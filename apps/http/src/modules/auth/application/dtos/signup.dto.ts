@@ -8,12 +8,8 @@ export interface SignupUserInputDTO {
 }
 
 export interface SignupUserOutputDTO {
-    id: string;
-    name: string;
     email: string;
-    role: string;
-    authProvider: string;
-    isEmailVerified: boolean;
+    message: string;
 }
 
 // Aliases for convenience
