@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { SignupController } from "../controllers/signup.controller";
+import { VerifyOtpController } from "../controllers/verify-otp.controller";
 import { signupSchema, verifySignupSchema } from "../validators/index";
 import validate from "@/app/middlewares/validate";
-import { VerifyOtpController } from "../controllers/verify-otp.controller";
+import { authRateLimiter } from "@/app/middlewares/rate-limit.middleware";
 
 export class AuthRoutes {
     public readonly router: Router;
@@ -16,6 +17,8 @@ export class AuthRoutes {
     }
 
     private initRoutes(): void {
+        this.router.use(authRateLimiter);
+
         this.router.post(
             "/signup",
             validate(signupSchema),
