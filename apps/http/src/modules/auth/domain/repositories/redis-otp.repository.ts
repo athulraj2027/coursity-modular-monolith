@@ -13,8 +13,18 @@ export interface StoredOtpData {
     createdAt: number; // Unix timestamp in ms
 }
 
+export interface StoredResetPasswordOtpData {
+    otp: string;
+    email: string;
+    createdAt: number; // Unix timestamp in ms
+}
+
 export interface OtpRepository {
     saveSignupOtp(email: string, otp: string, userData: TempSignupUser, ttlSeconds?: number): Promise<void>;
     getSignupOtp(email: string): Promise<StoredOtpData | null>;
     deleteSignupOtp(email: string): Promise<void>;
+
+    saveResetPasswordOtp(email: string, otp: string, ttlSeconds?: number): Promise<void>;
+    getResetPasswordOtp(email: string): Promise<StoredResetPasswordOtpData | null>;
+    deleteResetPasswordOtp(email: string): Promise<void>;
 }

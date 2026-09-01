@@ -6,6 +6,13 @@ const envSchema = z.object({
     PORT: z.coerce.number().default(3000),
     DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
     JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),
+    JWT_REFRESH_SECRET: z.string().optional(),
+    JWT_ACCESS_EXPIRES_IN: z.string().default("15m"),
+    JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
+    GOOGLE_CLIENT_ID: z.string().optional().default(""),
+    GOOGLE_CLIENT_SECRET: z.string().optional().default(""),
+    GOOGLE_REDIRECT_URI: z.string().optional().default("http://localhost:3000/api/auth/google/callback"),
+    FRONTEND_URL: z.string().optional().default("http://localhost:5173"),
     REDIS_URL: z.string().default("redis://localhost:6379"),
 });
 

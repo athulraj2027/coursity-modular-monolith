@@ -8,22 +8,45 @@ export class PrismaUserRepository implements UserRepository {
     ) { }
 
 
+    async findById(id: string): Promise<User | null> {
+        // db code placeholder
+        return null;
+    }
+
     async findByEmail(email: string): Promise<User | null> {
         // db code
         return null;
     }
+
     async create(data: CreateUserData): Promise<User> {
         return {
             id: 'null',
-            name: '',
-            email: '',
-            password: '',
-            role: 'STUDENT',
-            authProvider: 'LOCAL',
-            isEmailVerified: false,
+            name: data.name,
+            email: data.email,
+            password: data.password,
+            role: data.role,
+            authProvider: data.authProvider,
+            isEmailVerified: data.isEmailVerified,
             createdAt: new Date(),
             updatedAt: new Date(),
-        }
-            ;
+        };
+    }
+
+    async update(id: string, data: Partial<Omit<User, "id" | "createdAt">>): Promise<User> {
+        return {
+            id,
+            name: data.name ?? '',
+            email: data.email ?? '',
+            password: data.password ?? null,
+            role: data.role ?? 'STUDENT',
+            authProvider: data.authProvider ?? 'LOCAL',
+            isEmailVerified: data.isEmailVerified ?? false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+    }
+
+    async updatePassword(id: string, newPasswordHash: string): Promise<User> {
+        return this.update(id, { password: newPasswordHash, updatedAt: new Date() });
     }
 }
