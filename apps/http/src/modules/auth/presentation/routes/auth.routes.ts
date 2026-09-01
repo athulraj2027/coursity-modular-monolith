@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { SignupController } from "../controllers/signup.controller";
 import { VerifyOtpController } from "../controllers/verify-otp.controller";
-import { signupSchema, verifySignupSchema } from "../validators/index";
+import { ResendOtpController } from "../controllers/resend-otp.controller";
+import { signupSchema, verifySignupSchema, resendOtpSchema } from "../validators/index";
 import validate from "@/app/middlewares/validate";
 import { authRateLimiter } from "@/app/middlewares/rate-limit.middleware";
 
@@ -10,7 +11,8 @@ export class AuthRoutes {
 
     constructor(
         private readonly signupController: SignupController,
-        private readonly verifyOtpController: VerifyOtpController
+        private readonly verifyOtpController: VerifyOtpController,
+        private readonly resendOtpController: ResendOtpController
     ) {
         this.router = Router();
         this.initRoutes();
@@ -29,6 +31,12 @@ export class AuthRoutes {
             "/verify-otp",
             validate(verifySignupSchema),
             this.verifyOtpController.execute
+        );
+
+        this.router.post(
+            "/resend-otp",
+            validate(resendOtpSchema),
+            this.resendOtpController.execute
         );
 
         this.router.post("/signin", (req, res) => { res.json({ message: "signin" }); });

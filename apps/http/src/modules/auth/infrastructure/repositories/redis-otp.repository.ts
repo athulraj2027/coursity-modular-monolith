@@ -14,7 +14,11 @@ export class RedisOtpRepository implements OtpRepository {
 
     async saveSignupOtp(email: string, otp: string, userData: TempSignupUser, ttlSeconds: number = this.defaultTTL): Promise<void> {
         const key = this.getKey(email);
-        const data: StoredOtpData = { otp, userData };
+        const data: StoredOtpData = {
+            otp,
+            userData,
+            createdAt: Date.now(),
+        };
         await this.redis.set(key, JSON.stringify(data), "EX", ttlSeconds);
     }
 

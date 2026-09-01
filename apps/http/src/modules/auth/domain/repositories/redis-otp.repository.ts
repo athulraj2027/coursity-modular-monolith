@@ -10,6 +10,7 @@ export interface TempSignupUser {
 export interface StoredOtpData {
     otp: string;
     userData: TempSignupUser;
+    createdAt: number; // Unix timestamp in ms
 }
 
 export interface OtpRepository {
