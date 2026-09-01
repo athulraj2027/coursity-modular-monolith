@@ -1,5 +1,8 @@
-import express from 'express'
+import express from 'express';
+import authRouter from '@/modules/auth';
 
-const router = express.Router()
+const router = express.Router();
 
-export default router
+router.use("/auth", authRouter);
+
+export default router;
