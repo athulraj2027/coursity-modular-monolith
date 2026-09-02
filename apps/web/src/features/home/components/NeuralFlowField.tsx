@@ -193,3 +193,5 @@ export const NeuralFlowField: React.FC<NeuralFlowFieldProps> = ({
     />
   )
 }
+
+export default NeuralFlowField

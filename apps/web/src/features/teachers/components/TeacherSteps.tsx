@@ -2,7 +2,7 @@ import React from "react"
 import {
   TEACHER_STEPS_HEADER,
   TEACHER_STEPS,
-} from "@/constants/teachers"
+} from "../constants/teachers.constants"
 
 export const TeacherSteps: React.FC = () => {
   return (
@@ -39,3 +39,5 @@ export const TeacherSteps: React.FC = () => {
     </section>
   )
 }
+
+export default TeacherSteps

@@ -5,7 +5,13 @@ import { queryClient } from "@/lib/query-client"
 import { ThemeProvider } from "@/context/theme-context"
 import { MainLayout } from "@/components/layout/MainLayout"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
-import { HomePage } from "@/pages/Home"
+import { HomePage } from "@/features/home"
+import { TeachersPage } from "@/features/teachers"
+import {
+  StudentDashboardPage,
+  TeacherDashboardPage,
+  AdminDashboardPage,
+} from "@/features/dashboard"
 import {
   SigninPage,
   SignupPage,
@@ -13,10 +19,6 @@ import {
   ForgotPasswordPage,
   ResetPasswordPage,
 } from "@/features/auth"
-import { StudentDashboardPage } from "@/pages/StudentDashboard"
-import { TeacherDashboardPage } from "@/pages/TeacherDashboard"
-import { AdminDashboardPage } from "@/pages/AdminDashboard"
-import { TeachersPage } from "@/pages/Teachers"
 import { NotFoundPage } from "@/pages/NotFound"
 
 export function App() {

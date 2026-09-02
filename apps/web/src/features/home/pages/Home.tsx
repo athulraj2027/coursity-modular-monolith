@@ -1,7 +1,7 @@
 import React from "react"
-import { Hero } from "@/components/home/Hero"
-import { Courses } from "@/components/home/Courses"
-import { Features } from "@/components/home/Features"
+import { Hero } from "../components/Hero"
+import { Courses } from "../components/Courses"
+import { Features } from "../components/Features"
 
 export const HomePage: React.FC = () => {
   return (
@@ -12,3 +12,5 @@ export const HomePage: React.FC = () => {
     </div>
   )
 }
+
+export default HomePage

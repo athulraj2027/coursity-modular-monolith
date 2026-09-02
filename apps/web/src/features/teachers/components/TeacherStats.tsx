@@ -1,5 +1,5 @@
 import React from "react"
-import { TEACHER_STATS } from "@/constants/teachers"
+import { TEACHER_STATS } from "../constants/teachers.constants"
 
 export const TeacherStats: React.FC = () => {
   return (
@@ -32,3 +32,5 @@ export const TeacherStats: React.FC = () => {
     </section>
   )
 }
+
+export default TeacherStats

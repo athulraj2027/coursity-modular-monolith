@@ -1,10 +1,8 @@
 import React from "react"
-import { FEATURES_DATA } from "@/constants/features"
+import { FEATURES_DATA } from "../constants/features.constants"
 import { Check } from "lucide-react"
 
 export const Features: React.FC = () => {
-
-
   return (
     <section className="w-full py-24 sm:py-32 px-4 sm:px-6 relative border-t border-neutral-200/40 dark:border-neutral-900">
       <div className="container mx-auto max-w-7xl">
@@ -28,9 +26,6 @@ export const Features: React.FC = () => {
               className="group relative flex flex-col justify-between rounded-2xl border border-neutral-200/80 dark:border-neutral-800/80 bg-white dark:bg-neutral-950/60 p-8 sm:p-10 transition-all duration-300 hover:border-[#F42A18]/60 hover:shadow-xl hover:shadow-[#F42A18]/5"
             >
               <div>
-                {/* Header with Icon and Badge */}
-
-
                 {/* Title & Subtitle */}
                 <h3 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white mb-2 group-hover:text-[#F42A18] transition-colors">
                   {item.title}
@@ -66,3 +61,5 @@ export const Features: React.FC = () => {
     </section>
   )
 }
+
+export default Features

@@ -3,7 +3,7 @@ import {
   COURSE_CATEGORIES,
   FEATURED_COURSES,
   type Course,
-} from "@/constants/courses"
+} from "../constants/courses.constants"
 import {
   BookOpen,
   ArrowRight,
@@ -42,10 +42,11 @@ export const Courses: React.FC = () => {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${activeCategory === cat
+                className={`px-4 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                  activeCategory === cat
                     ? "bg-[#F42A18] text-white shadow-sm"
                     : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
-                  }`}
+                }`}
               >
                 {cat}
               </button>
@@ -148,3 +149,5 @@ export const Courses: React.FC = () => {
     </section>
   )
 }
+
+export default Courses

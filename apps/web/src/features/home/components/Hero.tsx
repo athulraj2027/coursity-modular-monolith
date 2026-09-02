@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react"
-import { HERO_CONTENT, type HeroConfig } from "@/constants/home"
+import { HERO_CONTENT, type HeroConfig } from "../constants/home.constants"
 import { NeuralFlowField } from "./NeuralFlowField"
 
 export interface HeroProps {
@@ -74,3 +74,5 @@ export const Hero: React.FC<HeroProps> = ({ content }) => {
     </section>
   )
 }
+
+export default Hero

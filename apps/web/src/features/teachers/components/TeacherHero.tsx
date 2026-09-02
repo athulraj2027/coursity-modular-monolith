@@ -1,6 +1,6 @@
 import React from "react"
 import { Link } from "react-router-dom"
-import { TEACHER_HERO } from "@/constants/teachers"
+import { TEACHER_HERO } from "../constants/teachers.constants"
 import { ArrowRight, Check } from "lucide-react"
 
 export const TeacherHero: React.FC = () => {
@@ -64,9 +64,6 @@ export const TeacherHero: React.FC = () => {
               </Link>
             </div>
           </div>
-
-          {/* Right side: Sleek Creator Studio Preview Showcase Card */}
-
         </div>
       </div>
     </section>

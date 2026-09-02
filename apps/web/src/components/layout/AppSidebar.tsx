@@ -18,8 +18,8 @@ import {
   TEACHER_SIDEBAR_GROUPS,
   ADMIN_SIDEBAR_GROUPS,
   type SidebarNavGroup,
-} from "@/constants/sidebar"
-import { HERO_CONTENT } from "@/constants/home"
+} from "@/features/dashboard"
+import { HERO_CONTENT } from "@/features/home"
 import { ThemeToggle } from "@/components/common/ThemeToggle"
 import { LogOut, Sparkles, User, ChevronRight, Shield } from "lucide-react"
 import { cn } from "@/lib/utils"

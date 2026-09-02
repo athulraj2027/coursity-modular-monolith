@@ -2,7 +2,7 @@ import React from "react"
 import {
   TEACHER_FEATURES_HEADER,
   TEACHER_FEATURES,
-} from "@/constants/teachers"
+} from "../constants/teachers.constants"
 import { Zap } from "lucide-react"
 
 export const TeacherFeatures: React.FC = () => {
@@ -47,3 +47,5 @@ export const TeacherFeatures: React.FC = () => {
     </section>
   )
 }
+
+export default TeacherFeatures

@@ -5,7 +5,7 @@ import {
   TEACHER_NAV_LINKS,
   type NavCalloutConfig,
 } from "@/constants/navbar"
-import { HERO_CONTENT } from "@/constants/home"
+import { HERO_CONTENT } from "@/features/home"
 import { ThemeToggle } from "@/components/common/ThemeToggle"
 import { Sparkles, X } from "lucide-react"
 import { cn } from "@/lib/utils"
