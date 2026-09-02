@@ -1,16 +1,17 @@
 import React from "react"
 import { useLocation, useSearchParams } from "react-router-dom"
-import { Signup } from "@/components/auth/Signup"
+import { Signup } from "../components/Signup"
+import type { UserRole } from "../types"
 
 export interface SignupPageProps {
-  role?: "student" | "teacher"
+  role?: UserRole
 }
 
 export const SignupPage: React.FC<SignupPageProps> = ({ role }) => {
   const location = useLocation()
   const [searchParams] = useSearchParams()
-  const activeRole =
-    role ||
+  const activeRole: "student" | "teacher" =
+    (role === "teacher" || role === "student" ? role : undefined) ||
     (location.pathname.startsWith("/teachers") ||
     searchParams.get("role") === "teacher"
       ? "teacher"

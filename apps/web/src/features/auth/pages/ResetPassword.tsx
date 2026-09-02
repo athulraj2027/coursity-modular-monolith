@@ -1,19 +1,19 @@
 import React from "react"
-import { useSearchParams } from "react-router-dom"
-import { Signin } from "@/components/auth/Signin"
+import { useLocation, useSearchParams } from "react-router-dom"
+import { ResetPassword } from "../components/ResetPassword"
+import type { UserRole } from "../types"
 
-export interface SigninPageProps {
-  role?: "student" | "teacher" | "admin"
+export interface ResetPasswordPageProps {
+  role?: UserRole
 }
 
-export const SigninPage: React.FC<SigninPageProps> = ({ role: initialRole }) => {
+export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ role }) => {
+  const location = useLocation()
   const [searchParams] = useSearchParams()
-  const roleParam = searchParams.get("role")
-  const role =
-    initialRole ||
-    (roleParam === "admin"
-      ? "admin"
-      : roleParam === "teacher"
+  const activeRole: "student" | "teacher" =
+    (role === "teacher" || role === "student" ? role : undefined) ||
+    (location.pathname.startsWith("/teachers") ||
+    searchParams.get("role") === "teacher"
       ? "teacher"
       : "student")
 
@@ -28,8 +28,10 @@ export const SigninPage: React.FC<SigninPageProps> = ({ role: initialRole }) => 
       </div>
 
       <div className="w-full max-w-sm">
-        <Signin role={role} />
+        <ResetPassword role={activeRole} />
       </div>
     </div>
   )
 }
+
+export default ResetPasswordPage

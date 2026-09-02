@@ -4,12 +4,12 @@ import {
   STUDENT_FORGOT_PASSWORD_CONFIG,
   TEACHER_FORGOT_PASSWORD_CONFIG,
   type AuthFormConfig,
-} from "@/constants/auth"
+} from "../constants"
 import {
   forgotPasswordSchema,
-  type AuthFormErrors,
   type ForgotPasswordFormData,
-} from "@/validations/auth"
+} from "../schemas/auth.schema"
+import type { AuthFormErrors } from "../types"
 import { CheckCircle2, Mail, Send } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"

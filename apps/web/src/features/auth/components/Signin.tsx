@@ -5,12 +5,12 @@ import {
   TEACHER_SIGNIN_CONFIG,
   ADMIN_SIGNIN_CONFIG,
   type AuthFormConfig,
-} from "@/constants/auth"
+} from "../constants"
 import {
   signinSchema,
-  type AuthFormErrors,
   type SigninFormData,
-} from "@/validations/auth"
+} from "../schemas/auth.schema"
+import type { AuthFormErrors } from "../types"
 import { CheckCircle2, LogIn, Shield } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -77,10 +77,10 @@ export const Signin: React.FC<SigninProps> = ({ role = "student", config }) => {
         <Link
           to={
             role === "admin"
-              ? "/admin"
+              ? "/admin/dashboard"
               : role === "teacher"
-              ? "/dashboard"
-              : "/courses"
+              ? "/teachers/dashboard"
+              : "/students/dashboard"
           }
           className="inline-block px-7 py-3 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-colors shadow-lg shadow-[#F42A18]/25"
         >

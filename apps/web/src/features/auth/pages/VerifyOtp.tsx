@@ -1,18 +1,21 @@
 import React from "react"
-import { useSearchParams } from "react-router-dom"
-import { VerifyOtp } from "@/components/auth/VerifyOtp"
+import { useLocation, useSearchParams } from "react-router-dom"
+import { VerifyOtp } from "../components/VerifyOtp"
+import type { UserRole } from "../types"
 
 export interface VerifyOtpPageProps {
-  role?: "student" | "teacher"
+  role?: UserRole
 }
 
-export const VerifyOtpPage: React.FC<VerifyOtpPageProps> = ({
-  role: initialRole,
-}) => {
+export const VerifyOtpPage: React.FC<VerifyOtpPageProps> = ({ role }) => {
+  const location = useLocation()
   const [searchParams] = useSearchParams()
-  const roleParam = searchParams.get("role")
-  const role =
-    initialRole || (roleParam === "teacher" ? "teacher" : "student")
+  const activeRole: "student" | "teacher" =
+    (role === "teacher" || role === "student" ? role : undefined) ||
+    (location.pathname.startsWith("/teachers") ||
+    searchParams.get("role") === "teacher"
+      ? "teacher"
+      : "student")
 
   return (
     <div className="w-full min-h-[calc(100vh-3.75rem)] flex items-center justify-center py-16 px-4 sm:px-6 relative overflow-hidden">
@@ -25,7 +28,7 @@ export const VerifyOtpPage: React.FC<VerifyOtpPageProps> = ({
       </div>
 
       <div className="w-full max-w-sm">
-        <VerifyOtp role={role} />
+        <VerifyOtp role={activeRole} />
       </div>
     </div>
   )

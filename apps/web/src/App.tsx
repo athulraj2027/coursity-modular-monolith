@@ -6,11 +6,13 @@ import { ThemeProvider } from "@/context/theme-context"
 import { MainLayout } from "@/components/layout/MainLayout"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { HomePage } from "@/pages/Home"
-import { SigninPage } from "@/pages/Signin"
-import { SignupPage } from "@/pages/Signup"
-import { VerifyOtpPage } from "@/pages/VerifyOtp"
-import { ForgotPasswordPage } from "@/pages/ForgotPassword"
-import { ResetPasswordPage } from "@/pages/ResetPassword"
+import {
+  SigninPage,
+  SignupPage,
+  VerifyOtpPage,
+  ForgotPasswordPage,
+  ResetPasswordPage,
+} from "@/features/auth"
 import { StudentDashboardPage } from "@/pages/StudentDashboard"
 import { TeacherDashboardPage } from "@/pages/TeacherDashboard"
 import { AdminDashboardPage } from "@/pages/AdminDashboard"

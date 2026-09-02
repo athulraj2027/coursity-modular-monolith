@@ -4,12 +4,12 @@ import {
   STUDENT_SIGNUP_CONFIG,
   TEACHER_SIGNUP_CONFIG,
   type AuthFormConfig,
-} from "@/constants/auth"
+} from "../constants"
 import {
   signupSchema,
-  type AuthFormErrors,
   type SignupFormData,
-} from "@/validations/auth"
+} from "../schemas/auth.schema"
+import type { AuthFormErrors } from "../types"
 import { CheckCircle2, Send } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"

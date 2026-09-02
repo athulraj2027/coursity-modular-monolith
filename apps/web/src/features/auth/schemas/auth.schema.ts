@@ -87,4 +87,3 @@ export type SigninFormData = z.infer<typeof signinSchema>
 export type VerifyOtpFormData = z.infer<typeof verifyOtpSchema>
 export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>
-export type AuthFormErrors<T> = Partial<Record<keyof T, string>>
