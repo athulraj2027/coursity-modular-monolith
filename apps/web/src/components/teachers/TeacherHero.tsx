@@ -1,11 +1,11 @@
 import React from "react"
+import { Link } from "react-router-dom"
 import { TEACHER_HERO } from "@/constants/teachers"
-import { Check } from "lucide-react"
-import Signup from "../auth/Signup"
+import { ArrowRight, Check } from "lucide-react"
 
 export const TeacherHero: React.FC = () => {
   return (
-    <section className="w-full py-16 sm:py-24 lg:py-32 px-4 sm:px-6 relative overflow-hidden">
+    <section className="w-full py-16 sm:py-24 lg:py-28 px-4 sm:px-6 relative overflow-hidden">
       {/* Ambient background glow */}
       <div
         aria-hidden="true"
@@ -16,7 +16,7 @@ export const TeacherHero: React.FC = () => {
 
       <div className="container mx-auto max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-          {/* Left side: Heading, Subtitle & Key Points */}
+          {/* Left side: Heading, Subtitle, Highlights & Get Started Button */}
           <div className="lg:col-span-7 flex flex-col items-start text-left space-y-6">
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-neutral-900 dark:text-white leading-[1.08]">
               {TEACHER_HERO.titleMain} <br className="hidden sm:inline" />
@@ -28,7 +28,7 @@ export const TeacherHero: React.FC = () => {
             </p>
 
             {/* Quick Key Highlights */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2 w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1 w-full">
               {[
                 "85% creator revenue share",
                 "Automated AI lab grading",
@@ -46,14 +46,31 @@ export const TeacherHero: React.FC = () => {
                 </div>
               ))}
             </div>
+
+            {/* Get Started CTA in App Design */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 pt-4 w-full sm:w-auto">
+              <Link
+                to="/teachers/signup"
+                className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-all shadow-lg shadow-[#F42A18]/25 cursor-pointer"
+              >
+                <span>Get Started</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                to="/teachers/signin"
+                className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 text-sm font-semibold hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
+              >
+                <span>Sign In to Studio</span>
+              </Link>
+            </div>
           </div>
 
-          {/* Right side: Seamless Signup Form */}
-          <div className="lg:col-span-5 w-full max-w-sm mx-auto lg:ml-auto">
-            <Signup role="teacher" />
-          </div>
+          {/* Right side: Sleek Creator Studio Preview Showcase Card */}
+
         </div>
       </div>
     </section>
   )
 }
+
+export default TeacherHero

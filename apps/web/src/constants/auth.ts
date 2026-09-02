@@ -60,7 +60,7 @@ export const STUDENT_SIGNIN_CONFIG: AuthFormConfig = {
   passwordPlaceholder: "••••••••",
   buttonText: "Sign In",
   forgotPasswordPrompt: "Forgot your password?",
-  forgotPasswordLinkText: "Reset Password",
+  forgotPasswordLinkText: "Forgot Password?",
   forgotPasswordHref: "/forgot-password",
   signupPrompt: "Don't have an account?",
   signupLinkText: "Create an Account",
