@@ -1,7 +1,7 @@
 import React from "react"
 import { TEACHER_HERO } from "@/constants/teachers"
 import { Check } from "lucide-react"
-import { TeacherSignupForm } from "./TeacherSignupForm"
+import Signup from "../auth/Signup"
 
 export const TeacherHero: React.FC = () => {
   return (
@@ -50,7 +50,7 @@ export const TeacherHero: React.FC = () => {
 
           {/* Right side: Seamless Signup Form */}
           <div className="lg:col-span-5 w-full max-w-sm mx-auto lg:ml-auto">
-            <TeacherSignupForm />
+            <Signup role="teacher" />
           </div>
         </div>
       </div>

@@ -136,25 +136,3 @@ export const TEACHER_STEPS: StepItem[] = [
     description: "Publish your course to thousands of learners and start earning 85% revenue share from day one.",
   },
 ]
-
-export const TEACHER_SIGNUP_CONFIG = {
-  tagline: "START TEACHING TODAY",
-  title: "Create Your Teacher Account",
-  subtitle: "Join thousands of teachers creating world-class courses and live cohorts.",
-  nameLabel: "Full Name",
-  namePlaceholder: "Ada Lovelace",
-  emailLabel: "Work Email",
-  emailPlaceholder: "ada@example.com",
-  passwordLabel: "Password",
-  passwordPlaceholder: "••••••••",
-  expertiseLabel: "Primary Teaching Domain",
-  expertisePlaceholder: "e.g. Distributed Systems, AI Engineering, Full-Stack",
-  buttonText: "Create Teacher Account",
-  signinPrompt: "Already a teacher?",
-  signinLinkText: "Sign In",
-  signinHref: "/signin",
-  successTitle: "Welcome to Coursity!",
-  successSubtitle:
-    "Your teacher account has been created. Check your email to verify and access your studio.",
-  successButtonText: "Go to Dashboard",
-}

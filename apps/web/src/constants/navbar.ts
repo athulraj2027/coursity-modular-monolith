@@ -47,6 +47,10 @@ export const NAV_LINKS: NavLink[] = [
     href: "/teachers",
     callout: TEACHER_CALLOUT,
   },
+  {
+    label: "Get Started",
+    href: "/signup",
+  },
 ]
 
 // Navigation links when viewing the Teachers page

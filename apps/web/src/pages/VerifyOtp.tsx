@@ -1,21 +1,18 @@
 import React from "react"
 import { useSearchParams } from "react-router-dom"
-import { Signin } from "@/components/auth/Signin"
+import { VerifyOtp } from "@/components/auth/VerifyOtp"
 
-export interface SigninPageProps {
-  role?: "student" | "teacher" | "admin"
+export interface VerifyOtpPageProps {
+  role?: "student" | "teacher"
 }
 
-export const SigninPage: React.FC<SigninPageProps> = ({ role: initialRole }) => {
+export const VerifyOtpPage: React.FC<VerifyOtpPageProps> = ({
+  role: initialRole,
+}) => {
   const [searchParams] = useSearchParams()
   const roleParam = searchParams.get("role")
   const role =
-    initialRole ||
-    (roleParam === "admin"
-      ? "admin"
-      : roleParam === "teacher"
-      ? "teacher"
-      : "student")
+    initialRole || (roleParam === "teacher" ? "teacher" : "student")
 
   return (
     <div className="w-full min-h-[calc(100vh-3.75rem)] flex items-center justify-center py-16 px-4 sm:px-6 relative overflow-hidden">
@@ -28,8 +25,10 @@ export const SigninPage: React.FC<SigninPageProps> = ({ role: initialRole }) => 
       </div>
 
       <div className="w-full max-w-sm">
-        <Signin role={role} />
+        <VerifyOtp role={role} />
       </div>
     </div>
   )
 }
+
+export default VerifyOtpPage

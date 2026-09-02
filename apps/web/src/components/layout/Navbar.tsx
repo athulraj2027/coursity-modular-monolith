@@ -13,7 +13,12 @@ import { cn } from "@/lib/utils"
 export const Navbar: React.FC = () => {
   const location = useLocation()
   const isHome = location.pathname === "/"
-  const isTeachersRoute = location.pathname === "/teachers"
+  const isTeachersRoute =
+    location.pathname.startsWith("/teachers") ||
+    new URLSearchParams(location.search).get("role") === "teacher"
+  const isAdminRoute =
+    location.pathname.startsWith("/admin") ||
+    new URLSearchParams(location.search).get("role") === "admin"
   const [scrolled, setScrolled] = useState(!isHome)
 
   const activeNavLinks = isTeachersRoute ? TEACHER_NAV_LINKS : NAV_LINKS
@@ -136,40 +141,42 @@ export const Navbar: React.FC = () => {
         {/* Theme toggle & Navigation options on the right */}
         <div className="flex items-center space-x-5 sm:space-x-6">
           <ThemeToggle />
-          <nav className="flex items-center space-x-5 sm:space-x-8">
-            {activeNavLinks.map((link) => {
-              // Highlighted / mobile visible option
-              const isHighlight = isTeachersRoute
-                ? link.href === "/"
-                : link.href === "/teachers"
-              const hasCallout = Boolean(link.callout)
+          {!isAdminRoute && (
+            <nav className="flex items-center space-x-5 sm:space-x-8">
+              {activeNavLinks.map((link) => {
+                // Highlighted / mobile visible option
+                const isHighlight = isTeachersRoute
+                  ? link.href === "/"
+                  : link.href === "/teachers"
+                const hasCallout = Boolean(link.callout)
 
-              return (
-                <div
-                  key={link.href}
-                  className={cn(
-                    "relative",
-                    !isHighlight && "hidden min-[1001px]:inline-block"
-                  )}
-                >
-                  <Link
-                    to={link.href}
-                    className="text-sm font-medium text-neutral-800 dark:text-white hover:text-brand dark:hover:text-brand transition-colors whitespace-nowrap flex items-center gap-2"
-                  >
-                    <span>{link.label}</span>
-                    {hasCallout && (
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F42A18] opacity-75" />
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#F42A18]" />
-                      </span>
+                return (
+                  <div
+                    key={link.href}
+                    className={cn(
+                      "relative",
+                      !isHighlight && "hidden min-[1001px]:inline-block"
                     )}
-                  </Link>
+                  >
+                    <Link
+                      to={link.href}
+                      className="text-sm font-medium text-neutral-800 dark:text-white hover:text-brand dark:hover:text-brand transition-colors whitespace-nowrap flex items-center gap-2"
+                    >
+                      <span>{link.label}</span>
+                      {hasCallout && (
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F42A18] opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#F42A18]" />
+                        </span>
+                      )}
+                    </Link>
 
-                  {link.callout && renderCalloutPopup(link.callout)}
-                </div>
-              )
-            })}
-          </nav>
+                    {link.callout && renderCalloutPopup(link.callout)}
+                  </div>
+                )
+              })}
+            </nav>
+          )}
         </div>
       </div>
     </header>
