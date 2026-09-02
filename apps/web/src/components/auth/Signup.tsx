@@ -27,6 +27,7 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
     name: "",
     email: "",
     password: "",
+    confirmPassword: "",
   })
   const [errors, setErrors] = useState<AuthFormErrors<SignupFormData>>({})
 
@@ -55,19 +56,19 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
 
   if (submitted) {
     return (
-      <div className="text-center py-12 space-y-4 w-full max-w-sm mx-auto">
-        <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-[#F42A18]/10 text-[#F42A18]">
-          <CheckCircle2 className="h-8 w-8" />
+      <div className="text-center py-8 space-y-3.5 w-full max-w-sm mx-auto">
+        <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-full bg-[#F42A18]/10 text-[#F42A18]">
+          <CheckCircle2 className="h-7 w-7" />
         </div>
-        <h3 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white">
+        <h3 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">
           {formConfig.successTitle}
         </h3>
-        <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 max-w-xs mx-auto">
+        <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 max-w-xs mx-auto">
           {formConfig.successSubtitle}
         </p>
         <Link
-          to={role === "teacher" ? "/dashboard" : "/courses"}
-          className="inline-block px-7 py-3 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-colors shadow-lg shadow-[#F42A18]/25"
+          to={role === "teacher" ? "/teachers/dashboard" : "/students/dashboard"}
+          className="inline-block px-6 py-2.5 rounded-xl bg-[#F42A18] text-white text-xs sm:text-sm font-semibold hover:bg-[#d92211] transition-colors shadow-lg shadow-[#F42A18]/25"
         >
           {formConfig.successButtonText}
         </Link>
@@ -76,32 +77,32 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
   }
 
   return (
-    <div className="space-y-5 w-full max-w-sm mx-auto">
-      <div className="text-left space-y-1.5">
-        <span className="text-xs font-semibold uppercase tracking-widest text-[#F42A18]">
+    <div className="space-y-3.5 sm:space-y-4 w-full max-w-sm mx-auto">
+      <div className="text-left space-y-1">
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-[#F42A18]">
           {formConfig.tagline}
         </span>
-        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">
           {formConfig.title}
         </h2>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+        <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 leading-normal">
           {formConfig.subtitle}
         </p>
       </div>
 
       {/* Seamless form directly on page without background box */}
-      <form onSubmit={handleSubmit} noValidate className="space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="space-y-2.5 sm:space-y-3">
         {/* Full Name */}
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           <div className="flex items-center justify-between">
             <Label
               htmlFor="signup-name"
-              className="text-sm font-semibold text-neutral-800 dark:text-neutral-200"
+              className="text-xs sm:text-sm font-semibold text-neutral-800 dark:text-neutral-200"
             >
               {formConfig.nameLabel || "Full Name"}
             </Label>
             {errors.name && (
-              <span className="text-xs font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+              <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
                 {errors.name}
               </span>
             )}
@@ -109,7 +110,7 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
           <Input
             id="signup-name"
             className={cn(
-              "h-10 text-sm px-3.5 py-2 rounded-xl transition-colors",
+              "h-9 text-xs sm:text-sm px-3 py-1.5 rounded-xl transition-colors",
               errors.name && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
             )}
             placeholder={formConfig.namePlaceholder || "Alex Turing"}
@@ -124,16 +125,16 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
         </div>
 
         {/* Email */}
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           <div className="flex items-center justify-between">
             <Label
               htmlFor="signup-email"
-              className="text-sm font-semibold text-neutral-800 dark:text-neutral-200"
+              className="text-xs sm:text-sm font-semibold text-neutral-800 dark:text-neutral-200"
             >
               {formConfig.emailLabel}
             </Label>
             {errors.email && (
-              <span className="text-xs font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+              <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
                 {errors.email}
               </span>
             )}
@@ -142,7 +143,7 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
             id="signup-email"
             type="email"
             className={cn(
-              "h-10 text-sm px-3.5 py-2 rounded-xl transition-colors",
+              "h-9 text-xs sm:text-sm px-3 py-1.5 rounded-xl transition-colors",
               errors.email && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
             )}
             placeholder={formConfig.emailPlaceholder}
@@ -157,16 +158,16 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
         </div>
 
         {/* Password */}
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           <div className="flex items-center justify-between">
             <Label
               htmlFor="signup-password"
-              className="text-sm font-semibold text-neutral-800 dark:text-neutral-200"
+              className="text-xs sm:text-sm font-semibold text-neutral-800 dark:text-neutral-200"
             >
               {formConfig.passwordLabel}
             </Label>
             {errors.password && (
-              <span className="text-xs font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+              <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
                 {errors.password}
               </span>
             )}
@@ -175,7 +176,7 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
             id="signup-password"
             type="password"
             className={cn(
-              "h-10 text-sm px-3.5 py-2 rounded-xl transition-colors",
+              "h-9 text-xs sm:text-sm px-3 py-1.5 rounded-xl transition-colors",
               errors.password && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
             )}
             placeholder={formConfig.passwordPlaceholder}
@@ -189,21 +190,54 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
           />
         </div>
 
+        {/* Confirm Password */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <Label
+              htmlFor="signup-confirm-password"
+              className="text-xs sm:text-sm font-semibold text-neutral-800 dark:text-neutral-200"
+            >
+              {formConfig.confirmPasswordLabel || "Confirm Password"}
+            </Label>
+            {errors.confirmPassword && (
+              <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                {errors.confirmPassword}
+              </span>
+            )}
+          </div>
+          <Input
+            id="signup-confirm-password"
+            type="password"
+            className={cn(
+              "h-9 text-xs sm:text-sm px-3 py-1.5 rounded-xl transition-colors",
+              errors.confirmPassword && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
+            )}
+            placeholder={formConfig.confirmPasswordPlaceholder || "••••••••"}
+            value={formData.confirmPassword}
+            onChange={(e) => {
+              setFormData({ ...formData, confirmPassword: e.target.value })
+              if (errors.confirmPassword) {
+                setErrors((prev) => ({ ...prev, confirmPassword: undefined }))
+              }
+            }}
+          />
+        </div>
+
         {/* Primary Submit Button */}
         <button
           type="submit"
-          className="w-full h-11 py-2.5 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-all shadow-lg shadow-[#F42A18]/25 cursor-pointer flex items-center justify-center gap-2 mt-2"
+          className="w-full h-10 py-2 rounded-xl bg-[#F42A18] text-white text-xs sm:text-sm font-semibold hover:bg-[#d92211] transition-all shadow-md shadow-[#F42A18]/20 cursor-pointer flex items-center justify-center gap-2 mt-1.5"
         >
-          <Send className="w-4 h-4" />
+          <Send className="w-3.5 h-3.5" />
           {formConfig.buttonText}
         </button>
 
         {/* Divider */}
-        <div className="relative flex items-center justify-center pt-1 pb-0.5">
+        <div className="relative flex items-center justify-center py-0.5">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-neutral-200 dark:border-neutral-800" />
           </div>
-          <span className="relative px-3 bg-white dark:bg-neutral-950 text-xs font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+          <span className="relative px-2.5 bg-white dark:bg-black text-[11px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
             or
           </span>
         </div>
@@ -212,7 +246,7 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
         <GoogleButton role={role} />
 
         {formConfig.signinPrompt && formConfig.signinHref && (
-          <p className="text-center text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 pt-1">
+          <p className="text-center text-xs text-neutral-600 dark:text-neutral-400 pt-0.5">
             {formConfig.signinPrompt}{" "}
             <Link
               to={formConfig.signinHref}

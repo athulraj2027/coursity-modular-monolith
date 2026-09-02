@@ -27,7 +27,7 @@ export const GoogleButton: React.FC<GoogleButtonProps> = ({
       data-role={role}
       onClick={() => onClick?.(role)}
       className={cn(
-        "w-full h-11 py-2.5 px-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 text-neutral-800 dark:text-neutral-200 text-sm font-semibold hover:bg-neutral-50 dark:hover:bg-neutral-800/80 hover:border-neutral-300 dark:hover:border-neutral-700 transition-all flex items-center justify-center gap-3 shadow-xs cursor-pointer",
+        "w-full h-10 py-2 px-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 text-neutral-800 dark:text-neutral-200 text-xs sm:text-sm font-semibold hover:bg-neutral-50 dark:hover:bg-neutral-800/80 hover:border-neutral-300 dark:hover:border-neutral-700 transition-all flex items-center justify-center gap-2.5 shadow-xs cursor-pointer",
         className
       )}
     >
