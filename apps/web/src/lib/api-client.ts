@@ -1,4 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1"
+import { env } from "./env"
+
+const API_BASE_URL = env.VITE_API_URL
 
 export class ApiError extends Error {
   public status: number
