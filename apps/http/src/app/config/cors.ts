@@ -31,7 +31,7 @@ export const corsOptions: CorsOptions = {
             return callback(null, true);
         }
 
-        return callback(new Error(`CORS policy does not allow access from origin: ${origin}`));
+        return callback(null, false);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -41,8 +41,6 @@ export const corsOptions: CorsOptions = {
         "X-Requested-With",
         "Accept",
         "Origin",
-        "Access-Control-Request-Method",
-        "Access-Control-Request-Headers",
     ],
     exposedHeaders: ["Set-Cookie", "Authorization"],
     maxAge: 86400, // 24 hours

@@ -14,7 +14,6 @@ const app = express();
 
 // 1. CORS Configuration & Preflight
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
 
 // 2. Body Parsing Middleware
 app.use(express.json());
