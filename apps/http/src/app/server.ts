@@ -10,7 +10,7 @@ const startServer = async () => {
         // Initialize Redis connection
         if (redis.status === "wait") {
             await redis.connect().catch((err) => {
-                console.warn(`⚠️ Redis connection failed on startup: ${err.message}`);
+                console.warn(`⚠️ Redis connection failed on startup: ${err?.message || err || "Could not connect"}`);
             });
         }
 

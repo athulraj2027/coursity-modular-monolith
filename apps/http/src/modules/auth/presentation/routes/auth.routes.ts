@@ -18,6 +18,7 @@ import {
     forgotPasswordSchema,
     resetPasswordSchema,
     googleAuthSchema,
+    googleCallbackSchema,
 } from "../validators/index";
 import validate from "@/app/middlewares/validate";
 import { authRateLimiter } from "@/app/middlewares/rate-limit.middleware";
@@ -113,6 +114,7 @@ export class AuthRoutes {
 
         this.router.post(
             "/google/callback",
+            validate(googleCallbackSchema),
             this.googleAuthController.callback
         );
     }

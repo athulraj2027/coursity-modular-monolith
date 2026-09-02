@@ -5,7 +5,7 @@ import { SignupUserInputDTO, SignupUserOutputDTO } from "../dtos/signup.dto";
 import { OtpRepository } from "../../domain/repositories/redis-otp.repository";
 
 export class SignupUser {
-    private readonly RESEND_COOLDOWN_MS = 5 * 60 * 1000; // 1 minute (60 seconds)
+    private readonly RESEND_COOLDOWN_MS = 1 * 60 * 1000; // 1 minute (60 seconds)
 
     constructor(
         private readonly repository: UserRepository,

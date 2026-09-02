@@ -9,8 +9,10 @@
   "scripts": {
     "test": "tsx --test tests/**/*.test.ts",
     "dev": "npx tsx watch src/app/server.ts",
-    "build": "npx tsc",
-    "start": "node dist/app/server.js"
+    "build": "tsc && tsc-alias",
+    "start": "node dist/app/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -20,7 +22,8 @@
     "express-rate-limit": "^8.7.0",
     "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
-    "zod": "^4.5.4"
+    "zod": "^4.5.4",
+    "@prisma/client": "^6.4.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
@@ -29,7 +32,9 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.4.0",
     "@types/supertest": "^7.2.1",
+    "prisma": "^6.4.1",
     "supertest": "^7.2.2",
+    "tsc-alias": "^1.8.11",
     "typescript": "^7.0.2"
   }
 }

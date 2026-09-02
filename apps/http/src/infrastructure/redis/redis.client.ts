@@ -5,7 +5,11 @@ export const redis = new Redis(env.REDIS_URL || "redis://localhost:6379", {
     lazyConnect: true,
     maxRetriesPerRequest: 3,
     retryStrategy(times) {
-        const delay = Math.min(times * 100, 3000);
+        if (times > 5) {
+            console.warn("⚠️ Redis retry limit exceeded (5 attempts). Halting auto-reconnect.");
+            return null;
+        }
+        const delay = Math.min(times * 200, 2000);
         return delay;
     },
 });
@@ -18,8 +22,8 @@ redis.on("ready", () => {
     console.log("⚡ Redis client ready");
 });
 
-redis.on("error", (err) => {
-    console.error("❌ Redis connection error:", err.message);
+redis.on("error", (err: any) => {
+    console.error("❌ Redis connection error:", err?.message || err || "Unknown error");
 });
 
 redis.on("close", () => {
