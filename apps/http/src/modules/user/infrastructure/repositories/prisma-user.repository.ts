@@ -32,7 +32,6 @@ export class PrismaUserRepository implements UserRepository {
                 password: data.password ?? null,
                 role: data.role as any,
                 authProvider: data.authProvider as any,
-                isEmailVerified: data.isEmailVerified ?? false,
             },
         });
         return this.mapToEntity(user);
@@ -47,7 +46,6 @@ export class PrismaUserRepository implements UserRepository {
                 ...(data.password !== undefined ? { password: data.password } : {}),
                 ...(data.role !== undefined ? { role: data.role as any } : {}),
                 ...(data.authProvider !== undefined ? { authProvider: data.authProvider as any } : {}),
-                ...(data.isEmailVerified !== undefined ? { isEmailVerified: data.isEmailVerified } : {}),
             },
         });
         return this.mapToEntity(user);
@@ -65,7 +63,6 @@ export class PrismaUserRepository implements UserRepository {
             password: raw.password,
             role: raw.role as UserRole,
             authProvider: raw.authProvider as AuthProvider,
-            isEmailVerified: raw.isEmailVerified,
             createdAt: raw.createdAt,
             updatedAt: raw.updatedAt,
         };

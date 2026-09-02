@@ -2,7 +2,7 @@ import { UserRepository } from "@/modules/user";
 import { PasswordService } from "../../domain/services/password.service";
 import { TokenService } from "../../domain/services/token.service";
 import { TokenRepository } from "../../domain/repositories/token.repository";
-import { BadRequestError, ForbiddenError, UnauthorizedError } from "@/app/errors";
+import { BadRequestError, UnauthorizedError } from "@/app/errors";
 import { SigninInputDTO, SigninOutputDTO } from "../dtos/signin.dto";
 
 export class SigninUser {
@@ -36,19 +36,14 @@ export class SigninUser {
             throw new UnauthorizedError("Invalid email or password");
         }
 
-        // 4. Ensure email is verified
-        if (!user.isEmailVerified) {
-            throw new ForbiddenError("Please verify your email before signing in");
-        }
-
-        // 5. Generate Access & Refresh tokens
+        // 4. Generate Access & Refresh tokens
         const tokens = this.tokenService.generateAuthTokens({
             userId: user.id,
             email: user.email,
             role: user.role,
         });
 
-        // 6. Save Refresh Token in Redis session storage
+        // 5. Save Refresh Token in Redis session storage
         await this.tokenRepository.saveRefreshToken(user.id, tokens.refreshToken);
 
         return {

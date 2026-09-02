@@ -32,7 +32,6 @@ describe("POST /api/auth/verify-otp", () => {
         // Verify user exists in database
         const createdUser = await testCtx.userRepo.findByEmail("verify.user@example.com");
         assert.ok(createdUser);
-        assert.equal(createdUser.isEmailVerified, true);
 
         // Verify OTP is deleted from Redis
         const otpInRepo = await testCtx.otpRepo.getSignupOtp("verify.user@example.com");

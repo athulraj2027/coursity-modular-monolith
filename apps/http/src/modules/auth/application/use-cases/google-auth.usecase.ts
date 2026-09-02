@@ -29,12 +29,6 @@ export class GoogleAuth {
                 password: null,
                 role: requestedRole || "STUDENT",
                 authProvider: "GOOGLE",
-                isEmailVerified: profile.emailVerified ?? true,
-            });
-        } else if (!user.isEmailVerified && profile.emailVerified) {
-            // Verify email if it was previously unverified
-            user = await this.userRepository.update(user.id, {
-                isEmailVerified: true,
             });
         }
 

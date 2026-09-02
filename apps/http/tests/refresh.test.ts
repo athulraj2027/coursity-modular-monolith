@@ -16,7 +16,6 @@ describe("POST /api/auth/refresh", () => {
             password: "hashedpassword",
             role: "STUDENT",
             authProvider: "LOCAL",
-            isEmailVerified: true,
         });
         userId = user.id;
 

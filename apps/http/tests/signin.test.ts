@@ -15,7 +15,6 @@ describe("POST /api/auth/signin", () => {
             password: hashedPassword,
             role: "STUDENT",
             authProvider: "LOCAL",
-            isEmailVerified: true,
         });
     });
 
@@ -60,27 +59,5 @@ describe("POST /api/auth/signin", () => {
 
         assert.equal(res.status, 401);
         assert.match(res.body.message, /invalid email or password/i);
-    });
-
-    it("should return 403 when email is not verified", async () => {
-        const hashedPassword = await testCtx.passwordService.hash("Secret123!");
-        await testCtx.userRepo.create({
-            name: "Unverified User",
-            email: "unverified@example.com",
-            password: hashedPassword,
-            role: "STUDENT",
-            authProvider: "LOCAL",
-            isEmailVerified: false,
-        });
-
-        const res = await request(testCtx.app)
-            .post("/api/auth/signin")
-            .send({
-                email: "unverified@example.com",
-                password: "Secret123!",
-            });
-
-        assert.equal(res.status, 403);
-        assert.match(res.body.message, /verify your email/i);
     });
 });

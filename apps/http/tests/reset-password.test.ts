@@ -16,7 +16,6 @@ describe("POST /api/auth/reset-password", () => {
             password: hashedPassword,
             role: "STUDENT",
             authProvider: "LOCAL",
-            isEmailVerified: true,
         });
         userId = user.id;
 
