@@ -1,31 +1,31 @@
 import express from "express";
-import { AuthRoutes } from "@/modules/auth/presentation/routes/auth.routes";
-import { SignupUser } from "@/modules/auth/application/use-cases/signup.user.usecase";
-import { VerifySignupOtp } from "@/modules/auth/application/use-cases/verify-signup-otp.usecase";
-import { ResendSignupOtp } from "@/modules/auth/application/use-cases/resend-signup-otp.usecase";
-import { SigninUser } from "@/modules/auth/application/use-cases/signin.user.usecase";
-import { LogoutUser } from "@/modules/auth/application/use-cases/logout.user.usecase";
-import { RefreshToken } from "@/modules/auth/application/use-cases/refresh-token.usecase";
-import { ForgotPassword } from "@/modules/auth/application/use-cases/forgot-password.usecase";
-import { ResetPassword } from "@/modules/auth/application/use-cases/reset-password.usecase";
-import { GoogleAuth } from "@/modules/auth/application/use-cases/google-auth.usecase";
-import { SignupController } from "@/modules/auth/presentation/controllers/signup.controller";
-import { VerifyOtpController } from "@/modules/auth/presentation/controllers/verify-otp.controller";
-import { ResendOtpController } from "@/modules/auth/presentation/controllers/resend-otp.controller";
-import { SigninController } from "@/modules/auth/presentation/controllers/signin.controller";
-import { LogoutController } from "@/modules/auth/presentation/controllers/logout.controller";
-import { RefreshController } from "@/modules/auth/presentation/controllers/refresh.controller";
-import { ForgotPasswordController } from "@/modules/auth/presentation/controllers/forgot-password.controller";
-import { ResetPasswordController } from "@/modules/auth/presentation/controllers/reset-password.controller";
-import { GoogleAuthController } from "@/modules/auth/presentation/controllers/google-auth.controller";
-import { BcryptPasswordService } from "@/modules/auth/infrastructure/services/bcrypt/bcrypt-password.service";
-import { JwtTokenService } from "@/modules/auth/infrastructure/services/jwt/jwt-token.service";
-import errorMiddleware from "@/app/middlewares/err.middleware";
-import notFoundMiddleware from "@/app/middlewares/not-found.middleware";
-import { User, UserRepository, CreateUserData } from "@/modules/user";
-import { OtpRepository, StoredOtpData, StoredResetPasswordOtpData, TempSignupUser } from "@/modules/auth/domain/repositories/redis-otp.repository";
-import { TokenRepository } from "@/modules/auth/domain/repositories/token.repository";
-import { OAuthService, OAuthUserProfile } from "@/modules/auth/domain/services/oauth.service";
+import { AuthRoutes } from "../../src/modules/auth/presentation/routes/auth.routes";
+import { SignupUser } from "../../src/modules/auth/application/use-cases/signup.user.usecase";
+import { VerifySignupOtp } from "../../src/modules/auth/application/use-cases/verify-signup-otp.usecase";
+import { ResendSignupOtp } from "../../src/modules/auth/application/use-cases/resend-signup-otp.usecase";
+import { SigninUser } from "../../src/modules/auth/application/use-cases/signin.user.usecase";
+import { LogoutUser } from "../../src/modules/auth/application/use-cases/logout.user.usecase";
+import { RefreshToken } from "../../src/modules/auth/application/use-cases/refresh-token.usecase";
+import { ForgotPassword } from "../../src/modules/auth/application/use-cases/forgot-password.usecase";
+import { ResetPassword } from "../../src/modules/auth/application/use-cases/reset-password.usecase";
+import { GoogleAuth } from "../../src/modules/auth/application/use-cases/google-auth.usecase";
+import { SignupController } from "../../src/modules/auth/presentation/controllers/signup.controller";
+import { VerifyOtpController } from "../../src/modules/auth/presentation/controllers/verify-otp.controller";
+import { ResendOtpController } from "../../src/modules/auth/presentation/controllers/resend-otp.controller";
+import { SigninController } from "../../src/modules/auth/presentation/controllers/signin.controller";
+import { LogoutController } from "../../src/modules/auth/presentation/controllers/logout.controller";
+import { RefreshController } from "../../src/modules/auth/presentation/controllers/refresh.controller";
+import { ForgotPasswordController } from "../../src/modules/auth/presentation/controllers/forgot-password.controller";
+import { ResetPasswordController } from "../../src/modules/auth/presentation/controllers/reset-password.controller";
+import { GoogleAuthController } from "../../src/modules/auth/presentation/controllers/google-auth.controller";
+import { BcryptPasswordService } from "../../src/modules/auth/infrastructure/services/bcrypt/bcrypt-password.service";
+import { JwtTokenService } from "../../src/modules/auth/infrastructure/services/jwt/jwt-token.service";
+import errorMiddleware from "../../src/app/middlewares/err.middleware";
+import notFoundMiddleware from "../../src/app/middlewares/not-found.middleware";
+import { User, UserRepository, CreateUserData } from "../../src/modules/user";
+import { OtpRepository, StoredOtpData, StoredResetPasswordOtpData, TempSignupUser } from "../../src/modules/auth/domain/repositories/redis-otp.repository";
+import { TokenRepository } from "../../src/modules/auth/domain/repositories/token.repository";
+import { OAuthService, OAuthUserProfile } from "../../src/modules/auth/domain/services/oauth.service";
 
 export class InMemoryUserRepository implements UserRepository {
     public users = new Map<string, User>();
@@ -53,7 +53,6 @@ export class InMemoryUserRepository implements UserRepository {
             password: data.password,
             role: data.role,
             authProvider: data.authProvider,
-            isEmailVerified: data.isEmailVerified,
             createdAt: new Date(),
             updatedAt: new Date(),
         };

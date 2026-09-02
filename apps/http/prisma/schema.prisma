@@ -19,15 +19,14 @@ enum AuthProvider {
 }
 
 model User {
-  id              String       @id @default(uuid())
-  name            String
-  email           String       @unique
-  password        String?
-  role            UserRole     @default(STUDENT)
-  authProvider    AuthProvider @default(LOCAL)
-  isEmailVerified Boolean      @default(false)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id           String       @id @default(uuid())
+  name         String
+  email        String       @unique
+  password     String?
+  role         UserRole     @default(STUDENT)
+  authProvider AuthProvider @default(LOCAL)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   @@map("users")
 }

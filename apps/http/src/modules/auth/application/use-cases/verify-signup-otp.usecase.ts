@@ -40,7 +40,6 @@ export class VerifySignupOtp {
             password: stored.userData.password,
             role: stored.userData.role,
             authProvider: "LOCAL",
-            isEmailVerified: true, // ✅ Verified via OTP!
         });
 
         // 5. Invalidate the OTP in Redis

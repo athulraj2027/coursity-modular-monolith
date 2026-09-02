@@ -6,7 +6,6 @@ export interface CreateUserDTO {
     password: string | null;
     role: UserRole;
     authProvider: AuthProvider;
-    isEmailVerified: boolean;
 }
 
 export type CreateUserData = CreateUserDTO;

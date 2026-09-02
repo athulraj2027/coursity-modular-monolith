@@ -53,7 +53,6 @@ describe("POST /api/auth/signup", () => {
             password: "HashedPassword123!",
             role: "STUDENT",
             authProvider: "LOCAL",
-            isEmailVerified: true,
         });
 
         const res = await request(testCtx.app)

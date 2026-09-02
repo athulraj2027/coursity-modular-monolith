@@ -49,7 +49,6 @@ describe("Google OAuth Routes", () => {
             const user = await testCtx.userRepo.findByEmail("google.user@example.com");
             assert.ok(user);
             assert.equal(user.authProvider, "GOOGLE");
-            assert.equal(user.isEmailVerified, true);
         });
 
         it("should return 400 when no tokens or codes are provided", async () => {

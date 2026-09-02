@@ -15,7 +15,6 @@ describe("POST /api/auth/forgot-password", () => {
             password: hashedPassword,
             role: "STUDENT",
             authProvider: "LOCAL",
-            isEmailVerified: true,
         });
     });
 

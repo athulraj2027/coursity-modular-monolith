@@ -15,7 +15,6 @@ export interface User {
     password: string | null;
     role: UserRole;
     authProvider: AuthProvider;
-    isEmailVerified: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
