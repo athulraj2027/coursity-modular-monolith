@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import {
   STUDENT_SIGNUP_CONFIG,
   TEACHER_SIGNUP_CONFIG,
@@ -10,10 +10,11 @@ import {
   type SignupFormData,
 } from "../schemas/auth.schema"
 import type { AuthFormErrors } from "../types"
-import { CheckCircle2, Send } from "lucide-react"
+import { Send, AlertCircle, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { GoogleButton } from "./GoogleButton"
+import { useRegister } from "../hooks/useRegister"
 import { cn } from "@/lib/utils"
 
 export interface SignupProps {
@@ -22,7 +23,9 @@ export interface SignupProps {
 }
 
 export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
-  const [submitted, setSubmitted] = useState(false)
+  const navigate = useNavigate()
+  const { mutate: register, isPending } = useRegister()
+
   const [formData, setFormData] = useState<SignupFormData>({
     name: "",
     email: "",
@@ -30,12 +33,14 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
     confirmPassword: "",
   })
   const [errors, setErrors] = useState<AuthFormErrors<SignupFormData>>({})
+  const [serverError, setServerError] = useState<string | null>(null)
 
   const formConfig =
     config || (role === "teacher" ? TEACHER_SIGNUP_CONFIG : STUDENT_SIGNUP_CONFIG)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setServerError(null)
 
     const result = signupSchema.safeParse(formData)
     if (!result.success) {
@@ -51,28 +56,26 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
     }
 
     setErrors({})
-    setSubmitted(true)
-  }
 
-  if (submitted) {
-    return (
-      <div className="text-center py-8 space-y-3.5 w-full max-w-sm mx-auto">
-        <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-full bg-[#F42A18]/10 text-[#F42A18]">
-          <CheckCircle2 className="h-7 w-7" />
-        </div>
-        <h3 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">
-          {formConfig.successTitle}
-        </h3>
-        <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 max-w-xs mx-auto">
-          {formConfig.successSubtitle}
-        </p>
-        <Link
-          to={role === "teacher" ? "/teachers/dashboard" : "/students/dashboard"}
-          className="inline-block px-6 py-2.5 rounded-xl bg-[#F42A18] text-white text-xs sm:text-sm font-semibold hover:bg-[#d92211] transition-colors shadow-lg shadow-[#F42A18]/25"
-        >
-          {formConfig.successButtonText}
-        </Link>
-      </div>
+    register(
+      {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role,
+      },
+      {
+        onSuccess: () => {
+          const verifyRoute =
+            role === "teacher"
+              ? `/teachers/verify-otp?email=${encodeURIComponent(formData.email)}`
+              : `/verify-otp?email=${encodeURIComponent(formData.email)}`
+          navigate(verifyRoute)
+        },
+        onError: (err: any) => {
+          setServerError(err?.message || "Failed to create account. Please try again.")
+        },
+      }
     )
   }
 
@@ -89,6 +92,13 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
           {formConfig.subtitle}
         </p>
       </div>
+
+      {serverError && (
+        <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-medium animate-in fade-in duration-200">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{serverError}</span>
+        </div>
+      )}
 
       {/* Seamless form directly on page without background box */}
       <form onSubmit={handleSubmit} noValidate className="space-y-2.5 sm:space-y-3">
@@ -109,6 +119,7 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
           </div>
           <Input
             id="signup-name"
+            disabled={isPending}
             className={cn(
               "h-9 text-xs sm:text-sm px-3 py-1.5 rounded-xl transition-colors",
               errors.name && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
@@ -120,6 +131,7 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
               if (errors.name) {
                 setErrors((prev) => ({ ...prev, name: undefined }))
               }
+              if (serverError) setServerError(null)
             }}
           />
         </div>
@@ -142,6 +154,7 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
           <Input
             id="signup-email"
             type="email"
+            disabled={isPending}
             className={cn(
               "h-9 text-xs sm:text-sm px-3 py-1.5 rounded-xl transition-colors",
               errors.email && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
@@ -153,6 +166,7 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
               if (errors.email) {
                 setErrors((prev) => ({ ...prev, email: undefined }))
               }
+              if (serverError) setServerError(null)
             }}
           />
         </div>
@@ -175,6 +189,7 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
           <Input
             id="signup-password"
             type="password"
+            disabled={isPending}
             className={cn(
               "h-9 text-xs sm:text-sm px-3 py-1.5 rounded-xl transition-colors",
               errors.password && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
@@ -186,6 +201,7 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
               if (errors.password) {
                 setErrors((prev) => ({ ...prev, password: undefined }))
               }
+              if (serverError) setServerError(null)
             }}
           />
         </div>
@@ -208,6 +224,7 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
           <Input
             id="signup-confirm-password"
             type="password"
+            disabled={isPending}
             className={cn(
               "h-9 text-xs sm:text-sm px-3 py-1.5 rounded-xl transition-colors",
               errors.confirmPassword && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
@@ -219,6 +236,7 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
               if (errors.confirmPassword) {
                 setErrors((prev) => ({ ...prev, confirmPassword: undefined }))
               }
+              if (serverError) setServerError(null)
             }}
           />
         </div>
@@ -226,10 +244,20 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
         {/* Primary Submit Button */}
         <button
           type="submit"
-          className="w-full h-10 py-2 rounded-xl bg-[#F42A18] text-white text-xs sm:text-sm font-semibold hover:bg-[#d92211] transition-all shadow-md shadow-[#F42A18]/20 cursor-pointer flex items-center justify-center gap-2 mt-1.5"
+          disabled={isPending}
+          className="w-full h-10 py-2 rounded-xl bg-[#F42A18] text-white text-xs sm:text-sm font-semibold hover:bg-[#d92211] transition-all shadow-md shadow-[#F42A18]/20 cursor-pointer flex items-center justify-center gap-2 mt-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <Send className="w-3.5 h-3.5" />
-          {formConfig.buttonText}
+          {isPending ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>Creating Account...</span>
+            </>
+          ) : (
+            <>
+              <Send className="w-3.5 h-3.5" />
+              <span>{formConfig.buttonText}</span>
+            </>
+          )}
         </button>
 
         {/* Divider */}
