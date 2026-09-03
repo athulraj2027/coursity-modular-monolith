@@ -10,9 +10,10 @@ import {
   type ResetPasswordFormData,
 } from "../schemas/auth.schema"
 import type { AuthFormErrors } from "../types"
-import { CheckCircle2, Lock, ShieldCheck } from "lucide-react"
+import { CheckCircle2, Lock, ShieldCheck, AlertCircle, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useResetPassword } from "../hooks/useResetPassword"
 import { cn } from "@/lib/utils"
 
 export interface ResetPasswordProps {
@@ -27,7 +28,10 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
   const [searchParams] = useSearchParams()
   const defaultEmail = searchParams.get("email") || ""
 
+  const { mutate: resetPassword, isPending } = useResetPassword()
+
   const [submitted, setSubmitted] = useState(false)
+  const [serverError, setServerError] = useState<string | null>(null)
   const [formData, setFormData] = useState<ResetPasswordFormData>({
     email: defaultEmail,
     otp: "",
@@ -44,6 +48,7 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setServerError(null)
 
     const result = resetPasswordSchema.safeParse(formData)
     if (!result.success) {
@@ -59,7 +64,23 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
     }
 
     setErrors({})
-    setSubmitted(true)
+
+    resetPassword(
+      {
+        email: formData.email,
+        otp: formData.otp,
+        newPassword: formData.newPassword,
+        role,
+      },
+      {
+        onSuccess: () => {
+          setSubmitted(true)
+        },
+        onError: (err: any) => {
+          setServerError(err?.message || "Failed to reset password. Please verify the OTP code.")
+        },
+      }
+    )
   }
 
   if (submitted) {
@@ -74,16 +95,16 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
           <CheckCircle2 className="h-8 w-8" />
         </div>
         <h3 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white">
-          {formConfig.successTitle}
+          {formConfig.successTitle || "Password Changed Successfully!"}
         </h3>
         <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 max-w-xs mx-auto">
-          {formConfig.successSubtitle}
+          {formConfig.successSubtitle || "Your password has been updated. You can now sign in with your new password."}
         </p>
         <Link
           to={signinLink}
-          className="inline-block px-7 py-3 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-colors shadow-lg shadow-[#F42A18]/25"
+          className="inline-block px-7 py-3 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-colors shadow-lg shadow-[#F42A18]/25 cursor-pointer"
         >
-          {formConfig.successButtonText}
+          {formConfig.successButtonText || "Sign In to Your Account"}
         </Link>
       </div>
     )
@@ -106,6 +127,13 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
         </p>
       </div>
 
+      {serverError && (
+        <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-medium animate-in fade-in duration-200">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{serverError}</span>
+        </div>
+      )}
+
       {/* Seamless form directly on page without background box */}
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {/* Email */}
@@ -126,6 +154,7 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
           <Input
             id="reset-email"
             type="email"
+            disabled={isPending}
             className={cn(
               "h-10 text-sm px-3.5 py-2 rounded-xl transition-colors",
               errors.email && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
@@ -137,6 +166,7 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
               if (errors.email) {
                 setErrors((prev) => ({ ...prev, email: undefined }))
               }
+              if (serverError) setServerError(null)
             }}
           />
         </div>
@@ -160,6 +190,7 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
             id="reset-otp"
             type="text"
             maxLength={6}
+            disabled={isPending}
             className={cn(
               "h-10 text-sm px-3.5 py-2 rounded-xl tracking-widest font-mono text-center transition-colors",
               errors.otp && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
@@ -172,6 +203,7 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
               if (errors.otp) {
                 setErrors((prev) => ({ ...prev, otp: undefined }))
               }
+              if (serverError) setServerError(null)
             }}
           />
         </div>
@@ -194,6 +226,7 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
           <Input
             id="reset-new-password"
             type="password"
+            disabled={isPending}
             className={cn(
               "h-10 text-sm px-3.5 py-2 rounded-xl transition-colors",
               errors.newPassword && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
@@ -205,6 +238,7 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
               if (errors.newPassword) {
                 setErrors((prev) => ({ ...prev, newPassword: undefined }))
               }
+              if (serverError) setServerError(null)
             }}
           />
         </div>
@@ -227,6 +261,7 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
           <Input
             id="reset-confirm-password"
             type="password"
+            disabled={isPending}
             className={cn(
               "h-10 text-sm px-3.5 py-2 rounded-xl transition-colors",
               errors.confirmPassword && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
@@ -238,16 +273,27 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
               if (errors.confirmPassword) {
                 setErrors((prev) => ({ ...prev, confirmPassword: undefined }))
               }
+              if (serverError) setServerError(null)
             }}
           />
         </div>
 
         <button
           type="submit"
-          className="w-full h-11 py-2.5 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-all shadow-lg shadow-[#F42A18]/25 cursor-pointer flex items-center justify-center gap-2 mt-2"
+          disabled={isPending}
+          className="w-full h-11 py-2.5 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-all shadow-lg shadow-[#F42A18]/25 cursor-pointer flex items-center justify-center gap-2 mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <Lock className="w-4 h-4" />
-          {formConfig.buttonText}
+          {isPending ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Resetting Password...</span>
+            </>
+          ) : (
+            <>
+              <Lock className="w-4 h-4" />
+              <span>{formConfig.buttonText}</span>
+            </>
+          )}
         </button>
 
         {formConfig.signinPrompt && formConfig.signinHref && (

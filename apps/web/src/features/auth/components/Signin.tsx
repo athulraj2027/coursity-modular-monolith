@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import {
   STUDENT_SIGNIN_CONFIG,
   TEACHER_SIGNIN_CONFIG,
@@ -11,10 +11,11 @@ import {
   type SigninFormData,
 } from "../schemas/auth.schema"
 import type { AuthFormErrors } from "../types"
-import { CheckCircle2, LogIn, Shield } from "lucide-react"
+import { LogIn, Shield, AlertCircle, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { GoogleButton } from "./GoogleButton"
+import { useLogin } from "../hooks/useLogin"
 import { cn } from "@/lib/utils"
 
 export interface SigninProps {
@@ -23,23 +24,27 @@ export interface SigninProps {
 }
 
 export const Signin: React.FC<SigninProps> = ({ role = "student", config }) => {
-  const [submitted, setSubmitted] = useState(false)
+  const navigate = useNavigate()
+  const { mutate: login, isPending } = useLogin()
+
   const [formData, setFormData] = useState<SigninFormData>({
     email: "",
     password: "",
   })
   const [errors, setErrors] = useState<AuthFormErrors<SigninFormData>>({})
+  const [serverError, setServerError] = useState<string | null>(null)
 
   const formConfig =
     config ||
     (role === "admin"
       ? ADMIN_SIGNIN_CONFIG
       : role === "teacher"
-      ? TEACHER_SIGNIN_CONFIG
-      : STUDENT_SIGNIN_CONFIG)
+        ? TEACHER_SIGNIN_CONFIG
+        : STUDENT_SIGNIN_CONFIG)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setServerError(null)
 
     const result = signinSchema.safeParse(formData)
     if (!result.success) {
@@ -55,38 +60,36 @@ export const Signin: React.FC<SigninProps> = ({ role = "student", config }) => {
     }
 
     setErrors({})
-    setSubmitted(true)
-  }
 
-  if (submitted) {
-    return (
-      <div className="text-center py-12 space-y-4 w-full max-w-sm mx-auto">
-        <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-[#F42A18]/10 text-[#F42A18]">
-          {role === "admin" ? (
-            <Shield className="h-8 w-8" />
-          ) : (
-            <CheckCircle2 className="h-8 w-8" />
-          )}
-        </div>
-        <h3 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white">
-          {formConfig.successTitle}
-        </h3>
-        <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 max-w-xs mx-auto">
-          {formConfig.successSubtitle}
-        </p>
-        <Link
-          to={
-            role === "admin"
-              ? "/admin/dashboard"
-              : role === "teacher"
-              ? "/teachers/dashboard"
-              : "/students/dashboard"
+    login(
+      {
+        email: formData.email,
+        password: formData.password,
+        role,
+      },
+      {
+        onSuccess: (response: any) => {
+          const token = response?.data?.accessToken || response?.data?.token
+          const refreshToken = response?.data?.refreshToken
+          const user = response?.data?.user
+
+          if (token) localStorage.setItem("accessToken", token)
+          if (refreshToken) localStorage.setItem("refreshToken", refreshToken)
+          if (user) localStorage.setItem("user", JSON.stringify(user))
+
+          const userRole = (user?.role?.toLowerCase() || role) as "student" | "teacher" | "admin"
+          if (userRole === "admin") {
+            navigate("/admin/dashboard")
+          } else if (userRole === "teacher") {
+            navigate("/teachers/dashboard")
+          } else {
+            navigate("/students/dashboard")
           }
-          className="inline-block px-7 py-3 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-colors shadow-lg shadow-[#F42A18]/25"
-        >
-          {formConfig.successButtonText}
-        </Link>
-      </div>
+        },
+        onError: (err: any) => {
+          setServerError(err?.message || "Failed to sign in. Please check your credentials.")
+        },
+      }
     )
   }
 
@@ -109,6 +112,13 @@ export const Signin: React.FC<SigninProps> = ({ role = "student", config }) => {
         </p>
       </div>
 
+      {serverError && (
+        <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-medium animate-in fade-in duration-200">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{serverError}</span>
+        </div>
+      )}
+
       {/* Seamless form directly on page without background box */}
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {/* Email */}
@@ -129,6 +139,7 @@ export const Signin: React.FC<SigninProps> = ({ role = "student", config }) => {
           <Input
             id="signin-email"
             type="email"
+            disabled={isPending}
             className={cn(
               "h-10 text-sm px-3.5 py-2 rounded-xl transition-colors",
               errors.email && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
@@ -140,6 +151,7 @@ export const Signin: React.FC<SigninProps> = ({ role = "student", config }) => {
               if (errors.email) {
                 setErrors((prev) => ({ ...prev, email: undefined }))
               }
+              if (serverError) setServerError(null)
             }}
           />
         </div>
@@ -169,6 +181,7 @@ export const Signin: React.FC<SigninProps> = ({ role = "student", config }) => {
           <Input
             id="signin-password"
             type="password"
+            disabled={isPending}
             className={cn(
               "h-10 text-sm px-3.5 py-2 rounded-xl transition-colors",
               errors.password && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
@@ -180,6 +193,7 @@ export const Signin: React.FC<SigninProps> = ({ role = "student", config }) => {
               if (errors.password) {
                 setErrors((prev) => ({ ...prev, password: undefined }))
               }
+              if (serverError) setServerError(null)
             }}
           />
         </div>
@@ -187,10 +201,20 @@ export const Signin: React.FC<SigninProps> = ({ role = "student", config }) => {
         {/* Primary Submit Button */}
         <button
           type="submit"
-          className="w-full h-11 py-2.5 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-all shadow-lg shadow-[#F42A18]/25 cursor-pointer flex items-center justify-center gap-2 mt-2"
+          disabled={isPending}
+          className="w-full h-11 py-2.5 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-all shadow-lg shadow-[#F42A18]/25 cursor-pointer flex items-center justify-center gap-2 mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <LogIn className="w-4 h-4" />
-          {formConfig.buttonText}
+          {isPending ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Signing In...</span>
+            </>
+          ) : (
+            <>
+              <LogIn className="w-4 h-4" />
+              <span>{formConfig.buttonText}</span>
+            </>
+          )}
         </button>
 
         {/* Continue with Google at bottom (shown for student and teacher) */}

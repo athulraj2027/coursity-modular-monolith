@@ -10,9 +10,10 @@ import {
   type VerifyOtpFormData,
 } from "../schemas/auth.schema"
 import type { AuthFormErrors } from "../types"
-import { CheckCircle2, KeyRound, RotateCw } from "lucide-react"
+import { KeyRound, RotateCw, AlertCircle, CheckCircle2, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useVerifyOtp, useResendOtp } from "../hooks/useVerifyOtp"
 import { cn } from "@/lib/utils"
 
 export interface VerifyOtpProps {
@@ -27,9 +28,14 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
   const [searchParams] = useSearchParams()
   const defaultEmail = searchParams.get("email") || ""
 
-  const [submitted, setSubmitted] = useState(false)
-  const [resending, setResending] = useState(false)
+  const { mutate: verifyOtp, isPending: isVerifying } = useVerifyOtp()
+  const { mutate: resendOtp, isPending: isResending } = useResendOtp()
+
+  const [verifiedSuccess, setVerifiedSuccess] = useState(false)
   const [countdown, setCountdown] = useState(0)
+  const [serverError, setServerError] = useState<string | null>(null)
+  const [resendMessage, setResendMessage] = useState<string | null>(null)
+
   const [formData, setFormData] = useState<VerifyOtpFormData>({
     email: defaultEmail,
     otp: "",
@@ -51,6 +57,8 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setServerError(null)
+    setResendMessage(null)
 
     const result = verifyOtpSchema.safeParse(formData)
     if (!result.success) {
@@ -66,39 +74,70 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
     }
 
     setErrors({})
-    setSubmitted(true)
+
+    verifyOtp(
+      {
+        email: formData.email,
+        otp: formData.otp,
+        role,
+      },
+      {
+        onSuccess: () => {
+          setVerifiedSuccess(true)
+        },
+        onError: (err: any) => {
+          setServerError(err?.message || "Invalid or expired OTP. Please try again.")
+        },
+      }
+    )
   }
 
   const handleResend = () => {
-    if (countdown > 0 || resending) return
-    setResending(true)
-    setTimeout(() => {
-      setResending(false)
-      setCountdown(60)
-    }, 800)
+    if (countdown > 0 || isResending) return
+    if (!formData.email) {
+      setErrors({ email: "Email is required to resend OTP" })
+      return
+    }
+
+    setServerError(null)
+    setResendMessage(null)
+
+    resendOtp(
+      {
+        email: formData.email,
+        role,
+      },
+      {
+        onSuccess: () => {
+          setResendMessage("A new verification code has been sent to your email.")
+          setCountdown(60)
+        },
+        onError: (err: any) => {
+          setServerError(err?.message || "Failed to resend OTP. Please wait before trying again.")
+        },
+      }
+    )
   }
 
-  if (submitted) {
+  if (verifiedSuccess) {
+    const signinRoute = role === "teacher" ? "/teachers/signin" : "/signin"
+
     return (
       <div className="text-center py-12 space-y-4 w-full max-w-sm mx-auto">
         <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-[#F42A18]/10 text-[#F42A18]">
           <CheckCircle2 className="h-8 w-8" />
         </div>
         <h3 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white">
-          {formConfig.successTitle}
+          {formConfig.successTitle || "Email Verified!"}
         </h3>
         <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 max-w-xs mx-auto">
-          {formConfig.successSubtitle}
+          {formConfig.successSubtitle || "Your account is verified. You can now sign in to your portal."}
         </p>
         <Link
-          to={
-            role === "teacher"
-              ? "/teachers/dashboard"
-              : "/students/dashboard"
-          }
-          className="inline-block px-7 py-3 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-colors shadow-lg shadow-[#F42A18]/25"
+          to={signinRoute}
+          className="inline-block px-7 py-3 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-colors shadow-lg shadow-[#F42A18]/25 cursor-pointer"
         >
-          {formConfig.successButtonText}
+          {formConfig.successButtonText || "Sign In to Account"}
         </Link>
       </div>
     )
@@ -121,6 +160,20 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
         </p>
       </div>
 
+      {serverError && (
+        <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-medium animate-in fade-in duration-200">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{serverError}</span>
+        </div>
+      )}
+
+      {resendMessage && (
+        <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-medium animate-in fade-in duration-200">
+          <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{resendMessage}</span>
+        </div>
+      )}
+
       {/* Seamless form directly on page without background box */}
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {/* Email */}
@@ -141,6 +194,7 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
           <Input
             id="verify-email"
             type="email"
+            disabled={isVerifying}
             className={cn(
               "h-10 text-sm px-3.5 py-2 rounded-xl transition-colors",
               errors.email && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
@@ -152,6 +206,7 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
               if (errors.email) {
                 setErrors((prev) => ({ ...prev, email: undefined }))
               }
+              if (serverError) setServerError(null)
             }}
           />
         </div>
@@ -175,6 +230,7 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
             id="verify-otp"
             type="text"
             maxLength={6}
+            disabled={isVerifying}
             className={cn(
               "h-10 text-sm px-3.5 py-2 rounded-xl tracking-widest font-mono text-center transition-colors",
               errors.otp && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
@@ -187,16 +243,27 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
               if (errors.otp) {
                 setErrors((prev) => ({ ...prev, otp: undefined }))
               }
+              if (serverError) setServerError(null)
             }}
           />
         </div>
 
         <button
           type="submit"
-          className="w-full h-11 py-2.5 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-all shadow-lg shadow-[#F42A18]/25 cursor-pointer flex items-center justify-center gap-2 mt-2"
+          disabled={isVerifying}
+          className="w-full h-11 py-2.5 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-all shadow-lg shadow-[#F42A18]/25 cursor-pointer flex items-center justify-center gap-2 mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <KeyRound className="w-4 h-4" />
-          {formConfig.buttonText}
+          {isVerifying ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Verifying OTP...</span>
+            </>
+          ) : (
+            <>
+              <KeyRound className="w-4 h-4" />
+              <span>{formConfig.buttonText}</span>
+            </>
+          )}
         </button>
 
         {/* Resend Option */}
@@ -204,10 +271,10 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
           <button
             type="button"
             onClick={handleResend}
-            disabled={countdown > 0 || resending}
+            disabled={countdown > 0 || isResending || isVerifying}
             className={cn(
               "text-xs sm:text-sm inline-flex items-center gap-1.5 font-medium transition-colors cursor-pointer",
-              countdown > 0 || resending
+              countdown > 0 || isResending || isVerifying
                 ? "text-neutral-400 dark:text-neutral-600 cursor-not-allowed"
                 : "text-neutral-600 dark:text-neutral-400 hover:text-[#F42A18]"
             )}
@@ -215,12 +282,12 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
             <RotateCw
               className={cn(
                 "w-3.5 h-3.5",
-                resending && "animate-spin text-[#F42A18]"
+                isResending && "animate-spin text-[#F42A18]"
               )}
             />
             {countdown > 0
               ? `Resend code in ${countdown}s`
-              : resending
+              : isResending
               ? "Sending code..."
               : "Resend Code"}
           </button>
