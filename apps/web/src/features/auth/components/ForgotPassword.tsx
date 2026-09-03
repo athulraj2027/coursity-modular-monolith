@@ -1,19 +1,14 @@
-import React, { useState } from "react"
+import React from "react"
 import { Link } from "react-router-dom"
 import {
   STUDENT_FORGOT_PASSWORD_CONFIG,
   TEACHER_FORGOT_PASSWORD_CONFIG,
   type AuthFormConfig,
 } from "../constants"
-import {
-  forgotPasswordSchema,
-  type ForgotPasswordFormData,
-} from "../schemas/auth.schema"
-import type { AuthFormErrors } from "../types"
-import { CheckCircle2, Mail, Send, AlertCircle, Loader2 } from "lucide-react"
+import { Mail, Send, AlertCircle, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useForgotPassword } from "../hooks/useForgotPassword"
+import { useForgotPasswordForm } from "../hooks/useForgotPassword"
 import { cn } from "@/lib/utils"
 
 export interface ForgotPasswordProps {
@@ -25,82 +20,14 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
   role = "student",
   config,
 }) => {
-  const { mutate: forgotPassword, isPending } = useForgotPassword()
-
-  const [submitted, setSubmitted] = useState(false)
-  const [serverError, setServerError] = useState<string | null>(null)
-  const [formData, setFormData] = useState<ForgotPasswordFormData>({
-    email: "",
-  })
-  const [errors, setErrors] = useState<AuthFormErrors<ForgotPasswordFormData>>({})
+  const { formData, errors, serverError, isPending, handleChange, handleSubmit } =
+    useForgotPasswordForm(role)
 
   const formConfig =
     config ||
     (role === "teacher"
       ? TEACHER_FORGOT_PASSWORD_CONFIG
       : STUDENT_FORGOT_PASSWORD_CONFIG)
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setServerError(null)
-
-    const result = forgotPasswordSchema.safeParse(formData)
-    if (!result.success) {
-      const fieldErrors: AuthFormErrors<ForgotPasswordFormData> = {}
-      result.error.issues.forEach((issue) => {
-        const fieldName = issue.path[0] as keyof ForgotPasswordFormData
-        if (!fieldErrors[fieldName]) {
-          fieldErrors[fieldName] = issue.message
-        }
-      })
-      setErrors(fieldErrors)
-      return
-    }
-
-    setErrors({})
-
-    forgotPassword(
-      {
-        email: formData.email,
-        role,
-      },
-      {
-        onSuccess: () => {
-          setSubmitted(true)
-        },
-        onError: (err: any) => {
-          setServerError(err?.message || "Failed to send reset instructions. Please check the email.")
-        },
-      }
-    )
-  }
-
-  if (submitted) {
-    const resetLink =
-      role === "teacher"
-        ? `/teachers/reset-password?email=${encodeURIComponent(formData.email)}`
-        : `/reset-password?email=${encodeURIComponent(formData.email)}`
-
-    return (
-      <div className="text-center py-12 space-y-4 w-full max-w-sm mx-auto">
-        <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-[#F42A18]/10 text-[#F42A18]">
-          <CheckCircle2 className="h-8 w-8" />
-        </div>
-        <h3 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white">
-          {formConfig.successTitle || "Check Your Email"}
-        </h3>
-        <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 max-w-xs mx-auto">
-          {formConfig.successSubtitle || "We sent a 6-digit recovery OTP to your inbox. Click below to reset your password."}
-        </p>
-        <Link
-          to={resetLink}
-          className="inline-block px-7 py-3 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-colors shadow-lg shadow-[#F42A18]/25 cursor-pointer"
-        >
-          {formConfig.successButtonText || "Enter Recovery Code"}
-        </Link>
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-6 w-full max-w-sm mx-auto">
@@ -153,13 +80,7 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
             )}
             placeholder={formConfig.emailPlaceholder || "alex@example.com"}
             value={formData.email}
-            onChange={(e) => {
-              setFormData({ ...formData, email: e.target.value })
-              if (errors.email) {
-                setErrors((prev) => ({ ...prev, email: undefined }))
-              }
-              if (serverError) setServerError(null)
-            }}
+            onChange={(e) => handleChange("email", e.target.value)}
           />
         </div>
 
