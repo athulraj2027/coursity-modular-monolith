@@ -34,10 +34,6 @@ export const authApi = {
   },
 
   logout: async (): Promise<AuthResponse> => {
-    const refreshToken =
-      typeof window !== "undefined"
-        ? localStorage.getItem("refreshToken") || undefined
-        : undefined
     const userStr =
       typeof window !== "undefined" ? localStorage.getItem("user") : null
     let userId: string | undefined = undefined
@@ -50,10 +46,18 @@ export const authApi = {
       // ignore
     }
 
-    return apiClient<AuthResponse>("/auth/logout", {
+    const response = await apiClient<AuthResponse>("/auth/logout", {
       method: "POST",
-      body: JSON.stringify({ refreshToken, userId }),
+      body: JSON.stringify({ userId }),
     })
+
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("user")
+      localStorage.removeItem("accessToken")
+      localStorage.removeItem("refreshToken")
+    }
+
+    return response
   },
 
   verifyOtp: async (data: VerifyOtpDTO): Promise<AuthResponse> => {
@@ -96,7 +100,7 @@ export const authApi = {
   },
 
   getCurrentUser: async (): Promise<User> => {
-    const response = await apiClient<{ data?: { user: User }; user?: User }>("/users/me", {
+    const response = await apiClient<{ data?: { user: User }; user?: User }>("/auth/me", {
       method: "GET",
     })
     return response.data?.user || response.user || (response as unknown as User)
