@@ -1,7 +1,7 @@
 import { UserRole } from "@/modules/user";
 
 export interface RefreshTokenInputDTO {
-    refreshToken: string;
+    refreshToken?: string;
 }
 
 export interface RefreshTokenOutputDTO {

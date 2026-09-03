@@ -12,6 +12,10 @@ export class RefreshToken {
     ) { }
 
     async execute(input: RefreshTokenInputDTO): Promise<RefreshTokenOutputDTO> {
+        if (!input.refreshToken) {
+            throw new UnauthorizedError("Refresh token is required");
+        }
+
         // 1. Verify cryptographic validity of Refresh Token
         const payload = this.tokenService.verifyRefreshToken(input.refreshToken);
 

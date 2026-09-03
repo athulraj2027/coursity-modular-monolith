@@ -1,5 +1,7 @@
 import { OtpRepository } from "@/modules/auth/domain/repositories/redis-otp.repository";
 import { UserRepository } from "@/modules/user";
+import { TokenService } from "../../domain/services/token.service";
+import { TokenRepository } from "../../domain/repositories/token.repository";
 import { BadRequestError, ConflictError } from "@/app/errors";
 
 export interface VerifySignupOtpInput {
@@ -10,7 +12,9 @@ export interface VerifySignupOtpInput {
 export class VerifySignupOtp {
     constructor(
         private readonly otpRepository: OtpRepository,
-        private readonly userRepository: UserRepository
+        private readonly userRepository: UserRepository,
+        private readonly tokenService: TokenService,
+        private readonly tokenRepository: TokenRepository
     ) { }
 
     async execute(input: VerifySignupOtpInput) {
@@ -45,11 +49,25 @@ export class VerifySignupOtp {
         // 5. Invalidate the OTP in Redis
         await this.otpRepository.deleteSignupOtp(email);
 
-        return {
-            id: user.id,
-            name: user.name,
+        // 6. Generate Access & Refresh tokens for automatic sign-in
+        const tokens = this.tokenService.generateAuthTokens({
+            userId: user.id,
             email: user.email,
             role: user.role,
+        });
+
+        // 7. Save Refresh Token in Redis session storage
+        await this.tokenRepository.saveRefreshToken(user.id, tokens.refreshToken);
+
+        return {
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+            },
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
         };
     }
 }
