@@ -1,19 +1,14 @@
-import React, { useState, useEffect } from "react"
-import { useSearchParams, useNavigate } from "react-router-dom"
+import React from "react"
+import { Link } from "react-router-dom"
 import {
   STUDENT_VERIFY_OTP_CONFIG,
   TEACHER_VERIFY_OTP_CONFIG,
   type AuthFormConfig,
 } from "../constants"
-import {
-  verifyOtpSchema,
-  type VerifyOtpFormData,
-} from "../schemas/auth.schema"
-import type { AuthFormErrors } from "../types"
 import { KeyRound, RotateCw, AlertCircle, CheckCircle2, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useVerifyOtp, useResendOtp } from "../hooks/useVerifyOtp"
+import { useVerifyOtpForm } from "../hooks/useVerifyOtp"
 import { cn } from "@/lib/utils"
 
 export interface VerifyOtpProps {
@@ -25,22 +20,19 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
   role = "student",
   config,
 }) => {
-  const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const defaultEmail = searchParams.get("email") || ""
-
-  const { mutate: verifyOtp, isPending: isVerifying } = useVerifyOtp()
-  const { mutate: resendOtp, isPending: isResending } = useResendOtp()
-
-  const [countdown, setCountdown] = useState(0)
-  const [serverError, setServerError] = useState<string | null>(null)
-  const [resendMessage, setResendMessage] = useState<string | null>(null)
-
-  const [formData, setFormData] = useState<VerifyOtpFormData>({
-    email: defaultEmail,
-    otp: "",
-  })
-  const [errors, setErrors] = useState<AuthFormErrors<VerifyOtpFormData>>({})
+  const {
+    email,
+    otp,
+    error,
+    countdown,
+    serverError,
+    resendMessage,
+    isVerifying,
+    isResending,
+    handleOtpChange,
+    handleSubmit,
+    handleResend,
+  } = useVerifyOtpForm(role)
 
   const formConfig =
     config ||
@@ -48,82 +40,7 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
       ? TEACHER_VERIFY_OTP_CONFIG
       : STUDENT_VERIFY_OTP_CONFIG)
 
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
-      return () => clearTimeout(timer)
-    }
-  }, [countdown])
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setServerError(null)
-    setResendMessage(null)
-
-    const result = verifyOtpSchema.safeParse(formData)
-    if (!result.success) {
-      const fieldErrors: AuthFormErrors<VerifyOtpFormData> = {}
-      result.error.issues.forEach((issue) => {
-        const fieldName = issue.path[0] as keyof VerifyOtpFormData
-        if (!fieldErrors[fieldName]) {
-          fieldErrors[fieldName] = issue.message
-        }
-      })
-      setErrors(fieldErrors)
-      return
-    }
-
-    setErrors({})
-
-    verifyOtp(
-      {
-        email: formData.email,
-        otp: formData.otp,
-        role,
-      },
-      {
-        onSuccess: (response: any) => {
-          const user = response?.data?.user
-          const userRole = (user?.role?.toLowerCase() || role) as "student" | "teacher" | "admin"
-          if (userRole === "teacher") {
-            navigate("/teachers/dashboard")
-          } else {
-            navigate("/students/dashboard")
-          }
-        },
-        onError: (err: any) => {
-          setServerError(err?.message || "Invalid or expired OTP. Please try again.")
-        },
-      }
-    )
-  }
-
-  const handleResend = () => {
-    if (countdown > 0 || isResending) return
-    if (!formData.email) {
-      setErrors({ email: "Email is required to resend OTP" })
-      return
-    }
-
-    setServerError(null)
-    setResendMessage(null)
-
-    resendOtp(
-      {
-        email: formData.email,
-        role,
-      },
-      {
-        onSuccess: () => {
-          setResendMessage("A new verification code has been sent to your email.")
-          setCountdown(60)
-        },
-        onError: (err: any) => {
-          setServerError(err?.message || "Failed to resend OTP. Please wait before trying again.")
-        },
-      }
-    )
-  }
+  const signupHref = role === "teacher" ? "/teachers/signup" : "/signup"
 
   return (
     <div className="space-y-6 w-full max-w-sm mx-auto">
@@ -138,14 +55,30 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
           {formConfig.title}
         </h2>
         <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
-          {formConfig.subtitle}
+          {email ? (
+            <>
+              Enter the 6-digit verification code sent to{" "}
+              <span className="font-semibold text-neutral-900 dark:text-white">{email}</span>.
+            </>
+          ) : (
+            formConfig.subtitle
+          )}
         </p>
       </div>
 
       {serverError && (
         <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-medium animate-in fade-in duration-200">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>{serverError}</span>
+          <div className="space-y-1">
+            <span>{serverError}</span>
+            {!email && (
+              <div>
+                <Link to={signupHref} className="underline font-semibold hover:text-red-700">
+                  Return to sign up
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -158,41 +91,6 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
 
       {/* Seamless form directly on page without background box */}
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        {/* Email */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <Label
-              htmlFor="verify-email"
-              className="text-sm font-semibold text-neutral-800 dark:text-neutral-200"
-            >
-              {formConfig.emailLabel || "Email Address"}
-            </Label>
-            {errors.email && (
-              <span className="text-xs font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
-                {errors.email}
-              </span>
-            )}
-          </div>
-          <Input
-            id="verify-email"
-            type="email"
-            disabled={isVerifying}
-            className={cn(
-              "h-10 text-sm px-3.5 py-2 rounded-xl transition-colors",
-              errors.email && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
-            )}
-            placeholder={formConfig.emailPlaceholder || "alex@example.com"}
-            value={formData.email}
-            onChange={(e) => {
-              setFormData({ ...formData, email: e.target.value })
-              if (errors.email) {
-                setErrors((prev) => ({ ...prev, email: undefined }))
-              }
-              if (serverError) setServerError(null)
-            }}
-          />
-        </div>
-
         {/* OTP Code */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
@@ -202,9 +100,9 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
             >
               {formConfig.otpLabel || "6-Digit OTP Code"}
             </Label>
-            {errors.otp && (
+            {error && (
               <span className="text-xs font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
-                {errors.otp}
+                {error}
               </span>
             )}
           </div>
@@ -213,26 +111,20 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
             type="text"
             maxLength={6}
             disabled={isVerifying}
+            autoFocus
             className={cn(
-              "h-10 text-sm px-3.5 py-2 rounded-xl tracking-widest font-mono text-center transition-colors",
-              errors.otp && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
+              "h-11 text-base px-3.5 py-2 rounded-xl tracking-[0.35em] font-mono text-center transition-colors font-semibold",
+              error && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
             )}
-            placeholder={formConfig.otpPlaceholder || "123456"}
-            value={formData.otp}
-            onChange={(e) => {
-              const val = e.target.value.replace(/\D/g, "")
-              setFormData({ ...formData, otp: val })
-              if (errors.otp) {
-                setErrors((prev) => ({ ...prev, otp: undefined }))
-              }
-              if (serverError) setServerError(null)
-            }}
+            placeholder={formConfig.otpPlaceholder || "••••••"}
+            value={otp}
+            onChange={(e) => handleOtpChange(e.target.value)}
           />
         </div>
 
         <button
           type="submit"
-          disabled={isVerifying}
+          disabled={isVerifying || otp.length !== 6}
           className="w-full h-11 py-2.5 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-all shadow-lg shadow-[#F42A18]/25 cursor-pointer flex items-center justify-center gap-2 mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {isVerifying ? (
@@ -243,13 +135,13 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
           ) : (
             <>
               <KeyRound className="w-4 h-4" />
-              <span>{formConfig.buttonText}</span>
+              <span>{formConfig.buttonText || "Verify Code"}</span>
             </>
           )}
         </button>
 
-        {/* Resend Option */}
-        <div className="text-center pt-1">
+        {/* Resend Option & Change Email */}
+        <div className="flex items-center justify-between pt-1">
           <button
             type="button"
             onClick={handleResend}
@@ -268,11 +160,18 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
               )}
             />
             {countdown > 0
-              ? `Resend code in ${countdown}s`
+              ? `Resend in ${countdown}s`
               : isResending
-                ? "Sending code..."
-                : "Resend Code"}
+              ? "Sending code..."
+              : "Resend Code"}
           </button>
+
+          <Link
+            to={signupHref}
+            className="text-xs sm:text-sm text-neutral-500 hover:text-[#F42A18] transition-colors"
+          >
+            Change email
+          </Link>
         </div>
       </form>
     </div>

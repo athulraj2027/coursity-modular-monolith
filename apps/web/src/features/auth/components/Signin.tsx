@@ -1,21 +1,16 @@
-import React, { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import React from "react"
+import { Link } from "react-router-dom"
 import {
   STUDENT_SIGNIN_CONFIG,
   TEACHER_SIGNIN_CONFIG,
   ADMIN_SIGNIN_CONFIG,
   type AuthFormConfig,
 } from "../constants"
-import {
-  signinSchema,
-  type SigninFormData,
-} from "../schemas/auth.schema"
-import type { AuthFormErrors } from "../types"
 import { LogIn, Shield, AlertCircle, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { GoogleButton } from "./GoogleButton"
-import { useLogin } from "../hooks/useLogin"
+import { useSigninForm } from "../hooks/useLogin"
 import { cn } from "@/lib/utils"
 
 export interface SigninProps {
@@ -24,15 +19,8 @@ export interface SigninProps {
 }
 
 export const Signin: React.FC<SigninProps> = ({ role = "student", config }) => {
-  const navigate = useNavigate()
-  const { mutate: login, isPending } = useLogin()
-
-  const [formData, setFormData] = useState<SigninFormData>({
-    email: "",
-    password: "",
-  })
-  const [errors, setErrors] = useState<AuthFormErrors<SigninFormData>>({})
-  const [serverError, setServerError] = useState<string | null>(null)
+  const { formData, errors, serverError, isPending, handleChange, handleSubmit } =
+    useSigninForm(role)
 
   const formConfig =
     config ||
@@ -41,50 +29,6 @@ export const Signin: React.FC<SigninProps> = ({ role = "student", config }) => {
       : role === "teacher"
         ? TEACHER_SIGNIN_CONFIG
         : STUDENT_SIGNIN_CONFIG)
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setServerError(null)
-
-    const result = signinSchema.safeParse(formData)
-    if (!result.success) {
-      const fieldErrors: AuthFormErrors<SigninFormData> = {}
-      result.error.issues.forEach((issue) => {
-        const fieldName = issue.path[0] as keyof SigninFormData
-        if (!fieldErrors[fieldName]) {
-          fieldErrors[fieldName] = issue.message
-        }
-      })
-      setErrors(fieldErrors)
-      return
-    }
-
-    setErrors({})
-
-    login(
-      {
-        email: formData.email,
-        password: formData.password,
-        role,
-      },
-      {
-        onSuccess: (response: any) => {
-          const user = response?.data?.user
-          const userRole = (user?.role?.toLowerCase() || role) as "student" | "teacher" | "admin"
-          if (userRole === "admin") {
-            navigate("/admin/dashboard")
-          } else if (userRole === "teacher") {
-            navigate("/teachers/dashboard")
-          } else {
-            navigate("/students/dashboard")
-          }
-        },
-        onError: (err: any) => {
-          setServerError(err?.message || "Failed to sign in. Please check your credentials.")
-        },
-      }
-    )
-  }
 
   return (
     <div className="space-y-5 w-full max-w-sm mx-auto">
@@ -139,13 +83,7 @@ export const Signin: React.FC<SigninProps> = ({ role = "student", config }) => {
             )}
             placeholder={formConfig.emailPlaceholder}
             value={formData.email}
-            onChange={(e) => {
-              setFormData({ ...formData, email: e.target.value })
-              if (errors.email) {
-                setErrors((prev) => ({ ...prev, email: undefined }))
-              }
-              if (serverError) setServerError(null)
-            }}
+            onChange={(e) => handleChange("email", e.target.value)}
           />
         </div>
 
@@ -181,13 +119,7 @@ export const Signin: React.FC<SigninProps> = ({ role = "student", config }) => {
             )}
             placeholder={formConfig.passwordPlaceholder}
             value={formData.password}
-            onChange={(e) => {
-              setFormData({ ...formData, password: e.target.value })
-              if (errors.password) {
-                setErrors((prev) => ({ ...prev, password: undefined }))
-              }
-              if (serverError) setServerError(null)
-            }}
+            onChange={(e) => handleChange("password", e.target.value)}
           />
         </div>
 

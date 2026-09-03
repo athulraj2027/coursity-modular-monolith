@@ -1,20 +1,15 @@
-import React, { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import React from "react"
+import { Link } from "react-router-dom"
 import {
   STUDENT_SIGNUP_CONFIG,
   TEACHER_SIGNUP_CONFIG,
   type AuthFormConfig,
 } from "../constants"
-import {
-  signupSchema,
-  type SignupFormData,
-} from "../schemas/auth.schema"
-import type { AuthFormErrors } from "../types"
 import { Send, AlertCircle, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { GoogleButton } from "./GoogleButton"
-import { useRegister } from "../hooks/useRegister"
+import { useSignupForm } from "../hooks/useRegister"
 import { cn } from "@/lib/utils"
 
 export interface SignupProps {
@@ -23,61 +18,11 @@ export interface SignupProps {
 }
 
 export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
-  const navigate = useNavigate()
-  const { mutate: register, isPending } = useRegister()
-
-  const [formData, setFormData] = useState<SignupFormData>({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  })
-  const [errors, setErrors] = useState<AuthFormErrors<SignupFormData>>({})
-  const [serverError, setServerError] = useState<string | null>(null)
+  const { formData, errors, serverError, isPending, handleChange, handleSubmit } =
+    useSignupForm(role)
 
   const formConfig =
     config || (role === "teacher" ? TEACHER_SIGNUP_CONFIG : STUDENT_SIGNUP_CONFIG)
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setServerError(null)
-
-    const result = signupSchema.safeParse(formData)
-    if (!result.success) {
-      const fieldErrors: AuthFormErrors<SignupFormData> = {}
-      result.error.issues.forEach((issue) => {
-        const fieldName = issue.path[0] as keyof SignupFormData
-        if (!fieldErrors[fieldName]) {
-          fieldErrors[fieldName] = issue.message
-        }
-      })
-      setErrors(fieldErrors)
-      return
-    }
-
-    setErrors({})
-
-    register(
-      {
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-        role,
-      },
-      {
-        onSuccess: () => {
-          const verifyRoute =
-            role === "teacher"
-              ? `/teachers/verify-otp?email=${encodeURIComponent(formData.email)}`
-              : `/verify-otp?email=${encodeURIComponent(formData.email)}`
-          navigate(verifyRoute)
-        },
-        onError: (err: any) => {
-          setServerError(err?.message || "Failed to create account. Please try again.")
-        },
-      }
-    )
-  }
 
   return (
     <div className="space-y-3.5 sm:space-y-4 w-full max-w-sm mx-auto">
@@ -126,13 +71,7 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
             )}
             placeholder={formConfig.namePlaceholder || "Alex Turing"}
             value={formData.name}
-            onChange={(e) => {
-              setFormData({ ...formData, name: e.target.value })
-              if (errors.name) {
-                setErrors((prev) => ({ ...prev, name: undefined }))
-              }
-              if (serverError) setServerError(null)
-            }}
+            onChange={(e) => handleChange("name", e.target.value)}
           />
         </div>
 
@@ -161,13 +100,7 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
             )}
             placeholder={formConfig.emailPlaceholder}
             value={formData.email}
-            onChange={(e) => {
-              setFormData({ ...formData, email: e.target.value })
-              if (errors.email) {
-                setErrors((prev) => ({ ...prev, email: undefined }))
-              }
-              if (serverError) setServerError(null)
-            }}
+            onChange={(e) => handleChange("email", e.target.value)}
           />
         </div>
 
@@ -196,13 +129,7 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
             )}
             placeholder={formConfig.passwordPlaceholder}
             value={formData.password}
-            onChange={(e) => {
-              setFormData({ ...formData, password: e.target.value })
-              if (errors.password) {
-                setErrors((prev) => ({ ...prev, password: undefined }))
-              }
-              if (serverError) setServerError(null)
-            }}
+            onChange={(e) => handleChange("password", e.target.value)}
           />
         </div>
 
@@ -231,13 +158,7 @@ export const Signup: React.FC<SignupProps> = ({ role = "student", config }) => {
             )}
             placeholder={formConfig.confirmPasswordPlaceholder || "••••••••"}
             value={formData.confirmPassword}
-            onChange={(e) => {
-              setFormData({ ...formData, confirmPassword: e.target.value })
-              if (errors.confirmPassword) {
-                setErrors((prev) => ({ ...prev, confirmPassword: undefined }))
-              }
-              if (serverError) setServerError(null)
-            }}
+            onChange={(e) => handleChange("confirmPassword", e.target.value)}
           />
         </div>
 
