@@ -10,9 +10,10 @@ import {
   type ForgotPasswordFormData,
 } from "../schemas/auth.schema"
 import type { AuthFormErrors } from "../types"
-import { CheckCircle2, Mail, Send } from "lucide-react"
+import { CheckCircle2, Mail, Send, AlertCircle, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useForgotPassword } from "../hooks/useForgotPassword"
 import { cn } from "@/lib/utils"
 
 export interface ForgotPasswordProps {
@@ -24,7 +25,10 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
   role = "student",
   config,
 }) => {
+  const { mutate: forgotPassword, isPending } = useForgotPassword()
+
   const [submitted, setSubmitted] = useState(false)
+  const [serverError, setServerError] = useState<string | null>(null)
   const [formData, setFormData] = useState<ForgotPasswordFormData>({
     email: "",
   })
@@ -38,6 +42,7 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setServerError(null)
 
     const result = forgotPasswordSchema.safeParse(formData)
     if (!result.success) {
@@ -53,7 +58,21 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
     }
 
     setErrors({})
-    setSubmitted(true)
+
+    forgotPassword(
+      {
+        email: formData.email,
+        role,
+      },
+      {
+        onSuccess: () => {
+          setSubmitted(true)
+        },
+        onError: (err: any) => {
+          setServerError(err?.message || "Failed to send reset instructions. Please check the email.")
+        },
+      }
+    )
   }
 
   if (submitted) {
@@ -68,16 +87,16 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
           <CheckCircle2 className="h-8 w-8" />
         </div>
         <h3 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white">
-          {formConfig.successTitle}
+          {formConfig.successTitle || "Check Your Email"}
         </h3>
         <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 max-w-xs mx-auto">
-          {formConfig.successSubtitle}
+          {formConfig.successSubtitle || "We sent a 6-digit recovery OTP to your inbox. Click below to reset your password."}
         </p>
         <Link
           to={resetLink}
-          className="inline-block px-7 py-3 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-colors shadow-lg shadow-[#F42A18]/25"
+          className="inline-block px-7 py-3 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-colors shadow-lg shadow-[#F42A18]/25 cursor-pointer"
         >
-          {formConfig.successButtonText}
+          {formConfig.successButtonText || "Enter Recovery Code"}
         </Link>
       </div>
     )
@@ -100,6 +119,13 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
         </p>
       </div>
 
+      {serverError && (
+        <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-medium animate-in fade-in duration-200">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{serverError}</span>
+        </div>
+      )}
+
       {/* Seamless form directly on page without background box */}
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {/* Email */}
@@ -120,6 +146,7 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
           <Input
             id="forgot-email"
             type="email"
+            disabled={isPending}
             className={cn(
               "h-10 text-sm px-3.5 py-2 rounded-xl transition-colors",
               errors.email && "border-[#F42A18] focus-visible:ring-[#F42A18]/25"
@@ -131,16 +158,27 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
               if (errors.email) {
                 setErrors((prev) => ({ ...prev, email: undefined }))
               }
+              if (serverError) setServerError(null)
             }}
           />
         </div>
 
         <button
           type="submit"
-          className="w-full h-11 py-2.5 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-all shadow-lg shadow-[#F42A18]/25 cursor-pointer flex items-center justify-center gap-2 mt-2"
+          disabled={isPending}
+          className="w-full h-11 py-2.5 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-all shadow-lg shadow-[#F42A18]/25 cursor-pointer flex items-center justify-center gap-2 mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <Send className="w-4 h-4" />
-          {formConfig.buttonText}
+          {isPending ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Sending Instructions...</span>
+            </>
+          ) : (
+            <>
+              <Send className="w-4 h-4" />
+              <span>{formConfig.buttonText}</span>
+            </>
+          )}
         </button>
 
         {formConfig.signinPrompt && formConfig.signinHref && (
