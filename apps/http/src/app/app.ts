@@ -3,6 +3,7 @@ dotenv.config();
 
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 import router from "./routes";
 import { corsOptions } from "./config/cors";
@@ -15,9 +16,10 @@ const app = express();
 // 1. CORS Configuration & Preflight
 app.use(cors(corsOptions));
 
-// 2. Body Parsing Middleware
+// 2. Body & Cookie Parsing Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // 3. Global Rate Limiter
 app.use(globalRateLimiter);

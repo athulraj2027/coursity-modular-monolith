@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, RequestHandler } from "express";
 import { SignupController } from "../controllers/signup.controller";
 import { VerifyOtpController } from "../controllers/verify-otp.controller";
 import { ResendOtpController } from "../controllers/resend-otp.controller";
@@ -8,6 +8,7 @@ import { RefreshController } from "../controllers/refresh.controller";
 import { ForgotPasswordController } from "../controllers/forgot-password.controller";
 import { ResetPasswordController } from "../controllers/reset-password.controller";
 import { GoogleAuthController } from "../controllers/google-auth.controller";
+import { MeController } from "../controllers/me.controller";
 import {
     signupSchema,
     verifySignupSchema,
@@ -35,7 +36,9 @@ export class AuthRoutes {
         private readonly refreshController: RefreshController,
         private readonly forgotPasswordController: ForgotPasswordController,
         private readonly resetPasswordController: ResetPasswordController,
-        private readonly googleAuthController: GoogleAuthController
+        private readonly googleAuthController: GoogleAuthController,
+        private readonly meController: MeController,
+        private readonly authMiddleware: RequestHandler
     ) {
         this.router = Router();
         this.initRoutes();
@@ -80,6 +83,13 @@ export class AuthRoutes {
             "/refresh",
             validate(refreshSchema),
             this.refreshController.execute
+        );
+
+        // Current Authenticated User
+        this.router.get(
+            "/me",
+            this.authMiddleware,
+            this.meController.execute
         );
 
         // Password Recovery

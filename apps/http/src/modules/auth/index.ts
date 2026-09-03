@@ -16,6 +16,7 @@ import { RefreshToken } from "./application/use-cases/refresh-token.usecase";
 import { ForgotPassword } from "./application/use-cases/forgot-password.usecase";
 import { ResetPassword } from "./application/use-cases/reset-password.usecase";
 import { GoogleAuth } from "./application/use-cases/google-auth.usecase";
+import { GetCurrentUser } from "./application/use-cases/get-current-user.usecase";
 
 // Controllers
 import { SignupController } from "./presentation/controllers/signup.controller";
@@ -27,8 +28,10 @@ import { RefreshController } from "./presentation/controllers/refresh.controller
 import { ForgotPasswordController } from "./presentation/controllers/forgot-password.controller";
 import { ResetPasswordController } from "./presentation/controllers/reset-password.controller";
 import { GoogleAuthController } from "./presentation/controllers/google-auth.controller";
+import { MeController } from "./presentation/controllers/me.controller";
 
-// Routes
+// Middleware & Routes
+import { createAuthMiddleware } from "@/app/middlewares/auth.middleware";
 import { AuthRoutes } from "./presentation/routes/auth.routes";
 
 // 1. Repositories & Services
@@ -54,8 +57,10 @@ const refreshTokenUseCase = new RefreshToken(tokenService, tokenRepository, user
 const forgotPassword = new ForgotPassword(userRepository, otpRepository);
 const resetPassword = new ResetPassword(userRepository, passwordService, otpRepository, tokenRepository);
 const googleAuth = new GoogleAuth(oauthService, userRepository, tokenService, tokenRepository);
+const getCurrentUser = new GetCurrentUser(userRepository);
 
-// 3. Controllers
+// 3. Middlewares & Controllers
+const authMiddleware = createAuthMiddleware(tokenService);
 const signupController = new SignupController(signupUser);
 const verifyOtpController = new VerifyOtpController(verifySignupOtp);
 const resendOtpController = new ResendOtpController(resendSignupOtp);
@@ -65,6 +70,7 @@ const refreshController = new RefreshController(refreshTokenUseCase);
 const forgotPasswordController = new ForgotPasswordController(forgotPassword);
 const resetPasswordController = new ResetPasswordController(resetPassword);
 const googleAuthController = new GoogleAuthController(googleAuth);
+const meController = new MeController(getCurrentUser);
 
 // 4. Routes
 const authRoutes = new AuthRoutes(
@@ -76,7 +82,9 @@ const authRoutes = new AuthRoutes(
     refreshController,
     forgotPasswordController,
     resetPasswordController,
-    googleAuthController
+    googleAuthController,
+    meController,
+    authMiddleware
 );
 
 export * from "./application/dtos";
