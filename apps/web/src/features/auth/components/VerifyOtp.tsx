@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { Link, useSearchParams } from "react-router-dom"
+import { useSearchParams, useNavigate } from "react-router-dom"
 import {
   STUDENT_VERIFY_OTP_CONFIG,
   TEACHER_VERIFY_OTP_CONFIG,
@@ -25,13 +25,13 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
   role = "student",
   config,
 }) => {
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const defaultEmail = searchParams.get("email") || ""
 
   const { mutate: verifyOtp, isPending: isVerifying } = useVerifyOtp()
   const { mutate: resendOtp, isPending: isResending } = useResendOtp()
 
-  const [verifiedSuccess, setVerifiedSuccess] = useState(false)
   const [countdown, setCountdown] = useState(0)
   const [serverError, setServerError] = useState<string | null>(null)
   const [resendMessage, setResendMessage] = useState<string | null>(null)
@@ -82,8 +82,14 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
         role,
       },
       {
-        onSuccess: () => {
-          setVerifiedSuccess(true)
+        onSuccess: (response: any) => {
+          const user = response?.data?.user
+          const userRole = (user?.role?.toLowerCase() || role) as "student" | "teacher" | "admin"
+          if (userRole === "teacher") {
+            navigate("/teachers/dashboard")
+          } else {
+            navigate("/students/dashboard")
+          }
         },
         onError: (err: any) => {
           setServerError(err?.message || "Invalid or expired OTP. Please try again.")
@@ -116,30 +122,6 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
           setServerError(err?.message || "Failed to resend OTP. Please wait before trying again.")
         },
       }
-    )
-  }
-
-  if (verifiedSuccess) {
-    const signinRoute = role === "teacher" ? "/teachers/signin" : "/signin"
-
-    return (
-      <div className="text-center py-12 space-y-4 w-full max-w-sm mx-auto">
-        <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-[#F42A18]/10 text-[#F42A18]">
-          <CheckCircle2 className="h-8 w-8" />
-        </div>
-        <h3 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white">
-          {formConfig.successTitle || "Email Verified!"}
-        </h3>
-        <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 max-w-xs mx-auto">
-          {formConfig.successSubtitle || "Your account is verified. You can now sign in to your portal."}
-        </p>
-        <Link
-          to={signinRoute}
-          className="inline-block px-7 py-3 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-colors shadow-lg shadow-[#F42A18]/25 cursor-pointer"
-        >
-          {formConfig.successButtonText || "Sign In to Account"}
-        </Link>
-      </div>
     )
   }
 
@@ -256,7 +238,7 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
           {isVerifying ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Verifying OTP...</span>
+              <span>Verifying & Signing in...</span>
             </>
           ) : (
             <>
@@ -288,8 +270,8 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
             {countdown > 0
               ? `Resend code in ${countdown}s`
               : isResending
-              ? "Sending code..."
-              : "Resend Code"}
+                ? "Sending code..."
+                : "Resend Code"}
           </button>
         </div>
       </form>

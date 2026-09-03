@@ -30,11 +30,20 @@ export async function apiClient<T>(
     headers.set("Authorization", `Bearer ${token}`)
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    credentials: "include", // For session / httpOnly cookies
-  })
+  let response: Response
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: "include", // For session / httpOnly cookies
+    })
+  } catch (networkErr: any) {
+    throw new ApiError(
+      "Unable to connect to the server. Please ensure the backend is running.",
+      0,
+      networkErr
+    )
+  }
 
   let responseData: any = null
   const contentType = response.headers.get("content-type")
@@ -45,10 +54,22 @@ export async function apiClient<T>(
   }
 
   if (!response.ok) {
-    const errorMessage =
+    let errorMessage =
       responseData?.message ||
       responseData?.error ||
       `Request failed with status ${response.status}`
+
+    // Sanitize any raw database or internal trace messages if they leak
+    if (
+      typeof errorMessage === "string" &&
+      (errorMessage.includes("Invalid `this.prisma") ||
+        errorMessage.includes("PrismaClient") ||
+        errorMessage.includes("invocation in") ||
+        errorMessage.includes("does not exist"))
+    ) {
+      errorMessage = "A server configuration error occurred. Please try again later."
+    }
+
     throw new ApiError(errorMessage, response.status, responseData)
   }
 
