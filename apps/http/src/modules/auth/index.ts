@@ -41,7 +41,12 @@ const oauthService = new GoogleOAuthService();
 
 // 2. Use Cases
 const signupUser = new SignupUser(userRepository, passwordService, otpRepository);
-const verifySignupOtp = new VerifySignupOtp(otpRepository, userRepository);
+const verifySignupOtp = new VerifySignupOtp(
+    otpRepository,
+    userRepository,
+    tokenService,
+    tokenRepository
+);
 const resendSignupOtp = new ResendSignupOtp(otpRepository, userRepository);
 const signinUser = new SigninUser(userRepository, passwordService, tokenService, tokenRepository);
 const logoutUser = new LogoutUser(tokenRepository, tokenService);
