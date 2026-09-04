@@ -4,12 +4,10 @@ import { UpdateProfileController } from "../controllers/update-profile.controlle
 import { ChangePasswordController } from "../controllers/change-password.controller";
 import { GetAllUsersController } from "../controllers/get-all-users.controller";
 import { GetUserByIdController } from "../controllers/get-user-by-id.controller";
-import { UpdateUserRoleController } from "../controllers/update-user-role.controller";
-import { DeleteUserController } from "../controllers/delete-user.controller";
+import { BlockUserController } from "../controllers/block-user.controller";
 import {
     updateProfileSchema,
     changePasswordSchema,
-    updateUserRoleSchema,
 } from "../validators/user.validator";
 import validate from "@/app/middlewares/validate";
 
@@ -22,8 +20,7 @@ export class UserRoutes {
         private readonly changePasswordController: ChangePasswordController,
         private readonly getAllUsersController: GetAllUsersController,
         private readonly getUserByIdController: GetUserByIdController,
-        private readonly updateUserRoleController: UpdateUserRoleController,
-        private readonly deleteUserController: DeleteUserController,
+        private readonly blockUserController: BlockUserController,
         private readonly authMiddleware: RequestHandler,
         private readonly adminMiddleware: RequestHandler
     ) {
@@ -76,26 +73,18 @@ export class UserRoutes {
         );
 
         this.router.patch(
-            "/:id/role",
+            "/:id/block",
             this.authMiddleware,
             this.adminMiddleware,
-            validate(updateUserRoleSchema),
-            this.updateUserRoleController.execute
+            this.blockUserController.execute
         );
 
         this.router.put(
-            "/:id/role",
+            "/:id/block",
             this.authMiddleware,
             this.adminMiddleware,
-            validate(updateUserRoleSchema),
-            this.updateUserRoleController.execute
-        );
-
-        this.router.delete(
-            "/:id",
-            this.authMiddleware,
-            this.adminMiddleware,
-            this.deleteUserController.execute
+            this.blockUserController.execute
         );
     }
 }
+

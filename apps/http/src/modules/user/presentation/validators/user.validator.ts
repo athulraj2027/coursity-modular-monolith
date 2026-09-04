@@ -16,10 +16,6 @@ export const changePasswordSchema = z.object({
         .max(100, "Password too long"),
 });
 
-export const updateUserRoleSchema = z.object({
-    role: z.enum(["STUDENT", "TEACHER", "ADMIN"]),
-});
-
 export const getUsersQuerySchema = z.object({
     page: z.coerce.number().int().positive().optional().default(1),
     limit: z.coerce.number().int().positive().max(100).optional().default(10),
@@ -32,5 +28,4 @@ export const getUsersQuerySchema = z.object({
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
-export type UpdateUserRoleInput = z.infer<typeof updateUserRoleSchema>;
 export type GetUsersQueryInput = z.infer<typeof getUsersQuerySchema>;

@@ -51,6 +51,7 @@ export class PrismaUserRepository implements UserRepository {
                 ...(data.password !== undefined ? { password: data.password } : {}),
                 ...(data.role !== undefined ? { role: data.role as any } : {}),
                 ...(data.authProvider !== undefined ? { authProvider: data.authProvider as any } : {}),
+                ...(data.isBlocked !== undefined ? { isBlocked: data.isBlocked } : {}),
             },
         });
         return this.mapToEntity(user);
@@ -58,6 +59,10 @@ export class PrismaUserRepository implements UserRepository {
 
     async updatePassword(id: string, newPasswordHash: string): Promise<User> {
         return this.update(id, { password: newPasswordHash });
+    }
+
+    async updateBlockStatus(id: string, isBlocked: boolean): Promise<User> {
+        return this.update(id, { isBlocked });
     }
 
     async findMany(options: FindUsersOptions = {}): Promise<PaginatedUsersResult> {
@@ -73,6 +78,10 @@ export class PrismaUserRepository implements UserRepository {
 
         if (options.authProvider) {
             where.authProvider = options.authProvider;
+        }
+
+        if (options.isBlocked !== undefined) {
+            where.isBlocked = options.isBlocked;
         }
 
         if (options.search && options.search.trim() !== "") {
@@ -136,6 +145,7 @@ export class PrismaUserRepository implements UserRepository {
             password: raw.password,
             role: raw.role as UserRole,
             authProvider: raw.authProvider as AuthProvider,
+            isBlocked: Boolean(raw.isBlocked),
             createdAt: raw.createdAt,
             updatedAt: raw.updatedAt,
         };

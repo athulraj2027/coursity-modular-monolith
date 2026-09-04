@@ -181,49 +181,50 @@ describe("User Module Routes", () => {
         });
     });
 
-    describe("PATCH /api/users/:id/role", () => {
-        it("should allow admin to update user role", async () => {
+    describe("PATCH /api/users/:id/block", () => {
+        it("should allow admin to block a user", async () => {
             const res = await request(testCtx.app)
-                .patch(`/api/users/${studentId}/role`)
+                .patch(`/api/users/${studentId}/block`)
                 .set("Authorization", `Bearer ${adminToken}`)
-                .send({ role: "TEACHER" });
+                .send({ isBlocked: true });
 
             assert.equal(res.status, 200);
-            assert.equal(res.body.data.user.role, "TEACHER");
+            assert.equal(res.body.data.user.isBlocked, true);
 
             const updated = await testCtx.userRepo.findById(studentId);
-            assert.equal(updated?.role, "TEACHER");
+            assert.equal(updated?.isBlocked, true);
         });
 
-        it("should return 400 when invalid role is passed", async () => {
+        it("should allow admin to unblock a user", async () => {
+            await testCtx.userRepo.updateBlockStatus(studentId, true);
+
             const res = await request(testCtx.app)
-                .patch(`/api/users/${studentId}/role`)
+                .patch(`/api/users/${studentId}/block`)
                 .set("Authorization", `Bearer ${adminToken}`)
-                .send({ role: "SUPERUSER" });
-
-            assert.equal(res.status, 400);
-        });
-    });
-
-    describe("DELETE /api/users/:id", () => {
-        it("should allow admin to delete user", async () => {
-            const res = await request(testCtx.app)
-                .delete(`/api/users/${studentId}`)
-                .set("Authorization", `Bearer ${adminToken}`);
+                .send({ isBlocked: false });
 
             assert.equal(res.status, 200);
-            assert.equal(res.body.message, "User deleted successfully");
-
-            const deleted = await testCtx.userRepo.findById(studentId);
-            assert.equal(deleted, null);
+            assert.equal(res.body.data.user.isBlocked, false);
         });
 
-        it("should return 403 when regular student tries to delete user", async () => {
+        it("should return 403 when regular student tries to block user", async () => {
             const res = await request(testCtx.app)
-                .delete(`/api/users/${adminId}`)
-                .set("Authorization", `Bearer ${studentToken}`);
+                .patch(`/api/users/${adminId}/block`)
+                .set("Authorization", `Bearer ${studentToken}`)
+                .send({ isBlocked: true });
 
             assert.equal(res.status, 403);
         });
+
+        it("should return 400 when attempting to block an admin", async () => {
+            const res = await request(testCtx.app)
+                .patch(`/api/users/${adminId}/block`)
+                .set("Authorization", `Bearer ${adminToken}`)
+                .send({ isBlocked: true });
+
+            assert.equal(res.status, 400);
+            assert.match(res.body.message, /administrator/i);
+        });
     });
 });
+

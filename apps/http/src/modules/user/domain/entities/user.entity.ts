@@ -15,6 +15,8 @@ export interface User {
     password: string | null;
     role: UserRole;
     authProvider: AuthProvider;
+    isBlocked: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
+
