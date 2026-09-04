@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query"
 import { authApi } from "../api/auth.api"
 import { forgotPasswordSchema, type ForgotPasswordFormData } from "../schemas/auth.schema"
 import type { AuthFormErrors, AuthResponse, ForgotPasswordDTO } from "../types"
+import { showToast } from "@/lib/toast"
 
 export function useForgotPassword() {
   return useMutation<AuthResponse, Error, ForgotPasswordDTO>({
@@ -13,7 +14,8 @@ export function useForgotPassword() {
 
 export function useForgotPasswordForm(role: "student" | "teacher" = "student") {
   const navigate = useNavigate()
-  const { mutate: forgotPassword, isPending } = useForgotPassword()
+  const { mutate: forgotPassword, isPending: isMutationPending } = useForgotPassword()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [formData, setFormData] = useState<ForgotPasswordFormData>({
     email: "",
@@ -47,6 +49,7 @@ export function useForgotPasswordForm(role: "student" | "teacher" = "student") {
     }
 
     setErrors({})
+    setIsSubmitting(true)
 
     forgotPassword(
       {
@@ -54,15 +57,30 @@ export function useForgotPasswordForm(role: "student" | "teacher" = "student") {
         role,
       },
       {
-        onSuccess: () => {
+        onSuccess: (response: any) => {
+          const successMsg =
+            response?.message || "Password recovery instructions sent to your email!"
+          showToast.success(successMsg)
+
           const verifyRoute =
             role === "teacher"
               ? `/teachers/reset-password`
               : `/reset-password`
-          navigate(verifyRoute, { state: { email: encodeURIComponent(formData.email) } })
+
+          setTimeout(() => {
+            setIsSubmitting(false)
+            navigate(verifyRoute, {
+              state: { email: encodeURIComponent(formData.email) },
+            })
+          }, 1000)
         },
         onError: (err: any) => {
-          setServerError(err?.message || "Failed to send reset instructions. Please check the email.")
+          setIsSubmitting(false)
+          const errorMsg =
+            err?.message ||
+            "Failed to send reset instructions. Please check the email."
+          setServerError(errorMsg)
+          showToast.error(errorMsg)
         },
       }
     )
@@ -72,7 +90,7 @@ export function useForgotPasswordForm(role: "student" | "teacher" = "student") {
     formData,
     errors,
     serverError,
-    isPending,
+    isPending: isMutationPending || isSubmitting,
     handleChange,
     handleSubmit,
   }

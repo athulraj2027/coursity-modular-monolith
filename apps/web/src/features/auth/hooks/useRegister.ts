@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query"
 import { authApi } from "../api/auth.api"
 import { signupSchema, type SignupFormData } from "../schemas/auth.schema"
 import type { AuthFormErrors, AuthResponse, SignupDTO } from "../types"
+import { showToast } from "@/lib/toast"
 
 export function useRegister() {
   return useMutation<AuthResponse, Error, SignupDTO>({
@@ -13,7 +14,8 @@ export function useRegister() {
 
 export function useSignupForm(role: "student" | "teacher" = "student") {
   const navigate = useNavigate()
-  const { mutate: register, isPending } = useRegister()
+  const { mutate: register, isPending: isMutationPending } = useRegister()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [formData, setFormData] = useState<SignupFormData>({
     name: "",
@@ -50,6 +52,7 @@ export function useSignupForm(role: "student" | "teacher" = "student") {
     }
 
     setErrors({})
+    setIsSubmitting(true)
 
     register(
       {
@@ -59,15 +62,27 @@ export function useSignupForm(role: "student" | "teacher" = "student") {
         role,
       },
       {
-        onSuccess: () => {
+        onSuccess: (response: any) => {
+          const successMsg =
+            response?.message + "Verification code sent to your email!"
+          showToast.success(successMsg)
+
           const verifyRoute =
-            role === "teacher"
-              ? `/teachers/verify-otp`
-              : `/verify-otp`
-          navigate(verifyRoute, { state: { email: encodeURIComponent(formData.email) } })
+            role === "teacher" ? `/teachers/verify-otp` : `/verify-otp`
+
+          setTimeout(() => {
+            setIsSubmitting(false)
+            navigate(verifyRoute, {
+              state: { email: encodeURIComponent(formData.email) },
+            })
+          }, 1000)
         },
         onError: (err: any) => {
-          setServerError(err?.message || "Failed to create account. Please try again.")
+          setIsSubmitting(false)
+          const errorMsg =
+            err?.message || "Failed to create account. Please try again."
+          setServerError(errorMsg)
+          showToast.error(errorMsg)
         },
       }
     )
@@ -77,7 +92,7 @@ export function useSignupForm(role: "student" | "teacher" = "student") {
     formData,
     errors,
     serverError,
-    isPending,
+    isPending: isMutationPending || isSubmitting,
     handleChange,
     handleSubmit,
   }

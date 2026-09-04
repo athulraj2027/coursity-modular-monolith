@@ -4,7 +4,7 @@ export interface User {
   id: string
   name: string
   email: string
-  role: UserRole
+  role: UserRole | "STUDENT" | "TEACHER" | "ADMIN"
   avatar?: string
   isEmailVerified?: boolean
   createdAt?: string

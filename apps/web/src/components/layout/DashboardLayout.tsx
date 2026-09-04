@@ -5,6 +5,8 @@ import { AppSidebar } from "./AppSidebar"
 import { Separator } from "@/components/ui/separator"
 import { Shield } from "lucide-react"
 
+import { useCurrentUser } from "@/features/auth"
+
 export interface DashboardLayoutProps {
   role?: "student" | "teacher" | "admin"
 }
@@ -13,6 +15,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   role = "student",
 }) => {
   const location = useLocation()
+  const { data: user } = useCurrentUser()
 
   // Dynamic breadcrumb section name
   const portalName =
@@ -33,7 +36,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <AppSidebar role={role} />
+      <AppSidebar role={role} user={user || undefined} />
       <SidebarInset className="bg-neutral-50/50 dark:bg-neutral-950 min-h-svh flex flex-col">
         {/* Top bar header */}
         <header className="flex h-14 shrink-0 items-center gap-2 border-b border-neutral-200/80 dark:border-neutral-900 px-4 transition-[width,height] ease-linear bg-white/60 dark:bg-neutral-950/60 backdrop-blur-md sticky top-0 z-20">

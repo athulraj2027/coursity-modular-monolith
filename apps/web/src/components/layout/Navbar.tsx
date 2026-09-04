@@ -7,7 +7,8 @@ import {
 } from "@/constants/navbar"
 import { HERO_CONTENT } from "@/features/home"
 import { ThemeToggle } from "@/components/common/ThemeToggle"
-import { Sparkles, X } from "lucide-react"
+import { Sparkles, X, LayoutDashboard, LogOut, Loader2 } from "lucide-react"
+import { useCurrentUser, useLogout } from "@/features/auth"
 import { cn } from "@/lib/utils"
 
 export const Navbar: React.FC = () => {
@@ -21,7 +22,16 @@ export const Navbar: React.FC = () => {
     new URLSearchParams(location.search).get("role") === "admin"
   const [scrolled, setScrolled] = useState(!isHome)
 
-  const activeNavLinks = isTeachersRoute ? TEACHER_NAV_LINKS : NAV_LINKS
+  const { data: user } = useCurrentUser()
+  const logout = useLogout()
+  const isStudent = user?.role?.toLowerCase() === "student"
+
+  const baseNavLinks = isTeachersRoute ? TEACHER_NAV_LINKS : NAV_LINKS
+  const activeNavLinks = isStudent
+    ? baseNavLinks.filter(
+      (link) => link.href !== "/signup" && link.href !== "/teachers"
+    )
+    : baseNavLinks
 
   // Track dismissed state for dynamic callouts
   const [dismissedKeys, setDismissedKeys] = useState<Record<string, boolean>>(() => {
@@ -175,6 +185,33 @@ export const Navbar: React.FC = () => {
                   </div>
                 )
               })}
+
+              {/* Once student is logged in, show Go to Dashboard and Sign Out button */}
+              {isStudent && (
+                <div className="flex items-center gap-2">
+                  <Link
+                    to="/students/dashboard"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#F42A18] text-white text-xs font-semibold hover:bg-[#d92211] transition-all shadow-md shadow-[#F42A18]/25 hover:shadow-lg hover:shadow-[#F42A18]/40 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                  >
+                    <LayoutDashboard className="w-3.5 h-3.5" />
+                    <span>Go to Dashboard</span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => logout.mutate()}
+                    disabled={logout.isPending}
+                    title="Sign Out"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-neutral-200 dark:border-neutral-800 bg-transparent text-neutral-700 dark:text-neutral-300 hover:text-[#F42A18] hover:border-[#F42A18]/30 hover:bg-[#F42A18]/5 text-xs font-medium transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {logout.isPending ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-[#F42A18]" />
+                    ) : (
+                      <LogOut className="w-3.5 h-3.5" />
+                    )}
+                    <span className="hidden sm:inline">Sign Out</span>
+                  </button>
+                </div>
+              )}
             </nav>
           )}
         </div>

@@ -5,6 +5,7 @@ import { authApi } from "../api/auth.api"
 import { useForgotPassword } from "./useForgotPassword"
 import { resetPasswordSchema, type ResetPasswordFormData } from "../schemas/auth.schema"
 import type { AuthFormErrors, AuthResponse, ResetPasswordDTO } from "../types"
+import { showToast } from "@/lib/toast"
 
 export type ResetPasswordFormInputs = Omit<ResetPasswordFormData, "email">
 
@@ -21,8 +22,9 @@ export function useResetPasswordForm(role: "student" | "teacher" = "student") {
   const stateEmail = (location.state as { email?: string } | null)?.email
   const email = stateEmail ? decodeURIComponent(stateEmail) : ""
 
-  const { mutate: resetPassword, isPending } = useResetPassword()
+  const { mutate: resetPassword, isPending: isResetMutationPending } = useResetPassword()
   const { mutate: resendOtp, isPending: isResending } = useForgotPassword()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [countdown, setCountdown] = useState(60)
   const [serverError, setServerError] = useState<string | null>(null)
@@ -59,7 +61,9 @@ export function useResetPasswordForm(role: "student" | "teacher" = "student") {
     setResendMessage(null)
 
     if (!email) {
-      setServerError("Email is missing. Please request password reset again.")
+      const msg = "Email is missing. Please request password reset again."
+      setServerError(msg)
+      showToast.error(msg)
       return
     }
 
@@ -81,6 +85,7 @@ export function useResetPasswordForm(role: "student" | "teacher" = "student") {
     }
 
     setErrors({})
+    setIsSubmitting(true)
 
     resetPassword(
       {
@@ -90,21 +95,38 @@ export function useResetPasswordForm(role: "student" | "teacher" = "student") {
         role,
       },
       {
-        onSuccess: () => {
-          const signinRoute = role === "teacher" ? "/teachers/signin" : "/signin"
-          navigate(signinRoute)
+        onSuccess: (response: any) => {
+          const successMsg =
+            response?.message ||
+            "Password reset successfully! Please sign in with your new password."
+          showToast.success(successMsg)
+
+          const signinRoute =
+            role === "teacher" ? "/teachers/signin" : "/signin"
+
+          setTimeout(() => {
+            setIsSubmitting(false)
+            navigate(signinRoute)
+          }, 1200)
         },
         onError: (err: any) => {
-          setServerError(err?.message || "Failed to reset password. Please verify the OTP code.")
+          setIsSubmitting(false)
+          const errorMsg =
+            err?.message ||
+            "Failed to reset password. Please verify the OTP code."
+          setServerError(errorMsg)
+          showToast.error(errorMsg)
         },
       }
     )
   }
 
   const handleResend = () => {
-    if (countdown > 0 || isResending || isPending) return
+    if (countdown > 0 || isResending || isResetMutationPending || isSubmitting) return
     if (!email) {
-      setServerError("Email is missing. Please request password reset again.")
+      const msg = "Email is missing. Please request password reset again."
+      setServerError(msg)
+      showToast.error(msg)
       return
     }
 
@@ -117,12 +139,19 @@ export function useResetPasswordForm(role: "student" | "teacher" = "student") {
         role,
       },
       {
-        onSuccess: () => {
-          setResendMessage("A new recovery code has been sent to your email.")
+        onSuccess: (response: any) => {
+          const msg =
+            response?.message || "A new recovery code has been sent to your email."
+          setResendMessage(msg)
+          showToast.info(msg)
           setCountdown(60)
         },
         onError: (err: any) => {
-          setServerError(err?.message || "Failed to resend recovery code. Please wait before trying again.")
+          const errorMsg =
+            err?.message ||
+            "Failed to resend recovery code. Please wait before trying again."
+          setServerError(errorMsg)
+          showToast.error(errorMsg)
         },
       }
     )
@@ -135,7 +164,7 @@ export function useResetPasswordForm(role: "student" | "teacher" = "student") {
     countdown,
     serverError,
     resendMessage,
-    isPending,
+    isPending: isResetMutationPending || isSubmitting,
     isResending,
     handleChange,
     handleSubmit,

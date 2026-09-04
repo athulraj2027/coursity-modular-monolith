@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { authApi } from "../api/auth.api"
 import { signinSchema, type SigninFormData } from "../schemas/auth.schema"
 import type { AuthFormErrors, AuthResponse, SigninDTO } from "../types"
+import { showToast } from "@/lib/toast"
 
 export function useLogin() {
   const queryClient = useQueryClient()
@@ -19,7 +20,8 @@ export function useLogin() {
 
 export function useSigninForm(role: "student" | "teacher" | "admin" = "student") {
   const navigate = useNavigate()
-  const { mutate: login, isPending } = useLogin()
+  const { mutate: login, isPending: isMutationPending } = useLogin()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [formData, setFormData] = useState<SigninFormData>({
     email: "",
@@ -54,6 +56,7 @@ export function useSigninForm(role: "student" | "teacher" | "admin" = "student")
     }
 
     setErrors({})
+    setIsSubmitting(true)
 
     login(
       {
@@ -63,18 +66,34 @@ export function useSigninForm(role: "student" | "teacher" | "admin" = "student")
       },
       {
         onSuccess: (response: any) => {
+          const successMessage =
+            response?.message || "Signed in successfully! Welcome back."
+          showToast.success(successMessage)
+
           const user = response?.data?.user
-          const userRole = (user?.role?.toLowerCase() || role) as "student" | "teacher" | "admin"
-          if (userRole === "admin") {
-            navigate("/admin/dashboard")
-          } else if (userRole === "teacher") {
-            navigate("/teachers/dashboard")
-          } else {
-            navigate("/students/dashboard")
-          }
+          const userRole = (user?.role?.toLowerCase() || role) as
+            | "student"
+            | "teacher"
+            | "admin"
+
+          // Give user time to read the toast with active loading spinner before redirecting
+          setTimeout(() => {
+            setIsSubmitting(false)
+            if (userRole === "admin") {
+              navigate("/admin/dashboard")
+            } else if (userRole === "teacher") {
+              navigate("/teachers/dashboard")
+            } else {
+              navigate("/")
+            }
+          }, 1200)
         },
         onError: (err: any) => {
-          setServerError(err?.message || "Failed to sign in. Please check your credentials.")
+          setIsSubmitting(false)
+          const errorMsg =
+            err?.message || "Failed to sign in. Please check your credentials."
+          setServerError(errorMsg)
+          showToast.error(errorMsg)
         },
       }
     )
@@ -84,7 +103,7 @@ export function useSigninForm(role: "student" | "teacher" | "admin" = "student")
     formData,
     errors,
     serverError,
-    isPending,
+    isPending: isMutationPending || isSubmitting,
     handleChange,
     handleSubmit,
   }
