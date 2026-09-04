@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { authApi } from "../api/auth.api"
 import { verifyOtpSchema } from "../schemas/auth.schema"
 import type { AuthResponse, ResendOtpDTO, VerifyOtpDTO } from "../types"
+import { showToast } from "@/lib/toast"
 
 export function useVerifyOtp() {
   const queryClient = useQueryClient()
@@ -30,8 +31,9 @@ export function useVerifyOtpForm(role: "student" | "teacher" = "student") {
   const stateEmail = (location.state as { email?: string } | null)?.email
   const email = stateEmail ? decodeURIComponent(stateEmail) : ""
 
-  const { mutate: verifyOtp, isPending: isVerifying } = useVerifyOtp()
+  const { mutate: verifyOtp, isPending: isVerifyMutationPending } = useVerifyOtp()
   const { mutate: resendOtp, isPending: isResending } = useResendOtp()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [otp, setOtp] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -62,18 +64,23 @@ export function useVerifyOtpForm(role: "student" | "teacher" = "student") {
     setResendMessage(null)
 
     if (!email) {
-      setServerError("Email is missing. Please sign up again.")
+      const msg = "Email is missing. Please sign up again."
+      setServerError(msg)
+      showToast.error(msg)
       return
     }
 
     const result = verifyOtpSchema.safeParse({ email, otp: otp.trim() })
     if (!result.success) {
       const otpIssue = result.error.issues.find((issue) => issue.path[0] === "otp")
-      setError(otpIssue?.message || result.error.issues[0]?.message || "Invalid 6-digit OTP code")
+      const issueMsg =
+        otpIssue?.message || result.error.issues[0]?.message || "Invalid 6-digit OTP code"
+      setError(issueMsg)
       return
     }
 
     setError(null)
+    setIsSubmitting(true)
 
     verifyOtp(
       {
@@ -83,25 +90,42 @@ export function useVerifyOtpForm(role: "student" | "teacher" = "student") {
       },
       {
         onSuccess: (response: any) => {
+          const successMsg =
+            response?.message || "Account verified successfully! Welcome to Coursity."
+          showToast.success(successMsg)
+
           const user = response?.data?.user
-          const userRole = (user?.role?.toLowerCase() || role) as "student" | "teacher" | "admin"
-          if (userRole === "teacher") {
-            navigate("/teachers/dashboard")
-          } else {
-            navigate("/students/dashboard")
-          }
+          const userRole = (user?.role?.toLowerCase() || role) as
+            | "student"
+            | "teacher"
+            | "admin"
+
+          setTimeout(() => {
+            setIsSubmitting(false)
+            if (userRole === "teacher") {
+              navigate("/teachers/dashboard")
+            } else {
+              navigate("/")
+            }
+          }, 1200)
         },
         onError: (err: any) => {
-          setServerError(err?.message || "Invalid or expired OTP. Please try again.")
+          setIsSubmitting(false)
+          const errorMsg =
+            err?.message || "Invalid or expired OTP. Please try again."
+          setServerError(errorMsg)
+          showToast.error(errorMsg)
         },
       }
     )
   }
 
   const handleResend = () => {
-    if (countdown > 0 || isResending || isVerifying) return
+    if (countdown > 0 || isResending || isVerifyMutationPending || isSubmitting) return
     if (!email) {
-      setServerError("Email is missing. Please return to sign up.")
+      const msg = "Email is missing. Please return to sign up."
+      setServerError(msg)
+      showToast.error(msg)
       return
     }
 
@@ -114,12 +138,18 @@ export function useVerifyOtpForm(role: "student" | "teacher" = "student") {
         role,
       },
       {
-        onSuccess: () => {
-          setResendMessage("A new verification code has been sent to your email.")
+        onSuccess: (response: any) => {
+          const msg =
+            response?.message || "A new verification code has been sent to your email."
+          setResendMessage(msg)
+          showToast.info(msg)
           setCountdown(60)
         },
         onError: (err: any) => {
-          setServerError(err?.message || "Failed to resend OTP. Please wait before trying again.")
+          const errorMsg =
+            err?.message || "Failed to resend OTP. Please wait before trying again."
+          setServerError(errorMsg)
+          showToast.error(errorMsg)
         },
       }
     )
@@ -132,7 +162,7 @@ export function useVerifyOtpForm(role: "student" | "teacher" = "student") {
     countdown,
     serverError,
     resendMessage,
-    isVerifying,
+    isVerifying: isVerifyMutationPending || isSubmitting,
     isResending,
     handleOtpChange,
     handleSubmit,

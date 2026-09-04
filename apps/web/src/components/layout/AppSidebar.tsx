@@ -1,5 +1,5 @@
-import React from "react"
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
+import { useLogout } from "@/features/auth"
 import {
   Sidebar,
   SidebarContent,
@@ -51,8 +51,26 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   },
 }) => {
   const location = useLocation()
+  const navigate = useNavigate()
+  const logout = useLogout()
   const { state } = useSidebar()
   const isCollapsed = state === "collapsed"
+
+  const handleSignOut = async () => {
+    try {
+      await logout.mutateAsync()
+    } catch {
+      // ignore
+    } finally {
+      const target =
+        role === "admin"
+          ? "/admin/signin"
+          : role === "teacher"
+          ? "/teachers/signin"
+          : "/signin"
+      navigate(target, { replace: true })
+    }
+  }
 
   const navGroups: SidebarNavGroup[] =
     role === "admin"
@@ -185,19 +203,15 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           {!isCollapsed && (
             <div className="flex items-center gap-1 shrink-0">
               <ThemeToggle />
-              <Link
-                to={
-                  role === "admin"
-                    ? "/admin/signin"
-                    : role === "teacher"
-                    ? "/teachers/signin"
-                    : "/signin"
-                }
+              <button
+                type="button"
+                onClick={handleSignOut}
+                disabled={logout.isPending}
                 title="Sign Out"
-                className="p-1.5 rounded-lg text-neutral-400 hover:text-[#F42A18] hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-neutral-400 hover:text-[#F42A18] hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors cursor-pointer disabled:opacity-50"
               >
                 <LogOut className="w-3.5 h-3.5" />
-              </Link>
+              </button>
             </div>
           )}
         </div>
