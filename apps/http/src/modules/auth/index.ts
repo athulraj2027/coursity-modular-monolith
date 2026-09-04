@@ -32,6 +32,7 @@ import { MeController } from "./presentation/controllers/me.controller";
 
 // Middleware & Routes
 import { createAuthMiddleware } from "@/app/middlewares/auth.middleware";
+import { createIsBlockedMiddleware } from "@/app/middlewares/is-blocked.middleware";
 import { AuthRoutes } from "./presentation/routes/auth.routes";
 
 // 1. Repositories & Services
@@ -61,6 +62,7 @@ const getCurrentUser = new GetCurrentUser(userRepository);
 
 // 3. Middlewares & Controllers
 const authMiddleware = createAuthMiddleware(tokenService);
+const isBlockedMiddleware = createIsBlockedMiddleware(userRepository);
 const signupController = new SignupController(signupUser);
 const verifyOtpController = new VerifyOtpController(verifySignupOtp);
 const resendOtpController = new ResendOtpController(resendSignupOtp);
@@ -84,7 +86,8 @@ const authRoutes = new AuthRoutes(
     resetPasswordController,
     googleAuthController,
     meController,
-    authMiddleware
+    authMiddleware,
+    isBlockedMiddleware
 );
 
 export * from "./application/dtos";

@@ -21,6 +21,7 @@ import { BlockUserController } from "./presentation/controllers/block-user.contr
 
 // Middlewares & Routes
 import { createAuthMiddleware } from "@/app/middlewares/auth.middleware";
+import { createIsBlockedMiddleware } from "@/app/middlewares/is-blocked.middleware";
 import { requireRoles } from "@/app/middlewares/role.middleware";
 import { UserRoutes } from "./presentation/routes/user.routes";
 
@@ -31,6 +32,7 @@ const tokenService = new JwtTokenService();
 
 // 2. Middlewares
 const authMiddleware = createAuthMiddleware(tokenService);
+const isBlockedMiddleware = createIsBlockedMiddleware(userRepository);
 const adminMiddleware = requireRoles("ADMIN");
 
 // 3. Use Cases
@@ -58,6 +60,7 @@ const userRoutes = new UserRoutes(
     getUserByIdController,
     blockUserController,
     authMiddleware,
+    isBlockedMiddleware,
     adminMiddleware
 );
 

@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { UnauthorizedError } from "@/app/errors";
 import { TokenService } from "@/modules/auth/domain/services/token.service";
+import { JwtTokenService } from "@/modules/auth/infrastructure/services/jwt/jwt-token.service";
 
 declare global {
     namespace Express {
@@ -39,3 +40,8 @@ export const createAuthMiddleware = (tokenService: TokenService) => {
         }
     };
 };
+
+const defaultTokenService = new JwtTokenService();
+export const authMiddleware = createAuthMiddleware(defaultTokenService);
+export default authMiddleware;
+

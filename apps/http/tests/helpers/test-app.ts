@@ -23,6 +23,7 @@ import { MeController } from "../../src/modules/auth/presentation/controllers/me
 import { BcryptPasswordService } from "../../src/modules/auth/infrastructure/services/bcrypt/bcrypt-password.service";
 import { JwtTokenService } from "../../src/modules/auth/infrastructure/services/jwt/jwt-token.service";
 import { createAuthMiddleware } from "../../src/app/middlewares/auth.middleware";
+import { createIsBlockedMiddleware } from "../../src/app/middlewares/is-blocked.middleware";
 import { requireRoles } from "../../src/app/middlewares/role.middleware";
 import errorMiddleware from "../../src/app/middlewares/err.middleware";
 import notFoundMiddleware from "../../src/app/middlewares/not-found.middleware";
@@ -259,6 +260,7 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
 
     // Middlewares
     const authMiddleware = createAuthMiddleware(tokenService);
+    const isBlockedMiddleware = createIsBlockedMiddleware(userRepo);
     const adminMiddleware = requireRoles("ADMIN");
 
     // Auth Use cases
@@ -297,7 +299,8 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
         resetPasswordController,
         googleAuthController,
         meController,
-        authMiddleware
+        authMiddleware,
+        isBlockedMiddleware
     );
 
     // User Use Cases
@@ -325,6 +328,7 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
         getUserByIdController,
         blockUserController,
         authMiddleware,
+        isBlockedMiddleware,
         adminMiddleware
     );
 
@@ -332,6 +336,8 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
     app.use("/api/auth", authRoutes.router);
+    app.use(authMiddleware);
+    app.use(isBlockedMiddleware);
     app.use("/api/users", userRoutes.router);
     app.use(notFoundMiddleware);
     app.use(errorMiddleware);

@@ -38,7 +38,8 @@ export class AuthRoutes {
         private readonly resetPasswordController: ResetPasswordController,
         private readonly googleAuthController: GoogleAuthController,
         private readonly meController: MeController,
-        private readonly authMiddleware: RequestHandler
+        private readonly authMiddleware: RequestHandler,
+        private readonly isBlockedMiddleware: RequestHandler
     ) {
         this.router = Router();
         this.initRoutes();
@@ -89,6 +90,7 @@ export class AuthRoutes {
         this.router.get(
             "/me",
             this.authMiddleware,
+            this.isBlockedMiddleware,
             this.meController.execute
         );
 

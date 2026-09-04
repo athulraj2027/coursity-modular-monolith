@@ -22,6 +22,7 @@ export class UserRoutes {
         private readonly getUserByIdController: GetUserByIdController,
         private readonly blockUserController: BlockUserController,
         private readonly authMiddleware: RequestHandler,
+        private readonly isBlockedMiddleware: RequestHandler,
         private readonly adminMiddleware: RequestHandler
     ) {
         this.router = Router();
@@ -33,12 +34,14 @@ export class UserRoutes {
         this.router.get(
             "/profile",
             this.authMiddleware,
+            this.isBlockedMiddleware,
             this.getProfileController.execute
         );
 
         this.router.patch(
             "/profile",
             this.authMiddleware,
+            this.isBlockedMiddleware,
             validate(updateProfileSchema),
             this.updateProfileController.execute
         );
@@ -46,6 +49,7 @@ export class UserRoutes {
         this.router.put(
             "/profile",
             this.authMiddleware,
+            this.isBlockedMiddleware,
             validate(updateProfileSchema),
             this.updateProfileController.execute
         );
@@ -53,6 +57,7 @@ export class UserRoutes {
         this.router.post(
             "/change-password",
             this.authMiddleware,
+            this.isBlockedMiddleware,
             validate(changePasswordSchema),
             this.changePasswordController.execute
         );
