@@ -7,6 +7,8 @@ import {
   StudentDashboardPage,
   TeacherDashboardPage,
   AdminDashboardPage,
+  AdminTeachersPage,
+  AdminStudentsPage,
 } from "@/features/dashboard"
 import {
   SigninPage,
@@ -80,6 +82,13 @@ export function AppRoutes() {
           <Route path="/admin/dashboard" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminDashboardPage />} />
           </Route>
+          <Route path="/admin/teachers" element={<DashboardLayout role="admin" />}>
+            <Route index element={<AdminTeachersPage />} />
+          </Route>
+          <Route path="/admin/users" element={<DashboardLayout role="admin" />}>
+            <Route index element={<AdminStudentsPage />} />
+          </Route>
+          <Route path="/admin/students" element={<Navigate to="/admin/users" replace />} />
         </Route>
       </Route>
 

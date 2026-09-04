@@ -136,24 +136,24 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
     label: "Administration",
     items: [
       {
-        title: "Admin Console",
+        title: "Dashboard",
         url: "/admin/dashboard",
         icon: LayoutDashboard,
       },
       {
-        title: "Teacher Verification",
+        title: "Teachers",
         url: "/admin/teachers",
         icon: UserCheck,
         badge: "5 Pending",
       },
       {
-        title: "User Management",
+        title: "Students",
         url: "/admin/users",
         icon: Users,
       },
       {
-        title: "Curriculum Moderation",
-        url: "/admin/moderation",
+        title: "Courses",
+        url: "/admin/courses",
         icon: GraduationCap,
       },
     ],
