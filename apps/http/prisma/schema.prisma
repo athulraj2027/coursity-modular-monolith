@@ -31,3 +31,29 @@ model User {
 
   @@map("users")
 }
+
+enum IdempotencyStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model IdempotencyKey {
+  id           String            @id @default(uuid())
+  key          String            @unique
+  userId       String?
+  method       String
+  path         String
+  requestHash  String?
+  statusCode   Int?
+  responseBody Json?
+  status       IdempotencyStatus @default(PROCESSING)
+  expiresAt    DateTime
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([key])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}
+

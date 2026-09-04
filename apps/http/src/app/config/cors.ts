@@ -41,8 +41,18 @@ export const corsOptions: CorsOptions = {
         "X-Requested-With",
         "Accept",
         "Origin",
+        "Idempotency-Key",
+        "idempotency-key",
+        "x-idempotency-key",
+        "X-Idempotency-Key",
     ],
-    exposedHeaders: ["Set-Cookie", "Authorization"],
+    exposedHeaders: [
+        "Set-Cookie",
+        "Authorization",
+        "Idempotent-Replayed",
+        "X-Cache",
+        "Retry-After",
+    ],
     maxAge: 86400, // 24 hours
     optionsSuccessStatus: 204,
 };
