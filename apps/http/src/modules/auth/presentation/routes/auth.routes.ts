@@ -45,7 +45,7 @@ export class AuthRoutes {
     }
 
     private initRoutes(): void {
-        this.router.use(authRateLimiter);
+        // this.router.use(authRateLimiter);
 
         // Sign up & Email Verification OTP
         this.router.post(

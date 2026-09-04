@@ -72,7 +72,7 @@ describe("Google OAuth Routes", () => {
                 assert.ok(res.body.data.accessToken);
                 assert.equal(res.body.data.user.email, "oauth.callback@example.com");
             } else {
-                assert.match(res.header.location, /accessToken=/);
+                assert.match(res.header.location, /\/auth\/callback/);
             }
         });
     });

@@ -1,5 +1,10 @@
 import { PrismaClient } from "@prisma/client";
-import { CreateUserData, UserRepository } from "../../domain/repositories/user.repository";
+import {
+    CreateUserData,
+    FindUsersOptions,
+    PaginatedUsersResult,
+    UserRepository,
+} from "../../domain/repositories/user.repository";
 import { User, UserRole, AuthProvider } from "../../domain/entities/user.entity";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
 
@@ -53,6 +58,74 @@ export class PrismaUserRepository implements UserRepository {
 
     async updatePassword(id: string, newPasswordHash: string): Promise<User> {
         return this.update(id, { password: newPasswordHash });
+    }
+
+    async findMany(options: FindUsersOptions = {}): Promise<PaginatedUsersResult> {
+        const page = Math.max(1, options.page || 1);
+        const limit = Math.max(1, Math.min(100, options.limit || 10));
+        const skip = (page - 1) * limit;
+
+        const where: any = {};
+
+        if (options.role) {
+            where.role = options.role;
+        }
+
+        if (options.authProvider) {
+            where.authProvider = options.authProvider;
+        }
+
+        if (options.search && options.search.trim() !== "") {
+            const search = options.search.trim();
+            where.OR = [
+                { name: { contains: search, mode: "insensitive" } },
+                { email: { contains: search, mode: "insensitive" } },
+            ];
+        }
+
+        const sortBy = options.sortBy || "createdAt";
+        const sortOrder = options.sortOrder || "desc";
+
+        const [users, total] = await this.prisma.$transaction([
+            this.prisma.user.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: {
+                    [sortBy]: sortOrder,
+                },
+            }),
+            this.prisma.user.count({ where }),
+        ]);
+
+        const sanitizedUsers = users.map((u) => {
+            const entity = this.mapToEntity(u);
+            const { password, ...safeUser } = entity;
+            return safeUser as Omit<User, "password">;
+        });
+
+        return {
+            users: sanitizedUsers,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit) || 1,
+        };
+    }
+
+    async delete(id: string): Promise<boolean> {
+        try {
+            await this.prisma.user.delete({
+                where: { id },
+            });
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    async count(where?: any): Promise<number> {
+        return this.prisma.user.count({ where });
     }
 
     private mapToEntity(raw: any): User {

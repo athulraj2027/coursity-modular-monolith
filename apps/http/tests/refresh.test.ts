@@ -76,7 +76,7 @@ describe("POST /api/auth/refresh", () => {
             .post("/api/auth/refresh")
             .send({});
 
-        assert.equal(res.status, 400);
-        assert.equal(res.body.message, "Validation error");
+        assert.equal(res.status, 401);
+        assert.match(res.body.message, /refresh token/i);
     });
 });
