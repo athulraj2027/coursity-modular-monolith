@@ -27,7 +27,7 @@ describe("POST /api/auth/verify-otp", () => {
 
         assert.equal(res.status, 201);
         assert.equal(res.body.message, "Account verified and created successfully");
-        assert.equal(res.body.data.email, "verify.user@example.com");
+        assert.equal(res.body.data.user?.email || res.body.data.email, "verify.user@example.com");
 
         // Verify user exists in database
         const createdUser = await testCtx.userRepo.findByEmail("verify.user@example.com");

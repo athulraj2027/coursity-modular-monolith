@@ -9,6 +9,7 @@ import { RefreshToken } from "../../src/modules/auth/application/use-cases/refre
 import { ForgotPassword } from "../../src/modules/auth/application/use-cases/forgot-password.usecase";
 import { ResetPassword } from "../../src/modules/auth/application/use-cases/reset-password.usecase";
 import { GoogleAuth } from "../../src/modules/auth/application/use-cases/google-auth.usecase";
+import { GetCurrentUser } from "../../src/modules/auth/application/use-cases/get-current-user.usecase";
 import { SignupController } from "../../src/modules/auth/presentation/controllers/signup.controller";
 import { VerifyOtpController } from "../../src/modules/auth/presentation/controllers/verify-otp.controller";
 import { ResendOtpController } from "../../src/modules/auth/presentation/controllers/resend-otp.controller";
@@ -18,11 +19,39 @@ import { RefreshController } from "../../src/modules/auth/presentation/controlle
 import { ForgotPasswordController } from "../../src/modules/auth/presentation/controllers/forgot-password.controller";
 import { ResetPasswordController } from "../../src/modules/auth/presentation/controllers/reset-password.controller";
 import { GoogleAuthController } from "../../src/modules/auth/presentation/controllers/google-auth.controller";
+import { MeController } from "../../src/modules/auth/presentation/controllers/me.controller";
 import { BcryptPasswordService } from "../../src/modules/auth/infrastructure/services/bcrypt/bcrypt-password.service";
 import { JwtTokenService } from "../../src/modules/auth/infrastructure/services/jwt/jwt-token.service";
+import { createAuthMiddleware } from "../../src/app/middlewares/auth.middleware";
+import { requireRoles } from "../../src/app/middlewares/role.middleware";
 import errorMiddleware from "../../src/app/middlewares/err.middleware";
 import notFoundMiddleware from "../../src/app/middlewares/not-found.middleware";
-import { User, UserRepository, CreateUserData } from "../../src/modules/user";
+import {
+    User,
+    UserRepository,
+    CreateUserData,
+    FindUsersOptions,
+    PaginatedUsersResult,
+} from "../../src/modules/user";
+import {
+    GetProfile,
+    UpdateProfile,
+    ChangePassword,
+    GetAllUsers,
+    GetUserById,
+    UpdateUserRole,
+    DeleteUser,
+} from "../../src/modules/user/application/use-cases";
+import {
+    GetProfileController,
+    UpdateProfileController,
+    ChangePasswordController,
+    GetAllUsersController,
+    GetUserByIdController,
+    UpdateUserRoleController,
+    DeleteUserController,
+} from "../../src/modules/user/presentation/controllers";
+import { UserRoutes } from "../../src/modules/user/presentation/routes/user.routes";
 import { OtpRepository, StoredOtpData, StoredResetPasswordOtpData, TempSignupUser } from "../../src/modules/auth/domain/repositories/redis-otp.repository";
 import { TokenRepository } from "../../src/modules/auth/domain/repositories/token.repository";
 import { OAuthService, OAuthUserProfile } from "../../src/modules/auth/domain/services/oauth.service";
@@ -76,6 +105,53 @@ export class InMemoryUserRepository implements UserRepository {
 
     async updatePassword(id: string, newPasswordHash: string): Promise<User> {
         return this.update(id, { password: newPasswordHash });
+    }
+
+    async findMany(options: FindUsersOptions = {}): Promise<PaginatedUsersResult> {
+        const page = Math.max(1, options.page || 1);
+        const limit = Math.max(1, Math.min(100, options.limit || 10));
+
+        let list = Array.from(this.users.values());
+
+        if (options.role) {
+            list = list.filter((u) => u.role === options.role);
+        }
+
+        if (options.authProvider) {
+            list = list.filter((u) => u.authProvider === options.authProvider);
+        }
+
+        if (options.search && options.search.trim() !== "") {
+            const search = options.search.toLowerCase().trim();
+            list = list.filter(
+                (u) =>
+                    u.name.toLowerCase().includes(search) ||
+                    u.email.toLowerCase().includes(search)
+            );
+        }
+
+        const total = list.length;
+        const skip = (page - 1) * limit;
+        const paged = list.slice(skip, skip + limit).map((u) => {
+            const { password, ...safeUser } = u;
+            return safeUser;
+        });
+
+        return {
+            users: paged,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit) || 1,
+        };
+    }
+
+    async delete(id: string): Promise<boolean> {
+        return this.users.delete(id);
+    }
+
+    async count(where?: any): Promise<number> {
+        return this.users.size;
     }
 }
 
@@ -179,9 +255,13 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
     const tokenService = new JwtTokenService();
     const oauthService = options.oauthService || new MockOAuthService();
 
-    // Use cases
+    // Middlewares
+    const authMiddleware = createAuthMiddleware(tokenService);
+    const adminMiddleware = requireRoles("ADMIN");
+
+    // Auth Use cases
     const signupUser = new SignupUser(userRepo, passwordService, otpRepo);
-    const verifySignupOtp = new VerifySignupOtp(otpRepo, userRepo);
+    const verifySignupOtp = new VerifySignupOtp(otpRepo, userRepo, tokenService, tokenRepo);
     const resendSignupOtp = new ResendSignupOtp(otpRepo, userRepo);
     const signinUser = new SigninUser(userRepo, passwordService, tokenService, tokenRepo);
     const logoutUser = new LogoutUser(tokenRepo, tokenService);
@@ -189,8 +269,9 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
     const forgotPassword = new ForgotPassword(userRepo, otpRepo);
     const resetPassword = new ResetPassword(userRepo, passwordService, otpRepo, tokenRepo);
     const googleAuth = new GoogleAuth(oauthService, userRepo, tokenService, tokenRepo);
+    const getCurrentUser = new GetCurrentUser(userRepo);
 
-    // Controllers
+    // Auth Controllers
     const signupController = new SignupController(signupUser);
     const verifyOtpController = new VerifyOtpController(verifySignupOtp);
     const resendOtpController = new ResendOtpController(resendSignupOtp);
@@ -200,8 +281,9 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
     const forgotPasswordController = new ForgotPasswordController(forgotPassword);
     const resetPasswordController = new ResetPasswordController(resetPassword);
     const googleAuthController = new GoogleAuthController(googleAuth);
+    const meController = new MeController(getCurrentUser);
 
-    // Routes
+    // Auth Routes
     const authRoutes = new AuthRoutes(
         signupController,
         verifyOtpController,
@@ -211,13 +293,47 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
         refreshController,
         forgotPasswordController,
         resetPasswordController,
-        googleAuthController
+        googleAuthController,
+        meController,
+        authMiddleware
+    );
+
+    // User Use Cases
+    const getProfile = new GetProfile(userRepo);
+    const updateProfile = new UpdateProfile(userRepo);
+    const changePassword = new ChangePassword(userRepo, passwordService);
+    const getAllUsers = new GetAllUsers(userRepo);
+    const getUserById = new GetUserById(userRepo);
+    const updateUserRole = new UpdateUserRole(userRepo);
+    const deleteUser = new DeleteUser(userRepo);
+
+    // User Controllers
+    const getProfileController = new GetProfileController(getProfile);
+    const updateProfileController = new UpdateProfileController(updateProfile);
+    const changePasswordController = new ChangePasswordController(changePassword);
+    const getAllUsersController = new GetAllUsersController(getAllUsers);
+    const getUserByIdController = new GetUserByIdController(getUserById);
+    const updateUserRoleController = new UpdateUserRoleController(updateUserRole);
+    const deleteUserController = new DeleteUserController(deleteUser);
+
+    // User Routes
+    const userRoutes = new UserRoutes(
+        getProfileController,
+        updateProfileController,
+        changePasswordController,
+        getAllUsersController,
+        getUserByIdController,
+        updateUserRoleController,
+        deleteUserController,
+        authMiddleware,
+        adminMiddleware
     );
 
     const app = express();
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
     app.use("/api/auth", authRoutes.router);
+    app.use("/api/users", userRoutes.router);
     app.use(notFoundMiddleware);
     app.use(errorMiddleware);
 

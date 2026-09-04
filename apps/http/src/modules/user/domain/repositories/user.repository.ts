@@ -1,6 +1,9 @@
 import { User } from "../entities/user.entity";
 import { CreateUserData } from "../dtos/create-user.dto";
+import { FindUsersOptions, PaginatedUsersResult } from "../dtos/user-query.dto";
+
 export { CreateUserData, CreateUserDTO } from "../dtos/create-user.dto";
+export { FindUsersOptions, PaginatedUsersResult } from "../dtos/user-query.dto";
 
 export interface UserRepository {
     findById(
@@ -24,4 +27,16 @@ export interface UserRepository {
         id: string,
         newPasswordHash: string
     ): Promise<User>;
+
+    findMany(
+        options?: FindUsersOptions
+    ): Promise<PaginatedUsersResult>;
+
+    delete(
+        id: string
+    ): Promise<boolean>;
+
+    count(
+        where?: any
+    ): Promise<number>;
 }
