@@ -2,7 +2,7 @@ import { UserRepository } from "@/modules/user";
 import { PasswordService } from "../../domain/services/password.service";
 import { TokenService } from "../../domain/services/token.service";
 import { TokenRepository } from "../../domain/repositories/token.repository";
-import { BadRequestError, UnauthorizedError } from "@/app/errors";
+import { BadRequestError, UnauthorizedError, ForbiddenError } from "@/app/errors";
 import { SigninInputDTO, SigninOutputDTO } from "../dtos/signin.dto";
 
 export class SigninUser {
@@ -20,6 +20,11 @@ export class SigninUser {
         const user = await this.userRepository.findByEmail(email);
         if (!user) {
             throw new UnauthorizedError("Invalid email or password");
+        }
+
+        // 2. Check if account is blocked
+        if (user.isBlocked) {
+            throw new ForbiddenError("Your account has been blocked. Please contact support.");
         }
 
         // 2. Check if user is password-based or OAuth-only

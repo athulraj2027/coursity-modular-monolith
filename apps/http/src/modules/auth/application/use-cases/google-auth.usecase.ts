@@ -2,7 +2,7 @@ import { UserRepository, UserRole } from "@/modules/user";
 import { OAuthService, OAuthUserProfile } from "../../domain/services/oauth.service";
 import { TokenService } from "../../domain/services/token.service";
 import { TokenRepository } from "../../domain/repositories/token.repository";
-import { BadRequestError } from "@/app/errors";
+import { BadRequestError, ForbiddenError } from "@/app/errors";
 import { GoogleAuthOutputDTO, GoogleAuthUrlOutputDTO, GoogleLoginInputDTO } from "../dtos/google-auth.dto";
 
 export class GoogleAuth {
@@ -30,6 +30,8 @@ export class GoogleAuth {
                 role: requestedRole || "STUDENT",
                 authProvider: "GOOGLE",
             });
+        } else if (user.isBlocked) {
+            throw new ForbiddenError("Your account has been blocked. Please contact support.");
         }
 
         // Issue auth tokens

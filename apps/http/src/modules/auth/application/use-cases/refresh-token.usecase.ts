@@ -1,7 +1,7 @@
 import { UserRepository } from "@/modules/user";
 import { TokenService } from "../../domain/services/token.service";
 import { TokenRepository } from "../../domain/repositories/token.repository";
-import { UnauthorizedError } from "@/app/errors";
+import { UnauthorizedError, ForbiddenError } from "@/app/errors";
 import { RefreshTokenInputDTO, RefreshTokenOutputDTO } from "../dtos/refresh-token.dto";
 
 export class RefreshToken {
@@ -33,6 +33,10 @@ export class RefreshToken {
 
         if (!user) {
             throw new UnauthorizedError("User no longer exists");
+        }
+
+        if (user.isBlocked) {
+            throw new ForbiddenError("Your account has been blocked. Please contact support.");
         }
 
         // 4. Issue new Access Token and rotated Refresh Token

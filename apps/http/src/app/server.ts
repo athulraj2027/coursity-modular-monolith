@@ -44,6 +44,8 @@ process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
 startServer();
-// server reloaded - role change API removed
+// server reloaded - mounted isBlocked in app routes
+
+
 
 

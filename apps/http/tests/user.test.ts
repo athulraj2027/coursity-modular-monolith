@@ -64,6 +64,17 @@ describe("User Module Routes", () => {
             const res = await request(testCtx.app).get("/api/users/profile");
             assert.equal(res.status, 401);
         });
+
+        it("should return 403 when user is blocked", async () => {
+            await testCtx.userRepo.updateBlockStatus(studentId, true);
+
+            const res = await request(testCtx.app)
+                .get("/api/users/profile")
+                .set("Authorization", `Bearer ${studentToken}`);
+
+            assert.equal(res.status, 403);
+            assert.match(res.body.message, /blocked/i);
+        });
     });
 
     describe("PATCH /api/users/profile", () => {
