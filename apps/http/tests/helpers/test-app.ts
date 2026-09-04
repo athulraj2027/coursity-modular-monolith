@@ -39,8 +39,7 @@ import {
     ChangePassword,
     GetAllUsers,
     GetUserById,
-    UpdateUserRole,
-    DeleteUser,
+    BlockUser,
 } from "../../src/modules/user/application/use-cases";
 import {
     GetProfileController,
@@ -48,8 +47,7 @@ import {
     ChangePasswordController,
     GetAllUsersController,
     GetUserByIdController,
-    UpdateUserRoleController,
-    DeleteUserController,
+    BlockUserController,
 } from "../../src/modules/user/presentation/controllers";
 import { UserRoutes } from "../../src/modules/user/presentation/routes/user.routes";
 import { OtpRepository, StoredOtpData, StoredResetPasswordOtpData, TempSignupUser } from "../../src/modules/auth/domain/repositories/redis-otp.repository";
@@ -105,6 +103,10 @@ export class InMemoryUserRepository implements UserRepository {
 
     async updatePassword(id: string, newPasswordHash: string): Promise<User> {
         return this.update(id, { password: newPasswordHash });
+    }
+
+    async updateBlockStatus(id: string, isBlocked: boolean): Promise<User> {
+        return this.update(id, { isBlocked });
     }
 
     async findMany(options: FindUsersOptions = {}): Promise<PaginatedUsersResult> {
@@ -304,8 +306,7 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
     const changePassword = new ChangePassword(userRepo, passwordService);
     const getAllUsers = new GetAllUsers(userRepo);
     const getUserById = new GetUserById(userRepo);
-    const updateUserRole = new UpdateUserRole(userRepo);
-    const deleteUser = new DeleteUser(userRepo);
+    const blockUser = new BlockUser(userRepo);
 
     // User Controllers
     const getProfileController = new GetProfileController(getProfile);
@@ -313,8 +314,7 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
     const changePasswordController = new ChangePasswordController(changePassword);
     const getAllUsersController = new GetAllUsersController(getAllUsers);
     const getUserByIdController = new GetUserByIdController(getUserById);
-    const updateUserRoleController = new UpdateUserRoleController(updateUserRole);
-    const deleteUserController = new DeleteUserController(deleteUser);
+    const blockUserController = new BlockUserController(blockUser);
 
     // User Routes
     const userRoutes = new UserRoutes(
@@ -323,8 +323,7 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
         changePasswordController,
         getAllUsersController,
         getUserByIdController,
-        updateUserRoleController,
-        deleteUserController,
+        blockUserController,
         authMiddleware,
         adminMiddleware
     );

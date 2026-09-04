@@ -28,6 +28,11 @@ export interface UserRepository {
         newPasswordHash: string
     ): Promise<User>;
 
+    updateBlockStatus(
+        id: string,
+        isBlocked: boolean
+    ): Promise<User>;
+
     findMany(
         options?: FindUsersOptions
     ): Promise<PaginatedUsersResult>;
