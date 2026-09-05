@@ -6,6 +6,8 @@ import { TeachersPage } from "@/features/teachers"
 import {
   StudentDashboardPage,
   TeacherDashboardPage,
+  StudentProfilePage,
+  TeacherProfilePage,
   AdminDashboardPage,
   AdminTeachersPage,
   AdminStudentsPage,
@@ -61,9 +63,14 @@ export function AppRoutes() {
           <Route path="/students/dashboard" element={<DashboardLayout role="student" />}>
             <Route index element={<StudentDashboardPage />} />
           </Route>
-          {/* Aliases for student dashboard */}
+          <Route path="/students/profile" element={<DashboardLayout role="student" />}>
+            <Route index element={<StudentProfilePage />} />
+          </Route>
+          {/* Aliases for student dashboard & profile */}
           <Route path="/student/dashboard" element={<Navigate to="/students/dashboard" replace />} />
           <Route path="/dashboard" element={<Navigate to="/students/dashboard" replace />} />
+          <Route path="/profile" element={<Navigate to="/students/profile" replace />} />
+          <Route path="/student/profile" element={<Navigate to="/students/profile" replace />} />
         </Route>
       </Route>
 
@@ -73,8 +80,15 @@ export function AppRoutes() {
           <Route path="/teachers/dashboard" element={<DashboardLayout role="teacher" />}>
             <Route index element={<TeacherDashboardPage />} />
           </Route>
+          <Route path="/teachers/profile" element={<DashboardLayout role="teacher" />}>
+            <Route index element={<TeacherProfilePage />} />
+          </Route>
+          {/* Aliases for teacher */}
+          <Route path="/teacher/dashboard" element={<Navigate to="/teachers/dashboard" replace />} />
+          <Route path="/teacher/profile" element={<Navigate to="/teachers/profile" replace />} />
         </Route>
       </Route>
+
 
       {/* 5. Protected Admin Portal Routes */}
       <Route element={<ProtectedRoute />}>
