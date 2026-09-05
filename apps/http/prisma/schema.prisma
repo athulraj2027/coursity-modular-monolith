@@ -29,5 +29,48 @@ model User {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
+  studentProfile StudentProfile?
+  teacherProfile TeacherProfile?
+
   @@map("users")
 }
+
+model StudentProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatar      String?
+  bio         String?
+  phone       String?
+  headline    String?
+  education   String?
+  interests   String[] @default([])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("student_profiles")
+}
+
+model TeacherProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatar          String?
+  bio             String?
+  phone           String?
+  headline        String?
+  expertise       String[] @default([])
+  qualifications  String?
+  experienceYears Int?
+ 
+  linkedinUrl     String?
+  twitterUrl      String?
+  websiteUrl      String?
+  isApproved      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("teacher_profiles")
+}
+
