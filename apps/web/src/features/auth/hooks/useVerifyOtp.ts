@@ -94,7 +94,7 @@ export function useVerifyOtpForm(role: "student" | "teacher" = "student") {
             response?.message || "Account verified successfully! Welcome to Coursity."
           showToast.success(successMsg)
 
-          const user = response?.data?.user
+          const user = response?.data?.user || response?.user
           const userRole = (user?.role?.toLowerCase() || role) as
             | "student"
             | "teacher"
