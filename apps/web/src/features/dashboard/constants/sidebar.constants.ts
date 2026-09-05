@@ -1,19 +1,11 @@
 import {
-  BookOpen,
-  Bot,
-  Brain,
-  CreditCard,
   Database,
-  FileCode,
   GraduationCap,
   LayoutDashboard,
-  Radio,
-  ScreenShare,
   Server,
   Settings,
   ShieldCheck,
-  Sparkles,
-  TrendingUp,
+  User,
   UserCheck,
   Users,
 } from "lucide-react"
@@ -39,34 +31,17 @@ export const STUDENT_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Dashboard",
         url: "/students/dashboard",
         icon: LayoutDashboard,
-      },
-      {
-        title: "My Tracks & Courses",
-        url: "/courses",
-        icon: BookOpen,
-        badge: "3 Active",
-      },
-      {
-        title: "Live Cohorts",
-        url: "/live",
-        icon: Radio,
-        badge: "Live",
-      },
-      {
-        title: "AI Lab & Grading",
-        url: "/ai-lab",
-        icon: Sparkles,
-      },
-      {
-        title: "Adaptive Quizzes",
-        url: "/quizzes",
-        icon: Brain,
-      },
+      }
     ],
   },
   {
     label: "Account & Preferences",
     items: [
+      {
+        title: "Profile",
+        url: "/students/profile",
+        icon: User,
+      },
       {
         title: "Settings",
         url: "/settings",
@@ -78,40 +53,13 @@ export const STUDENT_SIDEBAR_GROUPS: SidebarNavGroup[] = [
 
 export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
   {
-    label: "Creator Studio",
+    label: "Coursity Studio",
     items: [
       {
-        title: "Studio Dashboard",
+        title: "Dashboard",
         url: "/teachers/dashboard",
         icon: LayoutDashboard,
-      },
-      {
-        title: "Curriculum Builder",
-        url: "/studio/curriculum",
-        icon: FileCode,
-      },
-      {
-        title: "Live Cohorts Host",
-        url: "/studio/live",
-        icon: ScreenShare,
-        badge: "Host",
-      },
-      {
-        title: "AI Lab Evaluator",
-        url: "/studio/ai-eval",
-        icon: Bot,
-      },
-      {
-        title: "Learner Analytics",
-        url: "/studio/analytics",
-        icon: TrendingUp,
-      },
-      {
-        title: "Earnings & Stripe",
-        url: "/studio/earnings",
-        icon: CreditCard,
-        badge: "85%",
-      },
+      }
     ],
   },
   {
@@ -123,13 +71,19 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         icon: Users,
       },
       {
-        title: "Studio Settings",
+        title: "Profile",
+        url: "/teachers/profile",
+        icon: User,
+      },
+      {
+        title: "Settings",
         url: "/settings",
         icon: Settings,
       },
     ],
   },
 ]
+
 
 export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
   {
