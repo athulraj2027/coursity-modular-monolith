@@ -56,9 +56,106 @@ import { UserRoutes } from "../../src/modules/user/presentation/routes/user.rout
 import { OtpRepository, StoredOtpData, StoredResetPasswordOtpData, TempSignupUser } from "../../src/modules/auth/domain/repositories/redis-otp.repository";
 import { TokenRepository } from "../../src/modules/auth/domain/repositories/token.repository";
 import { OAuthService, OAuthUserProfile } from "../../src/modules/auth/domain/services/oauth.service";
+import {
+    ProfileRepository,
+    FullUserProfile,
+    StudentProfile,
+    TeacherProfile,
+    GetProfile as GetFullProfile,
+    UpdateProfile as UpdateFullProfile,
+    UpdateStudentProfile,
+    UpdateTeacherProfile,
+    GetProfileController as GetFullProfileController,
+    UpdateProfileController as UpdateFullProfileController,
+    UpdateStudentProfileController,
+    UpdateTeacherProfileController,
+    ProfileRoutes,
+} from "../../src/modules/profile";
+
+export class InMemoryProfileRepository implements ProfileRepository {
+    public studentProfiles = new Map<string, StudentProfile>();
+    public teacherProfiles = new Map<string, TeacherProfile>();
+
+    constructor(private readonly userRepo: InMemoryUserRepository) { }
+
+    async getFullProfileByUserId(userId: string): Promise<FullUserProfile | null> {
+        const user = await this.userRepo.findById(userId);
+        if (!user) return null;
+
+        const studentProfile = this.studentProfiles.get(userId) || null;
+        const teacherProfile = this.teacherProfiles.get(userId) || null;
+
+        const { password, ...safeUser } = user;
+        return {
+            ...safeUser,
+            studentProfile,
+            teacherProfile,
+        };
+    }
+
+    async getStudentProfile(userId: string): Promise<StudentProfile | null> {
+        return this.studentProfiles.get(userId) || null;
+    }
+
+    async getTeacherProfile(userId: string): Promise<TeacherProfile | null> {
+        return this.teacherProfiles.get(userId) || null;
+    }
+
+    async upsertStudentProfile(
+        userId: string,
+        data: Partial<Omit<StudentProfile, "id" | "userId" | "createdAt" | "updatedAt">>
+    ): Promise<StudentProfile> {
+        const existing = this.studentProfiles.get(userId);
+        const profile: StudentProfile = {
+            id: existing?.id || `sp_${Math.random().toString(36).substring(2, 9)}`,
+            userId,
+            avatar: data.avatar !== undefined ? data.avatar : (existing?.avatar ?? null),
+            bio: data.bio !== undefined ? data.bio : (existing?.bio ?? null),
+            phone: data.phone !== undefined ? data.phone : (existing?.phone ?? null),
+            headline: data.headline !== undefined ? data.headline : (existing?.headline ?? null),
+            education: data.education !== undefined ? data.education : (existing?.education ?? null),
+            interests: data.interests !== undefined ? data.interests : (existing?.interests ?? []),
+            createdAt: existing?.createdAt || new Date(),
+            updatedAt: new Date(),
+        };
+        this.studentProfiles.set(userId, profile);
+        return profile;
+    }
+
+    async upsertTeacherProfile(
+        userId: string,
+        data: Partial<Omit<TeacherProfile, "id" | "userId" | "createdAt" | "updatedAt">>
+    ): Promise<TeacherProfile> {
+        const existing = this.teacherProfiles.get(userId);
+        const profile: TeacherProfile = {
+            id: existing?.id || `tp_${Math.random().toString(36).substring(2, 9)}`,
+            userId,
+            avatar: data.avatar !== undefined ? data.avatar : (existing?.avatar ?? null),
+            bio: data.bio !== undefined ? data.bio : (existing?.bio ?? null),
+            phone: data.phone !== undefined ? data.phone : (existing?.phone ?? null),
+            headline: data.headline !== undefined ? data.headline : (existing?.headline ?? null),
+            expertise: data.expertise !== undefined ? data.expertise : (existing?.expertise ?? []),
+            qualifications: data.qualifications !== undefined ? data.qualifications : (existing?.qualifications ?? null),
+            experienceYears: data.experienceYears !== undefined ? data.experienceYears : (existing?.experienceYears ?? null),
+            linkedinUrl: data.linkedinUrl !== undefined ? data.linkedinUrl : (existing?.linkedinUrl ?? null),
+            twitterUrl: data.twitterUrl !== undefined ? data.twitterUrl : (existing?.twitterUrl ?? null),
+            websiteUrl: data.websiteUrl !== undefined ? data.websiteUrl : (existing?.websiteUrl ?? null),
+            isApproved: existing?.isApproved ?? false,
+            createdAt: existing?.createdAt || new Date(),
+            updatedAt: new Date(),
+        };
+        this.teacherProfiles.set(userId, profile);
+        return profile;
+    }
+
+    async updateUserName(userId: string, name: string): Promise<void> {
+        await this.userRepo.update(userId, { name });
+    }
+}
 
 export class InMemoryUserRepository implements UserRepository {
     public users = new Map<string, User>();
+
 
     async findById(id: string): Promise<User | null> {
         return this.users.get(id) || null;
@@ -337,6 +434,27 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
         adminMiddleware
     );
 
+    // Profile Setup
+    const profileRepo = new InMemoryProfileRepository(userRepo);
+    const getFullProfile = new GetFullProfile(profileRepo);
+    const updateFullProfile = new UpdateFullProfile(profileRepo);
+    const updateStudentProfile = new UpdateStudentProfile(profileRepo);
+    const updateTeacherProfile = new UpdateTeacherProfile(profileRepo);
+
+    const getFullProfileController = new GetFullProfileController(getFullProfile);
+    const updateFullProfileController = new UpdateFullProfileController(updateFullProfile);
+    const updateStudentProfileController = new UpdateStudentProfileController(updateStudentProfile);
+    const updateTeacherProfileController = new UpdateTeacherProfileController(updateTeacherProfile);
+
+    const profileRoutes = new ProfileRoutes(
+        getFullProfileController,
+        updateFullProfileController,
+        updateStudentProfileController,
+        updateTeacherProfileController,
+        authMiddleware,
+        isBlockedMiddleware
+    );
+
     const app = express();
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
@@ -345,12 +463,14 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
     app.use(authMiddleware);
     app.use(isBlockedMiddleware);
     app.use("/api/users", userRoutes.router);
+    app.use("/api/profile", profileRoutes.router);
     app.use(notFoundMiddleware);
     app.use(errorMiddleware);
 
     return {
         app,
         userRepo,
+        profileRepo,
         otpRepo,
         tokenRepo,
         passwordService,
@@ -359,3 +479,4 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
         idempotencyService,
     };
 }
+

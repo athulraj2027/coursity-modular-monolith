@@ -29,31 +29,48 @@ model User {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
+  studentProfile StudentProfile?
+  teacherProfile TeacherProfile?
+
   @@map("users")
 }
 
-enum IdempotencyStatus {
-  PROCESSING
-  COMPLETED
-  FAILED
+model StudentProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatar      String?
+  bio         String?
+  phone       String?
+  headline    String?
+  education   String?
+  interests   String[] @default([])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("student_profiles")
 }
 
-model IdempotencyKey {
-  id           String            @id @default(uuid())
-  key          String            @unique
-  userId       String?
-  method       String
-  path         String
-  requestHash  String?
-  statusCode   Int?
-  responseBody Json?
-  status       IdempotencyStatus @default(PROCESSING)
-  expiresAt    DateTime
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+model TeacherProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatar          String?
+  bio             String?
+  phone           String?
+  headline        String?
+  expertise       String[] @default([])
+  qualifications  String?
+  experienceYears Int?
+ 
+  linkedinUrl     String?
+  twitterUrl      String?
+  websiteUrl      String?
+  isApproved      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  @@index([key])
-  @@index([expiresAt])
-  @@map("idempotency_keys")
+  @@map("teacher_profiles")
 }
 
