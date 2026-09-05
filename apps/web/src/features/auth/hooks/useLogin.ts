@@ -70,7 +70,7 @@ export function useSigninForm(role: "student" | "teacher" | "admin" = "student")
             response?.message || "Signed in successfully! Welcome back."
           showToast.success(successMessage)
 
-          const user = response?.data?.user
+          const user = response?.data?.user || response?.user
           const userRole = (user?.role?.toLowerCase() || role) as
             | "student"
             | "teacher"

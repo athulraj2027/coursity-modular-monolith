@@ -25,6 +25,10 @@ export interface ApiClientOptions extends RequestInit {
    * Set to true to disable automatic Idempotency-Key generation on mutations.
    */
   skipIdempotency?: boolean
+  /**
+   * Internal flag to avoid infinite refresh retry loops.
+   */
+  _retry?: boolean
 }
 
 /**
@@ -41,21 +45,63 @@ export function generateIdempotencyKey(): string {
   })
 }
 
+// Single active refresh promise to deduplicate concurrent 401 refresh requests
+let activeRefreshPromise: Promise<boolean> | null = null
+
+/**
+ * Attempts to refresh the session via the backend /auth/refresh endpoint using HTTP-only cookies.
+ * Deduplicates concurrent calls so only one refresh network request occurs.
+ */
+export async function refreshAccessToken(): Promise<boolean> {
+  if (activeRefreshPromise) {
+    return activeRefreshPromise
+  }
+
+  activeRefreshPromise = (async () => {
+    try {
+      const refreshUrl = `${API_BASE_URL}/auth/refresh`
+      const response = await fetch(refreshUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}), // Backend automatically reads req.cookies.refreshToken
+        credentials: "include",   // Transmits refreshToken cookie and receives new Set-Cookie headers
+      })
+
+      return response.ok
+    } catch {
+      return false
+    } finally {
+      activeRefreshPromise = null
+    }
+  })()
+
+  return activeRefreshPromise
+}
+
+// Routes where 401 should NOT trigger a token refresh
+const AUTH_ENDPOINTS = [
+  "/auth/signin",
+  "/auth/signup",
+  "/auth/refresh",
+  "/auth/logout",
+  "/auth/verify-otp",
+  "/auth/resend-otp",
+  "/auth/forgot-password",
+  "/auth/reset-password",
+]
+
 export async function apiClient<T>(
   endpoint: string,
   options: ApiClientOptions = {}
 ): Promise<T> {
-  const { idempotencyKey, skipIdempotency, headers: rawHeaders, ...fetchOptions } = options
+  const { idempotencyKey, skipIdempotency, _retry, headers: rawHeaders, ...fetchOptions } = options
   const url = endpoint.startsWith("http") ? endpoint : `${API_BASE_URL}${endpoint}`
 
   const headers = new Headers(rawHeaders || {})
   if (!headers.has("Content-Type") && !(fetchOptions.body instanceof FormData)) {
     headers.set("Content-Type", "application/json")
-  }
-
-  const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null
-  if (token && !headers.has("Authorization")) {
-    headers.set("Authorization", `Bearer ${token}`)
   }
 
   // Inject Idempotency-Key for mutating requests (POST, PUT, PATCH, DELETE)
@@ -83,6 +129,21 @@ export async function apiClient<T>(
       0,
       networkErr
     )
+  }
+
+  // Check for 401 Unauthorized to trigger automatic cookie token refresh and retry
+  const isAuthEndpoint = AUTH_ENDPOINTS.some((authPath) => endpoint.includes(authPath))
+  if (response.status === 401 && !_retry && !isAuthEndpoint) {
+    const success = await refreshAccessToken()
+
+    if (success) {
+      // Retry original request — browser automatically sends the new accessToken cookie
+      return apiClient<T>(endpoint, {
+        ...options,
+        _retry: true,
+        headers,
+      })
+    }
   }
 
   let responseData: any = null

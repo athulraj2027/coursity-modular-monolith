@@ -105,6 +105,14 @@ export const authApi = {
     })
     return response.data?.user || response.user || (response as unknown as User)
   },
+
+  refreshToken: async (): Promise<AuthResponse> => {
+    return apiClient<AuthResponse>("/auth/refresh", {
+      method: "POST",
+      body: JSON.stringify({}),
+      skipIdempotency: true,
+    })
+  },
 }
 
 export default authApi
