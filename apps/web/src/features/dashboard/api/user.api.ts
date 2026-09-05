@@ -4,7 +4,6 @@ import type {
   GetUsersParams,
   PaginatedUsersResponse,
   SingleUserResponse,
-  UserRole,
 } from "../types/user-management.types"
 
 export const userApi = {

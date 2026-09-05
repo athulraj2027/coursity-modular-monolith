@@ -184,7 +184,16 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       {/* 3. Footer: Profile & Theme Options */}
       <SidebarFooter className="border-t border-neutral-200/60 dark:border-neutral-900/80 p-2.5">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <Link
+            to={
+              role === "teacher"
+                ? "/teachers/profile"
+                : role === "admin"
+                ? "/admin/dashboard"
+                : "/students/profile"
+            }
+            className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-85 transition-opacity"
+          >
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-semibold text-xs">
               {user.name ? user.name.charAt(0) : <User className="w-4 h-4" />}
             </div>
@@ -198,7 +207,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 </span>
               </div>
             )}
-          </div>
+          </Link>
+
 
           {!isCollapsed && (
             <div className="flex items-center gap-1 shrink-0">

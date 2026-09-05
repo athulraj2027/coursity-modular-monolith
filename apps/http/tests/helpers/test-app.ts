@@ -27,6 +27,8 @@ import { createIsBlockedMiddleware } from "../../src/app/middlewares/is-blocked.
 import { requireRoles } from "../../src/app/middlewares/role.middleware";
 import errorMiddleware from "../../src/app/middlewares/err.middleware";
 import notFoundMiddleware from "../../src/app/middlewares/not-found.middleware";
+import { createIdempotencyMiddleware } from "../../src/app/middlewares/idempotency.middleware";
+import { IdempotencyService, InMemoryIdempotencyService } from "../../src/infrastructure/idempotency/idempotency.service";
 import {
     User,
     UserRepository,
@@ -345,6 +347,7 @@ export interface CreateTestAppOptions {
     otpRepo?: InMemoryOtpRepository;
     tokenRepo?: InMemoryTokenRepository;
     oauthService?: OAuthService;
+    idempotencyService?: IdempotencyService;
 }
 
 export function createTestApp(options: CreateTestAppOptions = {}) {
@@ -354,11 +357,13 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
     const passwordService = new BcryptPasswordService();
     const tokenService = new JwtTokenService();
     const oauthService = options.oauthService || new MockOAuthService();
+    const idempotencyService = options.idempotencyService || new InMemoryIdempotencyService();
 
     // Middlewares
     const authMiddleware = createAuthMiddleware(tokenService);
     const isBlockedMiddleware = createIsBlockedMiddleware(userRepo);
     const adminMiddleware = requireRoles("ADMIN");
+    const idempotencyMiddleware = createIdempotencyMiddleware(idempotencyService);
 
     // Auth Use cases
     const signupUser = new SignupUser(userRepo, passwordService, otpRepo);
@@ -453,6 +458,7 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
     const app = express();
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
+    app.use(idempotencyMiddleware);
     app.use("/api/auth", authRoutes.router);
     app.use(authMiddleware);
     app.use(isBlockedMiddleware);
@@ -470,6 +476,7 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
         passwordService,
         tokenService,
         oauthService,
+        idempotencyService,
     };
 }
 

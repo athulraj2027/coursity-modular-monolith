@@ -14,14 +14,42 @@ export class ApiError extends Error {
   }
 }
 
+export interface ApiClientOptions extends RequestInit {
+  /**
+   * Optional custom idempotency key to prevent duplicate requests.
+   * If not provided for mutating methods (POST, PUT, PATCH, DELETE),
+   * a unique UUID will be automatically generated.
+   */
+  idempotencyKey?: string
+  /**
+   * Set to true to disable automatic Idempotency-Key generation on mutations.
+   */
+  skipIdempotency?: boolean
+}
+
+/**
+ * Generates a unique UUID v4 for request idempotency.
+ */
+export function generateIdempotencyKey(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID()
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    const v = c === "x" ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
+
 export async function apiClient<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: ApiClientOptions = {}
 ): Promise<T> {
+  const { idempotencyKey, skipIdempotency, headers: rawHeaders, ...fetchOptions } = options
   const url = endpoint.startsWith("http") ? endpoint : `${API_BASE_URL}${endpoint}`
 
-  const headers = new Headers(options.headers || {})
-  if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
+  const headers = new Headers(rawHeaders || {})
+  if (!headers.has("Content-Type") && !(fetchOptions.body instanceof FormData)) {
     headers.set("Content-Type", "application/json")
   }
 
@@ -30,10 +58,22 @@ export async function apiClient<T>(
     headers.set("Authorization", `Bearer ${token}`)
   }
 
+  // Inject Idempotency-Key for mutating requests (POST, PUT, PATCH, DELETE)
+  const method = (fetchOptions.method || "GET").toUpperCase()
+  const isMutating = ["POST", "PUT", "PATCH", "DELETE"].includes(method)
+
+  if (isMutating && !skipIdempotency) {
+    if (idempotencyKey) {
+      headers.set("Idempotency-Key", idempotencyKey)
+    } else if (!headers.has("Idempotency-Key") && !headers.has("x-idempotency-key")) {
+      headers.set("Idempotency-Key", generateIdempotencyKey())
+    }
+  }
+
   let response: Response
   try {
     response = await fetch(url, {
-      ...options,
+      ...fetchOptions,
       headers,
       credentials: "include", // For session / httpOnly cookies
     })

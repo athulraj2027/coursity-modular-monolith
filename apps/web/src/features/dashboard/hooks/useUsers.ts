@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { userApi } from "../api/user.api"
-import type { GetUsersParams, UserRole } from "../types/user-management.types"
+import type { GetUsersParams } from "../types/user-management.types"
 import { toast } from "@/lib/toast"
 
 export const USER_QUERY_KEY = ["admin-users"] as const
