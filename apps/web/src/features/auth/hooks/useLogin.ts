@@ -12,7 +12,8 @@ export function useLogin() {
   return useMutation<AuthResponse, Error, SigninDTO>({
     mutationFn: (data: SigninDTO) => authApi.login(data),
     onSuccess: () => {
-      // Invalidate user queries to refresh authentication state
+      // Clear previous user session cache completely and refresh currentUser
+      queryClient.clear()
       queryClient.invalidateQueries({ queryKey: ["currentUser"] })
     },
   })
