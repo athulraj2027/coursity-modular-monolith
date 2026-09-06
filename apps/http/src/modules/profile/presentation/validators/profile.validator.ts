@@ -9,7 +9,6 @@ export const updateProfileSchema = z.object({
         .optional(),
     avatar: z
         .string()
-        .url("Avatar must be a valid URL")
         .nullable()
         .optional()
         .or(z.literal("")),
@@ -81,7 +80,6 @@ export const updateStudentProfileSchema = z.object({
         .optional(),
     avatar: z
         .string()
-        .url("Avatar must be a valid URL")
         .nullable()
         .optional()
         .or(z.literal("")),
@@ -119,7 +117,6 @@ export const updateTeacherProfileSchema = z.object({
         .optional(),
     avatar: z
         .string()
-        .url("Avatar must be a valid URL")
         .nullable()
         .optional()
         .or(z.literal("")),
