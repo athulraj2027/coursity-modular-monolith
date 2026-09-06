@@ -156,7 +156,10 @@ export const StudentProfilePage: React.FC = () => {
       {/* Profile Header Card */}
       <div className="relative overflow-hidden rounded-3xl border border-neutral-200/80 dark:border-neutral-900 bg-white dark:bg-neutral-900/80 shadow-xs">
         {/* Banner Gradient */}
-        <div className="h-36 sm:h-44 w-full  relative overflow-hidden" />
+        <div className="h-36 sm:h-44 w-full bg-linear-to-r from-neutral-950 via-neutral-900 to-[#F42A18]/80 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(244,42,24,0.3),transparent_60%)]" />
+        </div>
+
         {/* Profile Info Section */}
         <div className="px-6 sm:px-8 pb-6 pt-0 relative">
           <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 -mt-14 sm:-mt-16 mb-4">
@@ -245,20 +248,22 @@ export const StudentProfilePage: React.FC = () => {
           <div className="flex items-center gap-2 border-b border-neutral-200 dark:border-neutral-800 mt-6">
             <button
               onClick={() => setActiveTab("overview")}
-              className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold transition-all border-b-2 cursor-pointer ${activeTab === "overview"
-                ? "border-[#F42A18] text-[#F42A18] dark:text-[#F42A18]"
-                : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-                }`}
+              className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold transition-all border-b-2 cursor-pointer ${
+                activeTab === "overview"
+                  ? "border-[#F42A18] text-[#F42A18] dark:text-[#F42A18]"
+                  : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+              }`}
             >
               <User className="w-4 h-4" />
               Profile Overview
             </button>
             <button
               onClick={() => setActiveTab("edit")}
-              className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold transition-all border-b-2 cursor-pointer ${activeTab === "edit"
-                ? "border-[#F42A18] text-[#F42A18] dark:text-[#F42A18]"
-                : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-                }`}
+              className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold transition-all border-b-2 cursor-pointer ${
+                activeTab === "edit"
+                  ? "border-[#F42A18] text-[#F42A18] dark:text-[#F42A18]"
+                  : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+              }`}
             >
               <Edit3 className="w-4 h-4" />
               Edit Profile
@@ -589,4 +594,3 @@ export const StudentProfilePage: React.FC = () => {
 }
 
 export default StudentProfilePage
-
