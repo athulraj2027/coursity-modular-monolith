@@ -3,6 +3,7 @@ import { Upload, X, Loader2, Camera } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/lib/toast"
+import { useUploadFile } from "@/features/dashboard/hooks/useUpload"
 
 interface ImageUploadInputProps {
   id?: string
@@ -10,71 +11,14 @@ interface ImageUploadInputProps {
   value?: string | null
   onChange: (value: string) => void
   fallbackName?: string
+  folder?: string
   maxSizeMB?: number
+  maxDimension?: number
+  quality?: number
   disabled?: boolean
   className?: string
   inputRef?: React.RefObject<HTMLInputElement | null>
   hint?: string
-}
-
-/**
- * Resizes and compresses an image file to a base64 Data URL using HTML5 Canvas.
- * Keeps output lightweight (~20-50KB) and ensures fast preview and database storage.
- */
-async function compressImageFile(file: File, maxDimension = 512, quality = 0.88): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onerror = () => reject(new Error("Failed to read image file"))
-    reader.onload = () => {
-      const img = new Image()
-      img.onerror = () => reject(new Error("Invalid image format"))
-      img.onload = () => {
-        let { width, height } = img
-
-        if (width > height) {
-          if (width > maxDimension) {
-            height = Math.round((height * maxDimension) / width)
-            width = maxDimension
-          }
-        } else {
-          if (height > maxDimension) {
-            width = Math.round((width * maxDimension) / height)
-            height = maxDimension
-          }
-        }
-
-        const canvas = document.createElement("canvas")
-        canvas.width = width
-        canvas.height = height
-
-        const ctx = canvas.getContext("2d")
-        if (!ctx) {
-          resolve(reader.result as string)
-          return
-        }
-
-        ctx.imageSmoothingEnabled = true
-        ctx.imageSmoothingQuality = "high"
-        ctx.drawImage(img, 0, 0, width, height)
-
-        try {
-          // Try WebP first for ultra-lightweight size
-          const webpData = canvas.toDataURL("image/webp", quality)
-          if (webpData.startsWith("data:image/webp")) {
-            resolve(webpData)
-            return
-          }
-        } catch {
-          // fallback to jpeg
-        }
-
-        const jpegData = canvas.toDataURL("image/jpeg", quality)
-        resolve(jpegData)
-      }
-      img.src = reader.result as string
-    }
-    reader.readAsDataURL(file)
-  })
 }
 
 export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
@@ -83,7 +27,10 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
   value,
   onChange,
   fallbackName = "User",
+  folder = "avatars",
   maxSizeMB = 5,
+  maxDimension = 800,
+  quality = 0.88,
   disabled = false,
   className = "",
   inputRef,
@@ -92,7 +39,8 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
   const localInputRef = useRef<HTMLInputElement>(null)
   const actualInputRef = inputRef || localInputRef
   const [isDragging, setIsDragging] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
+
+  const { uploadFile, isPending: isUploading, progress } = useUploadFile()
 
   const previewUrl =
     value ||
@@ -109,15 +57,22 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
       return
     }
 
-    setIsProcessing(true)
     try {
-      const compressedDataUrl = await compressImageFile(file)
-      onChange(compressedDataUrl)
-      toast.success("Image selected and optimized successfully")
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to process image")
-    } finally {
-      setIsProcessing(false)
+      const uploadedUrl = await uploadFile({
+        file,
+        options: {
+          folder,
+          maxDimension,
+          quality,
+        },
+      })
+
+      if (uploadedUrl) {
+        onChange(uploadedUrl)
+        toast.success("Image selected and uploaded successfully")
+      }
+    } catch {
+      // Toast error handled in useUpload hook
     }
   }
 
@@ -159,6 +114,8 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
     onChange("")
   }
 
+  const isBusy = disabled || isUploading
+
   return (
     <div className={`space-y-2.5 ${className}`}>
       {label && (
@@ -174,7 +131,7 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
         type="file"
         accept="image/png,image/jpeg,image/webp,image/gif"
         onChange={handleInputChange}
-        disabled={disabled || isProcessing}
+        disabled={isBusy}
         className="hidden"
       />
 
@@ -196,15 +153,16 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
             className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-white dark:border-neutral-800 shadow-md bg-neutral-100 dark:bg-neutral-800"
           />
 
-          {isProcessing ? (
-            <div className="absolute inset-0 rounded-2xl bg-neutral-950/60 backdrop-blur-xs flex items-center justify-center text-white">
+          {isUploading ? (
+            <div className="absolute inset-0 rounded-2xl bg-neutral-950/60 backdrop-blur-xs flex flex-col items-center justify-center text-white gap-1">
               <Loader2 className="w-6 h-6 animate-spin text-[#F42A18]" />
+              {progress > 0 && <span className="text-[10px] font-semibold">{progress}%</span>}
             </div>
           ) : (
             <button
               type="button"
               onClick={() => actualInputRef.current?.click()}
-              disabled={disabled}
+              disabled={isBusy}
               title="Upload new image"
               className="absolute inset-0 rounded-2xl bg-neutral-950/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 text-white text-[11px] font-medium cursor-pointer"
             >
@@ -222,13 +180,13 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
               variant="outline"
               size="sm"
               onClick={() => actualInputRef.current?.click()}
-              disabled={disabled || isProcessing}
+              disabled={isBusy}
               className="gap-2 rounded-xl text-xs font-semibold cursor-pointer border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800"
             >
-              {isProcessing ? (
+              {isUploading ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Processing...
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#F42A18]" />
+                  {progress > 0 ? `Uploading ${progress}%` : "Uploading..."}
                 </>
               ) : (
                 <>
@@ -244,7 +202,7 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={handleRemove}
-                disabled={disabled || isProcessing}
+                disabled={isBusy}
                 className="gap-1.5 rounded-xl text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />

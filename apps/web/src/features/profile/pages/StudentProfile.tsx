@@ -248,20 +248,22 @@ export const StudentProfilePage: React.FC = () => {
           <div className="flex items-center gap-2 border-b border-neutral-200 dark:border-neutral-800 mt-6">
             <button
               onClick={() => setActiveTab("overview")}
-              className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold transition-all border-b-2 cursor-pointer ${activeTab === "overview"
-                ? "border-[#F42A18] text-[#F42A18] dark:text-[#F42A18]"
-                : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-                }`}
+              className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold transition-all border-b-2 cursor-pointer ${
+                activeTab === "overview"
+                  ? "border-[#F42A18] text-[#F42A18] dark:text-[#F42A18]"
+                  : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+              }`}
             >
               <User className="w-4 h-4" />
               Profile Overview
             </button>
             <button
               onClick={() => setActiveTab("edit")}
-              className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold transition-all border-b-2 cursor-pointer ${activeTab === "edit"
-                ? "border-[#F42A18] text-[#F42A18] dark:text-[#F42A18]"
-                : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-                }`}
+              className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold transition-all border-b-2 cursor-pointer ${
+                activeTab === "edit"
+                  ? "border-[#F42A18] text-[#F42A18] dark:text-[#F42A18]"
+                  : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+              }`}
             >
               <Edit3 className="w-4 h-4" />
               Edit Profile
@@ -592,4 +594,3 @@ export const StudentProfilePage: React.FC = () => {
 }
 
 export default StudentProfilePage
-

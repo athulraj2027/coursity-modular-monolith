@@ -9,9 +9,8 @@ export function useLogout() {
   return useMutation<AuthResponse, Error, void>({
     mutationFn: () => authApi.logout(),
     onSuccess: (response: any) => {
-      // Clear user queries from cache on logout
-      queryClient.setQueryData(["currentUser"], null)
-      queryClient.removeQueries({ queryKey: ["currentUser"] })
+      // Clear all cached queries across the entire app on logout
+      queryClient.clear()
       showToast.success(response?.message || "Signed out successfully.")
     },
     onError: (err: any) => {

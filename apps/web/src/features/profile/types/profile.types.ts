@@ -1,4 +1,5 @@
-import type { UserRole, AuthProvider } from "./user-management.types"
+export type UserRole = "STUDENT" | "TEACHER" | "ADMIN"
+export type AuthProvider = "LOCAL" | "GOOGLE"
 
 export interface StudentProfileModel {
   id: string

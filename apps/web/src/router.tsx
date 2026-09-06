@@ -6,12 +6,14 @@ import { TeachersPage } from "@/features/teachers"
 import {
   StudentDashboardPage,
   TeacherDashboardPage,
-  StudentProfilePage,
-  TeacherProfilePage,
   AdminDashboardPage,
   AdminTeachersPage,
   AdminStudentsPage,
 } from "@/features/dashboard"
+import {
+  StudentProfilePage,
+  TeacherProfilePage,
+} from "@/features/profile"
 import {
   SigninPage,
   SignupPage,
