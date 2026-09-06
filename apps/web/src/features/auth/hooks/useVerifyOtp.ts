@@ -12,7 +12,8 @@ export function useVerifyOtp() {
   return useMutation<AuthResponse, Error, VerifyOtpDTO>({
     mutationFn: (data: VerifyOtpDTO) => authApi.verifyOtp(data),
     onSuccess: () => {
-      // Refresh authenticated current user cache
+      // Clear previous user session cache and refresh current user
+      queryClient.clear()
       queryClient.invalidateQueries({ queryKey: ["currentUser"] })
     },
   })

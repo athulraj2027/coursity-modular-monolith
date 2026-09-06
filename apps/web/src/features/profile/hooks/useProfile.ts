@@ -12,6 +12,7 @@ export function useProfile() {
   return useQuery({
     queryKey: PROFILE_QUERY_KEY,
     queryFn: () => profileApi.getProfile(),
+    staleTime: 0,
   })
 }
 
