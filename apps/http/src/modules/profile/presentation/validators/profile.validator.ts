@@ -1,5 +1,24 @@
 import { z } from "zod";
 
+const isValidUrl = (val: string) => {
+    try {
+        const url = new URL(val);
+        return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+        return false;
+    }
+};
+
+const optionalUrl = (label: string) =>
+    z
+        .string()
+        .trim()
+        .refine((val) => val === "" || isValidUrl(val), {
+            message: `${label} must be a valid URL (e.g. https://...)`,
+        })
+        .nullable()
+        .optional();
+
 export const updateProfileSchema = z.object({
     name: z
         .string()
@@ -38,24 +57,9 @@ export const updateProfileSchema = z.object({
         .max(80, "Experience years cannot exceed 80")
         .nullable()
         .optional(),
-    linkedinUrl: z
-        .string()
-        .url("LinkedIn URL must be a valid URL")
-        .nullable()
-        .optional()
-        .or(z.literal("")),
-    twitterUrl: z
-        .string()
-        .url("Twitter URL must be a valid URL")
-        .nullable()
-        .optional()
-        .or(z.literal("")),
-    websiteUrl: z
-        .string()
-        .url("Website URL must be a valid URL")
-        .nullable()
-        .optional()
-        .or(z.literal("")),
+    linkedinUrl: optionalUrl("LinkedIn URL"),
+    twitterUrl: optionalUrl("Twitter/X URL"),
+    websiteUrl: optionalUrl("Website URL"),
 });
 
 export const updateStudentProfileSchema = z.object({
@@ -120,24 +124,9 @@ export const updateTeacherProfileSchema = z.object({
         .max(80, "Experience years cannot exceed 80")
         .nullable()
         .optional(),
-    linkedinUrl: z
-        .string()
-        .url("LinkedIn URL must be a valid URL")
-        .nullable()
-        .optional()
-        .or(z.literal("")),
-    twitterUrl: z
-        .string()
-        .url("Twitter URL must be a valid URL")
-        .nullable()
-        .optional()
-        .or(z.literal("")),
-    websiteUrl: z
-        .string()
-        .url("Website URL must be a valid URL")
-        .nullable()
-        .optional()
-        .or(z.literal("")),
+    linkedinUrl: optionalUrl("LinkedIn URL"),
+    twitterUrl: optionalUrl("Twitter/X URL"),
+    websiteUrl: optionalUrl("Website URL"),
 });
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

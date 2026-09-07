@@ -7,7 +7,7 @@ export default function validate(schema: z.ZodSchema) {
         try {
             if (!req.body || typeof req.body !== "object") {
                 return res.status(STATUS_CODES.BAD_REQUEST).json({
-                    message: "Validation error",
+                    message: "Request body is required and must be JSON",
                     errors: [{ field: "body", message: "Request body is required and must be JSON" }],
                 });
             }

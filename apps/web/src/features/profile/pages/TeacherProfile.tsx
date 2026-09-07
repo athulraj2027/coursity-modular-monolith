@@ -24,6 +24,7 @@ import {
   Fingerprint,
   Calendar,
   Lock,
+  AlertCircle,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -31,6 +32,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { ImageUploadInput } from "@/components/common"
+import { toast } from "@/lib/toast"
 import { useProfile, useUpdateTeacherProfile } from "../hooks/useProfile"
 
 interface TeacherFormData {
@@ -44,6 +46,69 @@ interface TeacherFormData {
   twitterUrl: string
   websiteUrl: string
   expertise: string[]
+}
+
+function isValidUrl(val: string): boolean {
+  const trimmed = val.trim()
+  if (!trimmed) return true
+  try {
+    const parsed = new URL(trimmed)
+    return parsed.protocol === "http:" || parsed.protocol === "https:"
+  } catch {
+    return false
+  }
+}
+
+function validateTeacherForm(data: TeacherFormData): Partial<Record<keyof TeacherFormData, string>> {
+  const errors: Partial<Record<keyof TeacherFormData, string>> = {}
+
+  const trimmedName = data.name.trim()
+  if (!trimmedName) {
+    errors.name = "Display name is required"
+  } else if (trimmedName.length < 2) {
+    errors.name = "Display name must be at least 2 characters"
+  } else if (trimmedName.length > 100) {
+    errors.name = "Display name cannot exceed 100 characters"
+  }
+
+  if (data.phone && data.phone.trim().length > 20) {
+    errors.phone = "Phone number cannot exceed 20 characters"
+  }
+
+  if (data.bio && data.bio.trim().length > 1000) {
+    errors.bio = "Biography cannot exceed 1000 characters"
+  }
+
+  if (data.qualifications && data.qualifications.trim().length > 500) {
+    errors.qualifications = "Qualifications cannot exceed 500 characters"
+  }
+
+  if (data.experienceYears !== undefined && data.experienceYears !== null) {
+    const exp = Number(data.experienceYears)
+    if (isNaN(exp) || exp < 0 || exp > 80) {
+      errors.experienceYears = "Experience years must be between 0 and 80"
+    }
+  }
+
+  if (data.linkedinUrl && data.linkedinUrl.trim()) {
+    if (!isValidUrl(data.linkedinUrl)) {
+      errors.linkedinUrl = "LinkedIn URL must be a valid URL (e.g. https://linkedin.com/in/...)"
+    }
+  }
+
+  if (data.twitterUrl && data.twitterUrl.trim()) {
+    if (!isValidUrl(data.twitterUrl)) {
+      errors.twitterUrl = "Twitter/X URL must be a valid URL (e.g. https://x.com/...)"
+    }
+  }
+
+  if (data.websiteUrl && data.websiteUrl.trim()) {
+    if (!isValidUrl(data.websiteUrl)) {
+      errors.websiteUrl = "Website URL must be a valid URL (e.g. https://yourwebsite.com)"
+    }
+  }
+
+  return errors
 }
 
 export const TeacherProfilePage: React.FC = () => {
@@ -65,6 +130,7 @@ export const TeacherProfilePage: React.FC = () => {
     expertise: [],
   })
 
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof TeacherFormData, string>>>({})
   const [newTag, setNewTag] = useState("")
 
   // Sync form state when backend profile data is loaded or updated
@@ -82,11 +148,19 @@ export const TeacherProfilePage: React.FC = () => {
         websiteUrl: profileData.teacherProfile?.websiteUrl || "",
         expertise: profileData.teacherProfile?.expertise || [],
       })
+      setFieldErrors({})
     }
   }, [profileData])
 
   const handleInputChange = (field: keyof TeacherFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev }
+        delete next[field]
+        return next
+      })
+    }
   }
 
   const handleAddExpertise = () => {
@@ -110,6 +184,19 @@ export const TeacherProfilePage: React.FC = () => {
 
   const handleSaveChanges = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const clientErrors = validateTeacherForm(formData)
+    if (Object.keys(clientErrors).length > 0) {
+      setFieldErrors(clientErrors)
+      const firstError = Object.values(clientErrors)[0]
+      if (firstError) {
+        toast.error(firstError)
+      }
+      return
+    }
+
+    setFieldErrors({})
+
     try {
       await updateMutation.mutateAsync({
         name: formData.name.trim(),
@@ -124,8 +211,18 @@ export const TeacherProfilePage: React.FC = () => {
         expertise: formData.expertise,
       })
       setActiveTab("overview")
-    } catch {
-      // Toast handled via useMutation's onError handler
+    } catch (err: any) {
+      if (err?.data?.errors && Array.isArray(err.data.errors)) {
+        const backendErrors: Partial<Record<keyof TeacherFormData, string>> = {}
+        err.data.errors.forEach((e: { field: string; message: string }) => {
+          if (e.field && e.message) {
+            backendErrors[e.field as keyof TeacherFormData] = e.message
+          }
+        })
+        if (Object.keys(backendErrors).length > 0) {
+          setFieldErrors(backendErrors)
+        }
+      }
     }
   }
 
@@ -143,6 +240,7 @@ export const TeacherProfilePage: React.FC = () => {
         websiteUrl: profileData.teacherProfile?.websiteUrl || "",
         expertise: profileData.teacherProfile?.expertise || [],
       })
+      setFieldErrors({})
     }
   }
 
@@ -525,9 +623,15 @@ export const TeacherProfilePage: React.FC = () => {
                   value={formData.name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
                   placeholder="e.g. Ada Lovelace"
-                  className="rounded-xl"
+                  className={`rounded-xl ${fieldErrors.name ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   required
                 />
+                {fieldErrors.name && (
+                  <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {fieldErrors.name}
+                  </p>
+                )}
               </div>
 
               {/* Email (Readonly) */}
@@ -553,8 +657,14 @@ export const TeacherProfilePage: React.FC = () => {
                   value={formData.phone}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
                   placeholder="+1 (555) 000-0000"
-                  className="rounded-xl"
+                  className={`rounded-xl ${fieldErrors.phone ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 />
+                {fieldErrors.phone && (
+                  <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {fieldErrors.phone}
+                  </p>
+                )}
               </div>
 
               {/* Experience Years */}
@@ -566,11 +676,17 @@ export const TeacherProfilePage: React.FC = () => {
                   id="experienceYears"
                   type="number"
                   min={0}
-                  max={60}
+                  max={80}
                   value={formData.experienceYears}
                   onChange={(e) => handleInputChange("experienceYears", parseInt(e.target.value) || 0)}
-                  className="rounded-xl"
+                  className={`rounded-xl ${fieldErrors.experienceYears ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 />
+                {fieldErrors.experienceYears && (
+                  <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {fieldErrors.experienceYears}
+                  </p>
+                )}
               </div>
 
               {/* Avatar Image Input */}
@@ -595,8 +711,14 @@ export const TeacherProfilePage: React.FC = () => {
                   value={formData.qualifications}
                   onChange={(e) => handleInputChange("qualifications", e.target.value)}
                   placeholder="e.g. Ph.D. in Computer Science • MIT"
-                  className="rounded-xl"
+                  className={`rounded-xl ${fieldErrors.qualifications ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 />
+                {fieldErrors.qualifications && (
+                  <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {fieldErrors.qualifications}
+                  </p>
+                )}
               </div>
 
               {/* Bio */}
@@ -610,8 +732,18 @@ export const TeacherProfilePage: React.FC = () => {
                   value={formData.bio}
                   onChange={(e) => handleInputChange("bio", e.target.value)}
                   placeholder="Share your industry experience, background, and teaching focus..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-transparent text-sm focus:outline-hidden focus:ring-2 focus:ring-[#F42A18]/20 focus:border-[#F42A18] text-neutral-900 dark:text-white"
+                  className={`w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-sm focus:outline-hidden focus:ring-2 text-neutral-900 dark:text-white ${
+                    fieldErrors.bio
+                      ? "border-red-500 focus:ring-red-500/20 focus:border-red-500"
+                      : "border-neutral-200 dark:border-neutral-800 focus:ring-[#F42A18]/20 focus:border-[#F42A18]"
+                  }`}
                 />
+                {fieldErrors.bio && (
+                  <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {fieldErrors.bio}
+                  </p>
+                )}
               </div>
 
               {/* LinkedIn URL */}
@@ -632,8 +764,16 @@ export const TeacherProfilePage: React.FC = () => {
                   onChange={(e) => handleInputChange("linkedinUrl", e.target.value)}
                   placeholder="https://linkedin.com/in/..."
                   disabled={Boolean(teacherProfile?.isApproved)}
-                  className={`rounded-xl ${teacherProfile?.isApproved ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed" : ""}`}
+                  className={`rounded-xl ${
+                    fieldErrors.linkedinUrl ? "border-red-500 focus-visible:ring-red-500" : ""
+                  } ${teacherProfile?.isApproved ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed" : ""}`}
                 />
+                {fieldErrors.linkedinUrl && (
+                  <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {fieldErrors.linkedinUrl}
+                  </p>
+                )}
                 {teacherProfile?.isApproved && (
                   <p className="text-[11px] text-neutral-400">
                     LinkedIn URL cannot be changed after account verification.
@@ -659,8 +799,16 @@ export const TeacherProfilePage: React.FC = () => {
                   onChange={(e) => handleInputChange("twitterUrl", e.target.value)}
                   placeholder="https://x.com/..."
                   disabled={Boolean(teacherProfile?.isApproved)}
-                  className={`rounded-xl ${teacherProfile?.isApproved ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed" : ""}`}
+                  className={`rounded-xl ${
+                    fieldErrors.twitterUrl ? "border-red-500 focus-visible:ring-red-500" : ""
+                  } ${teacherProfile?.isApproved ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed" : ""}`}
                 />
+                {fieldErrors.twitterUrl && (
+                  <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {fieldErrors.twitterUrl}
+                  </p>
+                )}
                 {teacherProfile?.isApproved && (
                   <p className="text-[11px] text-neutral-400">
                     Twitter URL cannot be changed after account verification.
@@ -678,8 +826,14 @@ export const TeacherProfilePage: React.FC = () => {
                   value={formData.websiteUrl}
                   onChange={(e) => handleInputChange("websiteUrl", e.target.value)}
                   placeholder="https://yourportfolio.io"
-                  className="rounded-xl"
+                  className={`rounded-xl ${fieldErrors.websiteUrl ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 />
+                {fieldErrors.websiteUrl && (
+                  <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {fieldErrors.websiteUrl}
+                  </p>
+                )}
               </div>
 
               {/* Expertise Areas */}

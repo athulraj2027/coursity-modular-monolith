@@ -13,12 +13,14 @@ import {
   Clock,
   Loader2,
   RefreshCw,
+  AlertCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { ImageUploadInput } from "@/components/common"
+import { toast } from "@/lib/toast"
 import { useProfile, useUpdateStudentProfile } from "../hooks/useProfile"
 
 interface StudentFormData {
@@ -26,6 +28,29 @@ interface StudentFormData {
   avatar: string
   phone: string
   bio: string
+}
+
+function validateStudentForm(data: StudentFormData): Partial<Record<keyof StudentFormData, string>> {
+  const errors: Partial<Record<keyof StudentFormData, string>> = {}
+
+  const trimmedName = data.name.trim()
+  if (!trimmedName) {
+    errors.name = "Full name is required"
+  } else if (trimmedName.length < 2) {
+    errors.name = "Full name must be at least 2 characters"
+  } else if (trimmedName.length > 100) {
+    errors.name = "Full name cannot exceed 100 characters"
+  }
+
+  if (data.phone && data.phone.trim().length > 20) {
+    errors.phone = "Phone number cannot exceed 20 characters"
+  }
+
+  if (data.bio && data.bio.trim().length > 1000) {
+    errors.bio = "Biography cannot exceed 1000 characters"
+  }
+
+  return errors
 }
 
 export const StudentProfilePage: React.FC = () => {
@@ -41,6 +66,8 @@ export const StudentProfilePage: React.FC = () => {
     bio: "",
   })
 
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof StudentFormData, string>>>({})
+
   // Sync form state when backend profile data is loaded or updated
   useEffect(() => {
     if (profileData) {
@@ -50,15 +77,36 @@ export const StudentProfilePage: React.FC = () => {
         phone: profileData.profile?.phone || "",
         bio: profileData.profile?.bio || "",
       })
+      setFieldErrors({})
     }
   }, [profileData])
 
   const handleInputChange = (field: keyof StudentFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev }
+        delete next[field]
+        return next
+      })
+    }
   }
 
   const handleSaveChanges = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const clientErrors = validateStudentForm(formData)
+    if (Object.keys(clientErrors).length > 0) {
+      setFieldErrors(clientErrors)
+      const firstError = Object.values(clientErrors)[0]
+      if (firstError) {
+        toast.error(firstError)
+      }
+      return
+    }
+
+    setFieldErrors({})
+
     try {
       await updateMutation.mutateAsync({
         name: formData.name.trim(),
@@ -67,8 +115,18 @@ export const StudentProfilePage: React.FC = () => {
         bio: formData.bio ? formData.bio.trim() : null,
       })
       setActiveTab("overview")
-    } catch {
-      // Toast notification is handled in mutation hook
+    } catch (err: any) {
+      if (err?.data?.errors && Array.isArray(err.data.errors)) {
+        const backendErrors: Partial<Record<keyof StudentFormData, string>> = {}
+        err.data.errors.forEach((e: { field: string; message: string }) => {
+          if (e.field && e.message) {
+            backendErrors[e.field as keyof StudentFormData] = e.message
+          }
+        })
+        if (Object.keys(backendErrors).length > 0) {
+          setFieldErrors(backendErrors)
+        }
+      }
     }
   }
 
@@ -80,6 +138,7 @@ export const StudentProfilePage: React.FC = () => {
         phone: profileData.profile?.phone || "",
         bio: profileData.profile?.bio || "",
       })
+      setFieldErrors({})
     }
   }
 
@@ -321,9 +380,15 @@ export const StudentProfilePage: React.FC = () => {
                   value={formData.name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
                   placeholder="Your full name"
-                  className="rounded-xl"
+                  className={`rounded-xl ${fieldErrors.name ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   required
                 />
+                {fieldErrors.name && (
+                  <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {fieldErrors.name}
+                  </p>
+                )}
               </div>
 
               {/* Email (Readonly) */}
@@ -349,8 +414,14 @@ export const StudentProfilePage: React.FC = () => {
                   value={formData.phone}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
                   placeholder="+1 (555) 000-0000"
-                  className="rounded-xl"
+                  className={`rounded-xl ${fieldErrors.phone ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 />
+                {fieldErrors.phone && (
+                  <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {fieldErrors.phone}
+                  </p>
+                )}
               </div>
 
               {/* Avatar Image Input */}
@@ -376,8 +447,18 @@ export const StudentProfilePage: React.FC = () => {
                   value={formData.bio}
                   onChange={(e) => handleInputChange("bio", e.target.value)}
                   placeholder="Write a brief bio about your background and interests..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-transparent text-sm focus:outline-hidden focus:ring-2 focus:ring-[#F42A18]/20 focus:border-[#F42A18] text-neutral-900 dark:text-white"
+                  className={`w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-sm focus:outline-hidden focus:ring-2 text-neutral-900 dark:text-white ${
+                    fieldErrors.bio
+                      ? "border-red-500 focus:ring-red-500/20 focus:border-red-500"
+                      : "border-neutral-200 dark:border-neutral-800 focus:ring-[#F42A18]/20 focus:border-[#F42A18]"
+                  }`}
                 />
+                {fieldErrors.bio && (
+                  <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {fieldErrors.bio}
+                  </p>
+                )}
               </div>
             </div>
 

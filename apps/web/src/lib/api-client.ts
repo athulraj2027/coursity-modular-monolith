@@ -155,10 +155,26 @@ export async function apiClient<T>(
   }
 
   if (!response.ok) {
-    let errorMessage =
-      responseData?.message ||
-      responseData?.error ||
-      `Request failed with status ${response.status}`
+    let errorMessage = ""
+
+    // 1. If backend returns an array of field errors, concatenate them
+    if (responseData?.errors && Array.isArray(responseData.errors) && responseData.errors.length > 0) {
+      const fieldMessages = responseData.errors
+        .map((err: any) => (typeof err === "string" ? err : err.message || err.msg))
+        .filter(Boolean)
+
+      if (fieldMessages.length > 0) {
+        errorMessage = fieldMessages.join(". ")
+      }
+    }
+
+    // 2. Fall back to responseData.message or responseData.error
+    if (!errorMessage) {
+      errorMessage =
+        responseData?.message ||
+        responseData?.error ||
+        `Request failed with status ${response.status}`
+    }
 
     // Sanitize any raw database or internal trace messages if they leak
     if (
