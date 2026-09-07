@@ -43,6 +43,7 @@ import {
     GetAllUsers,
     GetUserById,
     BlockUser,
+    ApproveTeacher,
 } from "../../src/modules/user/application/use-cases";
 import {
     GetProfileController,
@@ -51,6 +52,7 @@ import {
     GetAllUsersController,
     GetUserByIdController,
     BlockUserController,
+    ApproveTeacherController,
 } from "../../src/modules/user/presentation/controllers";
 import { UserRoutes } from "../../src/modules/user/presentation/routes/user.routes";
 import { OtpRepository, StoredOtpData, StoredResetPasswordOtpData, TempSignupUser } from "../../src/modules/auth/domain/repositories/redis-otp.repository";
@@ -202,6 +204,43 @@ export class InMemoryUserRepository implements UserRepository {
         return this.update(id, { isBlocked });
     }
 
+    async updateTeacherApproval(userId: string, isApproved: boolean): Promise<User> {
+        const existing = this.users.get(userId);
+        if (!existing) {
+            throw new Error(`User with id ${userId} not found`);
+        }
+        const currentProfile = existing.profile || {
+            id: `prof_${userId}`,
+            avatar: null,
+            bio: null,
+            phone: null,
+            teacherProfile: null,
+        };
+        const currentTeacherProfile = currentProfile.teacherProfile || {
+            id: `tp_${userId}`,
+            expertise: [],
+            qualifications: null,
+            experienceYears: null,
+            linkedinUrl: null,
+            twitterUrl: null,
+            websiteUrl: null,
+            isApproved: false,
+        };
+        const updated: User = {
+            ...existing,
+            profile: {
+                ...currentProfile,
+                teacherProfile: {
+                    ...currentTeacherProfile,
+                    isApproved,
+                },
+            },
+            updatedAt: new Date(),
+        };
+        this.users.set(userId, updated);
+        return updated;
+    }
+
     async findMany(options: FindUsersOptions = {}): Promise<PaginatedUsersResult> {
         const page = Math.max(1, options.page || 1);
         const limit = Math.max(1, Math.min(100, options.limit || 10));
@@ -214,6 +253,14 @@ export class InMemoryUserRepository implements UserRepository {
 
         if (options.authProvider) {
             list = list.filter((u) => u.authProvider === options.authProvider);
+        }
+
+        if (options.isBlocked !== undefined) {
+            list = list.filter((u) => u.isBlocked === options.isBlocked);
+        }
+
+        if (options.isApproved !== undefined) {
+            list = list.filter((u) => Boolean(u.profile?.teacherProfile?.isApproved) === options.isApproved);
         }
 
         if (options.search && options.search.trim() !== "") {
@@ -405,6 +452,7 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
     const getAllUsers = new GetAllUsers(userRepo);
     const getUserById = new GetUserById(userRepo);
     const blockUser = new BlockUser(userRepo);
+    const approveTeacher = new ApproveTeacher(userRepo);
 
     // User Controllers
     const getProfileController = new GetProfileController(getProfile);
@@ -413,6 +461,7 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
     const getAllUsersController = new GetAllUsersController(getAllUsers);
     const getUserByIdController = new GetUserByIdController(getUserById);
     const blockUserController = new BlockUserController(blockUser);
+    const approveTeacherController = new ApproveTeacherController(approveTeacher);
 
     // User Routes
     const userRoutes = new UserRoutes(
@@ -422,6 +471,7 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
         getAllUsersController,
         getUserByIdController,
         blockUserController,
+        approveTeacherController,
         authMiddleware,
         isBlockedMiddleware,
         adminMiddleware

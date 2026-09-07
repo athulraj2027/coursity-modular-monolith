@@ -16,6 +16,13 @@ export class PrismaUserRepository implements UserRepository {
     async findById(id: string): Promise<User | null> {
         const user = await this.prisma.user.findUnique({
             where: { id },
+            include: {
+                profile: {
+                    include: {
+                        teacherProfile: true,
+                    },
+                },
+            },
         });
         if (!user) return null;
         return this.mapToEntity(user);
@@ -24,6 +31,13 @@ export class PrismaUserRepository implements UserRepository {
     async findByEmail(email: string): Promise<User | null> {
         const user = await this.prisma.user.findUnique({
             where: { email: email.toLowerCase().trim() },
+            include: {
+                profile: {
+                    include: {
+                        teacherProfile: true,
+                    },
+                },
+            },
         });
         if (!user) return null;
         return this.mapToEntity(user);
@@ -37,6 +51,13 @@ export class PrismaUserRepository implements UserRepository {
                 password: data.password ?? null,
                 role: data.role as any,
                 authProvider: data.authProvider as any,
+            },
+            include: {
+                profile: {
+                    include: {
+                        teacherProfile: true,
+                    },
+                },
             },
         });
         return this.mapToEntity(user);
@@ -53,6 +74,13 @@ export class PrismaUserRepository implements UserRepository {
                 ...(data.authProvider !== undefined ? { authProvider: data.authProvider as any } : {}),
                 ...(data.isBlocked !== undefined ? { isBlocked: data.isBlocked } : {}),
             },
+            include: {
+                profile: {
+                    include: {
+                        teacherProfile: true,
+                    },
+                },
+            },
         });
         return this.mapToEntity(user);
     }
@@ -65,32 +93,100 @@ export class PrismaUserRepository implements UserRepository {
         return this.update(id, { isBlocked });
     }
 
+    async updateTeacherApproval(userId: string, isApproved: boolean): Promise<User> {
+        let profile = await this.prisma.profile.findUnique({
+            where: { userId },
+            include: { teacherProfile: true },
+        });
+
+        if (!profile) {
+            profile = await this.prisma.profile.create({
+                data: {
+                    userId,
+                    teacherProfile: {
+                        create: {
+                            isApproved,
+                        },
+                    },
+                },
+                include: { teacherProfile: true },
+            });
+        } else if (!profile.teacherProfile) {
+            await this.prisma.teacherProfile.create({
+                data: {
+                    profileId: profile.id,
+                    isApproved,
+                },
+            });
+        } else {
+            await this.prisma.teacherProfile.update({
+                where: { profileId: profile.id },
+                data: { isApproved },
+            });
+        }
+
+        const updatedUser = await this.findById(userId);
+        if (!updatedUser) {
+            throw new Error(`User with id ${userId} not found`);
+        }
+        return updatedUser;
+    }
+
     async findMany(options: FindUsersOptions = {}): Promise<PaginatedUsersResult> {
         const page = Math.max(1, options.page || 1);
         const limit = Math.max(1, Math.min(100, options.limit || 10));
         const skip = (page - 1) * limit;
 
-        const where: any = {};
+        const andConditions: any[] = [];
 
         if (options.role) {
-            where.role = options.role;
+            andConditions.push({ role: options.role });
         }
 
         if (options.authProvider) {
-            where.authProvider = options.authProvider;
+            andConditions.push({ authProvider: options.authProvider });
         }
 
         if (options.isBlocked !== undefined) {
-            where.isBlocked = options.isBlocked;
+            andConditions.push({ isBlocked: options.isBlocked });
+        }
+
+        if (options.isApproved !== undefined) {
+            if (!options.role) {
+                andConditions.push({ role: "TEACHER" });
+            }
+
+            const isApprovedBool = options.isApproved === true || (options.isApproved as any) === "true";
+            if (isApprovedBool) {
+                andConditions.push({
+                    profile: {
+                        teacherProfile: {
+                            isApproved: true,
+                        },
+                    },
+                });
+            } else {
+                andConditions.push({
+                    OR: [
+                        { profile: null },
+                        { profile: { teacherProfile: null } },
+                        { profile: { teacherProfile: { isApproved: false } } },
+                    ],
+                });
+            }
         }
 
         if (options.search && options.search.trim() !== "") {
             const search = options.search.trim();
-            where.OR = [
-                { name: { contains: search, mode: "insensitive" } },
-                { email: { contains: search, mode: "insensitive" } },
-            ];
+            andConditions.push({
+                OR: [
+                    { name: { contains: search, mode: "insensitive" } },
+                    { email: { contains: search, mode: "insensitive" } },
+                ],
+            });
         }
+
+        const where = andConditions.length > 0 ? { AND: andConditions } : {};
 
         const sortBy = options.sortBy || "createdAt";
         const sortOrder = options.sortOrder || "desc";
@@ -102,6 +198,13 @@ export class PrismaUserRepository implements UserRepository {
                 take: limit,
                 orderBy: {
                     [sortBy]: sortOrder,
+                },
+                include: {
+                    profile: {
+                        include: {
+                            teacherProfile: true,
+                        },
+                    },
                 },
             }),
             this.prisma.user.count({ where }),
@@ -148,6 +251,30 @@ export class PrismaUserRepository implements UserRepository {
             isBlocked: Boolean(raw.isBlocked),
             createdAt: raw.createdAt,
             updatedAt: raw.updatedAt,
+            profile: raw.profile
+                ? {
+                      id: raw.profile.id,
+                      avatar: raw.profile.avatar ?? null,
+                      bio: raw.profile.bio ?? null,
+                      phone: raw.profile.phone ?? null,
+                      teacherProfile: raw.profile.teacherProfile
+                          ? {
+                                id: raw.profile.teacherProfile.id,
+                                expertise: raw.profile.teacherProfile.expertise || [],
+                                qualifications: raw.profile.teacherProfile.qualifications ?? null,
+                                experienceYears: raw.profile.teacherProfile.experienceYears ?? null,
+                                linkedinUrl: raw.profile.teacherProfile.linkedinUrl ?? null,
+                                twitterUrl: raw.profile.teacherProfile.twitterUrl ?? null,
+                                websiteUrl: raw.profile.teacherProfile.websiteUrl ?? null,
+                                isApproved: Boolean(raw.profile.teacherProfile.isApproved),
+                                createdAt: raw.profile.teacherProfile.createdAt,
+                                updatedAt: raw.profile.teacherProfile.updatedAt,
+                            }
+                          : null,
+                      createdAt: raw.profile.createdAt,
+                      updatedAt: raw.profile.updatedAt,
+                  }
+                : null,
         };
     }
-}
+}

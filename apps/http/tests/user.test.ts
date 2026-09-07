@@ -237,5 +237,84 @@ describe("User Module Routes", () => {
             assert.match(res.body.message, /administrator/i);
         });
     });
+
+    describe("PATCH /api/users/:id/approve", () => {
+        let teacherId: string;
+
+        beforeEach(async () => {
+            const teacher = await testCtx.userRepo.create({
+                name: "Sarah Professor",
+                email: "sarah@professor.com",
+                password: "TeacherPass123!",
+                role: "TEACHER",
+                authProvider: "LOCAL",
+            });
+            teacherId = teacher.id;
+        });
+
+        it("should allow admin to approve a teacher", async () => {
+            const res = await request(testCtx.app)
+                .patch(`/api/users/${teacherId}/approve`)
+                .set("Authorization", `Bearer ${adminToken}`)
+                .send({ isApproved: true });
+
+            assert.equal(res.status, 200);
+            assert.equal(res.body.message, "Instructor has been verified and approved successfully");
+            assert.equal(res.body.data.user.profile?.teacherProfile?.isApproved, true);
+        });
+
+        it("should allow admin to filter teachers by isApproved", async () => {
+            // Initially teacher is not approved (isApproved: false)
+            const resUnapproved = await request(testCtx.app)
+                .get("/api/users?role=TEACHER&isApproved=false")
+                .set("Authorization", `Bearer ${adminToken}`);
+
+            assert.equal(resUnapproved.status, 200);
+            assert.equal(resUnapproved.body.data.total, 1);
+            assert.equal(resUnapproved.body.data.users[0].id, teacherId);
+
+            // Now approve teacher
+            await request(testCtx.app)
+                .patch(`/api/users/${teacherId}/approve`)
+                .set("Authorization", `Bearer ${adminToken}`)
+                .send({ isApproved: true });
+
+            // Query isApproved=true
+            const resApproved = await request(testCtx.app)
+                .get("/api/users?role=TEACHER&isApproved=true")
+                .set("Authorization", `Bearer ${adminToken}`);
+
+            assert.equal(resApproved.status, 200);
+            assert.equal(resApproved.body.data.total, 1);
+            assert.equal(resApproved.body.data.users[0].id, teacherId);
+
+            // Query isApproved=false should now be 0
+            const resUnapprovedAfter = await request(testCtx.app)
+                .get("/api/users?role=TEACHER&isApproved=false")
+                .set("Authorization", `Bearer ${adminToken}`);
+
+            assert.equal(resUnapprovedAfter.status, 200);
+            assert.equal(resUnapprovedAfter.body.data.total, 0);
+        });
+
+        it("should return 400 if user is not a teacher", async () => {
+            const res = await request(testCtx.app)
+                .patch(`/api/users/${studentId}/approve`)
+                .set("Authorization", `Bearer ${adminToken}`)
+                .send({ isApproved: true });
+
+            assert.equal(res.status, 400);
+            assert.match(res.body.message, /instructor/i);
+        });
+
+        it("should return 403 when non-admin tries to approve a teacher", async () => {
+            const res = await request(testCtx.app)
+                .patch(`/api/users/${teacherId}/approve`)
+                .set("Authorization", `Bearer ${studentToken}`)
+                .send({ isApproved: true });
+
+            assert.equal(res.status, 403);
+        });
+    });
 });
 

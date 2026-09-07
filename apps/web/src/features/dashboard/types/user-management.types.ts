@@ -1,6 +1,29 @@
 export type UserRole = "STUDENT" | "TEACHER" | "ADMIN"
 export type AuthProvider = "LOCAL" | "GOOGLE"
 
+export interface BackendTeacherProfile {
+  id: string
+  expertise: string[]
+  qualifications?: string | null
+  experienceYears?: number | null
+  linkedinUrl?: string | null
+  twitterUrl?: string | null
+  websiteUrl?: string | null
+  isApproved: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface BackendUserProfile {
+  id: string
+  avatar?: string | null
+  bio?: string | null
+  phone?: string | null
+  teacherProfile?: BackendTeacherProfile | null
+  createdAt?: string
+  updatedAt?: string
+}
+
 export interface BackendUser {
   id: string
   name: string
@@ -10,6 +33,7 @@ export interface BackendUser {
   isBlocked: boolean
   createdAt: string
   updatedAt: string
+  profile?: BackendUserProfile | null
 }
 
 export interface GetUsersParams {
@@ -19,6 +43,7 @@ export interface GetUsersParams {
   role?: UserRole
   authProvider?: AuthProvider
   isBlocked?: boolean
+  isApproved?: boolean
   sortBy?: "createdAt" | "name" | "email"
   sortOrder?: "asc" | "desc"
 }

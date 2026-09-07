@@ -33,6 +33,11 @@ export interface UserRepository {
         isBlocked: boolean
     ): Promise<User>;
 
+    updateTeacherApproval(
+        userId: string,
+        isApproved: boolean
+    ): Promise<User>;
+
     findMany(
         options?: FindUsersOptions
     ): Promise<PaginatedUsersResult>;

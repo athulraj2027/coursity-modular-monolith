@@ -15,6 +15,8 @@ export const userApi = {
     if (params.search && params.search.trim()) searchParams.append("search", params.search.trim())
     if (params.role) searchParams.append("role", params.role)
     if (params.authProvider) searchParams.append("authProvider", params.authProvider)
+    if (params.isBlocked !== undefined) searchParams.append("isBlocked", String(params.isBlocked))
+    if (params.isApproved !== undefined) searchParams.append("isApproved", String(params.isApproved))
     if (params.sortBy) searchParams.append("sortBy", params.sortBy)
     if (params.sortOrder) searchParams.append("sortOrder", params.sortOrder)
 
@@ -33,11 +35,17 @@ export const userApi = {
     return response.data.user
   },
 
-
   blockUser: async (id: string, isBlocked?: boolean): Promise<{ message: string; data?: { user: BackendUser } }> => {
     return apiClient<{ message: string; data?: { user: BackendUser } }>(`/users/${id}/block`, {
       method: "PATCH",
       ...(isBlocked !== undefined ? { body: JSON.stringify({ isBlocked }) } : {}),
+    })
+  },
+
+  approveTeacher: async (id: string, isApproved: boolean = true): Promise<{ message: string; data?: { user: BackendUser } }> => {
+    return apiClient<{ message: string; data?: { user: BackendUser } }>(`/users/${id}/approve`, {
+      method: "PATCH",
+      body: JSON.stringify({ isApproved }),
     })
   },
 }

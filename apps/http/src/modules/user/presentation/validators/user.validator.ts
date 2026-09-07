@@ -22,10 +22,22 @@ export const getUsersQuerySchema = z.object({
     search: z.string().optional(),
     role: z.enum(["STUDENT", "TEACHER", "ADMIN"]).optional(),
     authProvider: z.enum(["LOCAL", "GOOGLE"]).optional(),
+    isApproved: z
+        .preprocess((val) => {
+            if (val === "true" || val === true || val === "1" || val === 1 || val === "approved" || val === "verified") return true;
+            if (val === "false" || val === false || val === "0" || val === 0 || val === "pending" || val === "unapproved") return false;
+            return undefined;
+        }, z.boolean().optional())
+        .optional(),
     sortBy: z.enum(["createdAt", "name", "email"]).optional().default("createdAt"),
     sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
+});
+
+export const approveTeacherSchema = z.object({
+    isApproved: z.boolean().optional().default(true),
 });
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type GetUsersQueryInput = z.infer<typeof getUsersQuerySchema>;
+export type ApproveTeacherInput = z.infer<typeof approveTeacherSchema>;

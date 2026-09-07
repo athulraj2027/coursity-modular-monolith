@@ -7,8 +7,9 @@ import {
   Calendar,
   KeyRound,
   Globe,
-  Clock,
   GraduationCap,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -18,7 +19,7 @@ import {
   type TableColumn,
   type TableMetricCard,
 } from "@/components/common"
-import { useUsers, useBlockUser } from "../hooks/useUsers"
+import { useUsers, useBlockUser, useApproveTeacher } from "../hooks/useUsers"
 import { useDebounce } from "@/hooks/use-debounce"
 import type { BackendUser, AuthProvider } from "../types/user-management.types"
 
@@ -26,6 +27,8 @@ export const AdminTeachersPage = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const debouncedSearch = useDebounce(searchQuery, 300)
 
+  // Status & Provider filters
+  const [approvalFilter, setApprovalFilter] = useState<string>("all")
   const [authProviderFilter, setAuthProviderFilter] = useState<string>("all")
   const [sortOption, setSortOption] = useState<string>("newest")
   const [selectedTeacher, setSelectedTeacher] = useState<BackendUser | null>(null)
@@ -50,7 +53,13 @@ export const AdminTeachersPage = () => {
     }
   }, [sortOption])
 
-  // Real backend query
+  // Real backend query with isApproved filter
+  const isApprovedQuery = useMemo(() => {
+    if (approvalFilter === "pending") return false
+    if (approvalFilter === "approved") return true
+    return undefined
+  }, [approvalFilter])
+
   const {
     data: usersResponse,
     isLoading,
@@ -64,26 +73,39 @@ export const AdminTeachersPage = () => {
     limit: pageSize,
     search: debouncedSearch || undefined,
     authProvider: authProviderFilter === "all" ? undefined : (authProviderFilter as AuthProvider),
+    isApproved: isApprovedQuery,
     sortBy,
     sortOrder,
   })
 
-  // Block mutation
+  // Mutations
   const blockUserMutation = useBlockUser()
+  const approveTeacherMutation = useApproveTeacher()
+
+  // Query all teachers for accurate metric counts and tab badges
+  const { data: allTeachersResponse } = useUsers({
+    role: "TEACHER",
+    limit: 100,
+  })
 
   const teachers = usersResponse?.data?.users || []
   const totalItems = usersResponse?.data?.total ?? 0
 
-  // Count helper
-  const counts = useMemo(() => {
-    const googleCount = teachers.filter((t) => t.authProvider === "GOOGLE").length
-    const localCount = teachers.filter((t) => t.authProvider === "LOCAL").length
+  const allTeachersList = allTeachersResponse?.data?.users || []
+  const globalCounts = useMemo(() => {
+    const total = allTeachersResponse?.data?.total ?? totalItems
+    const pending = allTeachersList.filter((t) => !t.profile?.teacherProfile?.isApproved).length
+    const approved = allTeachersList.filter((t) => Boolean(t.profile?.teacherProfile?.isApproved)).length
+    const google = allTeachersList.filter((t) => t.authProvider === "GOOGLE").length
+    const local = allTeachersList.filter((t) => t.authProvider === "LOCAL").length
     return {
-      all: totalItems,
-      google: googleCount,
-      local: localCount,
+      total,
+      pending,
+      approved,
+      google,
+      local,
     }
-  }, [totalItems, teachers])
+  }, [allTeachersResponse, allTeachersList, totalItems])
 
   const handleOpenBlockModal = (teacherId: string) => {
     const teacher = teachers.find((t) => t.id === teacherId) || (selectedTeacher?.id === teacherId ? selectedTeacher : null)
@@ -101,24 +123,32 @@ export const AdminTeachersPage = () => {
     }
   }
 
+  const handleApproveTeacher = async (teacherId: string, isApproved: boolean = true) => {
+    const res = await approveTeacherMutation.mutateAsync({ id: teacherId, isApproved })
+    if (selectedTeacher?.id === teacherId && res?.data?.user) {
+      setSelectedTeacher(res.data.user)
+    }
+  }
+
   const handleResetFilters = () => {
     setSearchQuery("")
+    setApprovalFilter("all")
     setAuthProviderFilter("all")
     setSortOption("newest")
     setCurrentPage(1)
   }
 
-  const hasActiveFilters = Boolean(searchQuery) || authProviderFilter !== "all" || sortOption !== "newest"
+  const hasActiveFilters = Boolean(searchQuery) || approvalFilter !== "all" || authProviderFilter !== "all" || sortOption !== "newest"
 
   // Metrics
   const metrics: TableMetricCard[] = [
-    { label: "Total Instructors", val: totalItems, icon: Users, color: "text-[#F42A18]" },
-    { label: "Active on Page", val: teachers.length, icon: GraduationCap, color: "text-emerald-500" },
-    { label: "Google OAuth Hosts", val: counts.google, icon: Globe, color: "text-blue-500" },
-    { label: "Email / Local Hosts", val: counts.local, icon: KeyRound, color: "text-purple-500" },
+    { label: "Total Instructors", val: globalCounts.total, icon: Users, color: "text-[#F42A18]" },
+    { label: "Pending Verification", val: globalCounts.pending, icon: AlertCircle, color: "text-amber-500" },
+    { label: "Verified Instructors", val: globalCounts.approved, icon: CheckCircle2, color: "text-emerald-500" },
+    { label: "Google Account Hosts", val: globalCounts.google, icon: Globe, color: "text-blue-500" },
   ]
 
-  // Columns Configuration matching database schema
+  // Columns Configuration
   const columns: TableColumn<BackendUser>[] = [
     {
       header: "Instructor",
@@ -134,9 +164,17 @@ export const AdminTeachersPage = () => {
 
         return (
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 font-bold text-xs flex items-center justify-center shrink-0">
-              {initials}
-            </div>
+            {teacher.profile?.avatar ? (
+              <img
+                src={teacher.profile.avatar}
+                alt={teacher.name}
+                className="w-9 h-9 rounded-xl object-cover border border-neutral-200 dark:border-neutral-800 shrink-0"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 font-bold text-xs flex items-center justify-center shrink-0">
+                {initials}
+              </div>
+            )}
             <div className="min-w-0">
               <div className="font-semibold text-neutral-900 dark:text-white truncate flex items-center gap-1.5">
                 <span>{teacher.name}</span>
@@ -155,24 +193,42 @@ export const AdminTeachersPage = () => {
       },
     },
     {
-      header: "System Role",
+      header: "Verification Status",
       align: "center",
-      cell: (teacher) => (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+      cell: (teacher) => {
+        const isApproved = Boolean(teacher.profile?.teacherProfile?.isApproved)
+        return isApproved ? (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Verified
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            <AlertCircle className="w-3.5 h-3.5" />
+            Pending Verification
+          </span>
+        )
+      },
+    },
+    {
+      header: "Role",
+      align: "center",
+      cell: () => (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-500 border border-blue-500/20">
           <ShieldCheck className="w-3.5 h-3.5" />
-          {teacher.role}
+          Instructor
         </span>
       ),
     },
     {
-      header: "Auth Provider",
+      header: "Sign-in Method",
       align: "center",
       cell: (teacher) => (
         <div className="whitespace-nowrap">
           {teacher.authProvider === "GOOGLE" ? (
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
               <Globe className="w-3 h-3" />
-              Google OAuth
+              Google Account
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-purple-500/10 text-purple-500 border border-purple-500/20">
@@ -198,26 +254,6 @@ export const AdminTeachersPage = () => {
         return (
           <div className="text-xs text-neutral-600 dark:text-neutral-300 flex items-center gap-1.5 whitespace-nowrap">
             <Calendar className="w-3.5 h-3.5 text-neutral-400" />
-            <span>{formatted}</span>
-          </div>
-        )
-      },
-    },
-    {
-      header: "Last Updated",
-      align: "center",
-      cell: (teacher) => {
-        const formatted = teacher.updatedAt
-          ? new Date(teacher.updatedAt).toLocaleDateString(undefined, {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            })
-          : "—"
-
-        return (
-          <div className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 whitespace-nowrap">
-            <Clock className="w-3.5 h-3.5 text-neutral-400" />
             <span>{formatted}</span>
           </div>
         )
@@ -260,10 +296,12 @@ export const AdminTeachersPage = () => {
       <UserDetailsDrawer
         user={selectedTeacher}
         onClose={() => setSelectedTeacher(null)}
-        titleFallback="Instructor Record"
+        titleFallback="Instructor Profile"
         initialsFallback="IN"
         onBlock={handleOpenBlockModal}
         isBlocking={blockUserMutation.isPending}
+        onApprove={handleApproveTeacher}
+        isApproving={approveTeacherMutation.isPending}
       />
 
       <BlockUserModal
@@ -281,10 +319,10 @@ export const AdminTeachersPage = () => {
     <DataTableTemplate<BackendUser>
       badge={{
         icon: ShieldCheck,
-        label: "Instructor Verification & Roster",
+        label: "Instructor Verification & Directory",
       }}
       title="Teacher Directory"
-      description="Manage and inspect instructor accounts registered in the database."
+      description="Review instructor credentials, approve instructor accounts, and inspect detailed profiles."
       headerActions={
         <div className="flex items-center gap-2">
           <button
@@ -310,16 +348,29 @@ export const AdminTeachersPage = () => {
         setCurrentPage(1)
       }}
       tabs={[
-        { key: "all", label: "All Instructors", count: totalItems },
-        { key: "GOOGLE", label: "Google OAuth" },
-        { key: "LOCAL", label: "Email & Password" },
+        { key: "all", label: "All Instructors", count: globalCounts.total },
+        { key: "pending", label: "Pending Verification", count: globalCounts.pending },
+        { key: "approved", label: "Verified Instructors", count: globalCounts.approved },
       ]}
-      activeTab={authProviderFilter}
+      activeTab={approvalFilter}
       onTabChange={(k) => {
-        setAuthProviderFilter(k)
+        setApprovalFilter(k)
         setCurrentPage(1)
       }}
       dropdownFilters={[
+        {
+          key: "verificationStatus",
+          value: approvalFilter,
+          onChange: (val) => {
+            setApprovalFilter(val)
+            setCurrentPage(1)
+          },
+          options: [
+            { label: "All Verification Statuses", value: "all" },
+            { label: "Pending Verification", value: "pending" },
+            { label: "Verified Instructors", value: "approved" },
+          ],
+        },
         {
           key: "authProvider",
           value: authProviderFilter,
@@ -328,9 +379,9 @@ export const AdminTeachersPage = () => {
             setCurrentPage(1)
           },
           options: [
-            { label: "All Providers", value: "all" },
-            { label: "Google OAuth", value: "GOOGLE" },
-            { label: "Email / Password", value: "LOCAL" },
+            { label: "All Sign-in Methods", value: "all" },
+            { label: "Google Account", value: "GOOGLE" },
+            { label: "Email & Password", value: "LOCAL" },
           ],
         },
       ]}
@@ -355,7 +406,11 @@ export const AdminTeachersPage = () => {
         title: isError ? "Unable to load instructors" : "No instructors found",
         description: isError
           ? (error as any)?.message || "Failed to fetch instructors from the server. Please verify your admin credentials."
-          : "No teacher records matching your search or filters were returned from the database.",
+          : approvalFilter === "pending"
+          ? "There are currently no instructor profiles awaiting verification."
+          : approvalFilter === "approved"
+          ? "No verified instructor accounts found matching the criteria."
+          : "No instructor records matching your search or filters were found.",
       }}
       pagination={{
         currentPage,

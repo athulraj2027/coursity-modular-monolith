@@ -5,9 +5,11 @@ import { ChangePasswordController } from "../controllers/change-password.control
 import { GetAllUsersController } from "../controllers/get-all-users.controller";
 import { GetUserByIdController } from "../controllers/get-user-by-id.controller";
 import { BlockUserController } from "../controllers/block-user.controller";
+import { ApproveTeacherController } from "../controllers/approve-teacher.controller";
 import {
     updateProfileSchema,
     changePasswordSchema,
+    approveTeacherSchema,
 } from "../validators/user.validator";
 import validate from "@/app/middlewares/validate";
 
@@ -21,6 +23,7 @@ export class UserRoutes {
         private readonly getAllUsersController: GetAllUsersController,
         private readonly getUserByIdController: GetUserByIdController,
         private readonly blockUserController: BlockUserController,
+        private readonly approveTeacherController: ApproveTeacherController,
         private readonly authMiddleware: RequestHandler,
         private readonly isBlockedMiddleware: RequestHandler,
         private readonly adminMiddleware: RequestHandler
@@ -89,6 +92,22 @@ export class UserRoutes {
             this.authMiddleware,
             this.adminMiddleware,
             this.blockUserController.execute
+        );
+
+        this.router.patch(
+            "/:id/approve",
+            this.authMiddleware,
+            this.adminMiddleware,
+            validate(approveTeacherSchema),
+            this.approveTeacherController.execute
+        );
+
+        this.router.put(
+            "/:id/approve",
+            this.authMiddleware,
+            this.adminMiddleware,
+            validate(approveTeacherSchema),
+            this.approveTeacherController.execute
         );
     }
 }

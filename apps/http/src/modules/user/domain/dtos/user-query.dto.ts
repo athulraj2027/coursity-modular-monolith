@@ -7,6 +7,7 @@ export interface FindUsersOptions {
     role?: UserRole;
     authProvider?: AuthProvider;
     isBlocked?: boolean;
+    isApproved?: boolean;
     sortBy?: "createdAt" | "name" | "email";
     sortOrder?: "asc" | "desc";
 }
