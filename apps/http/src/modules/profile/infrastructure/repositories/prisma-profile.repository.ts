@@ -1,81 +1,101 @@
 import { PrismaClient } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
 import { ProfileRepository } from "../../domain/repositories/profile.repository";
-import { FullUserProfile } from "../../domain/entities/profile.entity";
-import { StudentProfile } from "../../domain/entities/student-profile.entity";
-import { TeacherProfile } from "../../domain/entities/teacher-profile.entity";
+import { FullUserProfile, UserProfile, TeacherProfile } from "../../domain/entities/profile.entity";
 
 export class PrismaProfileRepository implements ProfileRepository {
-
     constructor(private readonly prisma: PrismaClient = defaultPrisma) { }
 
     async getFullProfileByUserId(userId: string): Promise<FullUserProfile | null> {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
             include: {
-                studentProfile: true,
-                teacherProfile: true,
+                profile: {
+                    include: {
+                        teacherProfile: true,
+                    },
+                },
             },
         });
 
         if (!user) return null;
 
-        const { password, ...safeUser } = user;
-        return safeUser as FullUserProfile;
+        const { password, profile, ...safeUser } = user;
+        const teacherProfile = profile?.teacherProfile || null;
+
+        return {
+            ...safeUser,
+            profile: profile
+                ? {
+                    id: profile.id,
+                    userId: profile.userId,
+                    avatar: profile.avatar,
+                    bio: profile.bio,
+                    phone: profile.phone,
+                    createdAt: profile.createdAt,
+                    updatedAt: profile.updatedAt,
+                }
+                : null,
+            teacherProfile: teacherProfile
+                ? {
+                    id: teacherProfile.id,
+                    profileId: teacherProfile.profileId,
+                    expertise: teacherProfile.expertise,
+                    qualifications: teacherProfile.qualifications,
+                    experienceYears: teacherProfile.experienceYears,
+                    linkedinUrl: teacherProfile.linkedinUrl,
+                    twitterUrl: teacherProfile.twitterUrl,
+                    websiteUrl: teacherProfile.websiteUrl,
+                    isApproved: teacherProfile.isApproved,
+                    createdAt: teacherProfile.createdAt,
+                    updatedAt: teacherProfile.updatedAt,
+                }
+                : null,
+        };
     }
 
-    async getStudentProfile(userId: string): Promise<StudentProfile | null> {
-        const profile = await this.prisma.studentProfile.findUnique({
+    async getProfileByUserId(userId: string): Promise<UserProfile | null> {
+        const profile = await this.prisma.profile.findUnique({
             where: { userId },
         });
         return profile;
     }
 
-    async getTeacherProfile(userId: string): Promise<TeacherProfile | null> {
+    async getTeacherProfileByProfileId(profileId: string): Promise<TeacherProfile | null> {
         const profile = await this.prisma.teacherProfile.findUnique({
-            where: { userId },
+            where: { profileId },
         });
         return profile;
     }
 
-    async upsertStudentProfile(
+    async upsertProfile(
         userId: string,
-        data: Partial<Omit<StudentProfile, "id" | "userId" | "createdAt" | "updatedAt">>
-    ): Promise<StudentProfile> {
-        return await this.prisma.studentProfile.upsert({
+        data: Partial<Omit<UserProfile, "id" | "userId" | "createdAt" | "updatedAt">>
+    ): Promise<UserProfile> {
+        return await this.prisma.profile.upsert({
             where: { userId },
             create: {
                 userId,
                 avatar: data.avatar ?? null,
                 bio: data.bio ?? null,
                 phone: data.phone ?? null,
-                headline: data.headline ?? null,
-                education: data.education ?? null,
-                interests: data.interests ?? [],
             },
             update: {
                 ...(data.avatar !== undefined ? { avatar: data.avatar } : {}),
                 ...(data.bio !== undefined ? { bio: data.bio } : {}),
                 ...(data.phone !== undefined ? { phone: data.phone } : {}),
-                ...(data.headline !== undefined ? { headline: data.headline } : {}),
-                ...(data.education !== undefined ? { education: data.education } : {}),
-                ...(data.interests !== undefined ? { interests: data.interests } : {}),
             },
         });
     }
 
     async upsertTeacherProfile(
-        userId: string,
-        data: Partial<Omit<TeacherProfile, "id" | "userId" | "createdAt" | "updatedAt">>
+        profileId: string,
+        data: Partial<Omit<TeacherProfile, "id" | "profileId" | "createdAt" | "updatedAt">>
     ): Promise<TeacherProfile> {
         return await this.prisma.teacherProfile.upsert({
-            where: { userId },
+            where: { profileId },
             create: {
-                userId,
-                avatar: data.avatar ?? null,
-                bio: data.bio ?? null,
-                phone: data.phone ?? null,
-                headline: data.headline ?? null,
+                profileId,
                 expertise: data.expertise ?? [],
                 qualifications: data.qualifications ?? null,
                 experienceYears: data.experienceYears ?? null,
@@ -84,10 +104,6 @@ export class PrismaProfileRepository implements ProfileRepository {
                 websiteUrl: data.websiteUrl ?? null,
             },
             update: {
-                ...(data.avatar !== undefined ? { avatar: data.avatar } : {}),
-                ...(data.bio !== undefined ? { bio: data.bio } : {}),
-                ...(data.phone !== undefined ? { phone: data.phone } : {}),
-                ...(data.headline !== undefined ? { headline: data.headline } : {}),
                 ...(data.expertise !== undefined ? { expertise: data.expertise } : {}),
                 ...(data.qualifications !== undefined ? { qualifications: data.qualifications } : {}),
                 ...(data.experienceYears !== undefined ? { experienceYears: data.experienceYears } : {}),

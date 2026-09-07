@@ -1,26 +1,19 @@
 export type UserRole = "STUDENT" | "TEACHER" | "ADMIN"
 export type AuthProvider = "LOCAL" | "GOOGLE"
 
-export interface StudentProfileModel {
+export interface UserProfileModel {
   id: string
   userId: string
   avatar: string | null
   bio: string | null
   phone: string | null
-  headline: string | null
-  education: string | null
-  interests: string[]
   createdAt: string
   updatedAt: string
 }
 
 export interface TeacherProfileModel {
   id: string
-  userId: string
-  avatar: string | null
-  bio: string | null
-  phone: string | null
-  headline: string | null
+  profileId: string
   expertise: string[]
   qualifications: string | null
   experienceYears: number | null
@@ -39,7 +32,7 @@ export interface FullUserProfileResponse {
   role: UserRole
   authProvider: AuthProvider
   isBlocked: boolean
-  studentProfile?: StudentProfileModel | null
+  profile?: UserProfileModel | null
   teacherProfile?: TeacherProfileModel | null
   createdAt: string
   updatedAt: string

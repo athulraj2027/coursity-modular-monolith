@@ -16,13 +16,10 @@ export class UpdateStudentProfile {
             await this.profileRepository.updateUserName(userId, data.name.trim());
         }
 
-        await this.profileRepository.upsertStudentProfile(userId, {
+        await this.profileRepository.upsertProfile(userId, {
             avatar: data.avatar,
             bio: data.bio,
             phone: data.phone,
-            headline: data.headline,
-            education: data.education,
-            interests: data.interests,
         });
 
         const updatedProfile = await this.profileRepository.getFullProfileByUserId(userId);

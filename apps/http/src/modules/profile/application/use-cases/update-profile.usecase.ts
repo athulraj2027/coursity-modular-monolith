@@ -1,4 +1,4 @@
-import { NotFoundError } from "@/app/errors";
+import { NotFoundError, BadRequestError } from "@/app/errors";
 import { ProfileRepository } from "../../domain/repositories/profile.repository";
 import { FullUserProfile } from "../../domain/entities/profile.entity";
 import { UpdateProfileDTO } from "../../domain/dtos/update-profile.dto";
@@ -12,34 +12,59 @@ export class UpdateProfile {
             throw new NotFoundError("User profile not found");
         }
 
+        // Prevent modifying verified social links (LinkedIn/Twitter) if instructor is approved
+        if (existingProfile.teacherProfile?.isApproved) {
+            const currentLinkedin = existingProfile.teacherProfile.linkedinUrl ? existingProfile.teacherProfile.linkedinUrl.trim() : null;
+            const currentTwitter = existingProfile.teacherProfile.twitterUrl ? existingProfile.teacherProfile.twitterUrl.trim() : null;
+
+            if (data.linkedinUrl !== undefined) {
+                const incomingLinkedin = data.linkedinUrl ? data.linkedinUrl.trim() : null;
+                if (incomingLinkedin !== currentLinkedin) {
+                    throw new BadRequestError(
+                        "Verified social links (LinkedIn) cannot be modified once your instructor account is approved by an administrator. You can only update your website URL."
+                    );
+                }
+            }
+
+            if (data.twitterUrl !== undefined) {
+                const incomingTwitter = data.twitterUrl ? data.twitterUrl.trim() : null;
+                if (incomingTwitter !== currentTwitter) {
+                    throw new BadRequestError(
+                        "Verified social links (Twitter/X) cannot be modified once your instructor account is approved by an administrator. You can only update your website URL."
+                    );
+                }
+            }
+        }
+
         // 1. Update user name if provided
         if (data.name !== undefined && data.name.trim() !== "") {
             await this.profileRepository.updateUserName(userId, data.name.trim());
         }
 
-        // 2. Update role-specific profile
-        if (existingProfile.role === "TEACHER") {
-            await this.profileRepository.upsertTeacherProfile(userId, {
-                avatar: data.avatar,
-                bio: data.bio,
-                phone: data.phone,
-                headline: data.headline,
+        // 2. Upsert common profile (avatar, bio, phone)
+        const updatedProfileRecord = await this.profileRepository.upsertProfile(userId, {
+            avatar: data.avatar,
+            bio: data.bio,
+            phone: data.phone,
+        });
+
+        // 3. If teacher role or teacher-specific fields provided, upsert teacher profile using profileId
+        if (
+            existingProfile.role === "TEACHER" ||
+            data.expertise !== undefined ||
+            data.qualifications !== undefined ||
+            data.experienceYears !== undefined ||
+            data.linkedinUrl !== undefined ||
+            data.twitterUrl !== undefined ||
+            data.websiteUrl !== undefined
+        ) {
+            await this.profileRepository.upsertTeacherProfile(updatedProfileRecord.id, {
                 expertise: data.expertise,
                 qualifications: data.qualifications,
                 experienceYears: data.experienceYears,
-                linkedinUrl: data.linkedinUrl,
-                twitterUrl: data.twitterUrl,
+                linkedinUrl: existingProfile.teacherProfile?.isApproved ? existingProfile.teacherProfile.linkedinUrl : data.linkedinUrl,
+                twitterUrl: existingProfile.teacherProfile?.isApproved ? existingProfile.teacherProfile.twitterUrl : data.twitterUrl,
                 websiteUrl: data.websiteUrl,
-            });
-        } else {
-            // Default or STUDENT role
-            await this.profileRepository.upsertStudentProfile(userId, {
-                avatar: data.avatar,
-                bio: data.bio,
-                phone: data.phone,
-                headline: data.headline,
-                education: data.education,
-                interests: data.interests,
             });
         }
 

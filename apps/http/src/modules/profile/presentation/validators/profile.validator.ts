@@ -22,19 +22,6 @@ export const updateProfileSchema = z.object({
         .max(20, "Phone number cannot exceed 20 characters")
         .nullable()
         .optional(),
-    headline: z
-        .string()
-        .max(150, "Headline cannot exceed 150 characters")
-        .nullable()
-        .optional(),
-    education: z
-        .string()
-        .max(255, "Education cannot exceed 255 characters")
-        .nullable()
-        .optional(),
-    interests: z
-        .array(z.string().trim().min(1, "Interest cannot be empty"))
-        .optional(),
     expertise: z
         .array(z.string().trim().min(1, "Expertise item cannot be empty"))
         .optional(),
@@ -93,19 +80,6 @@ export const updateStudentProfileSchema = z.object({
         .max(20, "Phone number cannot exceed 20 characters")
         .nullable()
         .optional(),
-    headline: z
-        .string()
-        .max(150, "Headline cannot exceed 150 characters")
-        .nullable()
-        .optional(),
-    education: z
-        .string()
-        .max(255, "Education cannot exceed 255 characters")
-        .nullable()
-        .optional(),
-    interests: z
-        .array(z.string().trim().min(1, "Interest cannot be empty"))
-        .optional(),
 });
 
 export const updateTeacherProfileSchema = z.object({
@@ -128,11 +102,6 @@ export const updateTeacherProfileSchema = z.object({
     phone: z
         .string()
         .max(20, "Phone number cannot exceed 20 characters")
-        .nullable()
-        .optional(),
-    headline: z
-        .string()
-        .max(150, "Headline cannot exceed 150 characters")
         .nullable()
         .optional(),
     expertise: z

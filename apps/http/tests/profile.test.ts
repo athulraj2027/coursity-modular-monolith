@@ -112,17 +112,15 @@ describe("Profile Module Routes", () => {
                 .set("Authorization", `Bearer ${studentToken}`)
                 .send({
                     name: "Alice Updated",
-                    headline: "Aspiring Full Stack Engineer",
-                    education: "B.Tech Computer Science",
-                    interests: ["Node.js", "React", "Docker"],
+                    bio: "Passionate developer",
+                    phone: "+1234567890",
                 });
 
             assert.equal(res.status, 200);
             assert.equal(res.body.message, "Profile updated successfully");
             assert.equal(res.body.data.profile.name, "Alice Updated");
-            assert.equal(res.body.data.profile.studentProfile.headline, "Aspiring Full Stack Engineer");
-            assert.equal(res.body.data.profile.studentProfile.education, "B.Tech Computer Science");
-            assert.deepEqual(res.body.data.profile.studentProfile.interests, ["Node.js", "React", "Docker"]);
+            assert.equal(res.body.data.profile.profile.bio, "Passionate developer");
+            assert.equal(res.body.data.profile.profile.phone, "+1234567890");
         });
 
         it("should update student profile using PUT /api/profile", async () => {
@@ -132,14 +130,12 @@ describe("Profile Module Routes", () => {
                 .send({
                     name: "Alice Put Name",
                     bio: "Passionate lifelong learner",
-                    headline: "Frontend Specialist",
                 });
 
             assert.equal(res.status, 200);
             assert.equal(res.body.message, "Profile updated successfully");
             assert.equal(res.body.data.profile.name, "Alice Put Name");
-            assert.equal(res.body.data.profile.studentProfile.bio, "Passionate lifelong learner");
-            assert.equal(res.body.data.profile.studentProfile.headline, "Frontend Specialist");
+            assert.equal(res.body.data.profile.profile.bio, "Passionate lifelong learner");
         });
 
         it("should update teacher profile using PATCH /api/profile", async () => {
@@ -148,7 +144,7 @@ describe("Profile Module Routes", () => {
                 .set("Authorization", `Bearer ${teacherToken}`)
                 .send({
                     name: "Dr. Bob",
-                    headline: "Lead Cloud Architect & Instructor",
+                    bio: "Senior systems instructor",
                     expertise: ["Distributed Systems", "Kubernetes", "PostgreSQL"],
                     experienceYears: 12,
                     websiteUrl: "https://drbob.io",
@@ -157,7 +153,7 @@ describe("Profile Module Routes", () => {
             assert.equal(res.status, 200);
             assert.equal(res.body.message, "Profile updated successfully");
             assert.equal(res.body.data.profile.name, "Dr. Bob");
-            assert.equal(res.body.data.profile.teacherProfile.headline, "Lead Cloud Architect & Instructor");
+            assert.equal(res.body.data.profile.profile.bio, "Senior systems instructor");
             assert.equal(res.body.data.profile.teacherProfile.experienceYears, 12);
             assert.equal(res.body.data.profile.teacherProfile.websiteUrl, "https://drbob.io");
             assert.deepEqual(res.body.data.profile.teacherProfile.expertise, ["Distributed Systems", "Kubernetes", "PostgreSQL"]);
@@ -182,16 +178,15 @@ describe("Profile Module Routes", () => {
                 .set("Authorization", `Bearer ${studentToken}`)
                 .send({
                     name: "Alice Dedicated Student",
-                    headline: "Data Science Enthusiast",
-                    education: "Stanford University",
-                    interests: ["Python", "Machine Learning"],
+                    bio: "Computer Science student",
+                    phone: "+1987654321",
                 });
 
             assert.equal(res.status, 200);
             assert.equal(res.body.message, "Student profile updated successfully");
             assert.equal(res.body.data.profile.name, "Alice Dedicated Student");
-            assert.equal(res.body.data.profile.studentProfile.headline, "Data Science Enthusiast");
-            assert.equal(res.body.data.profile.studentProfile.education, "Stanford University");
+            assert.equal(res.body.data.profile.profile.bio, "Computer Science student");
+            assert.equal(res.body.data.profile.profile.phone, "+1987654321");
         });
 
         it("should update student profile via PATCH /api/profile/student", async () => {
@@ -205,8 +200,8 @@ describe("Profile Module Routes", () => {
 
             assert.equal(res.status, 200);
             assert.equal(res.body.message, "Student profile updated successfully");
-            assert.equal(res.body.data.profile.studentProfile.phone, "+1234567890");
-            assert.equal(res.body.data.profile.studentProfile.bio, "Studying AI/ML and Cloud Computing");
+            assert.equal(res.body.data.profile.profile.phone, "+1234567890");
+            assert.equal(res.body.data.profile.profile.bio, "Studying AI/ML and Cloud Computing");
         });
     });
 
@@ -217,7 +212,7 @@ describe("Profile Module Routes", () => {
                 .set("Authorization", `Bearer ${teacherToken}`)
                 .send({
                     name: "Professor Bob",
-                    headline: "Principal Systems Engineer",
+                    bio: "20 years of research and teaching",
                     expertise: ["Rust", "Go", "Distributed Algorithms"],
                     qualifications: "Ph.D. in Computer Science",
                     experienceYears: 15,
@@ -229,22 +224,101 @@ describe("Profile Module Routes", () => {
             assert.equal(res.status, 200);
             assert.equal(res.body.message, "Teacher profile updated successfully");
             assert.equal(res.body.data.profile.name, "Professor Bob");
+            assert.equal(res.body.data.profile.profile.bio, "20 years of research and teaching");
             assert.equal(res.body.data.profile.teacherProfile.qualifications, "Ph.D. in Computer Science");
             assert.equal(res.body.data.profile.teacherProfile.experienceYears, 15);
             assert.equal(res.body.data.profile.teacherProfile.linkedinUrl, "https://linkedin.com/in/profbob");
         });
 
-        it("should update teacher profile via PATCH /api/profile/teacher", async () => {
+        it("should update teacher profile via PATCH /api/profile/teacher when not yet approved", async () => {
             const res = await request(testCtx.app)
                 .patch("/api/profile/teacher")
                 .set("Authorization", `Bearer ${teacherToken}`)
                 .send({
-                    bio: "20 years instructing senior software engineering professionals.",
+                    linkedinUrl: "https://linkedin.com/in/profbob-new",
+                    twitterUrl: "https://twitter.com/profbob_new",
+                    bio: "Updated bio before approval",
                 });
 
             assert.equal(res.status, 200);
             assert.equal(res.body.message, "Teacher profile updated successfully");
-            assert.equal(res.body.data.profile.teacherProfile.bio, "20 years instructing senior software engineering professionals.");
+            assert.equal(res.body.data.profile.teacherProfile.linkedinUrl, "https://linkedin.com/in/profbob-new");
+            assert.equal(res.body.data.profile.teacherProfile.twitterUrl, "https://twitter.com/profbob_new");
+        });
+
+        it("should reject modifying linkedinUrl when teacher is approved", async () => {
+            // Setup an approved teacher profile
+            const profile = await testCtx.profileRepo.upsertProfile(teacherId, {});
+            await testCtx.profileRepo.upsertTeacherProfile(profile.id, {
+                linkedinUrl: "https://linkedin.com/in/approved-teacher",
+                twitterUrl: "https://twitter.com/approved-teacher",
+                isApproved: true,
+            });
+
+            // Attempt to change linkedinUrl
+            const res = await request(testCtx.app)
+                .patch("/api/profile/teacher")
+                .set("Authorization", `Bearer ${teacherToken}`)
+                .send({
+                    linkedinUrl: "https://linkedin.com/in/changed-teacher",
+                });
+
+            assert.equal(res.status, 400);
+            assert.match(res.body.message, /LinkedIn/i);
+        });
+
+        it("should reject modifying twitterUrl when teacher is approved", async () => {
+            // Setup an approved teacher profile
+            const profile = await testCtx.profileRepo.upsertProfile(teacherId, {});
+            await testCtx.profileRepo.upsertTeacherProfile(profile.id, {
+                linkedinUrl: "https://linkedin.com/in/approved-teacher",
+                twitterUrl: "https://twitter.com/approved-teacher",
+                isApproved: true,
+            });
+
+            // Attempt to change twitterUrl
+            const res = await request(testCtx.app)
+                .patch("/api/profile/teacher")
+                .set("Authorization", `Bearer ${teacherToken}`)
+                .send({
+                    twitterUrl: "https://twitter.com/changed-teacher",
+                });
+
+            assert.equal(res.status, 400);
+            assert.match(res.body.message, /Twitter/i);
+        });
+
+        it("should allow approved teacher to update websiteUrl, bio, avatar, name, and expertise", async () => {
+            // Setup an approved teacher profile
+            const profile = await testCtx.profileRepo.upsertProfile(teacherId, {
+                bio: "Old bio",
+            });
+            await testCtx.profileRepo.upsertTeacherProfile(profile.id, {
+                linkedinUrl: "https://linkedin.com/in/approved-teacher",
+                twitterUrl: "https://twitter.com/approved-teacher",
+                websiteUrl: "https://oldwebsite.com",
+                isApproved: true,
+            });
+
+            const res = await request(testCtx.app)
+                .patch("/api/profile/teacher")
+                .set("Authorization", `Bearer ${teacherToken}`)
+                .send({
+                    name: "Dr. Verified Teacher",
+                    bio: "Updated bio after approval",
+                    websiteUrl: "https://newwebsite.io",
+                    expertise: ["Systems Architecture", "Cloud Native"],
+                    linkedinUrl: "https://linkedin.com/in/approved-teacher", // Same as current
+                    twitterUrl: "https://twitter.com/approved-teacher", // Same as current
+                });
+
+            assert.equal(res.status, 200);
+            assert.equal(res.body.message, "Teacher profile updated successfully");
+            assert.equal(res.body.data.profile.name, "Dr. Verified Teacher");
+            assert.equal(res.body.data.profile.profile.bio, "Updated bio after approval");
+            assert.equal(res.body.data.profile.teacherProfile.websiteUrl, "https://newwebsite.io");
+            assert.deepEqual(res.body.data.profile.teacherProfile.expertise, ["Systems Architecture", "Cloud Native"]);
+            assert.equal(res.body.data.profile.teacherProfile.linkedinUrl, "https://linkedin.com/in/approved-teacher");
         });
     });
 });

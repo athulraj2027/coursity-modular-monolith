@@ -3,7 +3,4 @@ export interface UpdateStudentProfileDTO {
     avatar?: string | null;
     bio?: string | null;
     phone?: string | null;
-    headline?: string | null;
-    education?: string | null;
-    interests?: string[];
 }

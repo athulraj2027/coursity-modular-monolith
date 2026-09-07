@@ -1,8 +1,8 @@
-import { StudentProfile } from "./student-profile.entity";
+import { UserProfile } from "./user-profile.entity";
 import { TeacherProfile } from "./teacher-profile.entity";
 import { UserRole, AuthProvider } from "@/modules/user/domain/entities/user.entity";
 
-export * from "./student-profile.entity";
+export * from "./user-profile.entity";
 export * from "./teacher-profile.entity";
 
 export interface FullUserProfile {
@@ -12,9 +12,8 @@ export interface FullUserProfile {
     role: UserRole;
     authProvider: AuthProvider;
     isBlocked: boolean;
-    studentProfile?: StudentProfile | null;
+    profile?: UserProfile | null;
     teacherProfile?: TeacherProfile | null;
     createdAt: Date;
     updatedAt: Date;
 }
-

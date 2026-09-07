@@ -3,15 +3,11 @@ import {
   User,
   Mail,
   Phone,
-  GraduationCap,
   Calendar,
   Edit3,
   Camera,
-  Plus,
-  X,
   Save,
   RotateCcw,
-  Code2,
   ShieldCheck,
   ShieldAlert,
   Clock,
@@ -29,10 +25,7 @@ interface StudentFormData {
   name: string
   avatar: string
   phone: string
-  headline: string
-  education: string
   bio: string
-  interests: string[]
 }
 
 export const StudentProfilePage: React.FC = () => {
@@ -45,50 +38,23 @@ export const StudentProfilePage: React.FC = () => {
     name: "",
     avatar: "",
     phone: "",
-    headline: "",
-    education: "",
     bio: "",
-    interests: [],
   })
-
-  const [newTag, setNewTag] = useState("")
 
   // Sync form state when backend profile data is loaded or updated
   useEffect(() => {
     if (profileData) {
       setFormData({
         name: profileData.name || "",
-        avatar: profileData.studentProfile?.avatar || "",
-        phone: profileData.studentProfile?.phone || "",
-        headline: profileData.studentProfile?.headline || "",
-        education: profileData.studentProfile?.education || "",
-        bio: profileData.studentProfile?.bio || "",
-        interests: profileData.studentProfile?.interests || [],
+        avatar: profileData.profile?.avatar || "",
+        phone: profileData.profile?.phone || "",
+        bio: profileData.profile?.bio || "",
       })
     }
   }, [profileData])
 
   const handleInputChange = (field: keyof StudentFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-  }
-
-  const handleAddInterest = () => {
-    const trimmed = newTag.trim()
-    if (!trimmed) return
-    if (!formData.interests.includes(trimmed)) {
-      setFormData((prev) => ({
-        ...prev,
-        interests: [...prev.interests, trimmed],
-      }))
-    }
-    setNewTag("")
-  }
-
-  const handleRemoveInterest = (tagToRemove: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      interests: prev.interests.filter((t) => t !== tagToRemove),
-    }))
   }
 
   const handleSaveChanges = async (e: React.FormEvent) => {
@@ -98,10 +64,7 @@ export const StudentProfilePage: React.FC = () => {
         name: formData.name.trim(),
         avatar: formData.avatar ? formData.avatar.trim() : null,
         phone: formData.phone ? formData.phone.trim() : null,
-        headline: formData.headline ? formData.headline.trim() : null,
-        education: formData.education ? formData.education.trim() : null,
         bio: formData.bio ? formData.bio.trim() : null,
-        interests: formData.interests,
       })
       setActiveTab("overview")
     } catch {
@@ -113,12 +76,9 @@ export const StudentProfilePage: React.FC = () => {
     if (profileData) {
       setFormData({
         name: profileData.name || "",
-        avatar: profileData.studentProfile?.avatar || "",
-        phone: profileData.studentProfile?.phone || "",
-        headline: profileData.studentProfile?.headline || "",
-        education: profileData.studentProfile?.education || "",
-        bio: profileData.studentProfile?.bio || "",
-        interests: profileData.studentProfile?.interests || [],
+        avatar: profileData.profile?.avatar || "",
+        phone: profileData.profile?.phone || "",
+        bio: profileData.profile?.bio || "",
       })
     }
   }
@@ -146,9 +106,9 @@ export const StudentProfilePage: React.FC = () => {
     )
   }
 
-  const studentProfile = profileData?.studentProfile
+  const profile = profileData?.profile
   const avatarUrl =
-    studentProfile?.avatar ||
+    profile?.avatar ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData?.name || "Student")}&background=F42A18&color=fff`
 
   return (
@@ -220,19 +180,15 @@ export const StudentProfilePage: React.FC = () => {
               )}
             </div>
 
-            <p className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
-              {studentProfile?.headline || "Student at Coursity"}
-            </p>
-
             <div className="flex flex-wrap items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 pt-1">
               <span className="flex items-center gap-1.5">
                 <Mail className="w-3.5 h-3.5 text-neutral-400" />
                 {profileData?.email}
               </span>
-              {studentProfile?.phone && (
+              {profile?.phone && (
                 <span className="flex items-center gap-1.5">
                   <Phone className="w-3.5 h-3.5 text-neutral-400" />
-                  {studentProfile.phone}
+                  {profile.phone}
                 </span>
               )}
               {profileData?.createdAt && (
@@ -283,72 +239,15 @@ export const StudentProfilePage: React.FC = () => {
                 <User className="w-4 h-4 text-[#F42A18]" />
                 Biography
               </h2>
-              {studentProfile?.bio ? (
+              {profile?.bio ? (
                 <p className="text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed whitespace-pre-line">
-                  {studentProfile.bio}
+                  {profile.bio}
                 </p>
               ) : (
                 <p className="text-xs text-neutral-400 italic">
                   No biography provided yet. Click "Edit Profile" to tell others about yourself.
                 </p>
               )}
-            </div>
-
-            {/* Education */}
-            <div className="rounded-2xl border border-neutral-200/80 dark:border-neutral-900 bg-white dark:bg-neutral-900/60 p-6 shadow-xs space-y-3">
-              <h2 className="text-base font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-                <GraduationCap className="w-4 h-4 text-[#F42A18]" />
-                Academic Background & Education
-              </h2>
-              {studentProfile?.education ? (
-                <div className="flex items-start gap-3.5 p-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800">
-                  <div className="p-2 rounded-lg bg-[#F42A18]/10 text-[#F42A18] shrink-0">
-                    <GraduationCap className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                      {studentProfile.education}
-                    </h3>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-xs text-neutral-400 italic">
-                  No educational institution or background specified.
-                </p>
-              )}
-            </div>
-
-            {/* Interests */}
-            <div className="rounded-2xl border border-neutral-200/80 dark:border-neutral-900 bg-white dark:bg-neutral-900/60 p-6 shadow-xs space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-                  <Code2 className="w-4 h-4 text-[#F42A18]" />
-                  Interests & Topic Focus
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("edit")}
-                  className="text-xs text-[#F42A18] hover:underline font-semibold cursor-pointer"
-                >
-                  Edit interests
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2 pt-1">
-                {studentProfile?.interests && studentProfile.interests.length > 0 ? (
-                  studentProfile.interests.map((interest, idx) => (
-                    <span
-                      key={idx}
-                      className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-medium bg-neutral-100 dark:bg-neutral-800/80 text-neutral-700 dark:text-neutral-300 border border-neutral-200/60 dark:border-neutral-700/60"
-                    >
-                      {interest}
-                    </span>
-                  ))
-                ) : (
-                  <p className="text-xs text-neutral-400 italic">
-                    No interests added yet. Click "Edit Profile" to list your learning interests.
-                  </p>
-                )}
-              </div>
             </div>
           </div>
 
@@ -407,7 +306,7 @@ export const StudentProfilePage: React.FC = () => {
             <div>
               <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Edit Profile Information</h2>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                Update your student profile attributes. Changes will be saved directly to your account.
+                Update your personal profile details. Changes will be saved directly to your account.
               </p>
             </div>
 
@@ -441,7 +340,7 @@ export const StudentProfilePage: React.FC = () => {
               </div>
 
               {/* Phone */}
-              <div className="space-y-2">
+              <div className="sm:col-span-2 space-y-2">
                 <Label htmlFor="phone" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
                   Phone Number
                 </Label>
@@ -466,34 +365,6 @@ export const StudentProfilePage: React.FC = () => {
                 />
               </div>
 
-              {/* Headline */}
-              <div className="sm:col-span-2 space-y-2">
-                <Label htmlFor="headline" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                  Headline
-                </Label>
-                <Input
-                  id="headline"
-                  value={formData.headline}
-                  onChange={(e) => handleInputChange("headline", e.target.value)}
-                  placeholder="e.g. Computer Science Student & Frontend Developer"
-                  className="rounded-xl"
-                />
-              </div>
-
-              {/* Education */}
-              <div className="sm:col-span-2 space-y-2">
-                <Label htmlFor="education" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                  Education & Background
-                </Label>
-                <Input
-                  id="education"
-                  value={formData.education}
-                  onChange={(e) => handleInputChange("education", e.target.value)}
-                  placeholder="e.g. Stanford University • B.S. Computer Science"
-                  className="rounded-xl"
-                />
-              </div>
-
               {/* Bio */}
               <div className="sm:col-span-2 space-y-2">
                 <Label htmlFor="bio" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
@@ -504,60 +375,9 @@ export const StudentProfilePage: React.FC = () => {
                   rows={4}
                   value={formData.bio}
                   onChange={(e) => handleInputChange("bio", e.target.value)}
-                  placeholder="Write a brief bio about your learning goals and background..."
+                  placeholder="Write a brief bio about your background and interests..."
                   className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-transparent text-sm focus:outline-hidden focus:ring-2 focus:ring-[#F42A18]/20 focus:border-[#F42A18] text-neutral-900 dark:text-white"
                 />
-              </div>
-
-              {/* Interests Array */}
-              <div className="sm:col-span-2 space-y-3">
-                <Label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                  Interests & Topic Areas
-                </Label>
-                <div className="flex flex-wrap gap-2 p-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/40 min-h-12 items-center">
-                  {formData.interests.length > 0 ? (
-                    formData.interests.map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-neutral-200/80 dark:bg-neutral-800 text-neutral-900 dark:text-white border border-neutral-300/60 dark:border-neutral-700"
-                      >
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveInterest(tag)}
-                          className="text-neutral-400 hover:text-[#F42A18] cursor-pointer"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-xs text-neutral-400 italic">No interests added yet.</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault()
-                        handleAddInterest()
-                      }
-                    }}
-                    placeholder="Type an interest tag and click Add (e.g. Distributed Systems, React)"
-                    className="rounded-xl flex-1 text-xs"
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleAddInterest}
-                    variant="outline"
-                    className="rounded-xl gap-1 text-xs cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Add
-                  </Button>
-                </div>
               </div>
             </div>
 

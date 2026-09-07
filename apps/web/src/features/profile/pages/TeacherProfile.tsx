@@ -23,6 +23,7 @@ import {
   Hash,
   Fingerprint,
   Calendar,
+  Lock,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -36,7 +37,6 @@ interface TeacherFormData {
   name: string
   avatar: string
   phone: string
-  headline: string
   qualifications: string
   experienceYears: number
   bio: string
@@ -56,7 +56,6 @@ export const TeacherProfilePage: React.FC = () => {
     name: "",
     avatar: "",
     phone: "",
-    headline: "",
     qualifications: "",
     experienceYears: 0,
     bio: "",
@@ -73,12 +72,11 @@ export const TeacherProfilePage: React.FC = () => {
     if (profileData) {
       setFormData({
         name: profileData.name || "",
-        avatar: profileData.teacherProfile?.avatar || "",
-        phone: profileData.teacherProfile?.phone || "",
-        headline: profileData.teacherProfile?.headline || "",
+        avatar: profileData.profile?.avatar || "",
+        phone: profileData.profile?.phone || "",
+        bio: profileData.profile?.bio || "",
         qualifications: profileData.teacherProfile?.qualifications || "",
         experienceYears: profileData.teacherProfile?.experienceYears ?? 0,
-        bio: profileData.teacherProfile?.bio || "",
         linkedinUrl: profileData.teacherProfile?.linkedinUrl || "",
         twitterUrl: profileData.teacherProfile?.twitterUrl || "",
         websiteUrl: profileData.teacherProfile?.websiteUrl || "",
@@ -117,10 +115,9 @@ export const TeacherProfilePage: React.FC = () => {
         name: formData.name.trim(),
         avatar: formData.avatar ? formData.avatar.trim() : null,
         phone: formData.phone ? formData.phone.trim() : null,
-        headline: formData.headline ? formData.headline.trim() : null,
+        bio: formData.bio ? formData.bio.trim() : null,
         qualifications: formData.qualifications ? formData.qualifications.trim() : null,
         experienceYears: Number(formData.experienceYears) || 0,
-        bio: formData.bio ? formData.bio.trim() : null,
         linkedinUrl: formData.linkedinUrl ? formData.linkedinUrl.trim() : null,
         twitterUrl: formData.twitterUrl ? formData.twitterUrl.trim() : null,
         websiteUrl: formData.websiteUrl ? formData.websiteUrl.trim() : null,
@@ -136,12 +133,11 @@ export const TeacherProfilePage: React.FC = () => {
     if (profileData) {
       setFormData({
         name: profileData.name || "",
-        avatar: profileData.teacherProfile?.avatar || "",
-        phone: profileData.teacherProfile?.phone || "",
-        headline: profileData.teacherProfile?.headline || "",
+        avatar: profileData.profile?.avatar || "",
+        phone: profileData.profile?.phone || "",
+        bio: profileData.profile?.bio || "",
         qualifications: profileData.teacherProfile?.qualifications || "",
         experienceYears: profileData.teacherProfile?.experienceYears ?? 0,
-        bio: profileData.teacherProfile?.bio || "",
         linkedinUrl: profileData.teacherProfile?.linkedinUrl || "",
         twitterUrl: profileData.teacherProfile?.twitterUrl || "",
         websiteUrl: profileData.teacherProfile?.websiteUrl || "",
@@ -173,9 +169,10 @@ export const TeacherProfilePage: React.FC = () => {
     )
   }
 
+  const userProfile = profileData?.profile
   const teacherProfile = profileData?.teacherProfile
   const avatarUrl =
-    teacherProfile?.avatar ||
+    userProfile?.avatar ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData?.name || "Teacher")}&background=F42A18&color=fff`
 
   const hasSocialLinks =
@@ -265,19 +262,15 @@ export const TeacherProfilePage: React.FC = () => {
               )}
             </div>
 
-            <p className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
-              {teacherProfile?.headline || "Instructor at Coursity"}
-            </p>
-
             <div className="flex flex-wrap items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 pt-1">
               <span className="flex items-center gap-1.5">
                 <Mail className="w-3.5 h-3.5 text-neutral-400" />
                 {profileData?.email}
               </span>
-              {teacherProfile?.phone && (
+              {userProfile?.phone && (
                 <span className="flex items-center gap-1.5">
                   <Phone className="w-3.5 h-3.5 text-neutral-400" />
-                  {teacherProfile.phone}
+                  {userProfile.phone}
                 </span>
               )}
               {teacherProfile?.experienceYears != null && (
@@ -373,9 +366,9 @@ export const TeacherProfilePage: React.FC = () => {
                 <User className="w-4 h-4 text-[#F42A18]" />
                 Instructor Biography
               </h2>
-              {teacherProfile?.bio ? (
+              {userProfile?.bio ? (
                 <p className="text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed whitespace-pre-line">
-                  {teacherProfile.bio}
+                  {userProfile.bio}
                 </p>
               ) : (
                 <p className="text-xs text-neutral-400 italic">
@@ -462,8 +455,8 @@ export const TeacherProfilePage: React.FC = () => {
                     <Fingerprint className="w-3.5 h-3.5 text-neutral-400" />
                     Profile ID
                   </span>
-                  <span className="font-mono text-[11px] text-neutral-700 dark:text-neutral-300 truncate max-w-[150px]" title={teacherProfile?.id || "None"}>
-                    {teacherProfile?.id || "None"}
+                  <span className="font-mono text-[11px] text-neutral-700 dark:text-neutral-300 truncate max-w-[150px]" title={userProfile?.id || "None"}>
+                    {userProfile?.id || "None"}
                   </span>
                 </div>
 
@@ -592,20 +585,6 @@ export const TeacherProfilePage: React.FC = () => {
                 />
               </div>
 
-              {/* Headline */}
-              <div className="sm:col-span-2 space-y-2">
-                <Label htmlFor="headline" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                  Headline / Professional Title
-                </Label>
-                <Input
-                  id="headline"
-                  value={formData.headline}
-                  onChange={(e) => handleInputChange("headline", e.target.value)}
-                  placeholder="e.g. Lead Cloud Architect & Distributed Systems Instructor"
-                  className="rounded-xl"
-                />
-              </div>
-
               {/* Qualifications */}
               <div className="sm:col-span-2 space-y-2">
                 <Label htmlFor="qualifications" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
@@ -637,30 +616,56 @@ export const TeacherProfilePage: React.FC = () => {
 
               {/* LinkedIn URL */}
               <div className="space-y-2">
-                <Label htmlFor="linkedinUrl" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                  LinkedIn URL
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="linkedinUrl" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+                    LinkedIn URL
+                    {teacherProfile?.isApproved && (
+                      <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-normal">
+                        <Lock className="w-3 h-3" /> Locked (Approved)
+                      </span>
+                    )}
+                  </Label>
+                </div>
                 <Input
                   id="linkedinUrl"
                   value={formData.linkedinUrl}
                   onChange={(e) => handleInputChange("linkedinUrl", e.target.value)}
                   placeholder="https://linkedin.com/in/..."
-                  className="rounded-xl"
+                  disabled={Boolean(teacherProfile?.isApproved)}
+                  className={`rounded-xl ${teacherProfile?.isApproved ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed" : ""}`}
                 />
+                {teacherProfile?.isApproved && (
+                  <p className="text-[11px] text-neutral-400">
+                    LinkedIn URL cannot be changed after account verification.
+                  </p>
+                )}
               </div>
 
               {/* Twitter / X URL */}
               <div className="space-y-2">
-                <Label htmlFor="twitterUrl" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                  Twitter / X URL
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="twitterUrl" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+                    Twitter / X URL
+                    {teacherProfile?.isApproved && (
+                      <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-normal">
+                        <Lock className="w-3 h-3" /> Locked (Approved)
+                      </span>
+                    )}
+                  </Label>
+                </div>
                 <Input
                   id="twitterUrl"
                   value={formData.twitterUrl}
                   onChange={(e) => handleInputChange("twitterUrl", e.target.value)}
                   placeholder="https://x.com/..."
-                  className="rounded-xl"
+                  disabled={Boolean(teacherProfile?.isApproved)}
+                  className={`rounded-xl ${teacherProfile?.isApproved ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed" : ""}`}
                 />
+                {teacherProfile?.isApproved && (
+                  <p className="text-[11px] text-neutral-400">
+                    Twitter URL cannot be changed after account verification.
+                  </p>
+                )}
               </div>
 
               {/* Website URL */}

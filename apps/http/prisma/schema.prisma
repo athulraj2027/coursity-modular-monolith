@@ -35,37 +35,31 @@ model User {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  studentProfile StudentProfile?
-  teacherProfile TeacherProfile?
+  profile      Profile?
 
   @@map("users")
 }
 
-model StudentProfile {
-  id          String   @id @default(uuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  avatar      String?
-  bio         String?
-  phone       String?
-  headline    String?
-  education   String?
-  interests   String[] @default([])
+model Profile {
+  id             String          @id @default(uuid())
+  userId         String          @unique
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatar         String?
+  bio            String?
+  phone          String?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  teacherProfile TeacherProfile?
 
-  @@map("student_profiles")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@map("profiles")
 }
 
 model TeacherProfile {
   id              String   @id @default(uuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  avatar          String?
-  bio             String?
-  phone           String?
-  headline        String?
+  profileId       String   @unique
+  profile         Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
   expertise       String[] @default([])
   qualifications  String?
   experienceYears Int?

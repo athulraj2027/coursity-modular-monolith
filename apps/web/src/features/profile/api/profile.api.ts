@@ -6,9 +6,6 @@ export interface UpdateStudentProfilePayload {
   avatar?: string | null
   bio?: string | null
   phone?: string | null
-  headline?: string | null
-  education?: string | null
-  interests?: string[]
 }
 
 export interface UpdateTeacherProfilePayload {
@@ -16,7 +13,6 @@ export interface UpdateTeacherProfilePayload {
   avatar?: string | null
   bio?: string | null
   phone?: string | null
-  headline?: string | null
   expertise?: string[]
   qualifications?: string | null
   experienceYears?: number | null

@@ -1,10 +1,6 @@
 export interface TeacherProfile {
     id: string;
-    userId: string;
-    avatar?: string | null;
-    bio?: string | null;
-    phone?: string | null;
-    headline?: string | null;
+    profileId: string;
     expertise: string[];
     qualifications?: string | null;
     experienceYears?: number | null;

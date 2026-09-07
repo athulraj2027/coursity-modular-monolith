@@ -59,7 +59,7 @@ import { OAuthService, OAuthUserProfile } from "../../src/modules/auth/domain/se
 import {
     ProfileRepository,
     FullUserProfile,
-    StudentProfile,
+    UserProfile,
     TeacherProfile,
     GetProfile as GetFullProfile,
     UpdateProfile as UpdateFullProfile,
@@ -73,7 +73,7 @@ import {
 } from "../../src/modules/profile";
 
 export class InMemoryProfileRepository implements ProfileRepository {
-    public studentProfiles = new Map<string, StudentProfile>();
+    public profiles = new Map<string, UserProfile>();
     public teacherProfiles = new Map<string, TeacherProfile>();
 
     constructor(private readonly userRepo: InMemoryUserRepository) { }
@@ -82,69 +82,62 @@ export class InMemoryProfileRepository implements ProfileRepository {
         const user = await this.userRepo.findById(userId);
         if (!user) return null;
 
-        const studentProfile = this.studentProfiles.get(userId) || null;
-        const teacherProfile = this.teacherProfiles.get(userId) || null;
+        const profile = this.profiles.get(userId) || null;
+        const teacherProfile = profile ? (this.teacherProfiles.get(profile.id) || null) : null;
 
         const { password, ...safeUser } = user;
         return {
             ...safeUser,
-            studentProfile,
+            profile,
             teacherProfile,
         };
     }
 
-    async getStudentProfile(userId: string): Promise<StudentProfile | null> {
-        return this.studentProfiles.get(userId) || null;
+    async getProfileByUserId(userId: string): Promise<UserProfile | null> {
+        return this.profiles.get(userId) || null;
     }
 
-    async getTeacherProfile(userId: string): Promise<TeacherProfile | null> {
-        return this.teacherProfiles.get(userId) || null;
+    async getTeacherProfileByProfileId(profileId: string): Promise<TeacherProfile | null> {
+        return this.teacherProfiles.get(profileId) || null;
     }
 
-    async upsertStudentProfile(
+    async upsertProfile(
         userId: string,
-        data: Partial<Omit<StudentProfile, "id" | "userId" | "createdAt" | "updatedAt">>
-    ): Promise<StudentProfile> {
-        const existing = this.studentProfiles.get(userId);
-        const profile: StudentProfile = {
-            id: existing?.id || `sp_${Math.random().toString(36).substring(2, 9)}`,
+        data: Partial<Omit<UserProfile, "id" | "userId" | "createdAt" | "updatedAt">>
+    ): Promise<UserProfile> {
+        const existing = this.profiles.get(userId);
+        const profile: UserProfile = {
+            id: existing?.id || `prof_${Math.random().toString(36).substring(2, 9)}`,
             userId,
             avatar: data.avatar !== undefined ? data.avatar : (existing?.avatar ?? null),
             bio: data.bio !== undefined ? data.bio : (existing?.bio ?? null),
             phone: data.phone !== undefined ? data.phone : (existing?.phone ?? null),
-            headline: data.headline !== undefined ? data.headline : (existing?.headline ?? null),
-            education: data.education !== undefined ? data.education : (existing?.education ?? null),
-            interests: data.interests !== undefined ? data.interests : (existing?.interests ?? []),
             createdAt: existing?.createdAt || new Date(),
             updatedAt: new Date(),
         };
-        this.studentProfiles.set(userId, profile);
+        this.profiles.set(userId, profile);
         return profile;
     }
 
     async upsertTeacherProfile(
-        userId: string,
-        data: Partial<Omit<TeacherProfile, "id" | "userId" | "createdAt" | "updatedAt">>
+        profileId: string,
+        data: Partial<Omit<TeacherProfile, "id" | "profileId" | "createdAt" | "updatedAt">>
     ): Promise<TeacherProfile> {
-        const existing = this.teacherProfiles.get(userId);
+        const existing = this.teacherProfiles.get(profileId);
         const profile: TeacherProfile = {
             id: existing?.id || `tp_${Math.random().toString(36).substring(2, 9)}`,
-            userId,
-            avatar: data.avatar !== undefined ? data.avatar : (existing?.avatar ?? null),
-            bio: data.bio !== undefined ? data.bio : (existing?.bio ?? null),
-            phone: data.phone !== undefined ? data.phone : (existing?.phone ?? null),
-            headline: data.headline !== undefined ? data.headline : (existing?.headline ?? null),
+            profileId,
             expertise: data.expertise !== undefined ? data.expertise : (existing?.expertise ?? []),
             qualifications: data.qualifications !== undefined ? data.qualifications : (existing?.qualifications ?? null),
             experienceYears: data.experienceYears !== undefined ? data.experienceYears : (existing?.experienceYears ?? null),
             linkedinUrl: data.linkedinUrl !== undefined ? data.linkedinUrl : (existing?.linkedinUrl ?? null),
             twitterUrl: data.twitterUrl !== undefined ? data.twitterUrl : (existing?.twitterUrl ?? null),
             websiteUrl: data.websiteUrl !== undefined ? data.websiteUrl : (existing?.websiteUrl ?? null),
-            isApproved: existing?.isApproved ?? false,
+            isApproved: data.isApproved !== undefined ? data.isApproved : (existing?.isApproved ?? false),
             createdAt: existing?.createdAt || new Date(),
             updatedAt: new Date(),
         };
-        this.teacherProfiles.set(userId, profile);
+        this.teacherProfiles.set(profileId, profile);
         return profile;
     }
 
