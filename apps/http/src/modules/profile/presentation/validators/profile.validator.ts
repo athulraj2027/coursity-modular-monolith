@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { EXPERTISE_DOMAINS, type ExpertiseDomain } from "../../domain/enums/expertise.enum";
+
+export { EXPERTISE_DOMAINS, type ExpertiseDomain };
 
 const isValidUrl = (val: string) => {
     try {
@@ -42,7 +45,12 @@ export const updateProfileSchema = z.object({
         .nullable()
         .optional(),
     expertise: z
-        .array(z.string().trim().min(1, "Expertise item cannot be empty"))
+        .array(
+            z.enum(EXPERTISE_DOMAINS, {
+                errorMap: () => ({ message: "Expertise item must be a valid predefined domain" }),
+            })
+        )
+        .max(15, "Cannot select more than 15 expertise domains")
         .optional(),
     qualifications: z
         .string()
@@ -109,7 +117,12 @@ export const updateTeacherProfileSchema = z.object({
         .nullable()
         .optional(),
     expertise: z
-        .array(z.string().trim().min(1, "Expertise item cannot be empty"))
+        .array(
+            z.enum(EXPERTISE_DOMAINS, {
+                errorMap: () => ({ message: "Expertise item must be a valid predefined domain" }),
+            })
+        )
+        .max(15, "Cannot select more than 15 expertise domains")
         .optional(),
     qualifications: z
         .string()

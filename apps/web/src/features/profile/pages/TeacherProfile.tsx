@@ -20,11 +20,12 @@ import {
   ShieldCheck,
   Loader2,
   RefreshCw,
-  Hash,
-  Fingerprint,
   Calendar,
   Lock,
   AlertCircle,
+  Search,
+  Check,
+  Sparkles,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -34,6 +35,23 @@ import { Badge } from "@/components/ui/badge"
 import { ImageUploadInput } from "@/components/common"
 import { toast } from "@/lib/toast"
 import { useProfile, useUpdateTeacherProfile } from "../hooks/useProfile"
+import { EXPERTISE_CATEGORIES, ALL_EXPERTISE_TAGS } from "../constants/expertise.constants"
+
+const POPULAR_SUGGESTIONS = [
+  "Web Development",
+  "Backend Development",
+  "Frontend Development",
+  "Cloud Computing",
+  "Distributed Systems",
+  "System Design",
+  "Machine Learning",
+  "Artificial Intelligence",
+  "Python",
+  "Rust",
+  "PostgreSQL",
+  "Cybersecurity",
+  "UI/UX Design",
+]
 
 interface TeacherFormData {
   name: string
@@ -108,12 +126,23 @@ function validateTeacherForm(data: TeacherFormData): Partial<Record<keyof Teache
     }
   }
 
+  if (data.expertise && data.expertise.length > 0) {
+    if (data.expertise.length > 15) {
+      errors.expertise = "You can select up to 15 domains of expertise"
+    }
+    const invalidTags = data.expertise.filter((t) => !ALL_EXPERTISE_TAGS.includes(t))
+    if (invalidTags.length > 0) {
+      errors.expertise = `Some selected domains are not recognized: ${invalidTags.join(", ")}`
+    }
+  }
+
   return errors
 }
 
 export const TeacherProfilePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"overview" | "edit">("overview")
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
   const { data: profileData, isLoading, isError, error, refetch } = useProfile()
   const updateMutation = useUpdateTeacherProfile()
 
@@ -131,7 +160,9 @@ export const TeacherProfilePage: React.FC = () => {
   })
 
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof TeacherFormData, string>>>({})
-  const [newTag, setNewTag] = useState("")
+  const [expertiseSearch, setExpertiseSearch] = useState("")
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>("all")
 
   // Sync form state when backend profile data is loaded or updated
   useEffect(() => {
@@ -152,6 +183,19 @@ export const TeacherProfilePage: React.FC = () => {
     }
   }, [profileData])
 
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
+
   const handleInputChange = (field: keyof TeacherFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     if (fieldErrors[field]) {
@@ -163,16 +207,29 @@ export const TeacherProfilePage: React.FC = () => {
     }
   }
 
-  const handleAddExpertise = () => {
-    const trimmed = newTag.trim()
-    if (!trimmed) return
-    if (!formData.expertise.includes(trimmed)) {
+  const handleToggleExpertise = (tag: string) => {
+    if (formData.expertise.includes(tag)) {
       setFormData((prev) => ({
         ...prev,
-        expertise: [...prev.expertise, trimmed],
+        expertise: prev.expertise.filter((t) => t !== tag),
+      }))
+    } else {
+      if (formData.expertise.length >= 15) {
+        toast.error("You can select at most 15 domains of expertise")
+        return
+      }
+      setFormData((prev) => ({
+        ...prev,
+        expertise: [...prev.expertise, tag],
       }))
     }
-    setNewTag("")
+    if (fieldErrors.expertise) {
+      setFieldErrors((prev) => {
+        const next = { ...prev }
+        delete next.expertise
+        return next
+      })
+    }
   }
 
   const handleRemoveExpertise = (tagToRemove: string) => {
@@ -181,6 +238,20 @@ export const TeacherProfilePage: React.FC = () => {
       expertise: prev.expertise.filter((t) => t !== tagToRemove),
     }))
   }
+
+  const filteredCategories = EXPERTISE_CATEGORIES.map((cat) => {
+    if (selectedCategoryTab !== "all" && cat.id !== selectedCategoryTab) {
+      return null
+    }
+    const matchingTags = cat.tags.filter((tag) =>
+      tag.toLowerCase().includes(expertiseSearch.toLowerCase().trim())
+    )
+    if (matchingTags.length === 0) return null
+    return {
+      ...cat,
+      tags: matchingTags,
+    }
+  }).filter(Boolean) as typeof EXPERTISE_CATEGORIES
 
   const handleSaveChanges = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -429,22 +500,20 @@ export const TeacherProfilePage: React.FC = () => {
           <div className="flex items-center gap-2 border-b border-neutral-200 dark:border-neutral-800 mt-6">
             <button
               onClick={() => setActiveTab("overview")}
-              className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold transition-all border-b-2 cursor-pointer ${
-                activeTab === "overview"
-                  ? "border-[#F42A18] text-[#F42A18] dark:text-[#F42A18]"
-                  : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-              }`}
+              className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold transition-all border-b-2 cursor-pointer ${activeTab === "overview"
+                ? "border-[#F42A18] text-[#F42A18] dark:text-[#F42A18]"
+                : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                }`}
             >
               <User className="w-4 h-4" />
               Instructor Overview
             </button>
             <button
               onClick={() => setActiveTab("edit")}
-              className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold transition-all border-b-2 cursor-pointer ${
-                activeTab === "edit"
-                  ? "border-[#F42A18] text-[#F42A18] dark:text-[#F42A18]"
-                  : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-              }`}
+              className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold transition-all border-b-2 cursor-pointer ${activeTab === "edit"
+                ? "border-[#F42A18] text-[#F42A18] dark:text-[#F42A18]"
+                : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                }`}
             >
               <Edit3 className="w-4 h-4" />
               Edit Profile
@@ -539,39 +608,11 @@ export const TeacherProfilePage: React.FC = () => {
               <h2 className="text-base font-bold text-neutral-900 dark:text-white">Instructor Details</h2>
               <div className="space-y-3 text-xs">
                 <div className="flex items-center justify-between py-1.5 border-b border-neutral-100 dark:border-neutral-800/80">
-                  <span className="text-neutral-500 flex items-center gap-1.5">
-                    <Hash className="w-3.5 h-3.5 text-neutral-400" />
-                    User ID
-                  </span>
-                  <span className="font-mono text-[11px] text-neutral-700 dark:text-neutral-300 truncate max-w-[150px]" title={profileData?.id}>
-                    {profileData?.id}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between py-1.5 border-b border-neutral-100 dark:border-neutral-800/80">
-                  <span className="text-neutral-500 flex items-center gap-1.5">
-                    <Fingerprint className="w-3.5 h-3.5 text-neutral-400" />
-                    Profile ID
-                  </span>
-                  <span className="font-mono text-[11px] text-neutral-700 dark:text-neutral-300 truncate max-w-[150px]" title={userProfile?.id || "None"}>
-                    {userProfile?.id || "None"}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between py-1.5 border-b border-neutral-100 dark:border-neutral-800/80">
                   <span className="text-neutral-500">Instructor Status</span>
                   <Badge className={teacherProfile?.isApproved ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px]" : "bg-amber-500/10 text-amber-600 text-[10px]"}>
                     {teacherProfile?.isApproved ? "Approved" : "Pending Review"}
                   </Badge>
                 </div>
-
-                <div className="flex items-center justify-between py-1.5 border-b border-neutral-100 dark:border-neutral-800/80">
-                  <span className="text-neutral-500">Auth Method</span>
-                  <Badge variant="outline" className="text-[10px] font-semibold">
-                    {profileData?.authProvider}
-                  </Badge>
-                </div>
-
                 {profileData?.createdAt && (
                   <div className="flex items-center justify-between py-1.5 border-b border-neutral-100 dark:border-neutral-800/80">
                     <span className="text-neutral-500 flex items-center gap-1.5">
@@ -732,11 +773,10 @@ export const TeacherProfilePage: React.FC = () => {
                   value={formData.bio}
                   onChange={(e) => handleInputChange("bio", e.target.value)}
                   placeholder="Share your industry experience, background, and teaching focus..."
-                  className={`w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-sm focus:outline-hidden focus:ring-2 text-neutral-900 dark:text-white ${
-                    fieldErrors.bio
-                      ? "border-red-500 focus:ring-red-500/20 focus:border-red-500"
-                      : "border-neutral-200 dark:border-neutral-800 focus:ring-[#F42A18]/20 focus:border-[#F42A18]"
-                  }`}
+                  className={`w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-sm focus:outline-hidden focus:ring-2 text-neutral-900 dark:text-white ${fieldErrors.bio
+                    ? "border-red-500 focus:ring-red-500/20 focus:border-red-500"
+                    : "border-neutral-200 dark:border-neutral-800 focus:ring-[#F42A18]/20 focus:border-[#F42A18]"
+                    }`}
                 />
                 {fieldErrors.bio && (
                   <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
@@ -764,9 +804,8 @@ export const TeacherProfilePage: React.FC = () => {
                   onChange={(e) => handleInputChange("linkedinUrl", e.target.value)}
                   placeholder="https://linkedin.com/in/..."
                   disabled={Boolean(teacherProfile?.isApproved)}
-                  className={`rounded-xl ${
-                    fieldErrors.linkedinUrl ? "border-red-500 focus-visible:ring-red-500" : ""
-                  } ${teacherProfile?.isApproved ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed" : ""}`}
+                  className={`rounded-xl ${fieldErrors.linkedinUrl ? "border-red-500 focus-visible:ring-red-500" : ""
+                    } ${teacherProfile?.isApproved ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed" : ""}`}
                 />
                 {fieldErrors.linkedinUrl && (
                   <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
@@ -799,9 +838,8 @@ export const TeacherProfilePage: React.FC = () => {
                   onChange={(e) => handleInputChange("twitterUrl", e.target.value)}
                   placeholder="https://x.com/..."
                   disabled={Boolean(teacherProfile?.isApproved)}
-                  className={`rounded-xl ${
-                    fieldErrors.twitterUrl ? "border-red-500 focus-visible:ring-red-500" : ""
-                  } ${teacherProfile?.isApproved ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed" : ""}`}
+                  className={`rounded-xl ${fieldErrors.twitterUrl ? "border-red-500 focus-visible:ring-red-500" : ""
+                    } ${teacherProfile?.isApproved ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed" : ""}`}
                 />
                 {fieldErrors.twitterUrl && (
                   <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
@@ -837,53 +875,183 @@ export const TeacherProfilePage: React.FC = () => {
               </div>
 
               {/* Expertise Areas */}
-              <div className="sm:col-span-2 space-y-3">
-                <Label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                  Domains of Expertise
-                </Label>
-                <div className="flex flex-wrap gap-2 p-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/40 min-h-12 items-center">
+              <div className="sm:col-span-2 space-y-3" ref={dropdownRef}>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#F42A18]" />
+                    Domains of Expertise (Standardized Topics)
+                  </Label>
+                  <span className="text-[11px] font-medium text-neutral-400">
+                    {formData.expertise.length} / 15 selected
+                  </span>
+                </div>
+
+                {/* Selected Tags Display */}
+                <div className="flex flex-wrap gap-2 p-3 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/40 min-h-12 items-center">
                   {formData.expertise.length > 0 ? (
                     formData.expertise.map((tag, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-neutral-200/80 dark:bg-neutral-800 text-neutral-900 dark:text-white border border-neutral-300/60 dark:border-neutral-700"
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-medium bg-[#F42A18]/10 text-[#F42A18] dark:text-[#ff6b5e] border border-[#F42A18]/25 shadow-2xs transition-all hover:bg-[#F42A18]/15"
                       >
                         {tag}
                         <button
                           type="button"
                           onClick={() => handleRemoveExpertise(tag)}
-                          className="text-neutral-400 hover:text-[#F42A18] cursor-pointer"
+                          className="hover:text-neutral-900 dark:hover:text-white cursor-pointer ml-0.5"
+                          title={`Remove ${tag}`}
                         >
                           <X className="w-3 h-3" />
                         </button>
                       </span>
                     ))
                   ) : (
-                    <span className="text-xs text-neutral-400 italic">No expertise areas added yet.</span>
+                    <span className="text-xs text-neutral-400 italic">
+                      No expertise domains selected yet. Search or click on the suggestions below to add.
+                    </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault()
-                        handleAddExpertise()
-                      }
-                    }}
-                    placeholder="Add an expertise area (e.g. Distributed Systems, Kubernetes, Rust)"
-                    className="rounded-xl flex-1 text-xs"
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleAddExpertise}
-                    variant="outline"
-                    className="rounded-xl gap-1 text-xs cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Add
-                  </Button>
+                {fieldErrors.expertise && (
+                  <p className="text-xs text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {fieldErrors.expertise}
+                  </p>
+                )}
+
+                {/* Search & Selection Dropdown */}
+                <div className="relative">
+                  <div className="relative">
+                    <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <Input
+                      value={expertiseSearch}
+                      onChange={(e) => {
+                        setExpertiseSearch(e.target.value)
+                        setIsDropdownOpen(true)
+                      }}
+                      onFocus={() => setIsDropdownOpen(true)}
+                      placeholder="Search standardized domains (e.g. Distributed Systems, Machine Learning, Rust)..."
+                      className="pl-9 pr-9 rounded-xl text-xs"
+                    />
+                    {expertiseSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setExpertiseSearch("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Dropdown Menu */}
+                  {isDropdownOpen && (
+                    <div className="absolute z-30 left-0 right-0 mt-2 p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xl max-h-72 overflow-y-auto space-y-3">
+                      {/* Filter category pills */}
+                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] scrollbar-none">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCategoryTab("all")}
+                          className={`px-2.5 py-1 rounded-lg font-medium shrink-0 cursor-pointer transition-colors ${
+                            selectedCategoryTab === "all"
+                              ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
+                              : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+                          }`}
+                        >
+                          All Categories
+                        </button>
+                        {EXPERTISE_CATEGORIES.map((cat) => (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setSelectedCategoryTab(cat.id)}
+                            className={`px-2.5 py-1 rounded-lg font-medium shrink-0 cursor-pointer transition-colors ${
+                              selectedCategoryTab === cat.id
+                                ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
+                                : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+                            }`}
+                          >
+                            {cat.name}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Filtered list of categories & tags */}
+                      {filteredCategories.length > 0 ? (
+                        <div className="space-y-3">
+                          {filteredCategories.map((cat) => (
+                            <div key={cat.id} className="space-y-1.5">
+                              <h4 className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                                {cat.name}
+                              </h4>
+                              <div className="flex flex-wrap gap-1.5">
+                                {cat.tags.map((tag) => {
+                                  const isSelected = formData.expertise.includes(tag)
+                                  return (
+                                    <button
+                                      key={tag}
+                                      type="button"
+                                      onClick={() => handleToggleExpertise(tag)}
+                                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                                        isSelected
+                                          ? "bg-[#F42A18] text-white shadow-xs"
+                                          : "bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 border border-neutral-200/60 dark:border-neutral-700/60"
+                                      }`}
+                                    >
+                                      {isSelected ? (
+                                        <Check className="w-3 h-3" />
+                                      ) : (
+                                        <Plus className="w-3 h-3 opacity-60" />
+                                      )}
+                                      {tag}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-6 text-center text-xs text-neutral-400">
+                          No matching standard domains found for &quot;{expertiseSearch}&quot;.
+                          <p className="text-[11px] text-neutral-500 mt-1">
+                            Please select from the standardized list above.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Popular / Quick Suggestion Chips */}
+                <div className="space-y-1.5 pt-1">
+                  <span className="text-[11px] font-semibold text-neutral-500 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-[#F42A18]" />
+                    Suggested Domains (Click to toggle):
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {POPULAR_SUGGESTIONS.map((tag) => {
+                      const isSelected = formData.expertise.includes(tag)
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => handleToggleExpertise(tag)}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-[#F42A18]/15 text-[#F42A18] border border-[#F42A18]/30 font-semibold"
+                              : "bg-neutral-100 dark:bg-neutral-800/80 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white border border-neutral-200/60 dark:border-neutral-800"
+                          }`}
+                        >
+                          {isSelected ? (
+                            <Check className="w-2.5 h-2.5" />
+                          ) : (
+                            <Plus className="w-2.5 h-2.5 opacity-60" />
+                          )}
+                          {tag}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
