@@ -102,10 +102,15 @@ export const AdminStudentsPage = () => {
 
   const handleConfirmBlock = async () => {
     if (!studentToBlock) return
-    await blockUserMutation.mutateAsync(studentToBlock.id)
+    const targetStudentId = studentToBlock.id
+    const res = await blockUserMutation.mutateAsync(targetStudentId)
     setStudentToBlock(null)
-    if (selectedStudent?.id === studentToBlock.id) {
-      setSelectedStudent(null)
+    if (selectedStudent?.id === targetStudentId) {
+      if (res?.data?.user) {
+        setSelectedStudent(res.data.user)
+      } else {
+        setSelectedStudent((prev) => (prev ? { ...prev, isBlocked: !prev.isBlocked } : null))
+      }
     }
   }
 

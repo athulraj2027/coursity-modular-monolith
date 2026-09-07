@@ -5,5 +5,6 @@ export * from "./UserDetailsDrawer"
 export * from "./ModalTemplate"
 export * from "./ConfirmationModal"
 export * from "./BlockUserModal"
+export * from "./VerifyTeacherModal"
 export * from "./ImageUploadInput"
 

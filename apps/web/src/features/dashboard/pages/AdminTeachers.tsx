@@ -16,6 +16,7 @@ import {
   DataTableTemplate,
   UserDetailsDrawer,
   BlockUserModal,
+  VerifyTeacherModal,
   type TableColumn,
   type TableMetricCard,
 } from "@/components/common"
@@ -33,6 +34,7 @@ export const AdminTeachersPage = () => {
   const [sortOption, setSortOption] = useState<string>("newest")
   const [selectedTeacher, setSelectedTeacher] = useState<BackendUser | null>(null)
   const [teacherToBlock, setTeacherToBlock] = useState<BackendUser | null>(null)
+  const [teacherToApprove, setTeacherToApprove] = useState<{ user: BackendUser; isApproved: boolean } | null>(null)
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -116,17 +118,52 @@ export const AdminTeachersPage = () => {
 
   const handleConfirmBlock = async () => {
     if (!teacherToBlock) return
-    await blockUserMutation.mutateAsync(teacherToBlock.id)
+    const targetTeacherId = teacherToBlock.id
+    const res = await blockUserMutation.mutateAsync(targetTeacherId)
     setTeacherToBlock(null)
-    if (selectedTeacher?.id === teacherToBlock.id) {
-      setSelectedTeacher(null)
+    if (selectedTeacher?.id === targetTeacherId) {
+      if (res?.data?.user) {
+        setSelectedTeacher(res.data.user)
+      } else {
+        setSelectedTeacher((prev) => (prev ? { ...prev, isBlocked: !prev.isBlocked } : null))
+      }
     }
   }
 
-  const handleApproveTeacher = async (teacherId: string, isApproved: boolean = true) => {
-    const res = await approveTeacherMutation.mutateAsync({ id: teacherId, isApproved })
-    if (selectedTeacher?.id === teacherId && res?.data?.user) {
-      setSelectedTeacher(res.data.user)
+  const handleOpenApproveModal = (teacherId: string, isApproved: boolean = true) => {
+    const teacher = teachers.find((t) => t.id === teacherId) || (selectedTeacher?.id === teacherId ? selectedTeacher : null)
+    if (teacher) {
+      setTeacherToApprove({ user: teacher, isApproved })
+    }
+  }
+
+  const handleConfirmApprove = async () => {
+    if (!teacherToApprove) return
+    const { user, isApproved } = teacherToApprove
+    const res = await approveTeacherMutation.mutateAsync({ id: user.id, isApproved })
+    setTeacherToApprove(null)
+    if (selectedTeacher?.id === user.id) {
+      if (res?.data?.user) {
+        setSelectedTeacher(res.data.user)
+      } else {
+        setSelectedTeacher((prev) => {
+          if (!prev) return null
+          return {
+            ...prev,
+            profile: prev.profile
+              ? {
+                  ...prev.profile,
+                  teacherProfile: prev.profile.teacherProfile
+                    ? {
+                        ...prev.profile.teacherProfile,
+                        isApproved,
+                      }
+                    : undefined,
+                }
+              : undefined,
+          }
+        })
+      }
     }
   }
 
@@ -290,7 +327,7 @@ export const AdminTeachersPage = () => {
     },
   ]
 
-  // Modals (Details Drawer & Confirmation Modal)
+  // Modals (Details Drawer & Confirmation Modals)
   const modalContent = (
     <>
       <UserDetailsDrawer
@@ -300,8 +337,17 @@ export const AdminTeachersPage = () => {
         initialsFallback="IN"
         onBlock={handleOpenBlockModal}
         isBlocking={blockUserMutation.isPending}
-        onApprove={handleApproveTeacher}
+        onApprove={handleOpenApproveModal}
         isApproving={approveTeacherMutation.isPending}
+      />
+
+      <VerifyTeacherModal
+        user={teacherToApprove?.user || null}
+        targetStatus={teacherToApprove?.isApproved ?? true}
+        isOpen={Boolean(teacherToApprove)}
+        onClose={() => setTeacherToApprove(null)}
+        onConfirm={handleConfirmApprove}
+        isLoading={approveTeacherMutation.isPending}
       />
 
       <BlockUserModal
