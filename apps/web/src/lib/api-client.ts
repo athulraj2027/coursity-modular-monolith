@@ -1,4 +1,6 @@
 import { env } from "./env"
+import { queryClient } from "./query-client"
+import { toast } from "./toast"
 
 const API_BASE_URL = env.VITE_API_URL
 
@@ -91,6 +93,67 @@ const AUTH_ENDPOINTS = [
   "/auth/forgot-password",
   "/auth/reset-password",
 ]
+
+function isProtectedRoute(pathname: string): boolean {
+  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/signin")) {
+    return true
+  }
+  if (
+    pathname.startsWith("/teachers/dashboard") ||
+    pathname.startsWith("/teachers/profile") ||
+    pathname.startsWith("/teacher/")
+  ) {
+    return true
+  }
+  if (
+    pathname.startsWith("/students") ||
+    pathname.startsWith("/student") ||
+    pathname === "/dashboard" ||
+    pathname === "/profile"
+  ) {
+    return true
+  }
+  return false
+}
+
+let isRedirecting = false
+
+function handleAuthFailure(errorMessage?: string, isBlocked?: boolean) {
+  if (typeof window === "undefined") return
+
+  // 1. Wipe client-side storage & TanStack Query auth cache
+  try {
+    localStorage.removeItem("user")
+    localStorage.removeItem("accessToken")
+    localStorage.removeItem("refreshToken")
+    queryClient.setQueryData(["currentUser"], null)
+  } catch {
+    // ignore
+  }
+
+  // 2. Show toast if blocked
+  if (isBlocked) {
+    toast.error(errorMessage || "Your account has been blocked. Please contact support.")
+  }
+
+  // 3. If currently on a protected route, cleanly redirect to appropriate signin portal
+  const pathname = window.location.pathname
+  if (isProtectedRoute(pathname) && !isRedirecting) {
+    isRedirecting = true
+    setTimeout(() => {
+      isRedirecting = false
+    }, 2000)
+
+    let target = "/signin"
+    if (pathname.startsWith("/admin")) {
+      target = "/admin/signin"
+    } else if (pathname.startsWith("/teachers") || pathname.startsWith("/teacher")) {
+      target = "/teachers/signin"
+    }
+
+    window.location.href = target
+  }
+}
 
 export async function apiClient<T>(
   endpoint: string,
@@ -187,6 +250,15 @@ export async function apiClient<T>(
       errorMessage = "A server configuration error occurred. Please try again later."
     }
 
+    // 3. If unauthenticated (401 with failed refresh) or forbidden/blocked (403), remove auth state & redirect from protected routes
+    const isBlocked =
+      response.status === 403 &&
+      (typeof errorMessage === "string" && errorMessage.toLowerCase().includes("block"))
+
+    if ((response.status === 401 && !isAuthEndpoint) || isBlocked) {
+      handleAuthFailure(errorMessage, isBlocked)
+    }
+
     throw new ApiError(errorMessage, response.status, responseData)
   }
 
@@ -194,3 +266,4 @@ export async function apiClient<T>(
 }
 
 export default apiClient
+

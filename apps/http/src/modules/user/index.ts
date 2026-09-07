@@ -27,14 +27,17 @@ import { createIsBlockedMiddleware } from "@/app/middlewares/is-blocked.middlewa
 import { requireRoles } from "@/app/middlewares/role.middleware";
 import { UserRoutes } from "./presentation/routes/user.routes";
 
+import { RedisTokenRepository } from "@/modules/auth/infrastructure/repositories/redis-token.repository";
+
 // 1. Repositories & Services
 const userRepository = new PrismaUserRepository();
+const tokenRepository = new RedisTokenRepository();
 const passwordService = new BcryptPasswordService();
 const tokenService = new JwtTokenService();
 
 // 2. Middlewares
 const authMiddleware = createAuthMiddleware(tokenService);
-const isBlockedMiddleware = createIsBlockedMiddleware(userRepository);
+const isBlockedMiddleware = createIsBlockedMiddleware(userRepository, tokenRepository);
 const adminMiddleware = requireRoles("ADMIN");
 
 // 3. Use Cases
@@ -43,7 +46,7 @@ const updateProfile = new UpdateProfile(userRepository);
 const changePassword = new ChangePassword(userRepository, passwordService);
 const getAllUsers = new GetAllUsers(userRepository);
 const getUserById = new GetUserById(userRepository);
-const blockUser = new BlockUser(userRepository);
+const blockUser = new BlockUser(userRepository, tokenRepository);
 const approveTeacher = new ApproveTeacher(userRepository);
 
 // 4. Controllers

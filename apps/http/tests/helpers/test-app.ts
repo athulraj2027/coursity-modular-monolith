@@ -401,7 +401,7 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
 
     // Middlewares
     const authMiddleware = createAuthMiddleware(tokenService);
-    const isBlockedMiddleware = createIsBlockedMiddleware(userRepo);
+    const isBlockedMiddleware = createIsBlockedMiddleware(userRepo, tokenRepo);
     const adminMiddleware = requireRoles("ADMIN");
     const idempotencyMiddleware = createIdempotencyMiddleware(idempotencyService);
 
@@ -451,7 +451,7 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
     const changePassword = new ChangePassword(userRepo, passwordService);
     const getAllUsers = new GetAllUsers(userRepo);
     const getUserById = new GetUserById(userRepo);
-    const blockUser = new BlockUser(userRepo);
+    const blockUser = new BlockUser(userRepo, tokenRepo);
     const approveTeacher = new ApproveTeacher(userRepo);
 
     // User Controllers

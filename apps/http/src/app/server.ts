@@ -44,7 +44,7 @@ process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
 startServer();
-// server reloaded - mounted isBlocked in app routes - updated at 2026-09-07T14:58:00Z
+// server reloaded - isBlocked cookie and session clearance updated at 2026-09-07T15:16:00Z
 
 
 
