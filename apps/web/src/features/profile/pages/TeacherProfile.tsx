@@ -36,7 +36,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { ImageUploadInput } from "@/components/common"
+import { ImageUploadInput, LoadingScreen, SubmitVerificationModal } from "@/components/common"
 import { toast } from "@/lib/toast"
 import { useProfile, useUpdateTeacherProfile, useSubmitTeacherVerification } from "../hooks/useProfile"
 import { EXPERTISE_CATEGORIES } from "../constants/expertise.constants"
@@ -97,6 +97,7 @@ export const TeacherProfilePage: React.FC = () => {
   const [expertiseSearch, setExpertiseSearch] = useState("")
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>("all")
+  const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false)
 
   // Sync form state when backend profile data is loaded or updated
   useEffect(() => {
@@ -251,10 +252,11 @@ export const TeacherProfilePage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-        <Loader2 className="w-8 h-8 text-[#F42A18] animate-spin" />
-        <p className="text-sm font-medium text-neutral-500">Loading instructor profile...</p>
-      </div>
+      <LoadingScreen
+        fullScreen={false}
+        message="Loading instructor profile..."
+        subMessage="Fetching your profile credentials and verification status"
+      />
     )
   }
 
@@ -281,7 +283,7 @@ export const TeacherProfilePage: React.FC = () => {
   const submissionCount = teacherProfile?.submissionCount ?? 0
   const isSubmissionMaxed = submissionCount >= 5
 
-  const handleSubmitForVerification = async () => {
+  const handleSubmitForVerification = () => {
     if (isSubmissionMaxed) {
       toast.error(
         "You have reached the maximum verification submission limit (5 attempts). Please contact an administrator."
@@ -307,8 +309,14 @@ export const TeacherProfilePage: React.FC = () => {
       return
     }
 
+    // Open confirmation modal before making the verification submission API call
+    setIsSubmitModalOpen(true)
+  }
+
+  const handleConfirmSubmitForVerification = async () => {
     try {
       await submitMutation.mutateAsync()
+      setIsSubmitModalOpen(false)
       setActiveTab("overview")
     } catch {
       // Handled in mutation hook
@@ -1201,6 +1209,23 @@ export const TeacherProfilePage: React.FC = () => {
           </div>
         </form>
       )}
+
+      {/* Verification Submission Confirmation Modal */}
+      <SubmitVerificationModal
+        isOpen={isSubmitModalOpen}
+        onClose={() => setIsSubmitModalOpen(false)}
+        onConfirm={handleConfirmSubmitForVerification}
+        isLoading={submitMutation.isPending}
+        submissionCount={submissionCount}
+        isRedo={currentApprovalStatus === "REDO"}
+        qualifications={formData.qualifications || teacherProfile?.qualifications}
+        bio={formData.bio || userProfile?.bio}
+        expertise={
+          formData.expertise && formData.expertise.length > 0
+            ? formData.expertise
+            : teacherProfile?.expertise || []
+        }
+      />
     </div>
   )
 }

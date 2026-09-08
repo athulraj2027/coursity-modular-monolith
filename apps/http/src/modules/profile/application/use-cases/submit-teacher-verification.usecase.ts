@@ -67,6 +67,7 @@ export class SubmitTeacherVerification {
         const nextAttempts = currentAttempts + 1;
 
         await this.profileRepository.upsertTeacherProfile(profileId, {
+            isApproved: false,
             approvalStatus: "IN_PROGRESS",
             rejectionReason: null,
             submissionCount: nextAttempts,
