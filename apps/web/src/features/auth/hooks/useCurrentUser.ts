@@ -1,9 +1,12 @@
 import { useQuery } from "@tanstack/react-query"
 import { authApi } from "../api/auth.api"
+import { useIsRefreshingToken } from "./useIsRefreshingToken"
 import type { User } from "../types"
 
 export function useCurrentUser() {
-  return useQuery<User | null>({
+  const isRefreshing = useIsRefreshingToken()
+
+  const query = useQuery<User | null>({
     queryKey: ["currentUser"],
     queryFn: async () => {
       try {
@@ -16,6 +19,12 @@ export function useCurrentUser() {
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
   })
+
+  return {
+    ...query,
+    isRefreshing,
+    isLoading: query.isLoading || isRefreshing,
+  }
 }
 
 export default useCurrentUser

@@ -392,11 +392,10 @@ export const TeacherProfilePage: React.FC = () => {
                 <Button
                   onClick={handleSubmitForVerification}
                   disabled={submitMutation.isPending || isSubmissionMaxed}
-                  className={`flex-1 sm:flex-none gap-2 rounded-xl text-xs font-semibold cursor-pointer shadow-xs ${
-                    isSubmissionMaxed
+                  className={`flex-1 sm:flex-none gap-2 rounded-xl text-xs font-semibold cursor-pointer shadow-xs ${isSubmissionMaxed
                       ? "bg-neutral-600 text-neutral-300 cursor-not-allowed"
                       : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                  }`}
+                    }`}
                   title={
                     isSubmissionMaxed
                       ? "Maximum submission attempts reached (5/5). Contact administrator to reapply."
@@ -412,8 +411,8 @@ export const TeacherProfilePage: React.FC = () => {
                     {isSubmissionMaxed
                       ? "Max Submissions (5/5)"
                       : currentApprovalStatus === "REDO"
-                      ? "Re-submit Application"
-                      : "Submit for Verification"}
+                        ? "Re-submit Application"
+                        : "Submit for Verification"}
                   </span>
                 </Button>
               )}
@@ -1073,11 +1072,10 @@ export const TeacherProfilePage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setSelectedCategoryTab("all")}
-                          className={`px-2.5 py-1 rounded-lg font-medium shrink-0 cursor-pointer transition-colors ${
-                            selectedCategoryTab === "all"
+                          className={`px-2.5 py-1 rounded-lg font-medium shrink-0 cursor-pointer transition-colors ${selectedCategoryTab === "all"
                               ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
                               : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
-                          }`}
+                            }`}
                         >
                           All Categories
                         </button>
@@ -1086,11 +1084,10 @@ export const TeacherProfilePage: React.FC = () => {
                             key={cat.id}
                             type="button"
                             onClick={() => setSelectedCategoryTab(cat.id)}
-                            className={`px-2.5 py-1 rounded-lg font-medium shrink-0 cursor-pointer transition-colors ${
-                              selectedCategoryTab === cat.id
+                            className={`px-2.5 py-1 rounded-lg font-medium shrink-0 cursor-pointer transition-colors ${selectedCategoryTab === cat.id
                                 ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
                                 : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
-                            }`}
+                              }`}
                           >
                             {cat.name}
                           </button>
@@ -1113,11 +1110,10 @@ export const TeacherProfilePage: React.FC = () => {
                                       key={tag}
                                       type="button"
                                       onClick={() => handleToggleExpertise(tag)}
-                                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                                        isSelected
+                                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${isSelected
                                           ? "bg-[#F42A18] text-white shadow-xs"
                                           : "bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 border border-neutral-200/60 dark:border-neutral-700/60"
-                                      }`}
+                                        }`}
                                     >
                                       {isSelected ? (
                                         <Check className="w-3 h-3" />
@@ -1158,11 +1154,10 @@ export const TeacherProfilePage: React.FC = () => {
                           key={tag}
                           type="button"
                           onClick={() => handleToggleExpertise(tag)}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
-                            isSelected
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${isSelected
                               ? "bg-[#F42A18]/15 text-[#F42A18] border border-[#F42A18]/30 font-semibold"
                               : "bg-neutral-100 dark:bg-neutral-800/80 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white border border-neutral-200/60 dark:border-neutral-800"
-                          }`}
+                            }`}
                         >
                           {isSelected ? (
                             <Check className="w-2.5 h-2.5" />
