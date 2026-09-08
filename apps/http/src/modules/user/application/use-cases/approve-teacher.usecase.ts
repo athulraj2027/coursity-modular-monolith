@@ -9,6 +9,8 @@ export interface ApproveTeacherDTO {
     rejectionReason?: string | null;
 }
 
+import { IEmailService } from "@/modules/email";
+
 export const ALLOWED_APPROVAL_TRANSITIONS: Record<ApprovalStatus, ApprovalStatus[]> = {
     PENDING: [],
     IN_PROGRESS: ["VERIFIED", "REDO"],
@@ -18,7 +20,10 @@ export const ALLOWED_APPROVAL_TRANSITIONS: Record<ApprovalStatus, ApprovalStatus
 };
 
 export class ApproveTeacher {
-    constructor(private readonly userRepository: UserRepository) { }
+    constructor(
+        private readonly userRepository: UserRepository,
+        private readonly emailService?: IEmailService
+    ) { }
 
     async execute(
         userIdOrDTO: string | ApproveTeacherDTO,
@@ -90,6 +95,20 @@ export class ApproveTeacher {
             rejectionReason: rejectionReason ? rejectionReason.trim() : null,
             isApproved: effectiveStatus === "VERIFIED",
         });
+
+        // Asynchronously notify instructor via email queue
+        if (this.emailService && updatedUser.email) {
+            await this.emailService
+                .sendTeacherStatusUpdate(
+                    updatedUser.email,
+                    updatedUser.name,
+                    effectiveStatus as any,
+                    rejectionReason ? rejectionReason.trim() : null
+                )
+                .catch((err) => {
+                    console.error(`⚠️ Failed to enqueue teacher status update email for ${updatedUser.email}:`, err?.message || err);
+                });
+        }
 
         const { password, ...safeUser } = updatedUser;
 

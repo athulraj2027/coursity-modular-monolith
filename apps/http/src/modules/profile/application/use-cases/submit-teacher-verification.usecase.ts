@@ -1,11 +1,15 @@
 import { NotFoundError, BadRequestError } from "@/app/errors";
 import { ProfileRepository } from "../../domain/repositories/profile.repository";
 import { FullUserProfile } from "../../domain/entities/profile.entity";
+import { IEmailService } from "@/modules/email";
 
 export const MAX_SUBMISSION_ATTEMPTS = 5;
 
 export class SubmitTeacherVerification {
-    constructor(private readonly profileRepository: ProfileRepository) { }
+    constructor(
+        private readonly profileRepository: ProfileRepository,
+        private readonly emailService?: IEmailService
+    ) { }
 
     async execute(userId: string): Promise<{ profile: FullUserProfile; message: string }> {
         const existingProfile = await this.profileRepository.getFullProfileByUserId(userId);
@@ -76,6 +80,15 @@ export class SubmitTeacherVerification {
         const updated = await this.profileRepository.getFullProfileByUserId(userId);
         if (!updated) {
             throw new NotFoundError("Updated profile not found");
+        }
+
+        // Asynchronously send "under review" email confirmation via queue
+        if (this.emailService && updated.email) {
+            await this.emailService
+                .sendTeacherStatusUpdate(updated.email, updated.name, "IN_PROGRESS")
+                .catch((err) => {
+                    console.error(`⚠️ Failed to enqueue submission confirmation email for ${updated.email}:`, err?.message || err);
+                });
         }
 
         return {

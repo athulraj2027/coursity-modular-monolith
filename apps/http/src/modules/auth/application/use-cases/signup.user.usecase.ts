@@ -3,6 +3,7 @@ import { PasswordService } from "../../domain/services/password.service";
 import { ConflictError, BadRequestError } from "@/app/errors";
 import { SignupUserInputDTO, SignupUserOutputDTO } from "../dtos/signup.dto";
 import { OtpRepository } from "../../domain/repositories/redis-otp.repository";
+import { IEmailService } from "@/modules/email";
 
 export class SignupUser {
     private readonly RESEND_COOLDOWN_MS = 1 * 60 * 1000; // 1 minute (60 seconds)
@@ -10,7 +11,8 @@ export class SignupUser {
     constructor(
         private readonly repository: UserRepository,
         private readonly passwordService: PasswordService,
-        private readonly otpRepository: OtpRepository
+        private readonly otpRepository: OtpRepository,
+        private readonly emailService?: IEmailService
     ) { }
 
     async execute(input: SignupUserInputDTO): Promise<SignupUserOutputDTO> {
@@ -47,8 +49,14 @@ export class SignupUser {
             role: input.role || "STUDENT",
         });
 
-        // 5. DEV Log (or send email via MailerService)
-        console.log(`🔑 [DEV ONLY] Signup OTP for ${email}: ${otp}`);
+        // 5. Asynchronously dispatch OTP email via queue
+        if (this.emailService) {
+            await this.emailService.sendSignupOtp(email, otp, input.name.trim()).catch((err) => {
+                console.error(`⚠️ Failed to enqueue signup OTP email for ${email}:`, err?.message || err);
+            });
+        } else {
+            console.log(`🔑 [DEV ONLY] Signup OTP for ${email}: ${otp}`);
+        }
 
         return {
             email,

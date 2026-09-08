@@ -2,13 +2,15 @@ import { UserRepository } from "@/modules/user";
 import { OtpRepository } from "../../domain/repositories/redis-otp.repository";
 import { BadRequestError } from "@/app/errors";
 import { ForgotPasswordInputDTO, ForgotPasswordOutputDTO } from "../dtos/forgot-password.dto";
+import { IEmailService } from "@/modules/email";
 
 export class ForgotPassword {
     private readonly RESEND_COOLDOWN_MS = 1 * 60 * 1000; // 1 minute
 
     constructor(
         private readonly userRepository: UserRepository,
-        private readonly otpRepository: OtpRepository
+        private readonly otpRepository: OtpRepository,
+        private readonly emailService?: IEmailService
     ) { }
 
     async execute(input: ForgotPasswordInputDTO): Promise<ForgotPasswordOutputDTO> {
@@ -42,8 +44,14 @@ export class ForgotPassword {
             // 4. Save to Redis with 10 minute TTL
             await this.otpRepository.saveResetPasswordOtp(email, otp, 600);
 
-            // 5. Dev logging (replace with email mailer in production)
-            console.log(`🔑 [DEV ONLY] Password Reset OTP for ${email}: ${otp}`);
+            // 5. Asynchronously dispatch password reset OTP email via queue
+            if (this.emailService) {
+                await this.emailService.sendPasswordResetOtp(email, otp, user.name).catch((err) => {
+                    console.error(`⚠️ Failed to enqueue password reset OTP email for ${email}:`, err?.message || err);
+                });
+            } else {
+                console.log(`🔑 [DEV ONLY] Password Reset OTP for ${email}: ${otp}`);
+            }
         }
 
         return {

@@ -14,6 +14,19 @@ const envSchema = z.object({
     GOOGLE_REDIRECT_URI: z.string().optional().default("http://localhost:3000/api/auth/google/callback"),
     FRONTEND_URL: z.string().optional().default("http://localhost:5173"),
     REDIS_URL: z.string().default("redis://localhost:6379"),
+
+    // Email / SMTP Configuration
+    SMTP_HOST: z.string().optional().default("smtp.gmail.com"),
+    SMTP_PORT: z.coerce.number().default(587),
+    SMTP_USER: z.string().optional().default(""),
+    SMTP_PASS: z.string().optional().default(""),
+    SMTP_SECURE: z
+        .preprocess((val) => val === "true" || val === true || val === "1", z.boolean().optional())
+        .default(false),
+    EMAIL_FROM: z.string().default("Coursity <noreply@coursity.com>"),
+    ENABLE_IN_PROCESS_WORKER: z
+        .preprocess((val) => (val === undefined ? true : val === "true" || val === true || val === "1"), z.boolean().optional())
+        .default(true),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
