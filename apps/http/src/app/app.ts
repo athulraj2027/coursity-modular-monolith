@@ -24,6 +24,15 @@ app.use(cookieParser());
 // 3. Global Rate Limiter
 app.use(globalRateLimiter);
 
+// Health check endpoint (for Docker, load balancers, and monitoring)
+app.get("/health", (_req, res) => {
+    res.status(200).json({
+        status: "ok",
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+    });
+});
+
 // 4. API Routes
 app.use("/api", router);
 
