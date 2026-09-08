@@ -24,6 +24,14 @@ enum IdempotencyStatus {
   FAILED
 }
 
+enum ApprovalStatus {
+  PENDING
+  IN_PROGRESS
+  VERIFIED
+  REVOKED
+  REDO
+}
+
 model User {
   id           String       @id @default(uuid())
   name         String
@@ -57,19 +65,22 @@ model Profile {
 }
 
 model TeacherProfile {
-  id              String   @id @default(uuid())
-  profileId       String   @unique
-  profile         Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  expertise       String[] @default([])
+  id              String                  @id @default(uuid())
+  profileId       String                  @unique
+  profile         Profile                 @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  expertise       String[]                @default([])
   qualifications  String?
   experienceYears Int?
  
   linkedinUrl     String?
   twitterUrl      String?
   websiteUrl      String?
-  isApproved      Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  isApproved      Boolean                 @default(false)
+  approvalStatus  ApprovalStatus          @default(PENDING)
+  rejectionReason String?
+  submissionCount Int                     @default(0)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
 
   @@map("teacher_profiles")
 }

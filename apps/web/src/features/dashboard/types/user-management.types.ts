@@ -1,5 +1,6 @@
 export type UserRole = "STUDENT" | "TEACHER" | "ADMIN"
 export type AuthProvider = "LOCAL" | "GOOGLE"
+export type ApprovalStatus = "PENDING" | "IN_PROGRESS" | "VERIFIED" | "REVOKED" | "REDO"
 
 export interface BackendTeacherProfile {
   id: string
@@ -10,6 +11,9 @@ export interface BackendTeacherProfile {
   twitterUrl?: string | null
   websiteUrl?: string | null
   isApproved: boolean
+  approvalStatus?: ApprovalStatus
+  rejectionReason?: string | null
+  submissionCount?: number
   createdAt?: string
   updatedAt?: string
 }
@@ -44,6 +48,7 @@ export interface GetUsersParams {
   authProvider?: AuthProvider
   isBlocked?: boolean
   isApproved?: boolean
+  approvalStatus?: ApprovalStatus
   sortBy?: "createdAt" | "name" | "email"
   sortOrder?: "asc" | "desc"
 }

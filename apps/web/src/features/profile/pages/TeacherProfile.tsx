@@ -26,6 +26,10 @@ import {
   Search,
   Check,
   Sparkles,
+  UserX,
+  MessageSquare,
+  AlertTriangle,
+  Send,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -34,8 +38,10 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { ImageUploadInput } from "@/components/common"
 import { toast } from "@/lib/toast"
-import { useProfile, useUpdateTeacherProfile } from "../hooks/useProfile"
-import { EXPERTISE_CATEGORIES, ALL_EXPERTISE_TAGS } from "../constants/expertise.constants"
+import { useProfile, useUpdateTeacherProfile, useSubmitTeacherVerification } from "../hooks/useProfile"
+import { EXPERTISE_CATEGORIES } from "../constants/expertise.constants"
+import { validateTeacherForm } from "../schemas/profile.schema"
+import type { ApprovalStatus } from "../types/profile.types"
 
 const POPULAR_SUGGESTIONS = [
   "Web Development",
@@ -66,85 +72,13 @@ interface TeacherFormData {
   expertise: string[]
 }
 
-function isValidUrl(val: string): boolean {
-  const trimmed = val.trim()
-  if (!trimmed) return true
-  try {
-    const parsed = new URL(trimmed)
-    return parsed.protocol === "http:" || parsed.protocol === "https:"
-  } catch {
-    return false
-  }
-}
-
-function validateTeacherForm(data: TeacherFormData): Partial<Record<keyof TeacherFormData, string>> {
-  const errors: Partial<Record<keyof TeacherFormData, string>> = {}
-
-  const trimmedName = data.name.trim()
-  if (!trimmedName) {
-    errors.name = "Display name is required"
-  } else if (trimmedName.length < 2) {
-    errors.name = "Display name must be at least 2 characters"
-  } else if (trimmedName.length > 100) {
-    errors.name = "Display name cannot exceed 100 characters"
-  }
-
-  if (data.phone && data.phone.trim().length > 20) {
-    errors.phone = "Phone number cannot exceed 20 characters"
-  }
-
-  if (data.bio && data.bio.trim().length > 1000) {
-    errors.bio = "Biography cannot exceed 1000 characters"
-  }
-
-  if (data.qualifications && data.qualifications.trim().length > 500) {
-    errors.qualifications = "Qualifications cannot exceed 500 characters"
-  }
-
-  if (data.experienceYears !== undefined && data.experienceYears !== null) {
-    const exp = Number(data.experienceYears)
-    if (isNaN(exp) || exp < 0 || exp > 80) {
-      errors.experienceYears = "Experience years must be between 0 and 80"
-    }
-  }
-
-  if (data.linkedinUrl && data.linkedinUrl.trim()) {
-    if (!isValidUrl(data.linkedinUrl)) {
-      errors.linkedinUrl = "LinkedIn URL must be a valid URL (e.g. https://linkedin.com/in/...)"
-    }
-  }
-
-  if (data.twitterUrl && data.twitterUrl.trim()) {
-    if (!isValidUrl(data.twitterUrl)) {
-      errors.twitterUrl = "Twitter/X URL must be a valid URL (e.g. https://x.com/...)"
-    }
-  }
-
-  if (data.websiteUrl && data.websiteUrl.trim()) {
-    if (!isValidUrl(data.websiteUrl)) {
-      errors.websiteUrl = "Website URL must be a valid URL (e.g. https://yourwebsite.com)"
-    }
-  }
-
-  if (data.expertise && data.expertise.length > 0) {
-    if (data.expertise.length > 15) {
-      errors.expertise = "You can select up to 15 domains of expertise"
-    }
-    const invalidTags = data.expertise.filter((t) => !ALL_EXPERTISE_TAGS.includes(t))
-    if (invalidTags.length > 0) {
-      errors.expertise = `Some selected domains are not recognized: ${invalidTags.join(", ")}`
-    }
-  }
-
-  return errors
-}
-
 export const TeacherProfilePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"overview" | "edit">("overview")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const { data: profileData, isLoading, isError, error, refetch } = useProfile()
   const updateMutation = useUpdateTeacherProfile()
+  const submitMutation = useSubmitTeacherVerification()
 
   const [formData, setFormData] = useState<TeacherFormData>({
     name: "",
@@ -340,6 +274,47 @@ export const TeacherProfilePage: React.FC = () => {
 
   const userProfile = profileData?.profile
   const teacherProfile = profileData?.teacherProfile
+  const currentApprovalStatus: ApprovalStatus =
+    teacherProfile?.approvalStatus ||
+    (teacherProfile?.isApproved ? "VERIFIED" : "PENDING")
+
+  const submissionCount = teacherProfile?.submissionCount ?? 0
+  const isSubmissionMaxed = submissionCount >= 5
+
+  const handleSubmitForVerification = async () => {
+    if (isSubmissionMaxed) {
+      toast.error(
+        "You have reached the maximum verification submission limit (5 attempts). Please contact an administrator."
+      )
+      return
+    }
+
+    const hasQualifications = Boolean(teacherProfile?.qualifications?.trim() || formData.qualifications?.trim())
+    const hasBio = Boolean(userProfile?.bio?.trim() || formData.bio?.trim())
+    const hasExpertise =
+      (teacherProfile?.expertise && teacherProfile.expertise.length > 0) ||
+      (formData.expertise && formData.expertise.length > 0)
+
+    if (!hasQualifications && !hasBio) {
+      toast.error("Please add your qualifications or biography before submitting for verification.")
+      setActiveTab("edit")
+      return
+    }
+
+    if (!hasExpertise) {
+      toast.error("Please select at least one domain of expertise before submitting for verification.")
+      setActiveTab("edit")
+      return
+    }
+
+    try {
+      await submitMutation.mutateAsync()
+      setActiveTab("overview")
+    } catch {
+      // Handled in mutation hook
+    }
+  }
+
   const avatarUrl =
     userProfile?.avatar ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData?.name || "Teacher")}&background=F42A18&color=fff`
@@ -357,15 +332,30 @@ export const TeacherProfilePage: React.FC = () => {
         <div className="h-36 sm:h-44 w-full bg-linear-to-r from-neutral-950 via-neutral-900 to-[#F42A18]/85 relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(244,42,24,0.35),transparent_65%)]" />
           <div className="absolute top-4 right-4 flex items-center gap-2">
-            {teacherProfile?.isApproved ? (
+            {currentApprovalStatus === "VERIFIED" ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 backdrop-blur-md text-emerald-300 border border-emerald-500/30">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                 Verified & Approved Instructor
               </span>
+            ) : currentApprovalStatus === "IN_PROGRESS" ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 backdrop-blur-md text-blue-300 border border-blue-500/30">
+                <Clock className="w-3.5 h-3.5 text-blue-400" />
+                Application Under Review ({submissionCount}/5 Submissions)
+              </span>
+            ) : currentApprovalStatus === "REDO" ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-orange-500/20 backdrop-blur-md text-orange-300 border border-orange-500/30">
+                <RotateCcw className="w-3.5 h-3.5 text-orange-400" />
+                Revision Requested ({submissionCount}/5 Submissions)
+              </span>
+            ) : currentApprovalStatus === "REVOKED" ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/20 backdrop-blur-md text-rose-300 border border-rose-500/30">
+                <UserX className="w-3.5 h-3.5 text-rose-400" />
+                Verification Revoked
+              </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 backdrop-blur-md text-amber-300 border border-amber-500/30">
                 <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-                Pending Verification
+                Draft Profile ({submissionCount}/5 Submissions)
               </span>
             )}
           </div>
@@ -397,7 +387,37 @@ export const TeacherProfilePage: React.FC = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+              {(currentApprovalStatus === "PENDING" || currentApprovalStatus === "REDO") && (
+                <Button
+                  onClick={handleSubmitForVerification}
+                  disabled={submitMutation.isPending || isSubmissionMaxed}
+                  className={`flex-1 sm:flex-none gap-2 rounded-xl text-xs font-semibold cursor-pointer shadow-xs ${
+                    isSubmissionMaxed
+                      ? "bg-neutral-600 text-neutral-300 cursor-not-allowed"
+                      : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  }`}
+                  title={
+                    isSubmissionMaxed
+                      ? "Maximum submission attempts reached (5/5). Contact administrator to reapply."
+                      : "Submit instructor application for administrator verification"
+                  }
+                >
+                  {submitMutation.isPending ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Send className="w-3.5 h-3.5" />
+                  )}
+                  <span>
+                    {isSubmissionMaxed
+                      ? "Max Submissions (5/5)"
+                      : currentApprovalStatus === "REDO"
+                      ? "Re-submit Application"
+                      : "Submit for Verification"}
+                  </span>
+                </Button>
+              )}
+
               <Button
                 variant={activeTab === "edit" ? "secondary" : "default"}
                 onClick={() => setActiveTab(activeTab === "edit" ? "overview" : "edit")}
@@ -457,47 +477,54 @@ export const TeacherProfilePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Social Links Bar */}
-          {hasSocialLinks && (
-            <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800/80">
-              {teacherProfile?.linkedinUrl && (
-                <a
-                  href={teacherProfile.linkedinUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:text-[#F42A18] transition-colors"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  LinkedIn
-                </a>
-              )}
-              {teacherProfile?.twitterUrl && (
-                <a
-                  href={teacherProfile.twitterUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:text-[#F42A18] transition-colors"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  Twitter / X
-                </a>
-              )}
-              {teacherProfile?.websiteUrl && (
-                <a
-                  href={teacherProfile.websiteUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:text-[#F42A18] transition-colors"
-                >
-                  <Globe className="w-3.5 h-3.5" />
-                  Website
-                </a>
-              )}
-            </div>
-          )}
+          {/* Quick Stats & Socials Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-4 mt-4 border-t border-neutral-100 dark:border-neutral-800">
+            {hasSocialLinks ? (
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
+                  Socials:
+                </span>
+                {teacherProfile?.linkedinUrl && (
+                  <a
+                    href={teacherProfile.linkedinUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:text-[#F42A18] hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                    title="LinkedIn"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+                {teacherProfile?.twitterUrl && (
+                  <a
+                    href={teacherProfile.twitterUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:text-[#F42A18] hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                    title="Twitter / X"
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                  </a>
+                )}
+                {teacherProfile?.websiteUrl && (
+                  <a
+                    href={teacherProfile.websiteUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:text-[#F42A18] hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                    title="Website"
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
+            ) : (
+              <span className="text-xs text-neutral-400 italic">No social profiles attached</span>
+            )}
+          </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex items-center gap-2 border-b border-neutral-200 dark:border-neutral-800 mt-6">
+          {/* Navigation Sub-Tabs */}
+          <div className="flex items-center gap-4 mt-6 border-b border-neutral-100 dark:border-neutral-800">
             <button
               onClick={() => setActiveTab("overview")}
               className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold transition-all border-b-2 cursor-pointer ${activeTab === "overview"
@@ -521,6 +548,85 @@ export const TeacherProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Maximum Submissions Reached Banner */}
+      {isSubmissionMaxed && (currentApprovalStatus === "PENDING" || currentApprovalStatus === "REDO") && (
+        <div className="p-5 rounded-3xl border border-red-500/30 bg-red-500/10 text-red-900 dark:text-red-200 flex flex-col sm:flex-row items-start gap-4 shadow-xs text-left">
+          <div className="p-2.5 rounded-2xl bg-red-500/20 text-red-600 dark:text-red-400 shrink-0">
+            <ShieldAlert className="w-6 h-6" />
+          </div>
+          <div className="space-y-1.5 flex-1">
+            <h3 className="font-bold text-sm text-red-600 dark:text-red-400">
+              Maximum Verification Submissions Limit Reached (5/5 attempts)
+            </h3>
+            <p className="text-xs leading-relaxed opacity-90">
+              You have submitted your profile for verification 5 times. You cannot submit again automatically.
+              Please contact an administrator or support team to review your application or reset your submission quota.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Dynamic Feedback Banner for REDO / REVOKED / Suggestions */}
+      {(currentApprovalStatus === "REDO" || currentApprovalStatus === "REVOKED" || teacherProfile?.rejectionReason) && (
+        <div
+          className={`p-5 rounded-3xl border flex flex-col sm:flex-row items-start gap-4 text-left shadow-xs ${currentApprovalStatus === "REVOKED"
+            ? "bg-rose-500/10 border-rose-500/25 text-rose-900 dark:text-rose-200"
+            : "bg-orange-500/10 border-orange-500/25 text-orange-900 dark:text-orange-200"
+            }`}
+        >
+          <div
+            className={`p-2.5 rounded-2xl shrink-0 ${currentApprovalStatus === "REVOKED"
+              ? "bg-rose-500/20 text-rose-600 dark:text-rose-400"
+              : "bg-orange-500/20 text-orange-600 dark:text-orange-400"
+              }`}
+          >
+            {currentApprovalStatus === "REVOKED" ? (
+              <UserX className="w-6 h-6" />
+            ) : (
+              <AlertTriangle className="w-6 h-6" />
+            )}
+          </div>
+
+          <div className="space-y-2 flex-1">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="font-bold text-sm">
+                {currentApprovalStatus === "REDO"
+                  ? "Action Required: Revisions Requested for Instructor Verification"
+                  : currentApprovalStatus === "REVOKED"
+                    ? "Instructor Verification Has Been Revoked"
+                    : "Feedback from Administrator Review"}
+              </h3>
+              <span
+                className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${currentApprovalStatus === "REVOKED"
+                  ? "bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-500/30"
+                  : "bg-orange-500/20 text-orange-700 dark:text-orange-300 border-orange-500/30"
+                  }`}
+              >
+                {currentApprovalStatus.replace("_", " ")}
+              </span>
+            </div>
+
+            {teacherProfile?.rejectionReason && (
+              <div className="p-3.5 rounded-xl bg-white/80 dark:bg-neutral-900/80 border border-neutral-200/80 dark:border-neutral-800 text-xs text-neutral-800 dark:text-neutral-200 space-y-1">
+                <div className="text-[11px] font-semibold text-neutral-500 flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5 text-[#F42A18]" />
+                  <span>Suggestions for Improvement:</span>
+                </div>
+                <p className="italic font-medium leading-relaxed">
+                  "{teacherProfile.rejectionReason}"
+                </p>
+              </div>
+            )}
+
+            <p className="text-xs opacity-90 leading-relaxed">
+              {currentApprovalStatus === "REDO"
+                ? "Please update your qualifications, bio, and portfolio links in the Edit Profile tab below to resolve the suggestions above. Once updated, your application will be re-evaluated by administrators."
+                : "Please address the administrator feedback and update your profile information as required."}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Tab: Overview */}
       {activeTab === "overview" && (
@@ -609,8 +715,20 @@ export const TeacherProfilePage: React.FC = () => {
               <div className="space-y-3 text-xs">
                 <div className="flex items-center justify-between py-1.5 border-b border-neutral-100 dark:border-neutral-800/80">
                   <span className="text-neutral-500">Instructor Status</span>
-                  <Badge className={teacherProfile?.isApproved ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px]" : "bg-amber-500/10 text-amber-600 text-[10px]"}>
-                    {teacherProfile?.isApproved ? "Approved" : "Pending Review"}
+                  <Badge
+                    className={
+                      currentApprovalStatus === "VERIFIED"
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px]"
+                        : currentApprovalStatus === "IN_PROGRESS"
+                          ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[10px]"
+                          : currentApprovalStatus === "REDO"
+                            ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20 text-[10px]"
+                            : currentApprovalStatus === "REVOKED"
+                              ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 text-[10px]"
+                              : "bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px]"
+                    }
+                  >
+                    {currentApprovalStatus.replace("_", " ")}
                   </Badge>
                 </div>
                 {profileData?.createdAt && (
@@ -736,7 +854,7 @@ export const TeacherProfilePage: React.FC = () => {
                   id="avatar"
                   label="Instructor Profile Picture"
                   value={formData.avatar}
-                  onChange={(val) => handleInputChange("avatar", val)}
+                  onChange={(val: string) => handleInputChange("avatar", val)}
                   fallbackName={formData.name || profileData?.name}
                   inputRef={fileInputRef}
                 />
@@ -791,9 +909,9 @@ export const TeacherProfilePage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <Label htmlFor="linkedinUrl" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
                     LinkedIn URL
-                    {teacherProfile?.isApproved && (
+                    {(currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || teacherProfile?.isApproved) && (
                       <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-normal">
-                        <Lock className="w-3 h-3" /> Locked (Approved)
+                        <Lock className="w-3 h-3" /> Locked ({currentApprovalStatus === "IN_PROGRESS" ? "In Progress" : "Approved"})
                       </span>
                     )}
                   </Label>
@@ -803,9 +921,9 @@ export const TeacherProfilePage: React.FC = () => {
                   value={formData.linkedinUrl}
                   onChange={(e) => handleInputChange("linkedinUrl", e.target.value)}
                   placeholder="https://linkedin.com/in/..."
-                  disabled={Boolean(teacherProfile?.isApproved)}
+                  disabled={currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || Boolean(teacherProfile?.isApproved)}
                   className={`rounded-xl ${fieldErrors.linkedinUrl ? "border-red-500 focus-visible:ring-red-500" : ""
-                    } ${teacherProfile?.isApproved ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed" : ""}`}
+                    } ${currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || teacherProfile?.isApproved ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed" : ""}`}
                 />
                 {fieldErrors.linkedinUrl && (
                   <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
@@ -813,9 +931,11 @@ export const TeacherProfilePage: React.FC = () => {
                     {fieldErrors.linkedinUrl}
                   </p>
                 )}
-                {teacherProfile?.isApproved && (
+                {(currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || teacherProfile?.isApproved) && (
                   <p className="text-[11px] text-neutral-400">
-                    LinkedIn URL cannot be changed after account verification.
+                    {currentApprovalStatus === "IN_PROGRESS"
+                      ? "LinkedIn URL cannot be modified while your application is under evaluation (In Progress)."
+                      : "LinkedIn URL cannot be changed after instructor account verification."}
                   </p>
                 )}
               </div>
@@ -825,9 +945,9 @@ export const TeacherProfilePage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <Label htmlFor="twitterUrl" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
                     Twitter / X URL
-                    {teacherProfile?.isApproved && (
+                    {(currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || teacherProfile?.isApproved) && (
                       <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-normal">
-                        <Lock className="w-3 h-3" /> Locked (Approved)
+                        <Lock className="w-3 h-3" /> Locked ({currentApprovalStatus === "IN_PROGRESS" ? "In Progress" : "Approved"})
                       </span>
                     )}
                   </Label>
@@ -837,9 +957,9 @@ export const TeacherProfilePage: React.FC = () => {
                   value={formData.twitterUrl}
                   onChange={(e) => handleInputChange("twitterUrl", e.target.value)}
                   placeholder="https://x.com/..."
-                  disabled={Boolean(teacherProfile?.isApproved)}
+                  disabled={currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || Boolean(teacherProfile?.isApproved)}
                   className={`rounded-xl ${fieldErrors.twitterUrl ? "border-red-500 focus-visible:ring-red-500" : ""
-                    } ${teacherProfile?.isApproved ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed" : ""}`}
+                    } ${currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || teacherProfile?.isApproved ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed" : ""}`}
                 />
                 {fieldErrors.twitterUrl && (
                   <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
@@ -847,9 +967,11 @@ export const TeacherProfilePage: React.FC = () => {
                     {fieldErrors.twitterUrl}
                   </p>
                 )}
-                {teacherProfile?.isApproved && (
+                {(currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || teacherProfile?.isApproved) && (
                   <p className="text-[11px] text-neutral-400">
-                    Twitter URL cannot be changed after account verification.
+                    {currentApprovalStatus === "IN_PROGRESS"
+                      ? "Twitter / X URL cannot be modified while your application is under evaluation (In Progress)."
+                      : "Twitter / X URL cannot be changed after instructor account verification."}
                   </p>
                 )}
               </div>

@@ -8,9 +8,14 @@ export class ApproveTeacherController {
     execute = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-            const isApproved = req.body?.isApproved !== undefined ? Boolean(req.body.isApproved) : true;
+            const { approvalStatus, isApproved, rejectionReason } = req.body || {};
 
-            const result = await this.approveTeacher.execute(id, isApproved);
+            const result = await this.approveTeacher.execute({
+                userId: id,
+                approvalStatus,
+                isApproved,
+                rejectionReason,
+            });
 
             res.status(STATUS_CODES.OK).json({
                 message: result.message,

@@ -17,6 +17,7 @@ export const userApi = {
     if (params.authProvider) searchParams.append("authProvider", params.authProvider)
     if (params.isBlocked !== undefined) searchParams.append("isBlocked", String(params.isBlocked))
     if (params.isApproved !== undefined) searchParams.append("isApproved", String(params.isApproved))
+    if (params.approvalStatus) searchParams.append("approvalStatus", params.approvalStatus)
     if (params.sortBy) searchParams.append("sortBy", params.sortBy)
     if (params.sortOrder) searchParams.append("sortOrder", params.sortOrder)
 
@@ -42,10 +43,20 @@ export const userApi = {
     })
   },
 
-  approveTeacher: async (id: string, isApproved: boolean = true): Promise<{ message: string; data?: { user: BackendUser } }> => {
+  approveTeacher: async (
+    id: string,
+    payload:
+      | {
+          approvalStatus?: import("../types/user-management.types").ApprovalStatus
+          isApproved?: boolean
+          rejectionReason?: string | null
+        }
+      | boolean = true
+  ): Promise<{ message: string; data?: { user: BackendUser } }> => {
+    const body = typeof payload === "boolean" ? { isApproved: payload } : payload
     return apiClient<{ message: string; data?: { user: BackendUser } }>(`/users/${id}/approve`, {
       method: "PATCH",
-      body: JSON.stringify({ isApproved }),
+      body: JSON.stringify(body),
     })
   },
 }

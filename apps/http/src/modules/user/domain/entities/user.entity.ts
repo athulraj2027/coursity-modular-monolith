@@ -8,6 +8,13 @@ export type AuthProvider =
     | "LOCAL"
     | "GOOGLE";
 
+export type ApprovalStatus =
+    | "PENDING"
+    | "IN_PROGRESS"
+    | "VERIFIED"
+    | "REVOKED"
+    | "REDO";
+
 export interface UserTeacherProfileDetails {
     id: string;
     expertise: string[];
@@ -17,6 +24,9 @@ export interface UserTeacherProfileDetails {
     twitterUrl: string | null;
     websiteUrl: string | null;
     isApproved: boolean;
+    approvalStatus: ApprovalStatus;
+    rejectionReason?: string | null;
+    submissionCount?: number;
     createdAt?: Date;
     updatedAt?: Date;
 }

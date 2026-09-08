@@ -67,10 +67,12 @@ import {
     UpdateProfile as UpdateFullProfile,
     UpdateStudentProfile,
     UpdateTeacherProfile,
+    SubmitTeacherVerification,
     GetProfileController as GetFullProfileController,
     UpdateProfileController as UpdateFullProfileController,
     UpdateStudentProfileController,
     UpdateTeacherProfileController,
+    SubmitTeacherVerificationController,
     ProfileRoutes,
 } from "../../src/modules/profile";
 
@@ -84,8 +86,40 @@ export class InMemoryProfileRepository implements ProfileRepository {
         const user = await this.userRepo.findById(userId);
         if (!user) return null;
 
-        const profile = this.profiles.get(userId) || null;
-        const teacherProfile = profile ? (this.teacherProfiles.get(profile.id) || null) : null;
+        let profile = this.profiles.get(userId) || null;
+        if (!profile && user.profile) {
+            profile = {
+                id: user.profile.id,
+                userId: user.id,
+                avatar: user.profile.avatar,
+                bio: user.profile.bio,
+                phone: user.profile.phone,
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt,
+            };
+            this.profiles.set(userId, profile);
+        }
+
+        let teacherProfile = profile ? (this.teacherProfiles.get(profile.id) || null) : null;
+        if (!teacherProfile && user.profile?.teacherProfile) {
+            teacherProfile = {
+                id: user.profile.teacherProfile.id,
+                profileId: user.profile.id,
+                expertise: user.profile.teacherProfile.expertise,
+                qualifications: user.profile.teacherProfile.qualifications,
+                experienceYears: user.profile.teacherProfile.experienceYears,
+                linkedinUrl: user.profile.teacherProfile.linkedinUrl,
+                twitterUrl: user.profile.teacherProfile.twitterUrl,
+                websiteUrl: user.profile.teacherProfile.websiteUrl,
+                isApproved: user.profile.teacherProfile.isApproved,
+                approvalStatus: user.profile.teacherProfile.approvalStatus,
+                submissionCount: user.profile.teacherProfile.submissionCount || 0,
+                rejectionReason: user.profile.teacherProfile.rejectionReason,
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt,
+            };
+            this.teacherProfiles.set(user.profile.id, teacherProfile);
+        }
 
         const { password, ...safeUser } = user;
         return {
@@ -96,11 +130,52 @@ export class InMemoryProfileRepository implements ProfileRepository {
     }
 
     async getProfileByUserId(userId: string): Promise<UserProfile | null> {
-        return this.profiles.get(userId) || null;
+        let profile = this.profiles.get(userId) || null;
+        if (!profile) {
+            const user = this.userRepo.users.get(userId);
+            if (user?.profile) {
+                profile = {
+                    id: user.profile.id,
+                    userId: user.id,
+                    avatar: user.profile.avatar,
+                    bio: user.profile.bio,
+                    phone: user.profile.phone,
+                    createdAt: user.createdAt,
+                    updatedAt: user.updatedAt,
+                };
+                this.profiles.set(userId, profile);
+            }
+        }
+        return profile;
     }
 
     async getTeacherProfileByProfileId(profileId: string): Promise<TeacherProfile | null> {
-        return this.teacherProfiles.get(profileId) || null;
+        let tp = this.teacherProfiles.get(profileId) || null;
+        if (!tp) {
+            for (const user of this.userRepo.users.values()) {
+                if (user.profile && (user.profile.id === profileId || user.id === profileId) && user.profile.teacherProfile) {
+                    tp = {
+                        id: user.profile.teacherProfile.id,
+                        profileId: user.profile.id,
+                        expertise: user.profile.teacherProfile.expertise,
+                        qualifications: user.profile.teacherProfile.qualifications,
+                        experienceYears: user.profile.teacherProfile.experienceYears,
+                        linkedinUrl: user.profile.teacherProfile.linkedinUrl,
+                        twitterUrl: user.profile.teacherProfile.twitterUrl,
+                        websiteUrl: user.profile.teacherProfile.websiteUrl,
+                        isApproved: user.profile.teacherProfile.isApproved,
+                        approvalStatus: user.profile.teacherProfile.approvalStatus,
+                        submissionCount: user.profile.teacherProfile.submissionCount || 0,
+                        rejectionReason: user.profile.teacherProfile.rejectionReason,
+                        createdAt: user.createdAt,
+                        updatedAt: user.updatedAt,
+                    };
+                    this.teacherProfiles.set(profileId, tp);
+                    break;
+                }
+            }
+        }
+        return tp;
     }
 
     async upsertProfile(
@@ -109,7 +184,7 @@ export class InMemoryProfileRepository implements ProfileRepository {
     ): Promise<UserProfile> {
         const existing = this.profiles.get(userId);
         const profile: UserProfile = {
-            id: existing?.id || `prof_${Math.random().toString(36).substring(2, 9)}`,
+            id: existing?.id || `prof_${userId}`,
             userId,
             avatar: data.avatar !== undefined ? data.avatar : (existing?.avatar ?? null),
             bio: data.bio !== undefined ? data.bio : (existing?.bio ?? null),
@@ -118,6 +193,17 @@ export class InMemoryProfileRepository implements ProfileRepository {
             updatedAt: new Date(),
         };
         this.profiles.set(userId, profile);
+
+        const user = this.userRepo.users.get(userId);
+        if (user) {
+            user.profile = {
+                id: profile.id,
+                avatar: profile.avatar,
+                bio: profile.bio,
+                phone: profile.phone,
+                teacherProfile: user.profile?.teacherProfile || null,
+            };
+        }
         return profile;
     }
 
@@ -127,7 +213,7 @@ export class InMemoryProfileRepository implements ProfileRepository {
     ): Promise<TeacherProfile> {
         const existing = this.teacherProfiles.get(profileId);
         const profile: TeacherProfile = {
-            id: existing?.id || `tp_${Math.random().toString(36).substring(2, 9)}`,
+            id: existing?.id || `tp_${profileId}`,
             profileId,
             expertise: data.expertise !== undefined ? data.expertise : (existing?.expertise ?? []),
             qualifications: data.qualifications !== undefined ? data.qualifications : (existing?.qualifications ?? null),
@@ -136,10 +222,32 @@ export class InMemoryProfileRepository implements ProfileRepository {
             twitterUrl: data.twitterUrl !== undefined ? data.twitterUrl : (existing?.twitterUrl ?? null),
             websiteUrl: data.websiteUrl !== undefined ? data.websiteUrl : (existing?.websiteUrl ?? null),
             isApproved: data.isApproved !== undefined ? data.isApproved : (existing?.isApproved ?? false),
+            approvalStatus: data.approvalStatus !== undefined ? data.approvalStatus : (existing?.approvalStatus ?? "PENDING"),
+            submissionCount: data.submissionCount !== undefined ? data.submissionCount : (existing?.submissionCount ?? 0),
+            rejectionReason: data.rejectionReason !== undefined ? data.rejectionReason : (existing?.rejectionReason ?? null),
             createdAt: existing?.createdAt || new Date(),
             updatedAt: new Date(),
         };
         this.teacherProfiles.set(profileId, profile);
+
+        for (const user of this.userRepo.users.values()) {
+            if (user.profile && (user.profile.id === profileId || user.id === profileId)) {
+                user.profile.teacherProfile = {
+                    id: profile.id,
+                    expertise: profile.expertise,
+                    qualifications: profile.qualifications,
+                    experienceYears: profile.experienceYears,
+                    linkedinUrl: profile.linkedinUrl,
+                    twitterUrl: profile.twitterUrl,
+                    websiteUrl: profile.websiteUrl,
+                    isApproved: profile.isApproved,
+                    approvalStatus: profile.approvalStatus,
+                    submissionCount: profile.submissionCount,
+                    rejectionReason: profile.rejectionReason,
+                };
+                break;
+            }
+        }
         return profile;
     }
 
@@ -150,7 +258,7 @@ export class InMemoryProfileRepository implements ProfileRepository {
 
 export class InMemoryUserRepository implements UserRepository {
     public users = new Map<string, User>();
-
+    public profileRepo?: InMemoryProfileRepository;
 
     async findById(id: string): Promise<User | null> {
         return this.users.get(id) || null;
@@ -175,6 +283,31 @@ export class InMemoryUserRepository implements UserRepository {
             password: data.password,
             role: data.role,
             authProvider: data.authProvider,
+            profile: data.role === "TEACHER" ? {
+                id: `prof_${id}`,
+                avatar: null,
+                bio: null,
+                phone: null,
+                teacherProfile: {
+                    id: `tp_${id}`,
+                    expertise: [],
+                    qualifications: null,
+                    experienceYears: null,
+                    linkedinUrl: null,
+                    twitterUrl: null,
+                    websiteUrl: null,
+                    isApproved: false,
+                    approvalStatus: "PENDING",
+                    submissionCount: 0,
+                    rejectionReason: null,
+                }
+            } : (data.role === "STUDENT" ? {
+                id: `prof_${id}`,
+                avatar: null,
+                bio: null,
+                phone: null,
+                teacherProfile: null,
+            } : null),
             createdAt: new Date(),
             updatedAt: new Date(),
         };
@@ -204,11 +337,34 @@ export class InMemoryUserRepository implements UserRepository {
         return this.update(id, { isBlocked });
     }
 
-    async updateTeacherApproval(userId: string, isApproved: boolean): Promise<User> {
+    async updateTeacherApproval(
+        userId: string,
+        data:
+            | {
+                  approvalStatus?: ApprovalStatus;
+                  isApproved?: boolean;
+                  rejectionReason?: string | null;
+              }
+            | boolean
+    ): Promise<User> {
         const existing = this.users.get(userId);
         if (!existing) {
             throw new Error(`User with id ${userId} not found`);
         }
+
+        let approvalStatus: ApprovalStatus;
+        let isApproved: boolean;
+        let rejectionReason: string | null = null;
+
+        if (typeof data === "boolean") {
+            isApproved = data;
+            approvalStatus = isApproved ? "VERIFIED" : "REVOKED";
+        } else {
+            approvalStatus = data.approvalStatus || (data.isApproved !== undefined ? (data.isApproved ? "VERIFIED" : "REVOKED") : "PENDING");
+            isApproved = data.isApproved !== undefined ? data.isApproved : (approvalStatus === "VERIFIED");
+            rejectionReason = data.rejectionReason ?? null;
+        }
+
         const currentProfile = existing.profile || {
             id: `prof_${userId}`,
             avatar: null,
@@ -225,6 +381,8 @@ export class InMemoryUserRepository implements UserRepository {
             twitterUrl: null,
             websiteUrl: null,
             isApproved: false,
+            approvalStatus: "PENDING" as ApprovalStatus,
+            rejectionReason: null,
         };
         const updated: User = {
             ...existing,
@@ -233,11 +391,24 @@ export class InMemoryUserRepository implements UserRepository {
                 teacherProfile: {
                     ...currentTeacherProfile,
                     isApproved,
+                    approvalStatus,
+                    rejectionReason,
                 },
             },
             updatedAt: new Date(),
         };
         this.users.set(userId, updated);
+
+        if (this.profileRepo) {
+            const profileId = updated.profile?.id || `prof_${userId}`;
+            const existingTp = this.profileRepo.teacherProfiles.get(profileId);
+            if (existingTp) {
+                existingTp.approvalStatus = approvalStatus;
+                existingTp.isApproved = isApproved;
+                existingTp.rejectionReason = rejectionReason;
+            }
+        }
+
         return updated;
     }
 
@@ -259,8 +430,19 @@ export class InMemoryUserRepository implements UserRepository {
             list = list.filter((u) => u.isBlocked === options.isBlocked);
         }
 
+        if (options.approvalStatus !== undefined) {
+            list = list.filter((u) => {
+                const status = u.profile?.teacherProfile?.approvalStatus || (u.role === "TEACHER" ? "PENDING" : undefined);
+                return status === options.approvalStatus;
+            });
+        }
+
         if (options.isApproved !== undefined) {
-            list = list.filter((u) => Boolean(u.profile?.teacherProfile?.isApproved) === options.isApproved);
+            list = list.filter((u) => {
+                if (u.role !== "TEACHER") return false;
+                const isApp = u.profile?.teacherProfile?.isApproved ?? (u.profile?.teacherProfile?.approvalStatus === "VERIFIED");
+                return Boolean(isApp) === options.isApproved;
+            });
         }
 
         if (options.search && options.search.trim() !== "") {
@@ -479,21 +661,25 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
 
     // Profile Setup
     const profileRepo = new InMemoryProfileRepository(userRepo);
+    userRepo.profileRepo = profileRepo;
     const getFullProfile = new GetFullProfile(profileRepo);
     const updateFullProfile = new UpdateFullProfile(profileRepo);
     const updateStudentProfile = new UpdateStudentProfile(profileRepo);
     const updateTeacherProfile = new UpdateTeacherProfile(profileRepo);
+    const submitTeacherVerification = new SubmitTeacherVerification(profileRepo);
 
     const getFullProfileController = new GetFullProfileController(getFullProfile);
     const updateFullProfileController = new UpdateFullProfileController(updateFullProfile);
     const updateStudentProfileController = new UpdateStudentProfileController(updateStudentProfile);
     const updateTeacherProfileController = new UpdateTeacherProfileController(updateTeacherProfile);
+    const submitTeacherVerificationController = new SubmitTeacherVerificationController(submitTeacherVerification);
 
     const profileRoutes = new ProfileRoutes(
         getFullProfileController,
         updateFullProfileController,
         updateStudentProfileController,
         updateTeacherProfileController,
+        submitTeacherVerificationController,
         authMiddleware,
         isBlockedMiddleware
     );

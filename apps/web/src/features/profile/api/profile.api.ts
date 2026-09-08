@@ -65,6 +65,16 @@ export const profileApi = {
     })
     return res.data.profile
   },
+
+  submitTeacherVerification: async (): Promise<{ profile: FullUserProfileResponse; message: string }> => {
+    const res = await apiClient<ProfileApiResponse>("/profile/teacher/submit-verification", {
+      method: "POST",
+    })
+    return {
+      profile: res.data.profile,
+      message: res.message,
+    }
+  },
 }
 
 export default profileApi

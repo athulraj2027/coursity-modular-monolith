@@ -5,7 +5,7 @@ import {
     PaginatedUsersResult,
     UserRepository,
 } from "../../domain/repositories/user.repository";
-import { User, UserRole, AuthProvider } from "../../domain/entities/user.entity";
+import { User, UserRole, AuthProvider, ApprovalStatus } from "../../domain/entities/user.entity";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
 
 export class PrismaUserRepository implements UserRepository {
@@ -93,7 +93,36 @@ export class PrismaUserRepository implements UserRepository {
         return this.update(id, { isBlocked });
     }
 
-    async updateTeacherApproval(userId: string, isApproved: boolean): Promise<User> {
+    async updateTeacherApproval(
+        userId: string,
+        data:
+            | {
+                  approvalStatus?: ApprovalStatus;
+                  isApproved?: boolean;
+                  rejectionReason?: string | null;
+              }
+            | boolean
+    ): Promise<User> {
+        let approvalStatus: ApprovalStatus = "PENDING";
+        let isApproved = false;
+        let rejectionReason: string | null = null;
+
+        if (typeof data === "boolean") {
+            isApproved = data;
+            approvalStatus = data ? "VERIFIED" : "REVOKED";
+        } else {
+            if (data.approvalStatus) {
+                approvalStatus = data.approvalStatus;
+                isApproved = data.approvalStatus === "VERIFIED";
+            } else if (data.isApproved !== undefined) {
+                isApproved = Boolean(data.isApproved);
+                approvalStatus = data.isApproved ? "VERIFIED" : "REVOKED";
+            }
+            if (data.rejectionReason !== undefined) {
+                rejectionReason = data.rejectionReason;
+            }
+        }
+
         let profile = await this.prisma.profile.findUnique({
             where: { userId },
             include: { teacherProfile: true },
@@ -106,6 +135,8 @@ export class PrismaUserRepository implements UserRepository {
                     teacherProfile: {
                         create: {
                             isApproved,
+                            approvalStatus: approvalStatus as any,
+                            rejectionReason,
                         },
                     },
                 },
@@ -116,12 +147,18 @@ export class PrismaUserRepository implements UserRepository {
                 data: {
                     profileId: profile.id,
                     isApproved,
+                    approvalStatus: approvalStatus as any,
+                    rejectionReason,
                 },
             });
         } else {
             await this.prisma.teacherProfile.update({
                 where: { profileId: profile.id },
-                data: { isApproved },
+                data: {
+                    isApproved,
+                    approvalStatus: approvalStatus as any,
+                    rejectionReason,
+                },
             });
         }
 
@@ -151,7 +188,18 @@ export class PrismaUserRepository implements UserRepository {
             andConditions.push({ isBlocked: options.isBlocked });
         }
 
-        if (options.isApproved !== undefined) {
+        if (options.approvalStatus) {
+            if (!options.role) {
+                andConditions.push({ role: "TEACHER" });
+            }
+            andConditions.push({
+                profile: {
+                    teacherProfile: {
+                        approvalStatus: options.approvalStatus,
+                    },
+                },
+            });
+        } else if (options.isApproved !== undefined) {
             if (!options.role) {
                 andConditions.push({ role: "TEACHER" });
             }
@@ -161,7 +209,10 @@ export class PrismaUserRepository implements UserRepository {
                 andConditions.push({
                     profile: {
                         teacherProfile: {
-                            isApproved: true,
+                            OR: [
+                                { isApproved: true },
+                                { approvalStatus: "VERIFIED" },
+                            ],
                         },
                     },
                 });
@@ -170,7 +221,16 @@ export class PrismaUserRepository implements UserRepository {
                     OR: [
                         { profile: null },
                         { profile: { teacherProfile: null } },
-                        { profile: { teacherProfile: { isApproved: false } } },
+                        {
+                            profile: {
+                                teacherProfile: {
+                                    AND: [
+                                        { isApproved: false },
+                                        { approvalStatus: { not: "VERIFIED" } },
+                                    ],
+                                },
+                            },
+                        },
                     ],
                 });
             }
@@ -267,6 +327,11 @@ export class PrismaUserRepository implements UserRepository {
                                 twitterUrl: raw.profile.teacherProfile.twitterUrl ?? null,
                                 websiteUrl: raw.profile.teacherProfile.websiteUrl ?? null,
                                 isApproved: Boolean(raw.profile.teacherProfile.isApproved),
+                                approvalStatus:
+                                    (raw.profile.teacherProfile.approvalStatus as ApprovalStatus) ||
+                                    (raw.profile.teacherProfile.isApproved ? "VERIFIED" : "PENDING"),
+                                rejectionReason: raw.profile.teacherProfile.rejectionReason ?? null,
+                                submissionCount: (raw.profile.teacherProfile as any).submissionCount ?? 0,
                                 createdAt: raw.profile.teacherProfile.createdAt,
                                 updatedAt: raw.profile.teacherProfile.updatedAt,
                             }

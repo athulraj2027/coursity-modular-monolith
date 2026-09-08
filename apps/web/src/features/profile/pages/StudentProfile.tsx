@@ -22,35 +22,13 @@ import { Badge } from "@/components/ui/badge"
 import { ImageUploadInput } from "@/components/common"
 import { toast } from "@/lib/toast"
 import { useProfile, useUpdateStudentProfile } from "../hooks/useProfile"
+import { validateStudentForm } from "../schemas/profile.schema"
 
 interface StudentFormData {
   name: string
   avatar: string
   phone: string
   bio: string
-}
-
-function validateStudentForm(data: StudentFormData): Partial<Record<keyof StudentFormData, string>> {
-  const errors: Partial<Record<keyof StudentFormData, string>> = {}
-
-  const trimmedName = data.name.trim()
-  if (!trimmedName) {
-    errors.name = "Full name is required"
-  } else if (trimmedName.length < 2) {
-    errors.name = "Full name must be at least 2 characters"
-  } else if (trimmedName.length > 100) {
-    errors.name = "Full name cannot exceed 100 characters"
-  }
-
-  if (data.phone && data.phone.trim().length > 20) {
-    errors.phone = "Phone number cannot exceed 20 characters"
-  }
-
-  if (data.bio && data.bio.trim().length > 1000) {
-    errors.bio = "Biography cannot exceed 1000 characters"
-  }
-
-  return errors
 }
 
 export const StudentProfilePage: React.FC = () => {

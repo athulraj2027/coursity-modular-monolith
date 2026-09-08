@@ -240,6 +240,7 @@ describe("User Module Routes", () => {
 
     describe("PATCH /api/users/:id/approve", () => {
         let teacherId: string;
+        let teacherToken: string;
 
         beforeEach(async () => {
             const teacher = await testCtx.userRepo.create({
@@ -250,21 +251,236 @@ describe("User Module Routes", () => {
                 authProvider: "LOCAL",
             });
             teacherId = teacher.id;
+            teacherToken = testCtx.tokenService.generateAccessToken({
+                userId: teacher.id,
+                email: teacher.email,
+                role: teacher.role,
+            });
+
+            // Populate teacher profile with credentials so submission succeeds
+            const prof = await testCtx.profileRepo.upsertProfile(teacherId, {
+                bio: "PhD in Systems with 10 years experience",
+            });
+            await testCtx.profileRepo.upsertTeacherProfile(prof.id, {
+                expertise: ["Distributed Systems", "Cloud Computing"],
+                qualifications: "Ph.D. in Computer Science",
+                approvalStatus: "PENDING",
+                submissionCount: 0,
+            });
         });
 
-        it("should allow admin to approve a teacher", async () => {
-            const res = await request(testCtx.app)
+        it("should enforce transition flow: PENDING (Teacher submit) -> IN_PROGRESS -> VERIFIED -> REVOKED -> PENDING", async () => {
+            // 1. Admin cannot transition directly from PENDING
+            const adminDirectRes = await request(testCtx.app)
                 .patch(`/api/users/${teacherId}/approve`)
                 .set("Authorization", `Bearer ${adminToken}`)
-                .send({ isApproved: true });
+                .send({ approvalStatus: "VERIFIED" });
 
-            assert.equal(res.status, 200);
-            assert.equal(res.body.message, "Instructor has been verified and approved successfully");
-            assert.equal(res.body.data.user.profile?.teacherProfile?.isApproved, true);
+            assert.equal(adminDirectRes.status, 400);
+            assert.match(adminDirectRes.body.message, /in draft \(Pending\)/i);
+
+            // 2. Teacher submits for verification: PENDING -> IN_PROGRESS
+            const submitRes = await request(testCtx.app)
+                .post("/api/profile/teacher/submit-verification")
+                .set("Authorization", `Bearer ${teacherToken}`);
+
+            assert.equal(submitRes.status, 200);
+            assert.equal(submitRes.body.data.profile.teacherProfile.approvalStatus, "IN_PROGRESS");
+            assert.equal(submitRes.body.data.profile.teacherProfile.submissionCount, 1);
+
+            // 3. Admin verifies: IN_PROGRESS -> VERIFIED (Allowed)
+            const verifyRes = await request(testCtx.app)
+                .patch(`/api/users/${teacherId}/approve`)
+                .set("Authorization", `Bearer ${adminToken}`)
+                .send({ approvalStatus: "VERIFIED" });
+
+            assert.equal(verifyRes.status, 200);
+            assert.equal(verifyRes.body.data.user.profile?.teacherProfile?.approvalStatus, "VERIFIED");
+            assert.equal(verifyRes.body.data.user.profile?.teacherProfile?.isApproved, true);
+
+            // 4. Admin revokes: VERIFIED -> REVOKED (Allowed with feedback)
+            const revokeRes = await request(testCtx.app)
+                .patch(`/api/users/${teacherId}/approve`)
+                .set("Authorization", `Bearer ${adminToken}`)
+                .send({
+                    approvalStatus: "REVOKED",
+                    rejectionReason: "Verification revoked due to updated credential requirements.",
+                });
+
+            assert.equal(revokeRes.status, 200);
+            assert.equal(revokeRes.body.data.user.profile?.teacherProfile?.approvalStatus, "REVOKED");
+            assert.equal(revokeRes.body.data.user.profile?.teacherProfile?.isApproved, false);
+
+            // 5. Admin resets: REVOKED -> PENDING (Allowed)
+            const resetRes = await request(testCtx.app)
+                .patch(`/api/users/${teacherId}/approve`)
+                .set("Authorization", `Bearer ${adminToken}`)
+                .send({ approvalStatus: "PENDING" });
+
+            assert.equal(resetRes.status, 200);
+            assert.equal(resetRes.body.data.user.profile?.teacherProfile?.approvalStatus, "PENDING");
+            assert.equal(resetRes.body.data.user.profile?.teacherProfile?.isApproved, false);
+        });
+
+        it("should enforce transition flow: PENDING (Teacher submit) -> IN_PROGRESS -> REDO (Teacher re-submit) -> IN_PROGRESS", async () => {
+            // Teacher submits: PENDING -> IN_PROGRESS
+            await request(testCtx.app)
+                .post("/api/profile/teacher/submit-verification")
+                .set("Authorization", `Bearer ${teacherToken}`);
+
+            // Admin requests redo: IN_PROGRESS -> REDO (with feedback)
+            const redoRes = await request(testCtx.app)
+                .patch(`/api/users/${teacherId}/approve`)
+                .set("Authorization", `Bearer ${adminToken}`)
+                .send({
+                    approvalStatus: "REDO",
+                    rejectionReason: "Please update your experience and certifications.",
+                });
+
+            assert.equal(redoRes.status, 200);
+            assert.equal(redoRes.body.data.user.profile?.teacherProfile?.approvalStatus, "REDO");
+
+            // Admin cannot transition directly from REDO
+            const adminInRedo = await request(testCtx.app)
+                .patch(`/api/users/${teacherId}/approve`)
+                .set("Authorization", `Bearer ${adminToken}`)
+                .send({ approvalStatus: "VERIFIED" });
+
+            assert.equal(adminInRedo.status, 400);
+            assert.match(adminInRedo.body.message, /marked for revision \(Redo\)/i);
+
+            // Teacher re-submits: REDO -> IN_PROGRESS
+            const resubmitRes = await request(testCtx.app)
+                .post("/api/profile/teacher/submit-verification")
+                .set("Authorization", `Bearer ${teacherToken}`);
+
+            assert.equal(resubmitRes.status, 200);
+            assert.equal(resubmitRes.body.data.profile.teacherProfile.approvalStatus, "IN_PROGRESS");
+            assert.equal(resubmitRes.body.data.profile.teacherProfile.submissionCount, 2);
+        });
+
+        it("should enforce 5-attempt limit on verification submissions", async () => {
+            // Submit 5 times (alternating PENDING/REDO -> IN_PROGRESS)
+            for (let attempt = 1; attempt <= 5; attempt++) {
+                const subRes = await request(testCtx.app)
+                    .post("/api/profile/teacher/submit-verification")
+                    .set("Authorization", `Bearer ${teacherToken}`);
+
+                assert.equal(subRes.status, 200);
+                assert.equal(subRes.body.data.profile.teacherProfile.submissionCount, attempt);
+
+                if (attempt < 5) {
+                    // Admin sets to REDO for next iteration
+                    await request(testCtx.app)
+                        .patch(`/api/users/${teacherId}/approve`)
+                        .set("Authorization", `Bearer ${adminToken}`)
+                        .send({
+                            approvalStatus: "REDO",
+                            rejectionReason: `Need more changes for attempt ${attempt}`,
+                        });
+                }
+            }
+
+            // Set to REDO so teacher is in an eligible status to try 6th time
+            await request(testCtx.app)
+                .patch(`/api/users/${teacherId}/approve`)
+                .set("Authorization", `Bearer ${adminToken}`)
+                .send({
+                    approvalStatus: "REDO",
+                    rejectionReason: "Final feedback attempt",
+                });
+
+            // 6th attempt should fail due to 5-attempt limit
+            const sixthRes = await request(testCtx.app)
+                .post("/api/profile/teacher/submit-verification")
+                .set("Authorization", `Bearer ${teacherToken}`);
+
+            assert.equal(sixthRes.status, 400);
+            assert.match(sixthRes.body.message, /maximum verification submission limit \(5 attempts\)/i);
+        });
+
+        it("should reject invalid transitions from VERIFIED (only REVOKED allowed)", async () => {
+            // Teacher submits -> Admin verifies
+            await request(testCtx.app)
+                .post("/api/profile/teacher/submit-verification")
+                .set("Authorization", `Bearer ${teacherToken}`);
+            await request(testCtx.app)
+                .patch(`/api/users/${teacherId}/approve`)
+                .set("Authorization", `Bearer ${adminToken}`)
+                .send({ approvalStatus: "VERIFIED" });
+
+            // Try VERIFIED -> REDO
+            const resRedo = await request(testCtx.app)
+                .patch(`/api/users/${teacherId}/approve`)
+                .set("Authorization", `Bearer ${adminToken}`)
+                .send({ approvalStatus: "REDO", rejectionReason: "Needs changes" });
+
+            assert.equal(resRedo.status, 400);
+            assert.match(resRedo.body.message, /invalid status transition from VERIFIED to REDO/i);
+        });
+
+        it("should require feedback suggestion when revoking verification or requesting redo", async () => {
+            // Teacher submits -> Admin verifies
+            await request(testCtx.app)
+                .post("/api/profile/teacher/submit-verification")
+                .set("Authorization", `Bearer ${teacherToken}`);
+            await request(testCtx.app)
+                .patch(`/api/users/${teacherId}/approve`)
+                .set("Authorization", `Bearer ${adminToken}`)
+                .send({ approvalStatus: "VERIFIED" });
+
+            // Missing rejectionReason on REVOKED
+            const resWithoutReason = await request(testCtx.app)
+                .patch(`/api/users/${teacherId}/approve`)
+                .set("Authorization", `Bearer ${adminToken}`)
+                .send({ approvalStatus: "REVOKED" });
+
+            assert.equal(resWithoutReason.status, 400);
+            assert.equal(resWithoutReason.body.message, "Validation error");
+            assert.match(resWithoutReason.body.errors[0].message, /suggestion or feedback/i);
+        });
+
+        it("should allow admin to filter teachers by approvalStatus", async () => {
+            // Initially teacher is PENDING
+            const resPendingQuery = await request(testCtx.app)
+                .get("/api/users?role=TEACHER&approvalStatus=PENDING")
+                .set("Authorization", `Bearer ${adminToken}`);
+
+            assert.equal(resPendingQuery.status, 200);
+            assert.equal(resPendingQuery.body.data.total, 1);
+            assert.equal(resPendingQuery.body.data.users[0].id, teacherId);
+
+            // Teacher submits -> Admin marks REDO
+            await request(testCtx.app)
+                .post("/api/profile/teacher/submit-verification")
+                .set("Authorization", `Bearer ${teacherToken}`);
+
+            await request(testCtx.app)
+                .patch(`/api/users/${teacherId}/approve`)
+                .set("Authorization", `Bearer ${adminToken}`)
+                .send({
+                    approvalStatus: "REDO",
+                    rejectionReason: "Please provide a more detailed bio and portfolio link.",
+                });
+
+            const resRedoQuery = await request(testCtx.app)
+                .get("/api/users?role=TEACHER&approvalStatus=REDO")
+                .set("Authorization", `Bearer ${adminToken}`);
+
+            assert.equal(resRedoQuery.status, 200);
+            assert.equal(resRedoQuery.body.data.total, 1);
+            assert.equal(resRedoQuery.body.data.users[0].id, teacherId);
+
+            const resVerifiedQuery = await request(testCtx.app)
+                .get("/api/users?role=TEACHER&approvalStatus=VERIFIED")
+                .set("Authorization", `Bearer ${adminToken}`);
+
+            assert.equal(resVerifiedQuery.status, 200);
+            assert.equal(resVerifiedQuery.body.data.total, 0);
         });
 
         it("should allow admin to filter teachers by isApproved", async () => {
-            // Initially teacher is not approved (isApproved: false)
+            // Teacher is currently PENDING (isApproved: false)
             const resUnapproved = await request(testCtx.app)
                 .get("/api/users?role=TEACHER&isApproved=false")
                 .set("Authorization", `Bearer ${adminToken}`);
@@ -273,11 +489,15 @@ describe("User Module Routes", () => {
             assert.equal(resUnapproved.body.data.total, 1);
             assert.equal(resUnapproved.body.data.users[0].id, teacherId);
 
-            // Now approve teacher
+            // Teacher submits -> Admin verifies
+            await request(testCtx.app)
+                .post("/api/profile/teacher/submit-verification")
+                .set("Authorization", `Bearer ${teacherToken}`);
+
             await request(testCtx.app)
                 .patch(`/api/users/${teacherId}/approve`)
                 .set("Authorization", `Bearer ${adminToken}`)
-                .send({ isApproved: true });
+                .send({ approvalStatus: "VERIFIED" });
 
             // Query isApproved=true
             const resApproved = await request(testCtx.app)
@@ -301,7 +521,7 @@ describe("User Module Routes", () => {
             const res = await request(testCtx.app)
                 .patch(`/api/users/${studentId}/approve`)
                 .set("Authorization", `Bearer ${adminToken}`)
-                .send({ isApproved: true });
+                .send({ approvalStatus: "VERIFIED" });
 
             assert.equal(res.status, 400);
             assert.match(res.body.message, /instructor/i);
@@ -311,7 +531,7 @@ describe("User Module Routes", () => {
             const res = await request(testCtx.app)
                 .patch(`/api/users/${teacherId}/approve`)
                 .set("Authorization", `Bearer ${studentToken}`)
-                .send({ isApproved: true });
+                .send({ approvalStatus: "VERIFIED" });
 
             assert.equal(res.status, 403);
         });

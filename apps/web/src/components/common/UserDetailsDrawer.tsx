@@ -16,11 +16,13 @@ import {
   AlertCircle,
   ExternalLink,
   Sparkles,
-  UserCheck,
   UserX,
+  RotateCcw,
+  MessageSquare,
+  SlidersHorizontal,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import type { BackendUser, UserRole } from "@/features/dashboard/types/user-management.types"
+import type { BackendUser, UserRole, ApprovalStatus } from "@/features/dashboard/types/user-management.types"
 
 export interface UserDetailsDrawerProps {
   user: BackendUser | null
@@ -30,7 +32,7 @@ export interface UserDetailsDrawerProps {
   initialsFallback?: string
   onBlock?: (userId: string) => void
   isBlocking?: boolean
-  onApprove?: (userId: string, isApproved: boolean) => void
+  onApprove?: (userId: string, status?: ApprovalStatus | boolean) => void
   isApproving?: boolean
   customFields?: (user: BackendUser) => React.ReactNode
   customActions?: (user: BackendUser) => React.ReactNode
@@ -89,7 +91,9 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
   const profile = user.profile
   const teacherProfile = profile?.teacherProfile
   const isTeacher = user.role === "TEACHER"
-  const isApproved = teacherProfile?.isApproved ?? false
+  const approvalStatus: ApprovalStatus =
+    teacherProfile?.approvalStatus ||
+    (teacherProfile?.isApproved ? "VERIFIED" : "PENDING")
 
   const getRoleIcon = (role: UserRole) => {
     switch (role) {
@@ -101,6 +105,47 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
         return <Shield className="w-4 h-4 text-purple-500" />
       default:
         return <Shield className="w-4 h-4 text-neutral-400" />
+    }
+  }
+
+  const renderApprovalStatusBadge = (status: ApprovalStatus) => {
+    switch (status) {
+      case "VERIFIED":
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+            <CheckCircle2 className="w-3 h-3" />
+            Verified
+          </span>
+        )
+      case "IN_PROGRESS":
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
+            <Clock className="w-3 h-3" />
+            In Progress
+          </span>
+        )
+      case "REDO":
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 shrink-0">
+            <RotateCcw className="w-3 h-3" />
+            Needs Revision
+          </span>
+        )
+      case "REVOKED":
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">
+            <UserX className="w-3 h-3" />
+            Revoked
+          </span>
+        )
+      case "PENDING":
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+            <AlertCircle className="w-3 h-3" />
+            Pending Verification
+          </span>
+        )
     }
   }
 
@@ -135,19 +180,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                 <h3 className="text-lg font-bold text-neutral-900 dark:text-white truncate">
                   {user.name || titleFallback}
                 </h3>
-                {isTeacher && (
-                  isApproved ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
-                      <CheckCircle2 className="w-3 h-3" />
-                      Verified
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
-                      <AlertCircle className="w-3 h-3" />
-                      Pending Verification
-                    </span>
-                  )
-                )}
+                {isTeacher && renderApprovalStatusBadge(approvalStatus)}
               </div>
               <p className="text-xs text-neutral-500 truncate">{user.email}</p>
             </div>
@@ -228,23 +261,26 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
               <div className="flex items-center justify-between border-b border-neutral-200/60 dark:border-neutral-800/80 pb-2">
                 <div className="text-[11px] uppercase tracking-wider font-bold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
                   <Award className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Instructor Credentials & Verification</span>
+                  <span>Instructor Credentials & Lifecycle</span>
                 </div>
-                {isApproved ? (
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" />
-                    Verified
-                  </span>
-                ) : (
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    Pending Verification
-                  </span>
-                )}
+                {renderApprovalStatusBadge(approvalStatus)}
               </div>
 
+              {/* Actionable Feedback / Rejection Reason Callout if present */}
+              {teacherProfile?.rejectionReason && (
+                <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 space-y-1.5 text-left">
+                  <div className="flex items-center gap-1.5 text-orange-700 dark:text-orange-300 font-bold text-xs">
+                    <MessageSquare className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                    <span>Admin Feedback & Improvement Suggestions:</span>
+                  </div>
+                  <p className="text-xs text-neutral-800 dark:text-neutral-200 bg-white/80 dark:bg-neutral-900/80 p-2.5 rounded-lg border border-orange-500/20 italic">
+                    "{teacherProfile.rejectionReason}"
+                  </p>
+                </div>
+              )}
+
               {/* Qualifications & Experience */}
-              <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                 <div className="p-2.5 rounded-lg bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/60 dark:border-neutral-800 space-y-1">
                   <div className="text-neutral-500 text-[10px] uppercase font-semibold flex items-center gap-1">
                     <Award className="w-3 h-3 text-emerald-500" />
@@ -264,6 +300,16 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                     {teacherProfile?.experienceYears !== undefined && teacherProfile?.experienceYears !== null
                       ? `${teacherProfile.experienceYears} Years`
                       : "Not specified"}
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/60 dark:border-neutral-800 space-y-1 col-span-2 sm:col-span-1">
+                  <div className="text-neutral-500 text-[10px] uppercase font-semibold flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-purple-500" />
+                    <span>Submissions</span>
+                  </div>
+                  <div className="font-semibold text-neutral-800 dark:text-neutral-200">
+                    {teacherProfile?.submissionCount ?? 0} / 5 attempts
                   </div>
                 </div>
               </div>
@@ -396,30 +442,17 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
         {/* Drawer Actions (Sticky Footer) */}
         <div className="p-5 sm:p-6 border-t border-neutral-200/80 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/40 flex flex-wrap items-center justify-between gap-2 shrink-0">
           <div className="flex items-center flex-wrap gap-2">
-            {/* Mark Verified / Revoke Approval button for teachers */}
+            {/* Manage Verification & Approval Lifecycle for Teachers */}
             {isTeacher && onApprove && (
-              !isApproved ? (
-                <Button
-                  type="button"
-                  onClick={() => onApprove(user.id, true)}
-                  disabled={isApproving}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded-xl cursor-pointer flex items-center gap-1.5 shadow-xs"
-                >
-                  <UserCheck className="w-3.5 h-3.5" />
-                  <span>{isApproving ? "Updating..." : "Mark Verified"}</span>
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onApprove(user.id, false)}
-                  disabled={isApproving}
-                  className="text-amber-600 border-amber-500/30 hover:bg-amber-500/10 text-xs rounded-xl cursor-pointer flex items-center gap-1.5"
-                >
-                  <UserX className="w-3.5 h-3.5" />
-                  <span>{isApproving ? "Updating..." : "Revoke Verification"}</span>
-                </Button>
-              )
+              <Button
+                type="button"
+                onClick={() => onApprove(user.id, approvalStatus)}
+                disabled={isApproving}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded-xl cursor-pointer flex items-center gap-1.5 shadow-xs"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>{isApproving ? "Updating..." : "Manage Approval Status"}</span>
+              </Button>
             )}
 
             {onBlock && (
@@ -456,3 +489,5 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
     </div>
   )
 }
+
+export default UserDetailsDrawer

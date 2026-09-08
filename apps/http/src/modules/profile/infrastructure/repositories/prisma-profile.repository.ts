@@ -47,6 +47,11 @@ export class PrismaProfileRepository implements ProfileRepository {
                     twitterUrl: teacherProfile.twitterUrl,
                     websiteUrl: teacherProfile.websiteUrl,
                     isApproved: teacherProfile.isApproved,
+                    approvalStatus:
+                        (teacherProfile.approvalStatus as any) ||
+                        (teacherProfile.isApproved ? "VERIFIED" : "PENDING"),
+                    rejectionReason: teacherProfile.rejectionReason ?? null,
+                    submissionCount: (teacherProfile as any).submissionCount ?? 0,
                     createdAt: teacherProfile.createdAt,
                     updatedAt: teacherProfile.updatedAt,
                 }
@@ -102,6 +107,9 @@ export class PrismaProfileRepository implements ProfileRepository {
                 linkedinUrl: data.linkedinUrl ?? null,
                 twitterUrl: data.twitterUrl ?? null,
                 websiteUrl: data.websiteUrl ?? null,
+                approvalStatus: ((data as any).approvalStatus as any) ?? "PENDING",
+                rejectionReason: (data as any).rejectionReason ?? null,
+                submissionCount: (data as any).submissionCount ?? 0,
             },
             update: {
                 ...(data.expertise !== undefined ? { expertise: data.expertise } : {}),
@@ -110,6 +118,9 @@ export class PrismaProfileRepository implements ProfileRepository {
                 ...(data.linkedinUrl !== undefined ? { linkedinUrl: data.linkedinUrl } : {}),
                 ...(data.twitterUrl !== undefined ? { twitterUrl: data.twitterUrl } : {}),
                 ...(data.websiteUrl !== undefined ? { websiteUrl: data.websiteUrl } : {}),
+                ...((data as any).approvalStatus !== undefined ? { approvalStatus: (data as any).approvalStatus as any } : {}),
+                ...((data as any).rejectionReason !== undefined ? { rejectionReason: (data as any).rejectionReason } : {}),
+                ...((data as any).submissionCount !== undefined ? { submissionCount: (data as any).submissionCount } : {}),
             },
         });
     }

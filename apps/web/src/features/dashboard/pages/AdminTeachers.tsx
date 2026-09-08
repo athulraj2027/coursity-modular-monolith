@@ -10,6 +10,11 @@ import {
   GraduationCap,
   CheckCircle2,
   AlertCircle,
+  Clock,
+  RotateCcw,
+  UserX,
+  MessageSquare,
+  SlidersHorizontal,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,7 +27,7 @@ import {
 } from "@/components/common"
 import { useUsers, useBlockUser, useApproveTeacher } from "../hooks/useUsers"
 import { useDebounce } from "@/hooks/use-debounce"
-import type { BackendUser, AuthProvider } from "../types/user-management.types"
+import type { BackendUser, AuthProvider, ApprovalStatus } from "../types/user-management.types"
 
 export const AdminTeachersPage = () => {
   const [searchQuery, setSearchQuery] = useState("")
@@ -34,7 +39,10 @@ export const AdminTeachersPage = () => {
   const [sortOption, setSortOption] = useState<string>("newest")
   const [selectedTeacher, setSelectedTeacher] = useState<BackendUser | null>(null)
   const [teacherToBlock, setTeacherToBlock] = useState<BackendUser | null>(null)
-  const [teacherToApprove, setTeacherToApprove] = useState<{ user: BackendUser; isApproved: boolean } | null>(null)
+  const [teacherToApprove, setTeacherToApprove] = useState<{
+    user: BackendUser
+    targetStatus?: ApprovalStatus | boolean
+  } | null>(null)
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -55,11 +63,10 @@ export const AdminTeachersPage = () => {
     }
   }, [sortOption])
 
-  // Real backend query with isApproved filter
-  const isApprovedQuery = useMemo(() => {
-    if (approvalFilter === "pending") return false
-    if (approvalFilter === "approved") return true
-    return undefined
+  // Approval status query filter
+  const approvalStatusQuery = useMemo(() => {
+    if (approvalFilter === "all") return undefined
+    return approvalFilter as ApprovalStatus
   }, [approvalFilter])
 
   const {
@@ -75,7 +82,7 @@ export const AdminTeachersPage = () => {
     limit: pageSize,
     search: debouncedSearch || undefined,
     authProvider: authProviderFilter === "all" ? undefined : (authProviderFilter as AuthProvider),
-    isApproved: isApprovedQuery,
+    approvalStatus: approvalStatusQuery,
     sortBy,
     sortOrder,
   })
@@ -96,21 +103,44 @@ export const AdminTeachersPage = () => {
   const allTeachersList = allTeachersResponse?.data?.users || []
   const globalCounts = useMemo(() => {
     const total = allTeachersResponse?.data?.total ?? totalItems
-    const pending = allTeachersList.filter((t) => !t.profile?.teacherProfile?.isApproved).length
-    const approved = allTeachersList.filter((t) => Boolean(t.profile?.teacherProfile?.isApproved)).length
+
+    let pending = 0
+    let inProgress = 0
+    let verified = 0
+    let redo = 0
+    let revoked = 0
+
+    allTeachersList.forEach((t) => {
+      const status: ApprovalStatus =
+        t.profile?.teacherProfile?.approvalStatus ||
+        (t.profile?.teacherProfile?.isApproved ? "VERIFIED" : "PENDING")
+
+      if (status === "VERIFIED") verified++
+      else if (status === "IN_PROGRESS") inProgress++
+      else if (status === "REDO") redo++
+      else if (status === "REVOKED") revoked++
+      else pending++
+    })
+
     const google = allTeachersList.filter((t) => t.authProvider === "GOOGLE").length
     const local = allTeachersList.filter((t) => t.authProvider === "LOCAL").length
+
     return {
       total,
       pending,
-      approved,
+      inProgress,
+      verified,
+      redo,
+      revoked,
       google,
       local,
     }
   }, [allTeachersResponse, allTeachersList, totalItems])
 
   const handleOpenBlockModal = (teacherId: string) => {
-    const teacher = teachers.find((t) => t.id === teacherId) || (selectedTeacher?.id === teacherId ? selectedTeacher : null)
+    const teacher =
+      teachers.find((t) => t.id === teacherId) ||
+      (selectedTeacher?.id === teacherId ? selectedTeacher : null)
     if (teacher) {
       setTeacherToBlock(teacher)
     }
@@ -130,17 +160,31 @@ export const AdminTeachersPage = () => {
     }
   }
 
-  const handleOpenApproveModal = (teacherId: string, isApproved: boolean = true) => {
-    const teacher = teachers.find((t) => t.id === teacherId) || (selectedTeacher?.id === teacherId ? selectedTeacher : null)
+  const handleOpenApproveModal = (
+    teacherId: string,
+    targetStatus?: ApprovalStatus | boolean
+  ) => {
+    const teacher =
+      teachers.find((t) => t.id === teacherId) ||
+      (selectedTeacher?.id === teacherId ? selectedTeacher : null)
     if (teacher) {
-      setTeacherToApprove({ user: teacher, isApproved })
+      setTeacherToApprove({ user: teacher, targetStatus })
     }
   }
 
-  const handleConfirmApprove = async () => {
+  const handleConfirmApprove = async (data: {
+    approvalStatus: ApprovalStatus
+    isApproved: boolean
+    rejectionReason?: string | null
+  }) => {
     if (!teacherToApprove) return
-    const { user, isApproved } = teacherToApprove
-    const res = await approveTeacherMutation.mutateAsync({ id: user.id, isApproved })
+    const { user } = teacherToApprove
+    const res = await approveTeacherMutation.mutateAsync({
+      id: user.id,
+      approvalStatus: data.approvalStatus,
+      isApproved: data.isApproved,
+      rejectionReason: data.rejectionReason,
+    })
     setTeacherToApprove(null)
     if (selectedTeacher?.id === user.id) {
       if (res?.data?.user) {
@@ -156,7 +200,9 @@ export const AdminTeachersPage = () => {
                   teacherProfile: prev.profile.teacherProfile
                     ? {
                         ...prev.profile.teacherProfile,
-                        isApproved,
+                        approvalStatus: data.approvalStatus,
+                        isApproved: data.isApproved,
+                        rejectionReason: data.rejectionReason ?? null,
                       }
                     : undefined,
                 }
@@ -175,14 +221,18 @@ export const AdminTeachersPage = () => {
     setCurrentPage(1)
   }
 
-  const hasActiveFilters = Boolean(searchQuery) || approvalFilter !== "all" || authProviderFilter !== "all" || sortOption !== "newest"
+  const hasActiveFilters =
+    Boolean(searchQuery) ||
+    approvalFilter !== "all" ||
+    authProviderFilter !== "all" ||
+    sortOption !== "newest"
 
   // Metrics
   const metrics: TableMetricCard[] = [
     { label: "Total Instructors", val: globalCounts.total, icon: Users, color: "text-[#F42A18]" },
     { label: "Pending Verification", val: globalCounts.pending, icon: AlertCircle, color: "text-amber-500" },
-    { label: "Verified Instructors", val: globalCounts.approved, icon: CheckCircle2, color: "text-emerald-500" },
-    { label: "Google Account Hosts", val: globalCounts.google, icon: Globe, color: "text-blue-500" },
+    { label: "In Evaluation", val: globalCounts.inProgress, icon: Clock, color: "text-blue-500" },
+    { label: "Verified Instructors", val: globalCounts.verified, icon: CheckCircle2, color: "text-emerald-500" },
   ]
 
   // Columns Configuration
@@ -230,21 +280,67 @@ export const AdminTeachersPage = () => {
       },
     },
     {
-      header: "Verification Status",
+      header: "Lifecycle Status",
       align: "center",
       cell: (teacher) => {
-        const isApproved = Boolean(teacher.profile?.teacherProfile?.isApproved)
-        return isApproved ? (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            Verified
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-            <AlertCircle className="w-3.5 h-3.5" />
-            Pending Verification
-          </span>
-        )
+        const status: ApprovalStatus =
+          teacher.profile?.teacherProfile?.approvalStatus ||
+          (teacher.profile?.teacherProfile?.isApproved ? "VERIFIED" : "PENDING")
+
+        switch (status) {
+          case "VERIFIED":
+            return (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Verified
+              </span>
+            )
+          case "IN_PROGRESS":
+            return (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                <Clock className="w-3.5 h-3.5" />
+                In Progress
+              </span>
+            )
+          case "REDO":
+            return (
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Needs Revision
+                </span>
+                {teacher.profile?.teacherProfile?.rejectionReason && (
+                  <span className="text-[10px] text-orange-600/80 dark:text-orange-400/80 flex items-center gap-0.5 font-medium">
+                    <MessageSquare className="w-2.5 h-2.5" />
+                    Feedback Given
+                  </span>
+                )}
+              </div>
+            )
+          case "REVOKED":
+            return (
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                  <UserX className="w-3.5 h-3.5" />
+                  Revoked
+                </span>
+                {teacher.profile?.teacherProfile?.rejectionReason && (
+                  <span className="text-[10px] text-rose-600/80 dark:text-rose-400/80 flex items-center gap-0.5 font-medium">
+                    <MessageSquare className="w-2.5 h-2.5" />
+                    Feedback Given
+                  </span>
+                )}
+              </div>
+            )
+          case "PENDING":
+          default:
+            return (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                <AlertCircle className="w-3.5 h-3.5" />
+                Pending Review
+              </span>
+            )
+        }
       },
     },
     {
@@ -310,6 +406,17 @@ export const AdminTeachersPage = () => {
             Details
           </Button>
 
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleOpenApproveModal(teacher.id)}
+            title="Update Approval & Verification Status"
+            className="h-8 px-2 text-xs rounded-lg border-neutral-200 dark:border-neutral-800 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Status</span>
+          </Button>
+
           <button
             type="button"
             onClick={() => handleOpenBlockModal(teacher.id)}
@@ -343,7 +450,7 @@ export const AdminTeachersPage = () => {
 
       <VerifyTeacherModal
         user={teacherToApprove?.user || null}
-        targetStatus={teacherToApprove?.isApproved ?? true}
+        targetStatus={teacherToApprove?.targetStatus}
         isOpen={Boolean(teacherToApprove)}
         onClose={() => setTeacherToApprove(null)}
         onConfirm={handleConfirmApprove}
@@ -368,7 +475,7 @@ export const AdminTeachersPage = () => {
         label: "Instructor Verification & Directory",
       }}
       title="Teacher Directory"
-      description="Review instructor credentials, approve instructor accounts, and inspect detailed profiles."
+      description="Review instructor credentials, evaluate applications, request revisions, and manage verified instructor status."
       headerActions={
         <div className="flex items-center gap-2">
           <button
@@ -395,8 +502,11 @@ export const AdminTeachersPage = () => {
       }}
       tabs={[
         { key: "all", label: "All Instructors", count: globalCounts.total },
-        { key: "pending", label: "Pending Verification", count: globalCounts.pending },
-        { key: "approved", label: "Verified Instructors", count: globalCounts.approved },
+        { key: "PENDING", label: "Pending", count: globalCounts.pending },
+        { key: "IN_PROGRESS", label: "In Progress", count: globalCounts.inProgress },
+        { key: "VERIFIED", label: "Verified", count: globalCounts.verified },
+        { key: "REDO", label: "Needs Revision", count: globalCounts.redo },
+        { key: "REVOKED", label: "Revoked", count: globalCounts.revoked },
       ]}
       activeTab={approvalFilter}
       onTabChange={(k) => {
@@ -412,9 +522,12 @@ export const AdminTeachersPage = () => {
             setCurrentPage(1)
           },
           options: [
-            { label: "All Verification Statuses", value: "all" },
-            { label: "Pending Verification", value: "pending" },
-            { label: "Verified Instructors", value: "approved" },
+            { label: "All Approval Statuses", value: "all" },
+            { label: "Pending Verification", value: "PENDING" },
+            { label: "In Progress (Evaluation)", value: "IN_PROGRESS" },
+            { label: "Verified Instructors", value: "VERIFIED" },
+            { label: "Needs Revision (Redo)", value: "REDO" },
+            { label: "Verification Revoked", value: "REVOKED" },
           ],
         },
         {
@@ -451,11 +564,18 @@ export const AdminTeachersPage = () => {
       emptyState={{
         title: isError ? "Unable to load instructors" : "No instructors found",
         description: isError
-          ? (error as any)?.message || "Failed to fetch instructors from the server. Please verify your admin credentials."
-          : approvalFilter === "pending"
-          ? "There are currently no instructor profiles awaiting verification."
-          : approvalFilter === "approved"
+          ? (error as any)?.message ||
+            "Failed to fetch instructors from the server. Please verify your admin credentials."
+          : approvalFilter === "PENDING"
+          ? "There are currently no instructor profiles awaiting initial verification."
+          : approvalFilter === "IN_PROGRESS"
+          ? "There are no instructor profiles currently marked as in progress."
+          : approvalFilter === "VERIFIED"
           ? "No verified instructor accounts found matching the criteria."
+          : approvalFilter === "REDO"
+          ? "No instructor accounts currently have revision requests pending."
+          : approvalFilter === "REVOKED"
+          ? "No instructor accounts with revoked verification found."
           : "No instructor records matching your search or filters were found.",
       }}
       pagination={{

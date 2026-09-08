@@ -1,5 +1,6 @@
 export type UserRole = "STUDENT" | "TEACHER" | "ADMIN"
 export type AuthProvider = "LOCAL" | "GOOGLE"
+export type ApprovalStatus = "PENDING" | "IN_PROGRESS" | "VERIFIED" | "REVOKED" | "REDO"
 
 export interface UserProfileModel {
   id: string
@@ -21,6 +22,9 @@ export interface TeacherProfileModel {
   twitterUrl: string | null
   websiteUrl: string | null
   isApproved: boolean
+  approvalStatus: ApprovalStatus
+  rejectionReason?: string | null
+  submissionCount?: number
   createdAt: string
   updatedAt: string
 }

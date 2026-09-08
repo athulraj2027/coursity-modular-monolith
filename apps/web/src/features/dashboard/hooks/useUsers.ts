@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { userApi } from "../api/user.api"
-import type { GetUsersParams } from "../types/user-management.types"
+import type { GetUsersParams, ApprovalStatus } from "../types/user-management.types"
 import { toast } from "@/lib/toast"
 
 export const USER_QUERY_KEY = ["admin-users"] as const
@@ -16,6 +16,7 @@ export function useUsers(params: GetUsersParams = {}) {
         search: params.search || "",
         authProvider: params.authProvider || "all",
         isApproved: params.isApproved === undefined ? "all" : params.isApproved,
+        approvalStatus: params.approvalStatus || "all",
         isBlocked: params.isBlocked === undefined ? "all" : params.isBlocked,
         sortBy: params.sortBy || "createdAt",
         sortOrder: params.sortOrder || "desc",
@@ -48,10 +49,21 @@ export function useApproveTeacher() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (payload: { id: string; isApproved?: boolean } | string) => {
-      const teacherId = typeof payload === "string" ? payload : payload.id
-      const isApproved = typeof payload === "object" && payload.isApproved !== undefined ? payload.isApproved : true
-      return userApi.approveTeacher(teacherId, isApproved)
+    mutationFn: async (
+      payload:
+        | {
+            id: string
+            approvalStatus?: ApprovalStatus
+            isApproved?: boolean
+            rejectionReason?: string | null
+          }
+        | string
+    ) => {
+      if (typeof payload === "string") {
+        return userApi.approveTeacher(payload, true)
+      }
+      const { id, ...data } = payload
+      return userApi.approveTeacher(id, data)
     },
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: USER_QUERY_KEY })

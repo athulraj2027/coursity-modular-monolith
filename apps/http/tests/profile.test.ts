@@ -267,6 +267,38 @@ describe("Profile Module Routes", () => {
             assert.match(res.body.message, /LinkedIn/i);
         });
 
+        it("should reject modifying linkedinUrl and twitterUrl when teacher status is IN_PROGRESS", async () => {
+            // Setup an IN_PROGRESS teacher profile
+            const profile = await testCtx.profileRepo.upsertProfile(teacherId, {});
+            await testCtx.profileRepo.upsertTeacherProfile(profile.id, {
+                linkedinUrl: "https://linkedin.com/in/in-progress-teacher",
+                twitterUrl: "https://twitter.com/in-progress-teacher",
+                approvalStatus: "IN_PROGRESS",
+            });
+
+            // Attempt to change linkedinUrl
+            const resLinkedin = await request(testCtx.app)
+                .patch("/api/profile/teacher")
+                .set("Authorization", `Bearer ${teacherToken}`)
+                .send({
+                    linkedinUrl: "https://linkedin.com/in/changed-in-progress-teacher",
+                });
+
+            assert.equal(resLinkedin.status, 400);
+            assert.match(resLinkedin.body.message, /In Progress/i);
+
+            // Attempt to change twitterUrl
+            const resTwitter = await request(testCtx.app)
+                .patch("/api/profile/teacher")
+                .set("Authorization", `Bearer ${teacherToken}`)
+                .send({
+                    twitterUrl: "https://twitter.com/changed-in-progress-teacher",
+                });
+
+            assert.equal(resTwitter.status, 400);
+            assert.match(resTwitter.body.message, /In Progress/i);
+        });
+
         it("should reject modifying twitterUrl when teacher is approved", async () => {
             // Setup an approved teacher profile
             const profile = await testCtx.profileRepo.upsertProfile(teacherId, {});
@@ -286,6 +318,31 @@ describe("Profile Module Routes", () => {
 
             assert.equal(res.status, 400);
             assert.match(res.body.message, /Twitter/i);
+        });
+
+        it("should retain approvalStatus as REDO when teacher in REDO status updates profile until explicit submission", async () => {
+            // Setup a teacher in REDO status with rejectionReason
+            const profile = await testCtx.profileRepo.upsertProfile(teacherId, {
+                bio: "Old draft bio",
+            });
+            await testCtx.profileRepo.upsertTeacherProfile(profile.id, {
+                linkedinUrl: "https://linkedin.com/in/redo-teacher",
+                twitterUrl: "https://twitter.com/redo-teacher",
+                approvalStatus: "REDO",
+                rejectionReason: "Please update your bio with more details.",
+            });
+
+            // Teacher updates their profile
+            const res = await request(testCtx.app)
+                .patch("/api/profile/teacher")
+                .set("Authorization", `Bearer ${teacherToken}`)
+                .send({
+                    bio: "Updated comprehensive teaching bio with 10 years experience",
+                    qualifications: "Ph.D. in Computer Science",
+                });
+
+            assert.equal(res.status, 200);
+            assert.equal(res.body.data.profile.teacherProfile.approvalStatus, "REDO");
         });
 
         it("should allow approved teacher to update websiteUrl, bio, avatar, name, and expertise", async () => {
