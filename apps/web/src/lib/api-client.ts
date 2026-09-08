@@ -1,7 +1,7 @@
 import { env } from "./env"
 import { queryClient } from "./query-client"
 import { toast } from "./toast"
-import { AUTH_API_ROUTES } from "@/features/auth"
+import { AUTH_API_ROUTES } from "@/features/auth/constants/routes.constants"
 
 const API_BASE_URL = env.VITE_API_URL
 
