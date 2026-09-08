@@ -75,6 +75,14 @@ import {
     SubmitTeacherVerificationController,
     ProfileRoutes,
 } from "../../src/modules/profile";
+import {
+    IStorageService,
+    PresignedUrlResponseDTO,
+    GetPresignedUrl,
+    DeleteFile,
+    UploadController,
+    UploadRoutes,
+} from "../../src/modules/storage";
 
 export class InMemoryProfileRepository implements ProfileRepository {
     public profiles = new Map<string, UserProfile>();
@@ -573,12 +581,50 @@ export class MockOAuthService implements OAuthService {
     }
 }
 
+export class MockStorageService implements IStorageService {
+    public files = new Map<string, { contentType: string; buffer?: Buffer }>();
+
+    async getPresignedPutUrl(input: {
+        key: string;
+        contentType: string;
+        fileSize?: number;
+        expiresIn?: number;
+    }): Promise<PresignedUrlResponseDTO> {
+        this.files.set(input.key, { contentType: input.contentType });
+        return {
+            uploadUrl: `https://mock-s3.amazonaws.com/${input.key}?signature=mock-sig`,
+            publicUrl: `https://mock-s3.amazonaws.com/${input.key}`,
+            key: input.key,
+            expiresIn: input.expiresIn || 900,
+        };
+    }
+
+    async deleteFile(key: string): Promise<boolean> {
+        this.files.delete(key);
+        return true;
+    }
+
+    async uploadBuffer(input: {
+        key: string;
+        buffer: Buffer;
+        contentType: string;
+    }): Promise<string> {
+        this.files.set(input.key, { contentType: input.contentType, buffer: input.buffer });
+        return `https://mock-s3.amazonaws.com/${input.key}`;
+    }
+
+    getPublicUrl(key: string): string {
+        return `https://mock-s3.amazonaws.com/${key}`;
+    }
+}
+
 export interface CreateTestAppOptions {
     userRepo?: InMemoryUserRepository;
     otpRepo?: InMemoryOtpRepository;
     tokenRepo?: InMemoryTokenRepository;
     oauthService?: OAuthService;
     idempotencyService?: IdempotencyService;
+    storageService?: IStorageService;
 }
 
 export function createTestApp(options: CreateTestAppOptions = {}) {
@@ -589,6 +635,7 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
     const tokenService = new JwtTokenService();
     const oauthService = options.oauthService || new MockOAuthService();
     const idempotencyService = options.idempotencyService || new InMemoryIdempotencyService();
+    const storageService = options.storageService || new MockStorageService();
 
     // Middlewares
     const authMiddleware = createAuthMiddleware(tokenService);
@@ -693,6 +740,12 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
         isBlockedMiddleware
     );
 
+    // Storage Setup
+    const getPresignedUrlUseCase = new GetPresignedUrl(storageService);
+    const deleteFileUseCase = new DeleteFile(storageService);
+    const uploadController = new UploadController(getPresignedUrlUseCase, deleteFileUseCase);
+    const uploadRoutes = new UploadRoutes(uploadController);
+
     const app = express();
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
@@ -702,6 +755,7 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
     app.use(isBlockedMiddleware);
     app.use("/api/users", userRoutes.router);
     app.use("/api/profile", profileRoutes.router);
+    app.use("/api/upload", uploadRoutes.router);
     app.use(notFoundMiddleware);
     app.use(errorMiddleware);
 
@@ -715,6 +769,7 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
         tokenService,
         oauthService,
         idempotencyService,
+        storageService,
     };
 }
 
