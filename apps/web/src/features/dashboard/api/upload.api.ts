@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client"
+import { UPLOAD_API_ROUTES } from "../constants/routes.constants"
 import type {
   GetPresignedUrlRequest,
   PresignedUrlApiResponse,
@@ -95,7 +96,7 @@ export const uploadApi = {
    * Requests a presigned PUT URL from the backend server.
    */
   getPresignedUrl: async (payload: GetPresignedUrlRequest): Promise<PresignedUrlData> => {
-    const res = await apiClient<PresignedUrlApiResponse>("/upload/presigned-url", {
+    const res = await apiClient<PresignedUrlApiResponse>(UPLOAD_API_ROUTES.PRESIGNED_URL, {
       method: "POST",
       body: JSON.stringify(payload),
     })

@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client"
+import { AUTH_API_ROUTES } from "../constants/routes.constants"
 import type {
   AuthResponse,
   ForgotPasswordDTO,
@@ -12,7 +13,7 @@ import type {
 
 export const authApi = {
   login: async (data: SigninDTO): Promise<AuthResponse> => {
-    return apiClient<AuthResponse>("/auth/signin", {
+    return apiClient<AuthResponse>(AUTH_API_ROUTES.SIGNIN, {
       method: "POST",
       body: JSON.stringify({
         email: data.email,
@@ -22,7 +23,7 @@ export const authApi = {
   },
 
   register: async (data: SignupDTO): Promise<AuthResponse> => {
-    return apiClient<AuthResponse>("/auth/signup", {
+    return apiClient<AuthResponse>(AUTH_API_ROUTES.SIGNUP, {
       method: "POST",
       body: JSON.stringify({
         name: data.name,
@@ -46,7 +47,7 @@ export const authApi = {
       // ignore
     }
 
-    const response = await apiClient<AuthResponse>("/auth/logout", {
+    const response = await apiClient<AuthResponse>(AUTH_API_ROUTES.LOGOUT, {
       method: "POST",
       body: JSON.stringify({ userId }),
     })
@@ -61,7 +62,7 @@ export const authApi = {
   },
 
   verifyOtp: async (data: VerifyOtpDTO): Promise<AuthResponse> => {
-    return apiClient<AuthResponse>("/auth/verify-otp", {
+    return apiClient<AuthResponse>(AUTH_API_ROUTES.VERIFY_OTP, {
       method: "POST",
       body: JSON.stringify({
         email: data.email,
@@ -71,7 +72,7 @@ export const authApi = {
   },
 
   resendOtp: async (data: ResendOtpDTO): Promise<AuthResponse> => {
-    return apiClient<AuthResponse>("/auth/resend-otp", {
+    return apiClient<AuthResponse>(AUTH_API_ROUTES.RESEND_OTP, {
       method: "POST",
       body: JSON.stringify({
         email: data.email,
@@ -80,7 +81,7 @@ export const authApi = {
   },
 
   forgotPassword: async (data: ForgotPasswordDTO): Promise<AuthResponse> => {
-    return apiClient<AuthResponse>("/auth/forgot-password", {
+    return apiClient<AuthResponse>(AUTH_API_ROUTES.FORGOT_PASSWORD, {
       method: "POST",
       body: JSON.stringify({
         email: data.email,
@@ -89,7 +90,7 @@ export const authApi = {
   },
 
   resetPassword: async (data: ResetPasswordDTO): Promise<AuthResponse> => {
-    return apiClient<AuthResponse>("/auth/reset-password", {
+    return apiClient<AuthResponse>(AUTH_API_ROUTES.RESET_PASSWORD, {
       method: "POST",
       body: JSON.stringify({
         email: data.email,
@@ -100,14 +101,14 @@ export const authApi = {
   },
 
   getCurrentUser: async (): Promise<User> => {
-    const response = await apiClient<{ data?: { user: User }; user?: User }>("/auth/me", {
+    const response = await apiClient<{ data?: { user: User }; user?: User }>(AUTH_API_ROUTES.ME, {
       method: "GET",
     })
     return response.data?.user || response.user || (response as unknown as User)
   },
 
   refreshToken: async (): Promise<AuthResponse> => {
-    return apiClient<AuthResponse>("/auth/refresh", {
+    return apiClient<AuthResponse>(AUTH_API_ROUTES.REFRESH, {
       method: "POST",
       body: JSON.stringify({}),
       skipIdempotency: true,

@@ -1,6 +1,7 @@
 import { env } from "./env"
 import { queryClient } from "./query-client"
 import { toast } from "./toast"
+import { AUTH_API_ROUTES } from "@/features/auth"
 
 const API_BASE_URL = env.VITE_API_URL
 
@@ -84,14 +85,14 @@ export async function refreshAccessToken(): Promise<boolean> {
 
 // Routes where 401 should NOT trigger a token refresh
 const AUTH_ENDPOINTS = [
-  "/auth/signin",
-  "/auth/signup",
-  "/auth/refresh",
-  "/auth/logout",
-  "/auth/verify-otp",
-  "/auth/resend-otp",
-  "/auth/forgot-password",
-  "/auth/reset-password",
+  AUTH_API_ROUTES.SIGNIN,
+  AUTH_API_ROUTES.SIGNUP,
+  AUTH_API_ROUTES.REFRESH,
+  AUTH_API_ROUTES.LOGOUT,
+  AUTH_API_ROUTES.VERIFY_OTP,
+  AUTH_API_ROUTES.RESEND_OTP,
+  AUTH_API_ROUTES.FORGOT_PASSWORD,
+  AUTH_API_ROUTES.RESET_PASSWORD,
 ]
 
 function isProtectedRoute(pathname: string): boolean {

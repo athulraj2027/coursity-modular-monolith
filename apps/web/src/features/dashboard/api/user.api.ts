@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client"
+import { USER_API_ROUTES } from "../constants/routes.constants"
 import type {
   BackendUser,
   GetUsersParams,
@@ -22,7 +23,7 @@ export const userApi = {
     if (params.sortOrder) searchParams.append("sortOrder", params.sortOrder)
 
     const queryStr = searchParams.toString()
-    const endpoint = queryStr ? `/users?${queryStr}` : "/users"
+    const endpoint = USER_API_ROUTES.LIST(queryStr)
 
     return apiClient<PaginatedUsersResponse>(endpoint, {
       method: "GET",
@@ -30,14 +31,14 @@ export const userApi = {
   },
 
   getUserById: async (id: string): Promise<BackendUser> => {
-    const response = await apiClient<SingleUserResponse>(`/users/${id}`, {
+    const response = await apiClient<SingleUserResponse>(USER_API_ROUTES.BY_ID(id), {
       method: "GET",
     })
     return response.data.user
   },
 
   blockUser: async (id: string, isBlocked?: boolean): Promise<{ message: string; data?: { user: BackendUser } }> => {
-    return apiClient<{ message: string; data?: { user: BackendUser } }>(`/users/${id}/block`, {
+    return apiClient<{ message: string; data?: { user: BackendUser } }>(USER_API_ROUTES.BLOCK(id), {
       method: "PATCH",
       ...(isBlocked !== undefined ? { body: JSON.stringify({ isBlocked }) } : {}),
     })
@@ -54,7 +55,7 @@ export const userApi = {
       | boolean = true
   ): Promise<{ message: string; data?: { user: BackendUser } }> => {
     const body = typeof payload === "boolean" ? { isApproved: payload } : payload
-    return apiClient<{ message: string; data?: { user: BackendUser } }>(`/users/${id}/approve`, {
+    return apiClient<{ message: string; data?: { user: BackendUser } }>(USER_API_ROUTES.APPROVE(id), {
       method: "PATCH",
       body: JSON.stringify(body),
     })
