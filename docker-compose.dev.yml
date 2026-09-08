@@ -43,6 +43,8 @@ services:
       dockerfile: Dockerfile.dev
     container_name: coursity-dev-backend
     restart: unless-stopped
+    entrypoint: ["./docker-entrypoint.sh"]
+    command: ["npm", "run", "dev"]
     ports:
       - "${BACKEND_PORT:-3000}:3000"
     environment:
