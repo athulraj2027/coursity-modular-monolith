@@ -82,6 +82,7 @@ services:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:3000/api}
         VITE_APP_NAME: ${VITE_APP_NAME:-Coursity}
         VITE_APP_URL: ${VITE_APP_URL:-http://localhost:5173}
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-${GOOGLE_CLIENT_ID:-}}
         VITE_ENABLE_DEVTOOLS: ${VITE_ENABLE_DEVTOOLS:-false}
     container_name: coursity-frontend
     restart: unless-stopped
