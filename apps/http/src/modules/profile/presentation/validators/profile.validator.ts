@@ -47,7 +47,7 @@ export const updateProfileSchema = z.object({
     expertise: z
         .array(
             z.enum(EXPERTISE_DOMAINS, {
-                errorMap: () => ({ message: "Expertise item must be a valid predefined domain" }),
+                message: "Expertise item must be a valid predefined domain",
             })
         )
         .max(15, "Cannot select more than 15 expertise domains")
@@ -119,7 +119,7 @@ export const updateTeacherProfileSchema = z.object({
     expertise: z
         .array(
             z.enum(EXPERTISE_DOMAINS, {
-                errorMap: () => ({ message: "Expertise item must be a valid predefined domain" }),
+                message: "Expertise item must be a valid predefined domain",
             })
         )
         .max(15, "Cannot select more than 15 expertise domains")
