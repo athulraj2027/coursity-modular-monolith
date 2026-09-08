@@ -7,6 +7,7 @@ import type {
   SigninDTO,
   SignupDTO,
   User,
+  GoogleAuthDTO,
   VerifyOtpDTO,
   ResendOtpDTO,
 } from "../types"
@@ -32,6 +33,30 @@ export const authApi = {
         role: data.role === "teacher" ? "TEACHER" : "STUDENT",
       }),
     })
+  },
+
+  googleAuth: async (data: GoogleAuthDTO): Promise<AuthResponse> => {
+    return apiClient<AuthResponse>(AUTH_API_ROUTES.GOOGLE, {
+      method: "POST",
+      body: JSON.stringify({
+        idToken: data.idToken,
+        credential: data.credential,
+        code: data.code,
+        role: data.role || "STUDENT",
+      }),
+    })
+  },
+
+  getGoogleAuthUrl: async (role?: string): Promise<{ url: string }> => {
+    const params = new URLSearchParams()
+    if (role) {
+      params.set("state", JSON.stringify({ role: role.toUpperCase() }))
+    }
+    const endpoint = `${AUTH_API_ROUTES.GOOGLE}${params.toString() ? `?${params.toString()}` : ""}`
+    const response = await apiClient<{ message: string; data: { url: string } }>(endpoint, {
+      method: "GET",
+    })
+    return response.data
   },
 
   logout: async (): Promise<AuthResponse> => {

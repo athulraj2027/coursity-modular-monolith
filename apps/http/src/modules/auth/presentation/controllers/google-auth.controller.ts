@@ -10,7 +10,11 @@ export class GoogleAuthController {
 
     getAuthUrl = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const state = typeof req.query.state === "string" ? req.query.state : undefined;
+            let state = typeof req.query.state === "string" ? req.query.state : undefined;
+            if (!state && typeof req.query.role === "string") {
+                state = JSON.stringify({ role: req.query.role.toUpperCase() });
+            }
+
             const result = this.googleAuth.getAuthUrl(state);
 
             // If query has redirect=true, redirect directly to Google consent screen
@@ -55,7 +59,20 @@ export class GoogleAuthController {
     callback = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const code = (req.body?.code || req.query?.code) as string;
-            const role = (req.body?.role || req.query?.role) as UserRole | undefined;
+            let role = (req.body?.role || req.query?.role) as UserRole | undefined;
+
+            // Extract role from state if available
+            const state = (req.body?.state || req.query?.state) as string | undefined;
+            if (!role && state) {
+                try {
+                    const parsedState = JSON.parse(state);
+                    if (parsedState.role) role = parsedState.role as UserRole;
+                } catch {
+                    if (state.toUpperCase() === "TEACHER" || state.toUpperCase() === "STUDENT" || state.toUpperCase() === "ADMIN") {
+                        role = state.toUpperCase() as UserRole;
+                    }
+                }
+            }
 
             const result = await this.googleAuth.handleCallback(code, role);
 
@@ -75,7 +92,14 @@ export class GoogleAuthController {
                 message: "Google OAuth callback handled successfully",
                 data: result,
             });
-        } catch (error) {
+        } catch (error: any) {
+            // If browser GET redirect failed, redirect back to frontend signin with error parameter
+            if (req.method === "GET" && env.FRONTEND_URL) {
+                const errorMessage = error?.message || "Google authentication failed";
+                const redirectUrl = new URL(`${env.FRONTEND_URL}/signin`);
+                redirectUrl.searchParams.set("error", errorMessage);
+                return res.redirect(redirectUrl.toString());
+            }
             next(error);
         }
     };

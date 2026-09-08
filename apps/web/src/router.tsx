@@ -20,6 +20,7 @@ import {
   VerifyOtpPage,
   ForgotPasswordPage,
   ResetPasswordPage,
+  AuthCallbackPage,
   ProtectedRoute,
   RoleGuard,
   GuestGuard,
@@ -36,6 +37,7 @@ export function AppRoutes() {
           <Route path="/" element={<HomePage />} />
           <Route path="/teachers" element={<TeachersPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
           {/* 2. Guest-Only Auth Routes (Redirects to active dashboard if already logged in) */}
           <Route element={<GuestGuard />}>
