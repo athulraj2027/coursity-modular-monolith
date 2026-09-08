@@ -67,21 +67,34 @@ export class GoogleOAuthService implements OAuthService {
 
     async exchangeCodeForProfile(code: string): Promise<OAuthUserProfile> {
         try {
-            const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({
-                    code,
-                    client_id: this.clientId,
-                    client_secret: this.clientSecret,
-                    redirect_uri: this.redirectUri,
-                    grant_type: "authorization_code",
-                }).toString(),
-            });
+            // GIS popup uses "postmessage", whereas standard redirect OAuth uses this.redirectUri
+            const urisToTry = ["postmessage", this.redirectUri];
+            let tokenResponse: Response | null = null;
+            let lastErrorData: any = null;
 
-            if (!tokenResponse.ok) {
-                const errorData = await tokenResponse.json().catch(() => ({}));
-                throw new BadRequestError(errorData.error_description || "Failed to exchange authorization code with Google");
+            for (const redirectUri of urisToTry) {
+                const response = await fetch("https://oauth2.googleapis.com/token", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: new URLSearchParams({
+                        code,
+                        client_id: this.clientId,
+                        client_secret: this.clientSecret,
+                        redirect_uri: redirectUri,
+                        grant_type: "authorization_code",
+                    }).toString(),
+                });
+
+                if (response.ok) {
+                    tokenResponse = response;
+                    break;
+                } else {
+                    lastErrorData = await response.json().catch(() => ({}));
+                }
+            }
+
+            if (!tokenResponse) {
+                throw new BadRequestError(lastErrorData?.error_description || "Failed to exchange authorization code with Google");
             }
 
             const tokenData = await tokenResponse.json() as {
