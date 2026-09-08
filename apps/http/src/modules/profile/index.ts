@@ -21,12 +21,14 @@ import { ProfileRoutes } from "./presentation/routes/profile.routes";
 // 1. Repositories
 const profileRepository = new PrismaProfileRepository();
 
+import { emailService } from "@/modules/email";
+
 // 2. Use Cases
 const getProfile = new GetProfile(profileRepository);
 const updateProfile = new UpdateProfile(profileRepository);
 const updateStudentProfile = new UpdateStudentProfile(profileRepository);
 const updateTeacherProfile = new UpdateTeacherProfile(profileRepository);
-const submitTeacherVerification = new SubmitTeacherVerification(profileRepository);
+const submitTeacherVerification = new SubmitTeacherVerification(profileRepository, emailService);
 
 // 3. Controllers
 const getProfileController = new GetProfileController(getProfile);

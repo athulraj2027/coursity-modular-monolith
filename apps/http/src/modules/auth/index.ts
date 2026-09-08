@@ -35,6 +35,8 @@ import { createAuthMiddleware } from "@/app/middlewares/auth.middleware";
 import { createIsBlockedMiddleware } from "@/app/middlewares/is-blocked.middleware";
 import { AuthRoutes } from "./presentation/routes/auth.routes";
 
+import { emailService } from "@/modules/email";
+
 // 1. Repositories & Services
 const userRepository = new PrismaUserRepository();
 const passwordService = new BcryptPasswordService();
@@ -44,18 +46,18 @@ const tokenService = new JwtTokenService();
 const oauthService = new GoogleOAuthService();
 
 // 2. Use Cases
-const signupUser = new SignupUser(userRepository, passwordService, otpRepository);
+const signupUser = new SignupUser(userRepository, passwordService, otpRepository, emailService);
 const verifySignupOtp = new VerifySignupOtp(
     otpRepository,
     userRepository,
     tokenService,
     tokenRepository
 );
-const resendSignupOtp = new ResendSignupOtp(otpRepository, userRepository);
+const resendSignupOtp = new ResendSignupOtp(otpRepository, userRepository, emailService);
 const signinUser = new SigninUser(userRepository, passwordService, tokenService, tokenRepository);
 const logoutUser = new LogoutUser(tokenRepository, tokenService);
 const refreshTokenUseCase = new RefreshToken(tokenService, tokenRepository, userRepository);
-const forgotPassword = new ForgotPassword(userRepository, otpRepository);
+const forgotPassword = new ForgotPassword(userRepository, otpRepository, emailService);
 const resetPassword = new ResetPassword(userRepository, passwordService, otpRepository, tokenRepository);
 const googleAuth = new GoogleAuth(oauthService, userRepository, tokenService, tokenRepository);
 const getCurrentUser = new GetCurrentUser(userRepository);

@@ -40,6 +40,8 @@ const authMiddleware = createAuthMiddleware(tokenService);
 const isBlockedMiddleware = createIsBlockedMiddleware(userRepository, tokenRepository);
 const adminMiddleware = requireRoles("ADMIN");
 
+import { emailService } from "@/modules/email";
+
 // 3. Use Cases
 const getProfile = new GetProfile(userRepository);
 const updateProfile = new UpdateProfile(userRepository);
@@ -47,7 +49,7 @@ const changePassword = new ChangePassword(userRepository, passwordService);
 const getAllUsers = new GetAllUsers(userRepository);
 const getUserById = new GetUserById(userRepository);
 const blockUser = new BlockUser(userRepository, tokenRepository);
-const approveTeacher = new ApproveTeacher(userRepository);
+const approveTeacher = new ApproveTeacher(userRepository, emailService);
 
 // 4. Controllers
 const getProfileController = new GetProfileController(getProfile);

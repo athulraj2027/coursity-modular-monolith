@@ -2,13 +2,15 @@ import { UserRepository } from "@/modules/user";
 import { OtpRepository } from "../../domain/repositories/redis-otp.repository";
 import { BadRequestError, ConflictError } from "@/app/errors";
 import { ResendOtpInputDTO, ResendOtpOutputDTO } from "../dtos/resend-otp.dto";
+import { IEmailService } from "@/modules/email";
 
 export class ResendSignupOtp {
     private readonly RESEND_COOLDOWN_MS = 1 * 60 * 1000; // 1 minute
 
     constructor(
         private readonly otpRepository: OtpRepository,
-        private readonly userRepository: UserRepository
+        private readonly userRepository: UserRepository,
+        private readonly emailService?: IEmailService
     ) { }
 
     async execute(input: ResendOtpInputDTO): Promise<ResendOtpOutputDTO> {
@@ -41,8 +43,15 @@ export class ResendSignupOtp {
         // 5. Overwrite in Redis with updated timestamp and reset TTL
         await this.otpRepository.saveSignupOtp(email, newOtp, stored.userData);
 
-        // 6. DEV Log (or send email via mailer)
-        console.log(`🔑 [DEV ONLY] Resent Signup OTP for ${email}: ${newOtp}`);
+        // 6. Asynchronously dispatch OTP email via queue
+        if (this.emailService) {
+            const name = stored.userData?.name || "";
+            await this.emailService.sendSignupOtp(email, newOtp, name).catch((err) => {
+                console.error(`⚠️ Failed to enqueue resent signup OTP email for ${email}:`, err?.message || err);
+            });
+        } else {
+            console.log(`🔑 [DEV ONLY] Resent Signup OTP for ${email}: ${newOtp}`);
+        }
 
         return {
             email,
