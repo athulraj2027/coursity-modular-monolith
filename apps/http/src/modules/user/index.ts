@@ -10,6 +10,7 @@ import { ChangePassword } from "./application/use-cases/change-password.usecase"
 import { GetAllUsers } from "./application/use-cases/get-all-users.usecase";
 import { GetUserById } from "./application/use-cases/get-user-by-id.usecase";
 import { BlockUser } from "./application/use-cases/block-user.usecase";
+import { ApproveTeacher } from "./application/use-cases/approve-teacher.usecase";
 
 // Controllers
 import { GetProfileController } from "./presentation/controllers/get-profile.controller";
@@ -18,6 +19,7 @@ import { ChangePasswordController } from "./presentation/controllers/change-pass
 import { GetAllUsersController } from "./presentation/controllers/get-all-users.controller";
 import { GetUserByIdController } from "./presentation/controllers/get-user-by-id.controller";
 import { BlockUserController } from "./presentation/controllers/block-user.controller";
+import { ApproveTeacherController } from "./presentation/controllers/approve-teacher.controller";
 
 // Middlewares & Routes
 import { createAuthMiddleware } from "@/app/middlewares/auth.middleware";
@@ -25,14 +27,17 @@ import { createIsBlockedMiddleware } from "@/app/middlewares/is-blocked.middlewa
 import { requireRoles } from "@/app/middlewares/role.middleware";
 import { UserRoutes } from "./presentation/routes/user.routes";
 
+import { RedisTokenRepository } from "@/modules/auth/infrastructure/repositories/redis-token.repository";
+
 // 1. Repositories & Services
 const userRepository = new PrismaUserRepository();
+const tokenRepository = new RedisTokenRepository();
 const passwordService = new BcryptPasswordService();
 const tokenService = new JwtTokenService();
 
 // 2. Middlewares
 const authMiddleware = createAuthMiddleware(tokenService);
-const isBlockedMiddleware = createIsBlockedMiddleware(userRepository);
+const isBlockedMiddleware = createIsBlockedMiddleware(userRepository, tokenRepository);
 const adminMiddleware = requireRoles("ADMIN");
 
 // 3. Use Cases
@@ -41,7 +46,8 @@ const updateProfile = new UpdateProfile(userRepository);
 const changePassword = new ChangePassword(userRepository, passwordService);
 const getAllUsers = new GetAllUsers(userRepository);
 const getUserById = new GetUserById(userRepository);
-const blockUser = new BlockUser(userRepository);
+const blockUser = new BlockUser(userRepository, tokenRepository);
+const approveTeacher = new ApproveTeacher(userRepository);
 
 // 4. Controllers
 const getProfileController = new GetProfileController(getProfile);
@@ -50,6 +56,7 @@ const changePasswordController = new ChangePasswordController(changePassword);
 const getAllUsersController = new GetAllUsersController(getAllUsers);
 const getUserByIdController = new GetUserByIdController(getUserById);
 const blockUserController = new BlockUserController(blockUser);
+const approveTeacherController = new ApproveTeacherController(approveTeacher);
 
 // 5. Routes
 const userRoutes = new UserRoutes(
@@ -59,6 +66,7 @@ const userRoutes = new UserRoutes(
     getAllUsersController,
     getUserByIdController,
     blockUserController,
+    approveTeacherController,
     authMiddleware,
     isBlockedMiddleware,
     adminMiddleware

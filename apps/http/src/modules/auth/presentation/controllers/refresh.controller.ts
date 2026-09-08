@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { RefreshToken } from "../../application/use-cases/refresh-token.usecase";
 import { STATUS_CODES } from "@/app/config/status";
-import { setAuthCookies } from "@/app/config/cookie";
+import { setAuthCookies, clearAuthCookies } from "@/app/config/cookie";
 
 export class RefreshController {
     constructor(private readonly refreshTokenUseCase: RefreshToken) { }
@@ -22,6 +22,7 @@ export class RefreshController {
                 data: result,
             });
         } catch (error) {
+            clearAuthCookies(res);
             next(error);
         }
     };

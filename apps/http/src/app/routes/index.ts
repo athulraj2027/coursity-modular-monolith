@@ -13,10 +13,11 @@ router.use(idempotencyMiddleware);
 
 // 2. Auth routes (Public signup/signin/OTP + protected /me)
 router.use("/auth", authRouter);
+
+// 3. Protected User & Profile routes
 router.use(authMiddleware);
 router.use(isBlockedMiddleware);
 router.use("/users", userRouter);
 router.use("/profile", profileRouter);
 
 export default router;
-

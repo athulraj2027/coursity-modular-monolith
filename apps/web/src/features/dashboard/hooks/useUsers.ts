@@ -1,18 +1,30 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { userApi } from "../api/user.api"
-import type { GetUsersParams } from "../types/user-management.types"
+import type { GetUsersParams, ApprovalStatus } from "../types/user-management.types"
 import { toast } from "@/lib/toast"
 
 export const USER_QUERY_KEY = ["admin-users"] as const
 
 export function useUsers(params: GetUsersParams = {}) {
   return useQuery({
-    queryKey: [...USER_QUERY_KEY, params],
+    queryKey: [
+      ...USER_QUERY_KEY,
+      {
+        role: params.role,
+        page: params.page,
+        limit: params.limit,
+        search: params.search || "",
+        authProvider: params.authProvider || "all",
+        isApproved: params.isApproved === undefined ? "all" : params.isApproved,
+        approvalStatus: params.approvalStatus || "all",
+        isBlocked: params.isBlocked === undefined ? "all" : params.isBlocked,
+        sortBy: params.sortBy || "createdAt",
+        sortOrder: params.sortOrder || "desc",
+      },
+    ],
     queryFn: () => userApi.getUsers(params),
-    placeholderData: (previousData) => previousData,
   })
 }
-
 
 export function useBlockUser() {
   const queryClient = useQueryClient()
@@ -33,3 +45,32 @@ export function useBlockUser() {
   })
 }
 
+export function useApproveTeacher() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (
+      payload:
+        | {
+            id: string
+            approvalStatus?: ApprovalStatus
+            isApproved?: boolean
+            rejectionReason?: string | null
+          }
+        | string
+    ) => {
+      if (typeof payload === "string") {
+        return userApi.approveTeacher(payload, true)
+      }
+      const { id, ...data } = payload
+      return userApi.approveTeacher(id, data)
+    },
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEY })
+      toast.success(res?.message || "Teacher verification status updated successfully")
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "Failed to update teacher verification status")
+    },
+  })
+}

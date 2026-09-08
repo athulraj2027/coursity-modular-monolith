@@ -1,4 +1,4 @@
-import { User } from "../entities/user.entity";
+import { User, ApprovalStatus } from "../entities/user.entity";
 import { CreateUserData } from "../dtos/create-user.dto";
 import { FindUsersOptions, PaginatedUsersResult } from "../dtos/user-query.dto";
 
@@ -31,6 +31,17 @@ export interface UserRepository {
     updateBlockStatus(
         id: string,
         isBlocked: boolean
+    ): Promise<User>;
+
+    updateTeacherApproval(
+        userId: string,
+        data:
+            | {
+                  approvalStatus?: ApprovalStatus;
+                  isApproved?: boolean;
+                  rejectionReason?: string | null;
+              }
+            | boolean
     ): Promise<User>;
 
     findMany(

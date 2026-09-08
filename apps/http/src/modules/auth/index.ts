@@ -62,7 +62,7 @@ const getCurrentUser = new GetCurrentUser(userRepository);
 
 // 3. Middlewares & Controllers
 const authMiddleware = createAuthMiddleware(tokenService);
-const isBlockedMiddleware = createIsBlockedMiddleware(userRepository);
+const isBlockedMiddleware = createIsBlockedMiddleware(userRepository, tokenRepository);
 const signupController = new SignupController(signupUser);
 const verifyOtpController = new VerifyOtpController(verifySignupOtp);
 const resendOtpController = new ResendOtpController(resendSignupOtp);

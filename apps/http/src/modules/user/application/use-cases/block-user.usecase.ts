@@ -1,9 +1,13 @@
 import { NotFoundError, BadRequestError } from "@/app/errors";
 import { UserRepository } from "../../domain/repositories/user.repository";
 import { User } from "../../domain/entities/user.entity";
+import { TokenRepository } from "@/modules/auth/domain/repositories/token.repository";
 
 export class BlockUser {
-    constructor(private readonly userRepository: UserRepository) { }
+    constructor(
+        private readonly userRepository: UserRepository,
+        private readonly tokenRepository?: TokenRepository
+    ) { }
 
     async execute(userId: string, isBlocked?: boolean): Promise<{ user: Omit<User, "password">; message: string }> {
         const existingUser = await this.userRepository.findById(userId);
@@ -19,8 +23,17 @@ export class BlockUser {
         }
 
         const updatedUser = await this.userRepository.updateBlockStatus(userId, targetStatus);
-        const { password, ...safeUser } = updatedUser;
 
+        // If blocking the user, invalidate their active refresh token session
+        if (targetStatus && this.tokenRepository) {
+            try {
+                await this.tokenRepository.deleteRefreshToken(userId);
+            } catch (e) {
+                // ignore if Redis is offline
+            }
+        }
+
+        const { password, ...safeUser } = updatedUser;
         const actionText = targetStatus ? "blocked" : "unblocked";
 
         return {

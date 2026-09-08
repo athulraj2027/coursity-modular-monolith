@@ -1,4 +1,4 @@
-import React, { useMemo } from "react"
+import React, { useMemo, useState, useEffect } from "react"
 import { Ban, ShieldCheck, Mail, Shield, AlertTriangle } from "lucide-react"
 import { ConfirmationModal } from "./ConfirmationModal"
 import type { BackendUser } from "@/features/dashboard/types/user-management.types"
@@ -20,6 +20,12 @@ export const BlockUserModal: React.FC<BlockUserModalProps> = ({
   isLoading = false,
   roleLabel,
 }) => {
+  const [avatarError, setAvatarError] = useState(false)
+
+  useEffect(() => {
+    setAvatarError(false)
+  }, [user?.id, user?.profile?.avatar])
+
   const isCurrentlyBlocked = Boolean(user?.isBlocked)
   const effectiveRoleLabel = roleLabel || (user?.role === "TEACHER" ? "Instructor" : user?.role === "STUDENT" ? "Student" : "User")
 
@@ -36,6 +42,7 @@ export const BlockUserModal: React.FC<BlockUserModalProps> = ({
 
   if (!user) return null
 
+  const profile = user.profile
   const title = isCurrentlyBlocked
     ? `Unblock ${effectiveRoleLabel} Account`
     : `Block ${effectiveRoleLabel} Account`
@@ -69,17 +76,26 @@ export const BlockUserModal: React.FC<BlockUserModalProps> = ({
       <div className="space-y-4">
         {/* User preview card */}
         <div className="p-3.5 sm:p-4 rounded-xl bg-neutral-50 dark:bg-neutral-950/60 border border-neutral-200/80 dark:border-neutral-800 flex items-center gap-3.5">
-          <div
-            className={`w-11 h-11 rounded-xl font-bold text-sm flex items-center justify-center shrink-0 ${
-              isCurrentlyBlocked
-                ? "bg-red-500/10 text-red-500"
-                : "bg-[#F42A18]/10 text-[#F42A18]"
-            }`}
-          >
-            {initials}
-          </div>
+          {profile?.avatar && !avatarError ? (
+            <img
+              src={profile.avatar}
+              alt={user.name}
+              onError={() => setAvatarError(true)}
+              className="w-12 h-12 rounded-xl object-cover border border-neutral-200 dark:border-neutral-800 shrink-0"
+            />
+          ) : (
+            <div
+              className={`w-12 h-12 rounded-xl font-bold text-sm flex items-center justify-center shrink-0 border ${
+                isCurrentlyBlocked
+                  ? "bg-red-500/10 text-red-500 border-red-500/20"
+                  : "bg-[#F42A18]/10 text-[#F42A18] border-[#F42A18]/20"
+              }`}
+            >
+              {initials}
+            </div>
+          )}
 
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 text-left">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-neutral-900 dark:text-white text-sm truncate">
                 {user.name}

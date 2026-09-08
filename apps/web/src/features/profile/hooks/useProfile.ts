@@ -51,3 +51,21 @@ export function useUpdateTeacherProfile() {
     },
   })
 }
+
+export function useSubmitTeacherVerification() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => profileApi.submitTeacherVerification(),
+    onSuccess: (res) => {
+      queryClient.setQueryData(PROFILE_QUERY_KEY, res.profile)
+      queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] })
+      queryClient.invalidateQueries({ queryKey: ["users"] })
+      toast.success(res.message || "Application submitted for verification successfully")
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "Failed to submit application for verification")
+    },
+  })
+}

@@ -44,8 +44,4 @@ process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
 startServer();
-// server reloaded - mounted isBlocked in app routes
-
-
-
-
+// server reloaded - verification routes and zod validation updated at 2026-09-08T11:27:00Z

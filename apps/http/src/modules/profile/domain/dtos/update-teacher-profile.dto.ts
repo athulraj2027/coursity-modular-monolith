@@ -3,7 +3,6 @@ export interface UpdateTeacherProfileDTO {
     avatar?: string | null;
     bio?: string | null;
     phone?: string | null;
-    headline?: string | null;
     expertise?: string[];
     qualifications?: string | null;
     experienceYears?: number | null;

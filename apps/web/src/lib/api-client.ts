@@ -1,4 +1,7 @@
 import { env } from "./env"
+import { queryClient } from "./query-client"
+import { toast } from "./toast"
+import { AUTH_API_ROUTES } from "@/features/auth"
 
 const API_BASE_URL = env.VITE_API_URL
 
@@ -82,15 +85,76 @@ export async function refreshAccessToken(): Promise<boolean> {
 
 // Routes where 401 should NOT trigger a token refresh
 const AUTH_ENDPOINTS = [
-  "/auth/signin",
-  "/auth/signup",
-  "/auth/refresh",
-  "/auth/logout",
-  "/auth/verify-otp",
-  "/auth/resend-otp",
-  "/auth/forgot-password",
-  "/auth/reset-password",
+  AUTH_API_ROUTES.SIGNIN,
+  AUTH_API_ROUTES.SIGNUP,
+  AUTH_API_ROUTES.REFRESH,
+  AUTH_API_ROUTES.LOGOUT,
+  AUTH_API_ROUTES.VERIFY_OTP,
+  AUTH_API_ROUTES.RESEND_OTP,
+  AUTH_API_ROUTES.FORGOT_PASSWORD,
+  AUTH_API_ROUTES.RESET_PASSWORD,
 ]
+
+function isProtectedRoute(pathname: string): boolean {
+  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/signin")) {
+    return true
+  }
+  if (
+    pathname.startsWith("/teachers/dashboard") ||
+    pathname.startsWith("/teachers/profile") ||
+    pathname.startsWith("/teacher/")
+  ) {
+    return true
+  }
+  if (
+    pathname.startsWith("/students") ||
+    pathname.startsWith("/student") ||
+    pathname === "/dashboard" ||
+    pathname === "/profile"
+  ) {
+    return true
+  }
+  return false
+}
+
+let isRedirecting = false
+
+function handleAuthFailure(errorMessage?: string, isBlocked?: boolean) {
+  if (typeof window === "undefined") return
+
+  // 1. Wipe client-side storage & TanStack Query auth cache
+  try {
+    localStorage.removeItem("user")
+    localStorage.removeItem("accessToken")
+    localStorage.removeItem("refreshToken")
+    queryClient.setQueryData(["currentUser"], null)
+  } catch {
+    // ignore
+  }
+
+  // 2. Show toast if blocked
+  if (isBlocked) {
+    toast.error(errorMessage || "Your account has been blocked. Please contact support.")
+  }
+
+  // 3. If currently on a protected route, cleanly redirect to appropriate signin portal
+  const pathname = window.location.pathname
+  if (isProtectedRoute(pathname) && !isRedirecting) {
+    isRedirecting = true
+    setTimeout(() => {
+      isRedirecting = false
+    }, 2000)
+
+    let target = "/signin"
+    if (pathname.startsWith("/admin")) {
+      target = "/admin/signin"
+    } else if (pathname.startsWith("/teachers") || pathname.startsWith("/teacher")) {
+      target = "/teachers/signin"
+    }
+
+    window.location.href = target
+  }
+}
 
 export async function apiClient<T>(
   endpoint: string,
@@ -155,10 +219,26 @@ export async function apiClient<T>(
   }
 
   if (!response.ok) {
-    let errorMessage =
-      responseData?.message ||
-      responseData?.error ||
-      `Request failed with status ${response.status}`
+    let errorMessage = ""
+
+    // 1. If backend returns an array of field errors, concatenate them
+    if (responseData?.errors && Array.isArray(responseData.errors) && responseData.errors.length > 0) {
+      const fieldMessages = responseData.errors
+        .map((err: any) => (typeof err === "string" ? err : err.message || err.msg))
+        .filter(Boolean)
+
+      if (fieldMessages.length > 0) {
+        errorMessage = fieldMessages.join(". ")
+      }
+    }
+
+    // 2. Fall back to responseData.message or responseData.error
+    if (!errorMessage) {
+      errorMessage =
+        responseData?.message ||
+        responseData?.error ||
+        `Request failed with status ${response.status}`
+    }
 
     // Sanitize any raw database or internal trace messages if they leak
     if (
@@ -171,6 +251,15 @@ export async function apiClient<T>(
       errorMessage = "A server configuration error occurred. Please try again later."
     }
 
+    // 3. If unauthenticated (401 with failed refresh) or forbidden/blocked (403), remove auth state & redirect from protected routes
+    const isBlocked =
+      response.status === 403 &&
+      (typeof errorMessage === "string" && errorMessage.toLowerCase().includes("block"))
+
+    if ((response.status === 401 && !isAuthEndpoint) || isBlocked) {
+      handleAuthFailure(errorMessage, isBlocked)
+    }
+
     throw new ApiError(errorMessage, response.status, responseData)
   }
 
@@ -178,3 +267,4 @@ export async function apiClient<T>(
 }
 
 export default apiClient
+

@@ -72,19 +72,26 @@ export const AdminStudentsPage = () => {
   // Block mutation
   const blockUserMutation = useBlockUser()
 
+  // Query all students for accurate metric counts and tab badges
+  const { data: allStudentsResponse } = useUsers({
+    role: "STUDENT",
+    limit: 100,
+  })
+
   const students = usersResponse?.data?.users || []
   const totalItems = usersResponse?.data?.total ?? 0
 
-  // Count helper
-  const counts = useMemo(() => {
-    const googleCount = students.filter((s) => s.authProvider === "GOOGLE").length
-    const localCount = students.filter((s) => s.authProvider === "LOCAL").length
+  const allStudentsList = allStudentsResponse?.data?.users || []
+  const globalCounts = useMemo(() => {
+    const total = allStudentsResponse?.data?.total ?? totalItems
+    const google = allStudentsList.filter((s) => s.authProvider === "GOOGLE").length
+    const local = allStudentsList.filter((s) => s.authProvider === "LOCAL").length
     return {
-      all: totalItems,
-      google: googleCount,
-      local: localCount,
+      total,
+      google,
+      local,
     }
-  }, [totalItems, students])
+  }, [allStudentsResponse, allStudentsList, totalItems])
 
   const handleOpenBlockModal = (studentId: string) => {
     const student = students.find((s) => s.id === studentId) || (selectedStudent?.id === studentId ? selectedStudent : null)
@@ -95,10 +102,15 @@ export const AdminStudentsPage = () => {
 
   const handleConfirmBlock = async () => {
     if (!studentToBlock) return
-    await blockUserMutation.mutateAsync(studentToBlock.id)
+    const targetStudentId = studentToBlock.id
+    const res = await blockUserMutation.mutateAsync(targetStudentId)
     setStudentToBlock(null)
-    if (selectedStudent?.id === studentToBlock.id) {
-      setSelectedStudent(null)
+    if (selectedStudent?.id === targetStudentId) {
+      if (res?.data?.user) {
+        setSelectedStudent(res.data.user)
+      } else {
+        setSelectedStudent((prev) => (prev ? { ...prev, isBlocked: !prev.isBlocked } : null))
+      }
     }
   }
 
@@ -113,13 +125,13 @@ export const AdminStudentsPage = () => {
 
   // Metrics
   const metrics: TableMetricCard[] = [
-    { label: "Total Students", val: totalItems, icon: Users, color: "text-[#F42A18]" },
+    { label: "Total Students", val: globalCounts.total, icon: Users, color: "text-[#F42A18]" },
     { label: "Active on Page", val: students.length, icon: BookOpen, color: "text-blue-500" },
-    { label: "Google OAuth Learners", val: counts.google, icon: Globe, color: "text-emerald-500" },
-    { label: "Email / Local Learners", val: counts.local, icon: KeyRound, color: "text-purple-500" },
+    { label: "Google Account Learners", val: globalCounts.google, icon: Globe, color: "text-emerald-500" },
+    { label: "Email & Password Learners", val: globalCounts.local, icon: KeyRound, color: "text-purple-500" },
   ]
 
-  // Columns Configuration matching database schema
+  // Columns Configuration
   const columns: TableColumn<BackendUser>[] = [
     {
       header: "Student",
@@ -135,9 +147,17 @@ export const AdminStudentsPage = () => {
 
         return (
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 font-bold text-xs flex items-center justify-center shrink-0">
-              {initials}
-            </div>
+            {student.profile?.avatar ? (
+              <img
+                src={student.profile.avatar}
+                alt={student.name}
+                className="w-9 h-9 rounded-xl object-cover border border-neutral-200 dark:border-neutral-800 shrink-0"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 font-bold text-xs flex items-center justify-center shrink-0">
+                {initials}
+              </div>
+            )}
             <div className="min-w-0">
               <div className="font-semibold text-neutral-900 dark:text-white truncate flex items-center gap-1.5">
                 <span>{student.name}</span>
@@ -156,24 +176,24 @@ export const AdminStudentsPage = () => {
       },
     },
     {
-      header: "System Role",
+      header: "Role",
       align: "center",
-      cell: (student) => (
+      cell: () => (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-500 border border-blue-500/20">
           <BookOpen className="w-3.5 h-3.5" />
-          {student.role}
+          Student
         </span>
       ),
     },
     {
-      header: "Auth Provider",
+      header: "Sign-in Method",
       align: "center",
       cell: (student) => (
         <div className="whitespace-nowrap">
           {student.authProvider === "GOOGLE" ? (
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
               <Globe className="w-3 h-3" />
-              Google OAuth
+              Google Account
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-purple-500/10 text-purple-500 border border-purple-500/20">
@@ -311,9 +331,9 @@ export const AdminStudentsPage = () => {
         setCurrentPage(1)
       }}
       tabs={[
-        { key: "all", label: "All Students", count: totalItems },
-        { key: "GOOGLE", label: "Google OAuth" },
-        { key: "LOCAL", label: "Email & Password" },
+        { key: "all", label: "All Students", count: globalCounts.total },
+        { key: "GOOGLE", label: "Google Accounts", count: globalCounts.google },
+        { key: "LOCAL", label: "Email & Password", count: globalCounts.local },
       ]}
       activeTab={authProviderFilter}
       onTabChange={(k) => {
@@ -329,9 +349,9 @@ export const AdminStudentsPage = () => {
             setCurrentPage(1)
           },
           options: [
-            { label: "All Providers", value: "all" },
-            { label: "Google OAuth", value: "GOOGLE" },
-            { label: "Email / Password", value: "LOCAL" },
+            { label: "All Sign-in Methods", value: "all" },
+            { label: "Google Account", value: "GOOGLE" },
+            { label: "Email & Password", value: "LOCAL" },
           ],
         },
       ]}

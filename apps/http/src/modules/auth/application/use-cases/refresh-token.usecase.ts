@@ -36,6 +36,7 @@ export class RefreshToken {
         }
 
         if (user.isBlocked) {
+            await this.tokenRepository.deleteRefreshToken(user.id || payload.userId);
             throw new ForbiddenError("Your account has been blocked. Please contact support.");
         }
 

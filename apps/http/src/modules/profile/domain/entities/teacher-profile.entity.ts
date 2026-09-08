@@ -1,10 +1,13 @@
+export type ApprovalStatus =
+    | "PENDING"
+    | "IN_PROGRESS"
+    | "VERIFIED"
+    | "REVOKED"
+    | "REDO";
+
 export interface TeacherProfile {
     id: string;
-    userId: string;
-    avatar?: string | null;
-    bio?: string | null;
-    phone?: string | null;
-    headline?: string | null;
+    profileId: string;
     expertise: string[];
     qualifications?: string | null;
     experienceYears?: number | null;
@@ -12,6 +15,9 @@ export interface TeacherProfile {
     twitterUrl?: string | null;
     websiteUrl?: string | null;
     isApproved: boolean;
+    approvalStatus: ApprovalStatus;
+    rejectionReason?: string | null;
+    submissionCount?: number;
     createdAt: Date;
     updatedAt: Date;
 }

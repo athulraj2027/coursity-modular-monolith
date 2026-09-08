@@ -3,6 +3,7 @@ import { GetProfileController } from "../controllers/get-profile.controller";
 import { UpdateProfileController } from "../controllers/update-profile.controller";
 import { UpdateStudentProfileController } from "../controllers/update-student-profile.controller";
 import { UpdateTeacherProfileController } from "../controllers/update-teacher-profile.controller";
+import { SubmitTeacherVerificationController } from "../controllers/submit-teacher-verification.controller";
 import {
     updateProfileSchema,
     updateStudentProfileSchema,
@@ -18,6 +19,7 @@ export class ProfileRoutes {
         private readonly updateProfileController: UpdateProfileController,
         private readonly updateStudentProfileController: UpdateStudentProfileController,
         private readonly updateTeacherProfileController: UpdateTeacherProfileController,
+        private readonly submitTeacherVerificationController: SubmitTeacherVerificationController,
         private readonly authMiddleware?: RequestHandler,
         private readonly isBlockedMiddleware?: RequestHandler
     ) {
@@ -91,6 +93,18 @@ export class ProfileRoutes {
             ...middlewares,
             validate(updateTeacherProfileSchema),
             this.updateTeacherProfileController.execute
+        );
+
+        this.router.post(
+            "/teacher/submit-verification",
+            ...middlewares,
+            this.submitTeacherVerificationController.execute
+        );
+
+        this.router.post(
+            "/submit-verification",
+            ...middlewares,
+            this.submitTeacherVerificationController.execute
         );
     }
 }

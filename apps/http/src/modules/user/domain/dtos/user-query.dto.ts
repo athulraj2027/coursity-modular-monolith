@@ -1,4 +1,4 @@
-import { AuthProvider, User, UserRole } from "../entities/user.entity";
+import { ApprovalStatus, AuthProvider, User, UserRole } from "../entities/user.entity";
 
 export interface FindUsersOptions {
     page?: number;
@@ -7,6 +7,8 @@ export interface FindUsersOptions {
     role?: UserRole;
     authProvider?: AuthProvider;
     isBlocked?: boolean;
+    isApproved?: boolean;
+    approvalStatus?: ApprovalStatus;
     sortBy?: "createdAt" | "name" | "email";
     sortOrder?: "asc" | "desc";
 }

@@ -8,17 +8,15 @@ export function useCurrentUser() {
     queryFn: async () => {
       try {
         return await authApi.getCurrentUser()
-      } catch (err: any) {
-        // If 401 Unauthorized, return null (guest) without throwing unhandled rejection
-        if (err?.status === 401) {
-          return null
-        }
-        throw err
+      } catch {
+        // Any auth error (401 unauthenticated, 403 blocked, or missing session) returns null for guest
+        return null
       }
     },
     retry: false,
-    staleTime: 1000 * 60 * 10, // 10 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutes
   })
 }
 
 export default useCurrentUser
+

@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client"
+import { PROFILE_API_ROUTES } from "../constants/routes.constants"
 import type { FullUserProfileResponse } from "../types/profile.types"
 
 export interface UpdateStudentProfilePayload {
@@ -6,9 +7,6 @@ export interface UpdateStudentProfilePayload {
   avatar?: string | null
   bio?: string | null
   phone?: string | null
-  headline?: string | null
-  education?: string | null
-  interests?: string[]
 }
 
 export interface UpdateTeacherProfilePayload {
@@ -16,7 +14,6 @@ export interface UpdateTeacherProfilePayload {
   avatar?: string | null
   bio?: string | null
   phone?: string | null
-  headline?: string | null
   expertise?: string[]
   qualifications?: string | null
   experienceYears?: number | null
@@ -34,7 +31,7 @@ export interface ProfileApiResponse {
 
 export const profileApi = {
   getProfile: async (): Promise<FullUserProfileResponse> => {
-    const res = await apiClient<ProfileApiResponse>("/profile", {
+    const res = await apiClient<ProfileApiResponse>(PROFILE_API_ROUTES.BASE, {
       method: "GET",
     })
     return res.data.profile
@@ -43,7 +40,7 @@ export const profileApi = {
   updateProfile: async (
     payload: Partial<UpdateStudentProfilePayload & UpdateTeacherProfilePayload>
   ): Promise<FullUserProfileResponse> => {
-    const res = await apiClient<ProfileApiResponse>("/profile", {
+    const res = await apiClient<ProfileApiResponse>(PROFILE_API_ROUTES.BASE, {
       method: "PATCH",
       body: JSON.stringify(payload),
     })
@@ -53,7 +50,7 @@ export const profileApi = {
   updateStudentProfile: async (
     payload: UpdateStudentProfilePayload
   ): Promise<FullUserProfileResponse> => {
-    const res = await apiClient<ProfileApiResponse>("/profile/student", {
+    const res = await apiClient<ProfileApiResponse>(PROFILE_API_ROUTES.STUDENT, {
       method: "PATCH",
       body: JSON.stringify(payload),
     })
@@ -63,11 +60,21 @@ export const profileApi = {
   updateTeacherProfile: async (
     payload: UpdateTeacherProfilePayload
   ): Promise<FullUserProfileResponse> => {
-    const res = await apiClient<ProfileApiResponse>("/profile/teacher", {
+    const res = await apiClient<ProfileApiResponse>(PROFILE_API_ROUTES.TEACHER, {
       method: "PATCH",
       body: JSON.stringify(payload),
     })
     return res.data.profile
+  },
+
+  submitTeacherVerification: async (): Promise<{ profile: FullUserProfileResponse; message: string }> => {
+    const res = await apiClient<ProfileApiResponse>(PROFILE_API_ROUTES.SUBMIT_VERIFICATION, {
+      method: "POST",
+    })
+    return {
+      profile: res.data.profile,
+      message: res.message,
+    }
   },
 }
 

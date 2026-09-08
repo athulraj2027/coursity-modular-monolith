@@ -1,4 +1,26 @@
 import { z } from "zod";
+import { EXPERTISE_DOMAINS, type ExpertiseDomain } from "../../domain/enums/expertise.enum";
+
+export { EXPERTISE_DOMAINS, type ExpertiseDomain };
+
+const isValidUrl = (val: string) => {
+    try {
+        const url = new URL(val);
+        return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+        return false;
+    }
+};
+
+const optionalUrl = (label: string) =>
+    z
+        .string()
+        .trim()
+        .refine((val) => val === "" || isValidUrl(val), {
+            message: `${label} must be a valid URL (e.g. https://...)`,
+        })
+        .nullable()
+        .optional();
 
 export const updateProfileSchema = z.object({
     name: z
@@ -9,7 +31,6 @@ export const updateProfileSchema = z.object({
         .optional(),
     avatar: z
         .string()
-        .url("Avatar must be a valid URL")
         .nullable()
         .optional()
         .or(z.literal("")),
@@ -23,21 +44,13 @@ export const updateProfileSchema = z.object({
         .max(20, "Phone number cannot exceed 20 characters")
         .nullable()
         .optional(),
-    headline: z
-        .string()
-        .max(150, "Headline cannot exceed 150 characters")
-        .nullable()
-        .optional(),
-    education: z
-        .string()
-        .max(255, "Education cannot exceed 255 characters")
-        .nullable()
-        .optional(),
-    interests: z
-        .array(z.string().trim().min(1, "Interest cannot be empty"))
-        .optional(),
     expertise: z
-        .array(z.string().trim().min(1, "Expertise item cannot be empty"))
+        .array(
+            z.enum(EXPERTISE_DOMAINS, {
+                errorMap: () => ({ message: "Expertise item must be a valid predefined domain" }),
+            })
+        )
+        .max(15, "Cannot select more than 15 expertise domains")
         .optional(),
     qualifications: z
         .string()
@@ -52,24 +65,9 @@ export const updateProfileSchema = z.object({
         .max(80, "Experience years cannot exceed 80")
         .nullable()
         .optional(),
-    linkedinUrl: z
-        .string()
-        .url("LinkedIn URL must be a valid URL")
-        .nullable()
-        .optional()
-        .or(z.literal("")),
-    twitterUrl: z
-        .string()
-        .url("Twitter URL must be a valid URL")
-        .nullable()
-        .optional()
-        .or(z.literal("")),
-    websiteUrl: z
-        .string()
-        .url("Website URL must be a valid URL")
-        .nullable()
-        .optional()
-        .or(z.literal("")),
+    linkedinUrl: optionalUrl("LinkedIn URL"),
+    twitterUrl: optionalUrl("Twitter/X URL"),
+    websiteUrl: optionalUrl("Website URL"),
 });
 
 export const updateStudentProfileSchema = z.object({
@@ -81,7 +79,6 @@ export const updateStudentProfileSchema = z.object({
         .optional(),
     avatar: z
         .string()
-        .url("Avatar must be a valid URL")
         .nullable()
         .optional()
         .or(z.literal("")),
@@ -94,19 +91,6 @@ export const updateStudentProfileSchema = z.object({
         .string()
         .max(20, "Phone number cannot exceed 20 characters")
         .nullable()
-        .optional(),
-    headline: z
-        .string()
-        .max(150, "Headline cannot exceed 150 characters")
-        .nullable()
-        .optional(),
-    education: z
-        .string()
-        .max(255, "Education cannot exceed 255 characters")
-        .nullable()
-        .optional(),
-    interests: z
-        .array(z.string().trim().min(1, "Interest cannot be empty"))
         .optional(),
 });
 
@@ -119,7 +103,6 @@ export const updateTeacherProfileSchema = z.object({
         .optional(),
     avatar: z
         .string()
-        .url("Avatar must be a valid URL")
         .nullable()
         .optional()
         .or(z.literal("")),
@@ -133,13 +116,13 @@ export const updateTeacherProfileSchema = z.object({
         .max(20, "Phone number cannot exceed 20 characters")
         .nullable()
         .optional(),
-    headline: z
-        .string()
-        .max(150, "Headline cannot exceed 150 characters")
-        .nullable()
-        .optional(),
     expertise: z
-        .array(z.string().trim().min(1, "Expertise item cannot be empty"))
+        .array(
+            z.enum(EXPERTISE_DOMAINS, {
+                errorMap: () => ({ message: "Expertise item must be a valid predefined domain" }),
+            })
+        )
+        .max(15, "Cannot select more than 15 expertise domains")
         .optional(),
     qualifications: z
         .string()
@@ -154,24 +137,9 @@ export const updateTeacherProfileSchema = z.object({
         .max(80, "Experience years cannot exceed 80")
         .nullable()
         .optional(),
-    linkedinUrl: z
-        .string()
-        .url("LinkedIn URL must be a valid URL")
-        .nullable()
-        .optional()
-        .or(z.literal("")),
-    twitterUrl: z
-        .string()
-        .url("Twitter URL must be a valid URL")
-        .nullable()
-        .optional()
-        .or(z.literal("")),
-    websiteUrl: z
-        .string()
-        .url("Website URL must be a valid URL")
-        .nullable()
-        .optional()
-        .or(z.literal("")),
+    linkedinUrl: optionalUrl("LinkedIn URL"),
+    twitterUrl: optionalUrl("Twitter/X URL"),
+    websiteUrl: optionalUrl("Website URL"),
 });
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

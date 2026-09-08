@@ -35,7 +35,13 @@ export function RoleGuard({
   }
 
   if (!user || error) {
-    return <Navigate to="/signin" state={{ from: location }} replace />
+    let fallbackSignIn = "/signin"
+    if (location.pathname.startsWith("/teachers") || location.pathname.startsWith("/teacher")) {
+      fallbackSignIn = "/teachers/signin"
+    } else if (location.pathname.startsWith("/admin")) {
+      fallbackSignIn = "/admin/signin"
+    }
+    return <Navigate to={fallbackSignIn} state={{ from: location }} replace />
   }
 
   const normalizedUserRole = user.role?.toLowerCase()
