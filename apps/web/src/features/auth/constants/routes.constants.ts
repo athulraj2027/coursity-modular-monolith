@@ -12,6 +12,8 @@ export const AUTH_API_ROUTES = {
   RESET_PASSWORD: "/auth/reset-password",
   ME: "/auth/me",
   REFRESH: "/auth/refresh",
+  GOOGLE: "/auth/google",
+  GOOGLE_CALLBACK: "/auth/google/callback",
 } as const
 
 export default AUTH_API_ROUTES

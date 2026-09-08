@@ -60,4 +60,11 @@ export interface ResetPasswordDTO {
   role?: UserRole
 }
 
+export interface GoogleAuthDTO {
+  idToken?: string
+  credential?: string
+  code?: string
+  role?: "STUDENT" | "TEACHER" | "ADMIN"
+}
+
 export type AuthFormErrors<T> = Partial<Record<keyof T, string>>
