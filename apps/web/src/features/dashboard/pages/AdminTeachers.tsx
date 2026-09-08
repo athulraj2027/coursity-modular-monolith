@@ -203,6 +203,10 @@ export const AdminTeachersPage = () => {
                         approvalStatus: data.approvalStatus,
                         isApproved: data.isApproved,
                         rejectionReason: data.rejectionReason ?? null,
+                        submissionCount:
+                          data.approvalStatus === "VERIFIED"
+                            ? 0
+                            : prev.profile.teacherProfile.submissionCount,
                       }
                     : undefined,
                 }

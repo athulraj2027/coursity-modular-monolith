@@ -71,7 +71,9 @@ export class UpdateTeacherProfile {
             websiteUrl: data.websiteUrl,
             approvalStatus: currentStatus,
             rejectionReason: existingProfile.teacherProfile?.rejectionReason,
-            submissionCount: existingProfile.teacherProfile?.submissionCount ?? 0,
+            submissionCount: (currentStatus === "VERIFIED" || existingProfile.teacherProfile?.isApproved)
+                ? 0
+                : (existingProfile.teacherProfile?.submissionCount ?? 0),
         });
 
         const updatedProfile = await this.profileRepository.getFullProfileByUserId(userId);

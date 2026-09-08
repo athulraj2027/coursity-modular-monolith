@@ -381,9 +381,14 @@ export class InMemoryUserRepository implements UserRepository {
             twitterUrl: null,
             websiteUrl: null,
             isApproved: false,
-            approvalStatus: "PENDING" as ApprovalStatus,
             rejectionReason: null,
+            submissionCount: 0,
         };
+        const isVerified = approvalStatus === "VERIFIED";
+        const nextSubmissionCount = isVerified
+            ? 0
+            : (currentTeacherProfile.submissionCount ?? 0);
+
         const updated: User = {
             ...existing,
             profile: {
@@ -393,6 +398,7 @@ export class InMemoryUserRepository implements UserRepository {
                     isApproved,
                     approvalStatus,
                     rejectionReason,
+                    submissionCount: nextSubmissionCount,
                 },
             },
             updatedAt: new Date(),
@@ -406,6 +412,9 @@ export class InMemoryUserRepository implements UserRepository {
                 existingTp.approvalStatus = approvalStatus;
                 existingTp.isApproved = isApproved;
                 existingTp.rejectionReason = rejectionReason;
+                if (isVerified) {
+                    existingTp.submissionCount = 0;
+                }
             }
         }
 

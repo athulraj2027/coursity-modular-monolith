@@ -297,6 +297,7 @@ describe("User Module Routes", () => {
             assert.equal(verifyRes.status, 200);
             assert.equal(verifyRes.body.data.user.profile?.teacherProfile?.approvalStatus, "VERIFIED");
             assert.equal(verifyRes.body.data.user.profile?.teacherProfile?.isApproved, true);
+            assert.equal(verifyRes.body.data.user.profile?.teacherProfile?.submissionCount, 0);
 
             // 4. Admin revokes: VERIFIED -> REVOKED (Allowed with feedback)
             const revokeRes = await request(testCtx.app)

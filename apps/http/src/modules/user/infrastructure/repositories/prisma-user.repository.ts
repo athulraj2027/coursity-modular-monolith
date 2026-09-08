@@ -128,6 +128,9 @@ export class PrismaUserRepository implements UserRepository {
             include: { teacherProfile: true },
         });
 
+        const isVerified =
+            String(approvalStatus).toUpperCase() === "VERIFIED" || isApproved === true;
+
         if (!profile) {
             profile = await this.prisma.profile.create({
                 data: {
@@ -137,6 +140,7 @@ export class PrismaUserRepository implements UserRepository {
                             isApproved,
                             approvalStatus: approvalStatus as any,
                             rejectionReason,
+                            submissionCount: isVerified ? 0 : 0,
                         },
                     },
                 },
@@ -149,6 +153,7 @@ export class PrismaUserRepository implements UserRepository {
                     isApproved,
                     approvalStatus: approvalStatus as any,
                     rejectionReason,
+                    submissionCount: isVerified ? 0 : 0,
                 },
             });
         } else {
@@ -158,6 +163,7 @@ export class PrismaUserRepository implements UserRepository {
                     isApproved,
                     approvalStatus: approvalStatus as any,
                     rejectionReason,
+                    submissionCount: isVerified ? 0 : profile.teacherProfile.submissionCount,
                 },
             });
         }
@@ -301,6 +307,12 @@ export class PrismaUserRepository implements UserRepository {
     }
 
     private mapToEntity(raw: any): User {
+        const rawTeacherProfile = raw.profile?.teacherProfile;
+        const isTeacherVerified = Boolean(
+            rawTeacherProfile &&
+            rawTeacherProfile.approvalStatus === "VERIFIED"
+        );
+
         return {
             id: raw.id,
             name: raw.name,
@@ -317,23 +329,25 @@ export class PrismaUserRepository implements UserRepository {
                       avatar: raw.profile.avatar ?? null,
                       bio: raw.profile.bio ?? null,
                       phone: raw.profile.phone ?? null,
-                      teacherProfile: raw.profile.teacherProfile
+                      teacherProfile: rawTeacherProfile
                           ? {
-                                id: raw.profile.teacherProfile.id,
-                                expertise: raw.profile.teacherProfile.expertise || [],
-                                qualifications: raw.profile.teacherProfile.qualifications ?? null,
-                                experienceYears: raw.profile.teacherProfile.experienceYears ?? null,
-                                linkedinUrl: raw.profile.teacherProfile.linkedinUrl ?? null,
-                                twitterUrl: raw.profile.teacherProfile.twitterUrl ?? null,
-                                websiteUrl: raw.profile.teacherProfile.websiteUrl ?? null,
-                                isApproved: Boolean(raw.profile.teacherProfile.isApproved),
+                                id: rawTeacherProfile.id,
+                                expertise: rawTeacherProfile.expertise || [],
+                                qualifications: rawTeacherProfile.qualifications ?? null,
+                                experienceYears: rawTeacherProfile.experienceYears ?? null,
+                                linkedinUrl: rawTeacherProfile.linkedinUrl ?? null,
+                                twitterUrl: rawTeacherProfile.twitterUrl ?? null,
+                                websiteUrl: rawTeacherProfile.websiteUrl ?? null,
+                                isApproved: isTeacherVerified,
                                 approvalStatus:
-                                    (raw.profile.teacherProfile.approvalStatus as ApprovalStatus) ||
-                                    (raw.profile.teacherProfile.isApproved ? "VERIFIED" : "PENDING"),
-                                rejectionReason: raw.profile.teacherProfile.rejectionReason ?? null,
-                                submissionCount: (raw.profile.teacherProfile as any).submissionCount ?? 0,
-                                createdAt: raw.profile.teacherProfile.createdAt,
-                                updatedAt: raw.profile.teacherProfile.updatedAt,
+                                    (rawTeacherProfile.approvalStatus as ApprovalStatus) ||
+                                    (rawTeacherProfile.isApproved ? "VERIFIED" : "PENDING"),
+                                rejectionReason: rawTeacherProfile.rejectionReason ?? null,
+                                submissionCount: isTeacherVerified
+                                    ? 0
+                                    : ((rawTeacherProfile as any).submissionCount ?? 0),
+                                createdAt: rawTeacherProfile.createdAt,
+                                updatedAt: rawTeacherProfile.updatedAt,
                             }
                           : null,
                       createdAt: raw.profile.createdAt,

@@ -61,6 +61,7 @@ export function useSubmitTeacherVerification() {
       queryClient.setQueryData(PROFILE_QUERY_KEY, res.profile)
       queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY })
       queryClient.invalidateQueries({ queryKey: ["currentUser"] })
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] })
       queryClient.invalidateQueries({ queryKey: ["users"] })
       toast.success(res.message || "Application submitted for verification successfully")
     },

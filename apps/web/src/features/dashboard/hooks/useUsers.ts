@@ -67,6 +67,8 @@ export function useApproveTeacher() {
     },
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: USER_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] })
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] })
       toast.success(res?.message || "Teacher verification status updated successfully")
     },
     onError: (error: any) => {
