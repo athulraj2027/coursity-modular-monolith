@@ -51,6 +51,36 @@ export function generateIdempotencyKey(): string {
 // Single active refresh promise to deduplicate concurrent 401 refresh requests
 let activeRefreshPromise: Promise<boolean> | null = null
 
+type RefreshStateListener = (isRefreshing: boolean) => void
+const refreshListeners = new Set<RefreshStateListener>()
+
+/**
+ * Subscribes to changes in the active token refresh state.
+ */
+export function onTokenRefreshStateChange(listener: RefreshStateListener): () => void {
+  refreshListeners.add(listener)
+  return () => {
+    refreshListeners.delete(listener)
+  }
+}
+
+function notifyRefreshState(isRefreshing: boolean) {
+  refreshListeners.forEach((listener) => {
+    try {
+      listener(isRefreshing)
+    } catch {
+      // ignore
+    }
+  })
+}
+
+/**
+ * Checks if a token refresh network request is currently active.
+ */
+export function isTokenRefreshing(): boolean {
+  return activeRefreshPromise !== null
+}
+
 /**
  * Attempts to refresh the session via the backend /auth/refresh endpoint using HTTP-only cookies.
  * Deduplicates concurrent calls so only one refresh network request occurs.
@@ -59,6 +89,8 @@ export async function refreshAccessToken(): Promise<boolean> {
   if (activeRefreshPromise) {
     return activeRefreshPromise
   }
+
+  notifyRefreshState(true)
 
   activeRefreshPromise = (async () => {
     try {
@@ -72,11 +104,17 @@ export async function refreshAccessToken(): Promise<boolean> {
         credentials: "include",   // Transmits refreshToken cookie and receives new Set-Cookie headers
       })
 
-      return response.ok
+      const success = response.ok
+      if (success) {
+        // Automatically sync current user in TanStack Query
+        queryClient.invalidateQueries({ queryKey: ["currentUser"] })
+      }
+      return success
     } catch {
       return false
     } finally {
       activeRefreshPromise = null
+      notifyRefreshState(false)
     }
   })()
 
@@ -94,30 +132,6 @@ const AUTH_ENDPOINTS = [
   AUTH_API_ROUTES.FORGOT_PASSWORD,
   AUTH_API_ROUTES.RESET_PASSWORD,
 ]
-
-function isProtectedRoute(pathname: string): boolean {
-  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/signin")) {
-    return true
-  }
-  if (
-    pathname.startsWith("/teachers/dashboard") ||
-    pathname.startsWith("/teachers/profile") ||
-    pathname.startsWith("/teacher/")
-  ) {
-    return true
-  }
-  if (
-    pathname.startsWith("/students") ||
-    pathname.startsWith("/student") ||
-    pathname === "/dashboard" ||
-    pathname === "/profile"
-  ) {
-    return true
-  }
-  return false
-}
-
-let isRedirecting = false
 
 function handleAuthFailure(errorMessage?: string, isBlocked?: boolean) {
   if (typeof window === "undefined") return
@@ -137,24 +151,9 @@ function handleAuthFailure(errorMessage?: string, isBlocked?: boolean) {
     toast.error(errorMessage || "Your account has been blocked. Please contact support.")
   }
 
-  // 3. If currently on a protected route, cleanly redirect to appropriate signin portal
-  const pathname = window.location.pathname
-  if (isProtectedRoute(pathname) && !isRedirecting) {
-    isRedirecting = true
-    setTimeout(() => {
-      isRedirecting = false
-    }, 2000)
-
-    let target = "/signin"
-    if (pathname.startsWith("/admin")) {
-      target = "/admin/signin"
-    } else if (pathname.startsWith("/teachers") || pathname.startsWith("/teacher")) {
-      target = "/teachers/signin"
-    }
-
-    window.location.href = target
-  }
+  // Note: Route protection and smooth redirects are handled declaratively by React Router guards (ProtectedRoute / RoleGuard)
 }
+
 
 export async function apiClient<T>(
   endpoint: string,
