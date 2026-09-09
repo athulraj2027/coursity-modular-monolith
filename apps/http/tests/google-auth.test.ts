@@ -45,10 +45,59 @@ describe("Google OAuth Routes", () => {
             assert.ok(res.body.data.refreshToken);
             assert.equal(res.body.data.user.email, "google.user@example.com");
 
-            // Verify user was stored in database with authProvider GOOGLE
+            // Verify user was stored in database with authProvider GOOGLE and googleId
             const user = await testCtx.userRepo.findByEmail("google.user@example.com");
             assert.ok(user);
             assert.equal(user.authProvider, "GOOGLE");
+            assert.equal(user.googleId, "google_123456");
+        });
+
+        it("should link googleId to an existing user with matching email", async () => {
+            // Pre-create user without googleId (e.g. local sign up)
+            const localUser = await testCtx.userRepo.create({
+                name: "Existing Local User",
+                email: "google.user@example.com",
+                password: "hashedpassword",
+                role: "STUDENT",
+                authProvider: "LOCAL",
+            });
+            assert.equal(localUser.googleId, null);
+
+            const res = await request(testCtx.app)
+                .post("/api/auth/google")
+                .send({
+                    idToken: "valid_id_token",
+                    role: "STUDENT",
+                });
+
+            assert.equal(res.status, 200);
+            const updatedUser = await testCtx.userRepo.findById(localUser.id);
+            assert.ok(updatedUser);
+            assert.equal(updatedUser.googleId, "google_123456");
+            assert.equal(updatedUser.authProvider, "GOOGLE");
+        });
+
+        it("should locate user by googleId directly on subsequent sign-ins", async () => {
+            await testCtx.userRepo.create({
+                name: "Google Linked User",
+                email: "changed.email@example.com",
+                password: null,
+                role: "STUDENT",
+                authProvider: "GOOGLE",
+                googleId: "google_123456",
+            });
+
+            const res = await request(testCtx.app)
+                .post("/api/auth/google")
+                .send({
+                    idToken: "valid_id_token",
+                    role: "STUDENT",
+                });
+
+            assert.equal(res.status, 200);
+            const user = await testCtx.userRepo.findByGoogleId("google_123456");
+            assert.ok(user);
+            assert.equal(user.googleId, "google_123456");
         });
 
         it("should return 400 when no tokens or codes are provided", async () => {

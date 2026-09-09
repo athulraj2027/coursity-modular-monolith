@@ -43,6 +43,21 @@ export class PrismaUserRepository implements UserRepository {
         return this.mapToEntity(user);
     }
 
+    async findByGoogleId(googleId: string): Promise<User | null> {
+        const user = await this.prisma.user.findUnique({
+            where: { googleId },
+            include: {
+                profile: {
+                    include: {
+                        teacherProfile: true,
+                    },
+                },
+            },
+        });
+        if (!user) return null;
+        return this.mapToEntity(user);
+    }
+
     async create(data: CreateUserData): Promise<User> {
         const user = await this.prisma.user.create({
             data: {
@@ -51,6 +66,7 @@ export class PrismaUserRepository implements UserRepository {
                 password: data.password ?? null,
                 role: data.role as any,
                 authProvider: data.authProvider as any,
+                googleId: data.googleId ?? null,
             },
             include: {
                 profile: {
@@ -72,6 +88,7 @@ export class PrismaUserRepository implements UserRepository {
                 ...(data.password !== undefined ? { password: data.password } : {}),
                 ...(data.role !== undefined ? { role: data.role as any } : {}),
                 ...(data.authProvider !== undefined ? { authProvider: data.authProvider as any } : {}),
+                ...(data.googleId !== undefined ? { googleId: data.googleId } : {}),
                 ...(data.isBlocked !== undefined ? { isBlocked: data.isBlocked } : {}),
             },
             include: {
@@ -320,6 +337,7 @@ export class PrismaUserRepository implements UserRepository {
             password: raw.password,
             role: raw.role as UserRole,
             authProvider: raw.authProvider as AuthProvider,
+            googleId: raw.googleId ?? null,
             isBlocked: Boolean(raw.isBlocked),
             createdAt: raw.createdAt,
             updatedAt: raw.updatedAt,

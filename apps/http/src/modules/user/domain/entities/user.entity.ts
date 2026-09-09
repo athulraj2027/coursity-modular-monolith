@@ -48,6 +48,7 @@ export interface User {
     password: string | null;
     role: UserRole;
     authProvider: AuthProvider;
+    googleId?: string | null;
     isBlocked: boolean;
     createdAt: Date;
     updatedAt: Date;

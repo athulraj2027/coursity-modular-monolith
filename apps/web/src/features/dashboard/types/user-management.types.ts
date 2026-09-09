@@ -34,6 +34,7 @@ export interface BackendUser {
   email: string
   role: UserRole
   authProvider: AuthProvider
+  googleId?: string | null
   isBlocked: boolean
   createdAt: string
   updatedAt: string
