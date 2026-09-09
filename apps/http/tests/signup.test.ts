@@ -64,6 +64,50 @@ describe("POST /api/auth/signup", () => {
             });
 
         assert.equal(res.status, 409);
-        assert.match(res.body.message, /already exists/i);
+        assert.match(res.body.message, /registered as a student/i);
+    });
+
+    it("should return 409 with specific message when a teacher is already registered with the email", async () => {
+        await testCtx.userRepo.create({
+            name: "Teacher Existing",
+            email: "teacher.existing@example.com",
+            password: "HashedPassword123!",
+            role: "TEACHER",
+            authProvider: "LOCAL",
+        });
+
+        const res = await request(testCtx.app)
+            .post("/api/auth/signup")
+            .send({
+                name: "Student Candidate",
+                email: "teacher.existing@example.com",
+                password: "SecurePassword123!",
+                role: "STUDENT",
+            });
+
+        assert.equal(res.status, 409);
+        assert.match(res.body.message, /registered as a teacher/i);
+    });
+
+    it("should return 409 with specific message when an admin is already registered with the email", async () => {
+        await testCtx.userRepo.create({
+            name: "Admin Existing",
+            email: "admin.existing@example.com",
+            password: "HashedPassword123!",
+            role: "ADMIN",
+            authProvider: "LOCAL",
+        });
+
+        const res = await request(testCtx.app)
+            .post("/api/auth/signup")
+            .send({
+                name: "Candidate",
+                email: "admin.existing@example.com",
+                password: "SecurePassword123!",
+                role: "STUDENT",
+            });
+
+        assert.equal(res.status, 409);
+        assert.match(res.body.message, /registered as an administrator/i);
     });
 });

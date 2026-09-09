@@ -29,12 +29,12 @@ export class SigninUser {
 
         // 3. Enforce strict role matching if a specific portal role was requested
         if (input.role && user.role !== input.role) {
-            if (user.role === "TEACHER") {
+            if (user.role === "ADMIN") {
+                throw new ForbiddenError("This account is registered as an Administrator. Please sign in through the Admin portal.");
+            } else if (user.role === "TEACHER") {
                 throw new ForbiddenError("This account is registered as a Teacher. Please sign in through the Teacher portal.");
             } else if (user.role === "STUDENT") {
                 throw new ForbiddenError("This account is registered as a Student. Please sign in through the Student portal.");
-            } else if (user.role === "ADMIN") {
-                throw new ForbiddenError("This account is registered as an Administrator. Please sign in through the Admin portal.");
             } else {
                 throw new ForbiddenError(`Access denied. Your account does not have ${input.role.toLowerCase()} privileges.`);
             }

@@ -121,6 +121,58 @@ describe("Google OAuth Routes", () => {
             assert.equal(res.status, 200);
             assert.equal(res.body.data.user.role, "TEACHER");
         });
+
+        it("should reject an Admin attempting to sign in on the Teacher portal with 403", async () => {
+            await testCtx.userRepo.create({
+                name: "Admin Super",
+                email: "google.user@example.com",
+                password: null,
+                role: "ADMIN",
+                authProvider: "GOOGLE",
+            });
+
+            const res = await request(testCtx.app)
+                .post("/api/auth/google")
+                .send({
+                    idToken: "valid_id_token",
+                    role: "TEACHER",
+                });
+
+            assert.equal(res.status, 403);
+            assert.match(res.body.message, /registered as an administrator/i);
+        });
+
+        it("should reject an Admin attempting to sign in on the Student portal with 403", async () => {
+            await testCtx.userRepo.create({
+                name: "Admin Super",
+                email: "google.user@example.com",
+                password: null,
+                role: "ADMIN",
+                authProvider: "GOOGLE",
+            });
+
+            const res = await request(testCtx.app)
+                .post("/api/auth/google")
+                .send({
+                    idToken: "valid_id_token",
+                    role: "STUDENT",
+                });
+
+            assert.equal(res.status, 403);
+            assert.match(res.body.message, /registered as an administrator/i);
+        });
+
+        it("should reject creating a new ADMIN user via Google authentication with 403", async () => {
+            const res = await request(testCtx.app)
+                .post("/api/auth/google")
+                .send({
+                    idToken: "valid_id_token",
+                    role: "ADMIN",
+                });
+
+            assert.equal(res.status, 403);
+            assert.match(res.body.message, /cannot be created via google/i);
+        });
     });
 
     describe("GET /api/auth/google/callback", () => {

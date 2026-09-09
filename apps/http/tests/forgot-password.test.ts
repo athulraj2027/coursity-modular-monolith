@@ -54,4 +54,37 @@ describe("POST /api/auth/forgot-password", () => {
         assert.equal(res.status, 400);
         assert.equal(res.body.message, "Validation error");
     });
+
+    it("should reject forgot password when a teacher email is used on the student portal", async () => {
+        const teacherPassword = await testCtx.passwordService.hash("TeacherPass123!");
+        await testCtx.userRepo.create({
+            name: "Teacher User",
+            email: "teacher.user@example.com",
+            password: teacherPassword,
+            role: "TEACHER",
+            authProvider: "LOCAL",
+        });
+
+        const res = await request(testCtx.app)
+            .post("/api/auth/forgot-password")
+            .send({
+                email: "teacher.user@example.com",
+                role: "STUDENT",
+            });
+
+        assert.equal(res.status, 400);
+        assert.match(res.body.message, /registered as a teacher/i);
+    });
+
+    it("should reject forgot password when a student email is used on the teacher portal", async () => {
+        const res = await request(testCtx.app)
+            .post("/api/auth/forgot-password")
+            .send({
+                email: "forgot.user@example.com",
+                role: "TEACHER",
+            });
+
+        assert.equal(res.status, 400);
+        assert.match(res.body.message, /registered as a student/i);
+    });
 });

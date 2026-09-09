@@ -22,6 +22,9 @@ export class GoogleAuth {
         let user = await this.userRepository.findByEmail(profile.email);
 
         if (!user) {
+            if (requestedRole === "ADMIN") {
+                throw new ForbiddenError("Administrator accounts cannot be created via Google authentication.");
+            }
             // Register new Google-authenticated user
             user = await this.userRepository.create({
                 name: profile.name,
@@ -38,12 +41,12 @@ export class GoogleAuth {
 
             // 2. Enforce strict role matching if a specific portal role was requested
             if (requestedRole && user.role !== requestedRole) {
-                if (user.role === "TEACHER") {
+                if (user.role === "ADMIN") {
+                    throw new ForbiddenError("This account is registered as an Administrator. Please sign in through the Admin portal.");
+                } else if (user.role === "TEACHER") {
                     throw new ForbiddenError("This account is registered as a Teacher. Please sign in through the Teacher portal.");
                 } else if (user.role === "STUDENT") {
                     throw new ForbiddenError("This account is registered as a Student. Please sign in through the Student portal.");
-                } else if (user.role === "ADMIN") {
-                    throw new ForbiddenError("This account is registered as an Administrator. Please sign in through the Admin portal.");
                 } else {
                     throw new ForbiddenError(`Access denied. Your account does not have ${requestedRole.toLowerCase()} privileges.`);
                 }
