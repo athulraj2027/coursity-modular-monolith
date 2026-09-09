@@ -27,7 +27,20 @@ export class SigninUser {
             throw new ForbiddenError("Your account has been blocked. Please contact support.");
         }
 
-        // 2. Check if user is password-based or OAuth-only
+        // 3. Enforce strict role matching if a specific portal role was requested
+        if (input.role && user.role !== input.role) {
+            if (user.role === "TEACHER") {
+                throw new ForbiddenError("This account is registered as a Teacher. Please sign in through the Teacher portal.");
+            } else if (user.role === "STUDENT") {
+                throw new ForbiddenError("This account is registered as a Student. Please sign in through the Student portal.");
+            } else if (user.role === "ADMIN") {
+                throw new ForbiddenError("This account is registered as an Administrator. Please sign in through the Admin portal.");
+            } else {
+                throw new ForbiddenError(`Access denied. Your account does not have ${input.role.toLowerCase()} privileges.`);
+            }
+        }
+
+        // 4. Check if user is password-based or OAuth-only
         if (!user.password) {
             if (user.authProvider === "GOOGLE") {
                 throw new BadRequestError("This account was created with Google. Please sign in with Google.");

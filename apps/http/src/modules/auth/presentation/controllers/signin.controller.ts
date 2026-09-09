@@ -8,8 +8,8 @@ export class SigninController {
 
     execute = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { email, password } = req.body;
-            const result = await this.signinUser.execute({ email, password });
+            const { email, password, role } = req.body;
+            const result = await this.signinUser.execute({ email, password, role });
 
             // Set HTTP-only auth cookies
             setAuthCookies(res, {
