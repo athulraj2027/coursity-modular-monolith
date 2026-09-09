@@ -19,7 +19,17 @@ export class GoogleAuth {
     }
 
     private async handleProfileLogin(profile: OAuthUserProfile, requestedRole?: UserRole): Promise<GoogleAuthOutputDTO> {
-        let user = await this.userRepository.findByEmail(profile.email);
+        let user = await this.userRepository.findByGoogleId(profile.id);
+
+        if (!user) {
+            user = await this.userRepository.findByEmail(profile.email);
+            if (user && !user.googleId) {
+                user = await this.userRepository.update(user.id, {
+                    googleId: profile.id,
+                    authProvider: "GOOGLE",
+                });
+            }
+        }
 
         if (!user) {
             if (requestedRole === "ADMIN") {
@@ -32,6 +42,7 @@ export class GoogleAuth {
                 password: null,
                 role: requestedRole || "STUDENT",
                 authProvider: "GOOGLE",
+                googleId: profile.id,
             });
         } else {
             // 1. Check if account is blocked

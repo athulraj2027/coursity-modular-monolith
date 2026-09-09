@@ -6,6 +6,7 @@ export interface CreateUserDTO {
     password: string | null;
     role: UserRole;
     authProvider: AuthProvider;
+    googleId?: string | null;
 }
 
 export type CreateUserData = CreateUserDTO;
