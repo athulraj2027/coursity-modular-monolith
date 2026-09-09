@@ -60,4 +60,83 @@ describe("POST /api/auth/signin", () => {
         assert.equal(res.status, 401);
         assert.match(res.body.message, /invalid email or password/i);
     });
+
+    it("should return 403 when a student tries to sign in on teacher portal", async () => {
+        const res = await request(testCtx.app)
+            .post("/api/auth/signin")
+            .send({
+                email: "signin.user@example.com",
+                password: "Secret123!",
+                role: "TEACHER",
+            });
+
+        assert.equal(res.status, 403);
+        assert.match(res.body.message, /registered as a student/i);
+    });
+
+    it("should return 403 when an admin tries to sign in on teacher portal", async () => {
+        const adminPassword = await testCtx.passwordService.hash("AdminPass123!");
+        await testCtx.userRepo.create({
+            name: "Admin User",
+            email: "admin.user@example.com",
+            password: adminPassword,
+            role: "ADMIN",
+            authProvider: "LOCAL",
+        });
+
+        const res = await request(testCtx.app)
+            .post("/api/auth/signin")
+            .send({
+                email: "admin.user@example.com",
+                password: "AdminPass123!",
+                role: "TEACHER",
+            });
+
+        assert.equal(res.status, 403);
+        assert.match(res.body.message, /registered as an administrator/i);
+    });
+
+    it("should return 403 when an admin tries to sign in on student portal", async () => {
+        const adminPassword = await testCtx.passwordService.hash("AdminPass123!");
+        await testCtx.userRepo.create({
+            name: "Admin User",
+            email: "admin.user@example.com",
+            password: adminPassword,
+            role: "ADMIN",
+            authProvider: "LOCAL",
+        });
+
+        const res = await request(testCtx.app)
+            .post("/api/auth/signin")
+            .send({
+                email: "admin.user@example.com",
+                password: "AdminPass123!",
+                role: "STUDENT",
+            });
+
+        assert.equal(res.status, 403);
+        assert.match(res.body.message, /registered as an administrator/i);
+    });
+
+    it("should return 403 when a teacher tries to sign in on student portal", async () => {
+        const teacherPassword = await testCtx.passwordService.hash("TeacherPass123!");
+        await testCtx.userRepo.create({
+            name: "Teacher User",
+            email: "teacher.user@example.com",
+            password: teacherPassword,
+            role: "TEACHER",
+            authProvider: "LOCAL",
+        });
+
+        const res = await request(testCtx.app)
+            .post("/api/auth/signin")
+            .send({
+                email: "teacher.user@example.com",
+                password: "TeacherPass123!",
+                role: "STUDENT",
+            });
+
+        assert.equal(res.status, 403);
+        assert.match(res.body.message, /registered as a teacher/i);
+    });
 });

@@ -10,6 +10,8 @@ export const signinSchema = z.object({
     password: z
         .string({ message: "Password is required" })
         .min(1, "Password is required"),
+
+    role: z.enum(["STUDENT", "TEACHER", "ADMIN"]).optional(),
 });
 
 export type SigninSchemaDTO = z.infer<typeof signinSchema>;

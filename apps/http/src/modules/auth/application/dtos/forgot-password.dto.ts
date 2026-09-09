@@ -1,5 +1,8 @@
+import { UserRole } from "@/modules/user";
+
 export interface ForgotPasswordInputDTO {
     email: string;
+    role?: UserRole;
 }
 
 export interface ForgotPasswordOutputDTO {

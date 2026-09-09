@@ -25,6 +25,17 @@ export class ForgotPassword {
             throw new BadRequestError("This account uses Google Sign-In. Please sign in with Google.");
         }
 
+        // Enforce role consistency if a specific portal role was requested
+        if (user && input.role && user.role !== input.role) {
+            if (user.role === "ADMIN") {
+                throw new BadRequestError("This account is registered as an Administrator. Please use the Admin portal.");
+            } else if (user.role === "TEACHER") {
+                throw new BadRequestError("This account is registered as a Teacher. Please use the Teacher portal to reset your password.");
+            } else if (user.role === "STUDENT") {
+                throw new BadRequestError("This account is registered as a Student. Please use the Student portal to reset your password.");
+            }
+        }
+
         if (user) {
             // 2. Check cooldown from previous OTP request
             const existingOtp = await this.otpRepository.getResetPasswordOtp(email);

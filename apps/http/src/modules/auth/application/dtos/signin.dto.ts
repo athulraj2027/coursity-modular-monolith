@@ -3,6 +3,7 @@ import { UserRole } from "@/modules/user";
 export interface SigninInputDTO {
     email: string;
     password: string;
+    role?: UserRole;
 }
 
 export interface SigninOutputDTO {
