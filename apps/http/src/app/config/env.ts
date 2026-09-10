@@ -27,6 +27,14 @@ const envSchema = z.object({
     ENABLE_IN_PROCESS_WORKER: z
         .preprocess((val) => (val === undefined ? true : val === "true" || val === true || val === "1"), z.boolean().optional())
         .default(true),
+
+    // AWS S3 / Cloud Storage Configuration
+    AWS_REGION: z.string().default("us-east-1"),
+    AWS_ACCESS_KEY_ID: z.string().optional().default(""),
+    AWS_SECRET_ACCESS_KEY: z.string().optional().default(""),
+    AWS_S3_BUCKET_NAME: z.string().optional().default(""),
+    AWS_CLOUDFRONT_URL: z.string().optional().default(""),
+    AWS_S3_ENDPOINT: z.string().optional().default(""),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
