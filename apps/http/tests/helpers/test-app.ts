@@ -282,6 +282,15 @@ export class InMemoryUserRepository implements UserRepository {
         return null;
     }
 
+    async findByGoogleId(googleId: string): Promise<User | null> {
+        for (const user of this.users.values()) {
+            if (user.googleId === googleId) {
+                return user;
+            }
+        }
+        return null;
+    }
+
     async create(data: CreateUserData): Promise<User> {
         const id = `usr_${Math.random().toString(36).substring(2, 9)}`;
         const user: User = {
@@ -291,6 +300,7 @@ export class InMemoryUserRepository implements UserRepository {
             password: data.password,
             role: data.role,
             authProvider: data.authProvider,
+            googleId: data.googleId ?? null,
             profile: data.role === "TEACHER" ? {
                 id: `prof_${id}`,
                 avatar: null,

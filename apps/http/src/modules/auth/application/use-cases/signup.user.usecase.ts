@@ -18,9 +18,20 @@ export class SignupUser {
     async execute(input: SignupUserInputDTO): Promise<SignupUserOutputDTO> {
         const email = input.email.toLowerCase().trim();
 
+        if (input.role === "ADMIN") {
+            throw new BadRequestError("Administrator accounts cannot be registered via public signup.");
+        }
+
         // 1. Check whether user already exists in DB
         const existingUser = await this.repository.findByEmail(email);
         if (existingUser) {
+            if (existingUser.role === "ADMIN") {
+                throw new ConflictError("This email is already registered as an Administrator. Please sign in through the Admin portal.");
+            } else if (existingUser.role === "TEACHER") {
+                throw new ConflictError("This email is already registered as a Teacher. Please sign in through the Teacher portal.");
+            } else if (existingUser.role === "STUDENT") {
+                throw new ConflictError("This email is already registered as a Student. Please sign in through the Student portal.");
+            }
             throw new ConflictError("An account with this email already exists");
         }
 

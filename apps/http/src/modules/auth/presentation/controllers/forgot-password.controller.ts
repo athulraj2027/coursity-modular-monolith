@@ -7,8 +7,8 @@ export class ForgotPasswordController {
 
     execute = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { email } = req.body;
-            const result = await this.forgotPassword.execute({ email });
+            const { email, role } = req.body;
+            const result = await this.forgotPassword.execute({ email, role });
 
             res.status(STATUS_CODES.OK).json({
                 message: result.message,

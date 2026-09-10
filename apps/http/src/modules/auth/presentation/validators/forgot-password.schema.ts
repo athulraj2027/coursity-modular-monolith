@@ -6,6 +6,8 @@ export const forgotPasswordSchema = z.object({
         .trim()
         .toLowerCase()
         .email("Invalid email address"),
+
+    role: z.enum(["STUDENT", "TEACHER", "ADMIN"]).optional(),
 });
 
 export type ForgotPasswordSchemaDTO = z.infer<typeof forgotPasswordSchema>;

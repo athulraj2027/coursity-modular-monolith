@@ -19,6 +19,13 @@ export const authApi = {
       body: JSON.stringify({
         email: data.email,
         password: data.password,
+        role: data.role
+          ? data.role === "teacher"
+            ? "TEACHER"
+            : data.role === "admin"
+              ? "ADMIN"
+              : "STUDENT"
+          : undefined,
       }),
     })
   },
@@ -110,6 +117,13 @@ export const authApi = {
       method: "POST",
       body: JSON.stringify({
         email: data.email,
+        role: data.role
+          ? data.role === "teacher"
+            ? "TEACHER"
+            : data.role === "admin"
+              ? "ADMIN"
+              : "STUDENT"
+          : undefined,
       }),
     })
   },

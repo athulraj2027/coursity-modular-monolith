@@ -39,6 +39,7 @@ model User {
   password     String?
   role         UserRole     @default(STUDENT)
   authProvider AuthProvider @default(LOCAL)
+  googleId     String?      @unique
   isBlocked    Boolean      @default(false)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt

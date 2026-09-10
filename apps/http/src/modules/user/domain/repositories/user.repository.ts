@@ -14,6 +14,10 @@ export interface UserRepository {
         email: string
     ): Promise<User | null>;
 
+    findByGoogleId(
+        googleId: string
+    ): Promise<User | null>;
+
     create(
         data: CreateUserData
     ): Promise<User>;
