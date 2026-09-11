@@ -32,6 +32,45 @@ enum ApprovalStatus {
   REDO
 }
 
+enum BillingCycle {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  LIFETIME
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  EXPIRED
+  PENDING
+}
+
+enum FeatureType {
+  BOOLEAN
+  NUMERIC
+  TEXT
+}
+
+enum FeatureCategory {
+  LIVE_STREAMING
+  COURSES
+  STORAGE
+  RECORDING
+  ANALYTICS
+  COMMUNITY
+  SUPPORT
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
 model User {
   id           String       @id @default(uuid())
   name         String
@@ -83,6 +122,8 @@ model TeacherProfile {
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
 
+  subscriptions   TeacherSubscription[]
+
   @@map("teacher_profiles")
 }
 
@@ -103,4 +144,134 @@ model IdempotencyKey {
   @@index([key])
   @@index([expiresAt])
   @@map("idempotency_keys")
+}
+
+// ==========================================
+// PLAN & DYNAMIC FEATURE CATALOG
+// ==========================================
+
+model Plan {
+  id            String         @id @default(uuid())
+  name          String         // e.g. "Starter Plan", "Pro Educator", "Elite Academy"
+  slug          String         @unique // e.g. "starter-plan", "pro-educator-monthly"
+  tagline       String?        // e.g. "Ideal for emerging teachers hosting live cohorts"
+  description   String?
+  price         Decimal        @db.Decimal(10, 2)
+  currency      String         @default("USD")
+  billingCycle  BillingCycle   @default(MONTHLY)
+  trialDays     Int            @default(0)
+  isActive      Boolean        @default(true)
+  isFeatured    Boolean        @default(false)
+  sortOrder     Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  features      PlanFeature[]
+  subscriptions TeacherSubscription[]
+
+  @@index([isActive, sortOrder])
+  @@map("plans")
+}
+
+model Feature {
+  id          String          @id @default(uuid())
+  code        String          @unique // e.g. "MAX_COURSES", "LIVE_VIEWER_MINUTES_MONTHLY"
+  name        String          // e.g. "Live Viewer Minutes per Month"
+  description String?
+  featureType FeatureType     @default(NUMERIC)
+  category    FeatureCategory @default(COURSES)
+  unit        String?         // e.g. "minutes", "classes", "GB", "courses"
+  sortOrder   Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  planFeatures PlanFeature[]
+
+  @@map("features")
+}
+
+model PlanFeature {
+  id          String      @id @default(uuid())
+  planId      String
+  plan        Plan        @relation(fields: [planId], references: [id], onDelete: Cascade)
+  featureId   String
+  feature     Feature     @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  
+  value       String      // Stores "true"/"false" for BOOLEAN, "15"/"25000" for NUMERIC, or custom text
+  isUnlimited Boolean     @default(false)
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([planId, featureId])
+  @@map("plan_features")
+}
+
+// ==========================================
+// TEACHER SUBSCRIPTIONS & METERED USAGE
+// ==========================================
+
+model TeacherSubscription {
+  id                     String             @id @default(uuid())
+  teacherProfileId       String
+  teacherProfile         TeacherProfile     @relation(fields: [teacherProfileId], references: [id], onDelete: Cascade)
+  planId                 String
+  plan                   Plan               @relation(fields: [planId], references: [id], onDelete: Restrict)
+  
+  status                 SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart     DateTime
+  currentPeriodEnd       DateTime
+  cancelAtPeriodEnd      Boolean            @default(false)
+  canceledAt             DateTime?
+  trialEndsAt            DateTime?
+
+  externalCustomerId     String?
+  externalSubscriptionId String?            @unique
+
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  usages                 TeacherPlanUsage[]
+  invoices               SubscriptionInvoice[]
+
+  @@index([teacherProfileId, status])
+  @@map("teacher_subscriptions")
+}
+
+model TeacherPlanUsage {
+  id               String               @id @default(uuid())
+  subscriptionId   String
+  subscription     TeacherSubscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  teacherProfileId String
+  
+  featureCode      String               // e.g. "LIVE_VIEWER_MINUTES_MONTHLY", "MAX_COURSES"
+  currentUsage     Float                @default(0)
+  periodStart      DateTime
+  periodEnd        DateTime
+  
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@unique([subscriptionId, featureCode, periodStart])
+  @@index([teacherProfileId, featureCode])
+  @@map("teacher_plan_usages")
+}
+
+model SubscriptionInvoice {
+  id             String              @id @default(uuid())
+  subscriptionId String
+  subscription   TeacherSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  
+  invoiceNumber  String              @unique
+  amount         Decimal             @db.Decimal(10, 2)
+  currency       String              @default("USD")
+  status         PaymentStatus       @default(PENDING)
+  paymentMethod  String?
+  receiptUrl     String?
+  paidAt         DateTime?
+  
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@map("subscription_invoices")
 }

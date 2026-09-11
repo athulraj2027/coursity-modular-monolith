@@ -8,6 +8,8 @@ import {
   User,
   UserCheck,
   Users,
+  Zap,
+  Layers,
 } from "lucide-react"
 
 export interface SidebarNavItem {
@@ -59,7 +61,12 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Dashboard",
         url: "/teachers/dashboard",
         icon: LayoutDashboard,
-      }
+      },
+      {
+        title: "Plans & Billing",
+        url: "/teachers/plans",
+        icon: Zap,
+      },
     ],
   },
   {
@@ -83,7 +90,6 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
     ],
   },
 ]
-
 
 export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
   {
@@ -109,6 +115,11 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Courses",
         url: "/admin/courses",
         icon: GraduationCap,
+      },
+      {
+        title: "Plans",
+        url: "/admin/plans",
+        icon: Layers,
       },
     ],
   },
