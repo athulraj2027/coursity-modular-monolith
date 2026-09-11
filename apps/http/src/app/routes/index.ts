@@ -23,5 +23,6 @@ router.use(authMiddleware);
 router.use(isBlockedMiddleware);
 router.use("/users", userRouter);
 router.use("/profile", profileRouter);
+router.use("/upload", uploadRouter);
 
 export default router;
