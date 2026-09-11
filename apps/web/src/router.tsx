@@ -15,6 +15,12 @@ import {
   TeacherProfilePage,
 } from "@/features/profile"
 import {
+  TeacherPlansPage,
+  AdminPlansPage,
+  AdminPlanDetailsPage,
+  AdminPlanFormPage,
+} from "@/features/plans"
+import {
   SigninPage,
   SignupPage,
   VerifyOtpPage,
@@ -87,9 +93,14 @@ export function AppRoutes() {
           <Route path="/teachers/profile" element={<DashboardLayout role="teacher" />}>
             <Route index element={<TeacherProfilePage />} />
           </Route>
+          <Route path="/teachers/plans" element={<DashboardLayout role="teacher" />}>
+            <Route index element={<TeacherPlansPage />} />
+          </Route>
           {/* Aliases for teacher */}
           <Route path="/teacher/dashboard" element={<Navigate to="/teachers/dashboard" replace />} />
           <Route path="/teacher/profile" element={<Navigate to="/teachers/profile" replace />} />
+          <Route path="/teacher/plans" element={<Navigate to="/teachers/plans" replace />} />
+          <Route path="/teachers/billing" element={<Navigate to="/teachers/plans" replace />} />
         </Route>
       </Route>
 
@@ -105,6 +116,12 @@ export function AppRoutes() {
           </Route>
           <Route path="/admin/users" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminStudentsPage />} />
+          </Route>
+          <Route path="/admin/plans" element={<DashboardLayout role="admin" />}>
+            <Route index element={<AdminPlansPage />} />
+            <Route path="new" element={<AdminPlanFormPage />} />
+            <Route path=":id" element={<AdminPlanDetailsPage />} />
+            <Route path=":id/edit" element={<AdminPlanFormPage />} />
           </Route>
           <Route path="/admin/students" element={<Navigate to="/admin/users" replace />} />
         </Route>
