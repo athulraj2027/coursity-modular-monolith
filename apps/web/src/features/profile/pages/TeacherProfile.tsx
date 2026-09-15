@@ -23,7 +23,6 @@ import {
   Calendar,
   Lock,
   AlertCircle,
-  Search,
   Check,
   Sparkles,
   UserX,
@@ -39,7 +38,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { ImageUploadInput, ResumeUploadInput, LoadingScreen, SubmitVerificationModal } from "@/components/common"
+import { ImageUploadInput, ResumeUploadInput, LoadingScreen, SubmitVerificationModal, SearchInput } from "@/components/common"
 import { toast } from "@/lib/toast"
 import { useProfile, useUpdateTeacherProfile, useSubmitTeacherVerification } from "../hooks/useProfile"
 import { EXPERTISE_CATEGORIES } from "../constants/expertise.constants"
@@ -503,11 +502,10 @@ export const TeacherProfilePage: React.FC = () => {
             <Button
               onClick={handleSubmitForVerification}
               disabled={submitMutation.isPending || isSubmissionMaxed}
-              className={`gap-2 rounded-xl text-xs font-semibold cursor-pointer w-full sm:w-auto ${
-                isSubmissionMaxed
+              className={`gap-2 rounded-xl text-xs font-semibold cursor-pointer w-full sm:w-auto ${isSubmissionMaxed
                   ? "bg-neutral-600 text-neutral-300 cursor-not-allowed"
                   : "bg-emerald-600 hover:bg-emerald-700 text-white"
-              }`}
+                }`}
               title={
                 isSubmissionMaxed
                   ? "Maximum submission attempts reached (5/5). Contact administrator to reapply."
@@ -523,8 +521,8 @@ export const TeacherProfilePage: React.FC = () => {
                 {isSubmissionMaxed
                   ? "Max Submissions (5/5)"
                   : currentApprovalStatus === "REDO"
-                  ? "Re-submit Application"
-                  : "Submit for Verification"}
+                    ? "Re-submit Application"
+                    : "Submit for Verification"}
               </span>
             </Button>
           )}
@@ -532,11 +530,10 @@ export const TeacherProfilePage: React.FC = () => {
           <Button
             variant={activeTab === "edit" ? "outline" : "default"}
             onClick={() => setActiveTab(activeTab === "edit" ? "overview" : "edit")}
-            className={`gap-2 rounded-xl text-xs font-semibold cursor-pointer w-full sm:w-auto ${
-              activeTab === "overview"
+            className={`gap-2 rounded-xl text-xs font-semibold cursor-pointer w-full sm:w-auto ${activeTab === "overview"
                 ? "bg-[#F42A18] hover:bg-[#d92212] text-white"
                 : ""
-            }`}
+              }`}
           >
             <Edit3 className="w-4 h-4" />
             {activeTab === "edit" ? "View Overview" : "Edit Profile"}
@@ -548,22 +545,20 @@ export const TeacherProfilePage: React.FC = () => {
       <div className="flex items-center gap-6 border-b border-neutral-200/80 dark:border-neutral-800 -mt-2">
         <button
           onClick={() => setActiveTab("overview")}
-          className={`flex items-center gap-2 pb-3 text-sm font-semibold transition-all border-b-2 cursor-pointer ${
-            activeTab === "overview"
+          className={`flex items-center gap-2 pb-3 text-sm font-semibold transition-all border-b-2 cursor-pointer ${activeTab === "overview"
               ? "border-[#F42A18] text-[#F42A18]"
               : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-          }`}
+            }`}
         >
           <User className="w-4 h-4" />
           Instructor Overview
         </button>
         <button
           onClick={() => setActiveTab("edit")}
-          className={`flex items-center gap-2 pb-3 text-sm font-semibold transition-all border-b-2 cursor-pointer ${
-            activeTab === "edit"
+          className={`flex items-center gap-2 pb-3 text-sm font-semibold transition-all border-b-2 cursor-pointer ${activeTab === "edit"
               ? "border-[#F42A18] text-[#F42A18]"
               : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-          }`}
+            }`}
         >
           <Edit3 className="w-4 h-4" />
           Edit Profile
@@ -589,11 +584,10 @@ export const TeacherProfilePage: React.FC = () => {
       {/* Dynamic Feedback Banner for REDO / REVOKED / Suggestions */}
       {(currentApprovalStatus === "REDO" || currentApprovalStatus === "REVOKED" || teacherProfile?.rejectionReason) && (
         <div
-          className={`p-4 rounded-2xl border flex items-start gap-3.5 ${
-            currentApprovalStatus === "REVOKED"
+          className={`p-4 rounded-2xl border flex items-start gap-3.5 ${currentApprovalStatus === "REVOKED"
               ? "bg-rose-500/5 border-rose-500/20 text-rose-900 dark:text-rose-200"
               : "bg-orange-500/5 border-orange-500/20 text-orange-900 dark:text-orange-200"
-          }`}
+            }`}
         >
           {currentApprovalStatus === "REVOKED" ? (
             <UserX className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
@@ -607,15 +601,14 @@ export const TeacherProfilePage: React.FC = () => {
                 {currentApprovalStatus === "REDO"
                   ? "Action Required: Revisions Requested for Instructor Verification"
                   : currentApprovalStatus === "REVOKED"
-                  ? "Instructor Verification Has Been Revoked"
-                  : "Feedback from Administrator Review"}
+                    ? "Instructor Verification Has Been Revoked"
+                    : "Feedback from Administrator Review"}
               </h3>
               <span
-                className={`text-[11px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
-                  currentApprovalStatus === "REVOKED"
+                className={`text-[11px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${currentApprovalStatus === "REVOKED"
                     ? "bg-rose-500/20 text-rose-700 dark:text-rose-300"
                     : "bg-orange-500/20 text-orange-700 dark:text-orange-300"
-                }`}
+                  }`}
               >
                 {currentApprovalStatus.replace("_", " ")}
               </span>
@@ -824,12 +817,12 @@ export const TeacherProfilePage: React.FC = () => {
                       currentApprovalStatus === "VERIFIED"
                         ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-xs"
                         : currentApprovalStatus === "IN_PROGRESS"
-                        ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-xs"
-                        : currentApprovalStatus === "REDO"
-                        ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20 text-xs"
-                        : currentApprovalStatus === "REVOKED"
-                        ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 text-xs"
-                        : "bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs"
+                          ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-xs"
+                          : currentApprovalStatus === "REDO"
+                            ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20 text-xs"
+                            : currentApprovalStatus === "REVOKED"
+                              ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 text-xs"
+                              : "bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs"
                     }
                   >
                     {currentApprovalStatus.replace("_", " ")}
@@ -1026,11 +1019,10 @@ export const TeacherProfilePage: React.FC = () => {
                 value={formData.bio}
                 onChange={(e) => handleInputChange("bio", e.target.value)}
                 placeholder="Share your industry background, teaching style, and areas of expertise..."
-                className={`w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-sm focus:outline-hidden focus:ring-2 text-neutral-900 dark:text-white ${
-                  fieldErrors.bio
+                className={`w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-sm focus:outline-hidden focus:ring-2 text-neutral-900 dark:text-white ${fieldErrors.bio
                     ? "border-red-500 focus:ring-red-500/20 focus:border-red-500"
                     : "border-neutral-200 dark:border-neutral-800 focus:ring-[#F42A18]/20 focus:border-[#F42A18]"
-                }`}
+                  }`}
               />
               {fieldErrors.bio && (
                 <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
@@ -1058,13 +1050,11 @@ export const TeacherProfilePage: React.FC = () => {
                 onChange={(e) => handleInputChange("linkedinUrl", e.target.value)}
                 placeholder="https://linkedin.com/in/username"
                 disabled={currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || Boolean(teacherProfile?.isApproved)}
-                className={`rounded-xl ${
-                  fieldErrors.linkedinUrl ? "border-red-500 focus-visible:ring-red-500" : ""
-                } ${
-                  currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || teacherProfile?.isApproved
+                className={`rounded-xl ${fieldErrors.linkedinUrl ? "border-red-500 focus-visible:ring-red-500" : ""
+                  } ${currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || teacherProfile?.isApproved
                     ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed"
                     : ""
-                }`}
+                  }`}
               />
               {fieldErrors.linkedinUrl && (
                 <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
@@ -1092,13 +1082,11 @@ export const TeacherProfilePage: React.FC = () => {
                 onChange={(e) => handleInputChange("twitterUrl", e.target.value)}
                 placeholder="https://x.com/username"
                 disabled={currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || Boolean(teacherProfile?.isApproved)}
-                className={`rounded-xl ${
-                  fieldErrors.twitterUrl ? "border-red-500 focus-visible:ring-red-500" : ""
-                } ${
-                  currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || teacherProfile?.isApproved
+                className={`rounded-xl ${fieldErrors.twitterUrl ? "border-red-500 focus-visible:ring-red-500" : ""
+                  } ${currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || teacherProfile?.isApproved
                     ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed"
                     : ""
-                }`}
+                  }`}
               />
               {fieldErrors.twitterUrl && (
                 <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
@@ -1174,28 +1162,17 @@ export const TeacherProfilePage: React.FC = () => {
 
               {/* Search & Selection Dropdown */}
               <div className="relative">
-                <div className="relative">
-                  <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <Input
-                    value={expertiseSearch}
-                    onChange={(e) => {
-                      setExpertiseSearch(e.target.value)
-                      setIsDropdownOpen(true)
-                    }}
-                    onFocus={() => setIsDropdownOpen(true)}
-                    placeholder="Search domains (e.g. Distributed Systems, Machine Learning, Rust)..."
-                    className="pl-9 pr-9 rounded-xl text-xs"
-                  />
-                  {expertiseSearch && (
-                    <button
-                      type="button"
-                      onClick={() => setExpertiseSearch("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 cursor-pointer"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
+                <SearchInput
+                  value={expertiseSearch}
+                  onChange={(val) => {
+                    setExpertiseSearch(val)
+                    setIsDropdownOpen(true)
+                  }}
+                  onFocus={() => setIsDropdownOpen(true)}
+                  placeholder="Search domains (e.g. Distributed Systems, Machine Learning, Rust)..."
+                  className="rounded-xl text-xs"
+                  containerClassName="w-full"
+                />
 
                 {/* Dropdown Menu */}
                 {isDropdownOpen && (
@@ -1205,11 +1182,10 @@ export const TeacherProfilePage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setSelectedCategoryTab("all")}
-                        className={`px-2.5 py-1 rounded-lg font-medium shrink-0 cursor-pointer transition-colors ${
-                          selectedCategoryTab === "all"
+                        className={`px-2.5 py-1 rounded-lg font-medium shrink-0 cursor-pointer transition-colors ${selectedCategoryTab === "all"
                             ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
                             : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
-                        }`}
+                          }`}
                       >
                         All Categories
                       </button>
@@ -1218,11 +1194,10 @@ export const TeacherProfilePage: React.FC = () => {
                           key={cat.id}
                           type="button"
                           onClick={() => setSelectedCategoryTab(cat.id)}
-                          className={`px-2.5 py-1 rounded-lg font-medium shrink-0 cursor-pointer transition-colors ${
-                            selectedCategoryTab === cat.id
+                          className={`px-2.5 py-1 rounded-lg font-medium shrink-0 cursor-pointer transition-colors ${selectedCategoryTab === cat.id
                               ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
                               : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
-                          }`}
+                            }`}
                         >
                           {cat.name}
                         </button>
@@ -1245,11 +1220,10 @@ export const TeacherProfilePage: React.FC = () => {
                                     key={tag}
                                     type="button"
                                     onClick={() => handleToggleExpertise(tag)}
-                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                                      isSelected
+                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${isSelected
                                         ? "bg-[#F42A18] text-white shadow-xs"
                                         : "bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 border border-neutral-200/60 dark:border-neutral-700/60"
-                                    }`}
+                                      }`}
                                   >
                                     {isSelected ? (
                                       <Check className="w-3 h-3" />
@@ -1287,11 +1261,10 @@ export const TeacherProfilePage: React.FC = () => {
                         key={tag}
                         type="button"
                         onClick={() => handleToggleExpertise(tag)}
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
-                          isSelected
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${isSelected
                             ? "bg-[#F42A18]/15 text-[#F42A18] border border-[#F42A18]/30 font-semibold"
                             : "bg-neutral-100 dark:bg-neutral-800/80 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
-                        }`}
+                          }`}
                       >
                         {isSelected ? (
                           <Check className="w-2.5 h-2.5" />

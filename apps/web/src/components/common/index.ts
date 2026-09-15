@@ -10,4 +10,5 @@ export * from "./ImageUploadInput"
 export * from "./ResumeUploadInput"
 export * from "./LoadingScreen"
 export * from "./SubmitVerificationModal"
+export * from "./SearchInput"
 
