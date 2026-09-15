@@ -40,6 +40,7 @@ export interface PresignedUrlRequestDTO {
 export interface PresignedUrlResponseDTO {
     uploadUrl: string;
     fileUrl: string;
+    publicUrl?: string;
     key: string;
     expiresIn: number;
 }

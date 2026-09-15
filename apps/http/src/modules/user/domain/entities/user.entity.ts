@@ -20,6 +20,7 @@ export interface UserTeacherProfileDetails {
     expertise: string[];
     qualifications: string | null;
     experienceYears: number | null;
+    resume?: string | null;
     linkedinUrl: string | null;
     twitterUrl: string | null;
     websiteUrl: string | null;

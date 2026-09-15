@@ -21,8 +21,9 @@ export const getPresignedUrlSchema = z.object({
         .optional()
         .default("avatars"),
     fileSize: z
+        .coerce
         .number()
-        .positive("fileSize must be a positive integer")
+        .min(0, "fileSize cannot be negative")
         .max(25 * 1024 * 1024, "fileSize cannot exceed 25MB")
         .optional(),
 });

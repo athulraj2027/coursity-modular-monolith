@@ -54,6 +54,7 @@ export class UpdateProfile {
             data.expertise !== undefined ||
             data.qualifications !== undefined ||
             data.experienceYears !== undefined ||
+            data.resume !== undefined ||
             data.linkedinUrl !== undefined ||
             data.twitterUrl !== undefined ||
             data.websiteUrl !== undefined
@@ -62,6 +63,7 @@ export class UpdateProfile {
                 expertise: data.expertise,
                 qualifications: data.qualifications,
                 experienceYears: data.experienceYears,
+                resume: data.resume,
                 linkedinUrl: existingProfile.teacherProfile?.isApproved ? existingProfile.teacherProfile.linkedinUrl : data.linkedinUrl,
                 twitterUrl: existingProfile.teacherProfile?.isApproved ? existingProfile.teacherProfile.twitterUrl : data.twitterUrl,
                 websiteUrl: data.websiteUrl,

@@ -66,6 +66,7 @@ export class UpdateTeacherProfile {
             expertise: data.expertise,
             qualifications: data.qualifications,
             experienceYears: data.experienceYears,
+            resume: data.resume,
             linkedinUrl: isSocialLocked ? existingProfile.teacherProfile?.linkedinUrl : data.linkedinUrl,
             twitterUrl: isSocialLocked ? existingProfile.teacherProfile?.twitterUrl : data.twitterUrl,
             websiteUrl: data.websiteUrl,

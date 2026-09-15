@@ -32,13 +32,14 @@ import {
   Send,
   FileText,
   KeyRound,
+  Download,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { ImageUploadInput, LoadingScreen, SubmitVerificationModal } from "@/components/common"
+import { ImageUploadInput, ResumeUploadInput, LoadingScreen, SubmitVerificationModal } from "@/components/common"
 import { toast } from "@/lib/toast"
 import { useProfile, useUpdateTeacherProfile, useSubmitTeacherVerification } from "../hooks/useProfile"
 import { EXPERTISE_CATEGORIES } from "../constants/expertise.constants"
@@ -68,6 +69,7 @@ interface TeacherFormData {
   qualifications: string
   experienceYears: number
   bio: string
+  resume: string
   linkedinUrl: string
   twitterUrl: string
   websiteUrl: string
@@ -89,6 +91,7 @@ export const TeacherProfilePage: React.FC = () => {
     qualifications: "",
     experienceYears: 0,
     bio: "",
+    resume: "",
     linkedinUrl: "",
     twitterUrl: "",
     websiteUrl: "",
@@ -111,6 +114,7 @@ export const TeacherProfilePage: React.FC = () => {
         bio: profileData.profile?.bio || "",
         qualifications: profileData.teacherProfile?.qualifications || "",
         experienceYears: profileData.teacherProfile?.experienceYears ?? 0,
+        resume: profileData.teacherProfile?.resume || "",
         linkedinUrl: profileData.teacherProfile?.linkedinUrl || "",
         twitterUrl: profileData.teacherProfile?.twitterUrl || "",
         websiteUrl: profileData.teacherProfile?.websiteUrl || "",
@@ -205,6 +209,21 @@ export const TeacherProfilePage: React.FC = () => {
 
     setFieldErrors({})
 
+    const isSocialLocked =
+      currentApprovalStatus === "IN_PROGRESS" ||
+      currentApprovalStatus === "VERIFIED" ||
+      Boolean(teacherProfile?.isApproved)
+
+    const normalizeUrl = (url?: string | null) => {
+      if (!url) return null
+      const trimmed = url.trim()
+      if (!trimmed) return null
+      if (trimmed.startsWith("/") || trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:") || trimmed.startsWith("blob:")) {
+        return trimmed
+      }
+      return `https://${trimmed}`
+    }
+
     try {
       await updateMutation.mutateAsync({
         name: formData.name.trim(),
@@ -213,9 +232,10 @@ export const TeacherProfilePage: React.FC = () => {
         bio: formData.bio ? formData.bio.trim() : null,
         qualifications: formData.qualifications ? formData.qualifications.trim() : null,
         experienceYears: Number(formData.experienceYears) || 0,
-        linkedinUrl: formData.linkedinUrl ? formData.linkedinUrl.trim() : null,
-        twitterUrl: formData.twitterUrl ? formData.twitterUrl.trim() : null,
-        websiteUrl: formData.websiteUrl ? formData.websiteUrl.trim() : null,
+        resume: formData.resume ? formData.resume.trim() : null,
+        linkedinUrl: isSocialLocked ? (teacherProfile?.linkedinUrl || null) : normalizeUrl(formData.linkedinUrl),
+        twitterUrl: isSocialLocked ? (teacherProfile?.twitterUrl || null) : normalizeUrl(formData.twitterUrl),
+        websiteUrl: normalizeUrl(formData.websiteUrl),
         expertise: formData.expertise,
       })
       setActiveTab("overview")
@@ -243,6 +263,7 @@ export const TeacherProfilePage: React.FC = () => {
         bio: profileData.profile?.bio || "",
         qualifications: profileData.teacherProfile?.qualifications || "",
         experienceYears: profileData.teacherProfile?.experienceYears ?? 0,
+        resume: profileData.teacherProfile?.resume || "",
         linkedinUrl: profileData.teacherProfile?.linkedinUrl || "",
         twitterUrl: profileData.teacherProfile?.twitterUrl || "",
         websiteUrl: profileData.teacherProfile?.websiteUrl || "",
@@ -688,6 +709,72 @@ export const TeacherProfilePage: React.FC = () => {
             )}
           </div>
 
+          {/* Resume & Curriculum Vitae (PDF) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-neutral-100 dark:border-neutral-800/80">
+              <h2 className="text-base font-bold text-neutral-900 dark:text-white flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#F42A18]" />
+                Resume & Curriculum Vitae (PDF)
+              </h2>
+              {!teacherProfile?.resume && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("edit")}
+                  className="text-xs text-[#F42A18] hover:underline font-medium cursor-pointer"
+                >
+                  + Upload resume
+                </button>
+              )}
+            </div>
+            {teacherProfile?.resume ? (
+              <div className="p-4 rounded-2xl border border-neutral-200/90 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-4xl">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-11 h-11 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0 border border-red-500/20 shadow-xs">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0 space-y-0.5">
+                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-white truncate">
+                      Instructor Resume & Professional CV
+                    </h3>
+                    <p className="text-xs text-neutral-500 flex items-center gap-1.5">
+                      <span className="uppercase font-bold text-red-600 dark:text-red-400 text-[10px] px-1.5 py-0.2 rounded-md bg-red-500/10 border border-red-500/20">
+                        PDF
+                      </span>
+                      <span>•</span>
+                      <span>Saved securely in S3</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <a
+                    href={teacherProfile.resume}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700/80 transition-colors shadow-xs"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-neutral-500" />
+                    View Resume
+                  </a>
+                  <a
+                    href={teacherProfile.resume}
+                    download="instructor-resume.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700/80 transition-colors shadow-xs cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-neutral-500" />
+                    Download PDF
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-neutral-400 italic">
+                No resume uploaded yet. Click "Edit Profile" to upload your CV in PDF format for administrative verification.
+              </p>
+            )}
+          </div>
+
           {/* Domains of Expertise */}
           <div className="space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-neutral-100 dark:border-neutral-800/80">
@@ -908,6 +995,22 @@ export const TeacherProfilePage: React.FC = () => {
                 <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                   {fieldErrors.qualifications}
+                </p>
+              )}
+            </div>
+
+            {/* Resume / Curriculum Vitae PDF */}
+            <div className="md:col-span-2">
+              <ResumeUploadInput
+                id="resume"
+                label="Curriculum Vitae / Resume (PDF)"
+                value={formData.resume}
+                onChange={(val: string) => handleInputChange("resume", val)}
+              />
+              {fieldErrors.resume && (
+                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  {fieldErrors.resume}
                 </p>
               )}
             </div>

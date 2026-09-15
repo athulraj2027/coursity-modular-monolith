@@ -20,11 +20,13 @@ router.use("/auth", authRouter);
 // 3. Subscription & Pricing Plan routes (Public listing + protected teacher/admin operations)
 router.use("/plans", planRouter);
 
-// 4. Protected User & Profile routes
+// 4. Storage & File Upload routes (contains internal auth for presigned-url and delete, open PUT for local binary upload)
+router.use("/upload", uploadRouter);
+
+// 5. Protected User & Profile routes
 router.use(authMiddleware);
 router.use(isBlockedMiddleware);
 router.use("/users", userRouter);
 router.use("/profile", profileRouter);
-router.use("/upload", uploadRouter);
 
 export default router;

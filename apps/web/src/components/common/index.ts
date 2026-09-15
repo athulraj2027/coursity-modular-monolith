@@ -7,6 +7,7 @@ export * from "./ConfirmationModal"
 export * from "./BlockUserModal"
 export * from "./VerifyTeacherModal"
 export * from "./ImageUploadInput"
+export * from "./ResumeUploadInput"
 export * from "./LoadingScreen"
 export * from "./SubmitVerificationModal"
 

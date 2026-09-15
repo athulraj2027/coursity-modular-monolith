@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client"
+import { env } from "@/lib/env"
 import { UPLOAD_API_ROUTES } from "../constants/routes.constants"
 import type {
   GetPresignedUrlRequest,
@@ -7,17 +8,50 @@ import type {
   UploadFileOptions,
 } from "../types/upload.types"
 
+const ALLOWED_MIME_MAP: Record<string, string> = {
+  pdf: "application/pdf",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  svg: "image/svg+xml",
+}
+
+/**
+ * Resolves a reliable MIME type from File.type or file extension.
+ */
+export function resolveMimeType(file: File): string {
+  const rawType = (file.type || "").toLowerCase().trim()
+  if (rawType && Object.values(ALLOWED_MIME_MAP).includes(rawType)) {
+    return rawType
+  }
+  const ext = file.name.split(".").pop()?.toLowerCase() || ""
+  if (ALLOWED_MIME_MAP[ext]) {
+    return ALLOWED_MIME_MAP[ext]
+  }
+  return rawType || "application/octet-stream"
+}
+
 /**
  * Optimizes an image file by resizing and compressing it into a WebP/JPEG Blob.
+ * Non-raster files (e.g. PDF, SVG) are returned as-is.
  */
 export async function optimizeImageToBlob(
   file: File,
   maxDimension = 800,
   quality = 0.88
 ): Promise<{ blob: Blob; fileType: string; fileName: string }> {
-  // If not an image, return raw file as-is
-  if (!file.type.startsWith("image/")) {
-    return { blob: file, fileType: file.type || "application/octet-stream", fileName: file.name }
+  const resolvedType = resolveMimeType(file)
+
+  // Only resize and re-encode raster images (PNG, JPG, WebP)
+  const isBitmapImage =
+    resolvedType === "image/jpeg" ||
+    resolvedType === "image/png" ||
+    resolvedType === "image/webp"
+
+  if (!isBitmapImage) {
+    return { blob: file, fileType: resolvedType, fileName: file.name }
   }
 
   return new Promise((resolve, reject) => {
@@ -47,7 +81,7 @@ export async function optimizeImageToBlob(
 
         const ctx = canvas.getContext("2d")
         if (!ctx) {
-          resolve({ blob: file, fileType: file.type, fileName: file.name })
+          resolve({ blob: file, fileType: resolvedType, fileName: file.name })
           return
         }
 
@@ -66,7 +100,7 @@ export async function optimizeImageToBlob(
                 fileName: `${baseName}.webp`,
               })
             } else {
-              resolve({ blob: file, fileType: file.type, fileName: file.name })
+              resolve({ blob: file, fileType: resolvedType, fileName: file.name })
             }
           },
           outputType,
@@ -102,7 +136,7 @@ export const uploadApi = {
     })
 
     const uploadUrl = res.data?.uploadUrl || res.uploadUrl
-    const fileUrl = res.data?.fileUrl || res.fileUrl
+    const fileUrl = res.data?.fileUrl || (res.data as any)?.publicUrl || res.fileUrl || (res as any)?.publicUrl
     const key = res.data?.key || res.key || ""
 
     if (!uploadUrl || !fileUrl) {
@@ -113,9 +147,9 @@ export const uploadApi = {
   },
 
   /**
-   * Uploads binary file/blob directly to AWS S3 using the presigned URL with progress monitoring.
+   * Uploads binary file/blob directly using XHR with progress monitoring.
    */
-  uploadDirectToS3: async (
+  uploadDirectToUrl: async (
     uploadUrl: string,
     blobOrFile: Blob | File,
     fileType: string,
@@ -137,12 +171,12 @@ export const uploadApi = {
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve()
         } else {
-          reject(new Error(`S3 upload failed with status ${xhr.status}`))
+          reject(new Error(`Direct upload failed with status ${xhr.status}`))
         }
       }
 
-      xhr.onerror = () => reject(new Error("Network error occurred during direct S3 upload"))
-      xhr.onabort = () => reject(new Error("S3 upload was cancelled"))
+      xhr.onerror = () => reject(new Error("Network error occurred during direct upload"))
+      xhr.onabort = () => reject(new Error("Upload was cancelled"))
 
       xhr.open("PUT", uploadUrl, true)
       xhr.setRequestHeader("Content-Type", fileType)
@@ -151,33 +185,75 @@ export const uploadApi = {
   },
 
   /**
-   * Complete pipeline:
-   * 1. Dynamically optimizes image
-   * 2. Requests S3 Presigned URL from backend
-   * 3. Streams directly to S3
-   * 4. Returns permanent file URL (with automatic fallback to Data URL if S3 is unconfigured)
+   * Legacy alias for backward compatibility.
+   */
+  uploadDirectToS3: async (
+    uploadUrl: string,
+    blobOrFile: Blob | File,
+    fileType: string,
+    onProgress?: (progress: number) => void
+  ): Promise<void> => {
+    return uploadApi.uploadDirectToUrl(uploadUrl, blobOrFile, fileType, onProgress)
+  },
+
+  /**
+   * Fallback direct upload to local server storage endpoint when AWS S3 is unavailable or unauthorized.
+   */
+  uploadDirectToLocal: async (
+    key: string,
+    blobOrFile: Blob | File,
+    fileType: string,
+    onProgress?: (progress: number) => void
+  ): Promise<string> => {
+    const cleanKey = key.startsWith("/") ? key.substring(1) : key
+    const uploadUrl = `${env.VITE_API_URL}/upload/local?key=${encodeURIComponent(cleanKey)}`
+    await uploadApi.uploadDirectToUrl(uploadUrl, blobOrFile, fileType, onProgress)
+
+    // Return the absolute public URL
+    const baseUrl = env.VITE_API_URL.replace(/\/api\/?$/, "")
+    return `${baseUrl}/uploads/${cleanKey}`
+  },
+
+  /**
+   * Complete upload pipeline:
+   * 1. Resolves MIME type and optimizes images if applicable
+   * 2. Requests Presigned PUT URL from backend
+   * 3. Performs direct binary upload to S3 or local endpoint
+   * 4. Seamlessly falls back to local server storage if S3 PUT fails with 403 Forbidden / Network error
+   * 5. Returns public accessible URL
    */
   uploadFile: async (file: File, options: UploadFileOptions = {}): Promise<string> => {
     const { folder = "avatars", maxDimension = 800, quality = 0.88, onProgress } = options
 
     const { blob, fileType, fileName } = await optimizeImageToBlob(file, maxDimension, quality)
 
+    // 1. Get Presigned URL from Backend
+    const { uploadUrl, fileUrl, key } = await uploadApi.getPresignedUrl({
+      fileName,
+      fileType,
+      folder,
+      fileSize: blob.size,
+    })
+
+    // 2. Direct Upload (S3 or Local)
     try {
-      // 1. Get Presigned URL
-      const { uploadUrl, fileUrl } = await uploadApi.getPresignedUrl({
-        fileName,
-        fileType,
-        folder,
-        fileSize: blob.size,
-      })
-
-      // 2. Direct S3 Upload
-      await uploadApi.uploadDirectToS3(uploadUrl, blob, fileType, onProgress)
-
+      await uploadApi.uploadDirectToUrl(uploadUrl, blob, fileType, onProgress)
       return fileUrl
-    } catch (err: any) {
-      console.warn("S3 presigned upload skipped or unavailable, falling back to optimized Data URL:", err?.message)
-      return await fileToDataUrl(blob)
+    } catch (directErr: any) {
+      console.warn("Direct upload to primary URL failed, attempting local fallback:", directErr?.message)
+
+      // 3. Fallback to Local Storage endpoint if key is available
+      if (key) {
+        try {
+          const localUrl = await uploadApi.uploadDirectToLocal(key, blob, fileType, onProgress)
+          return localUrl
+        } catch (localErr: any) {
+          console.error("Local storage fallback failed:", localErr)
+          throw new Error(`Upload failed: ${directErr?.message || "Storage error"}. Local fallback also failed.`)
+        }
+      }
+
+      throw directErr
     }
   },
 }

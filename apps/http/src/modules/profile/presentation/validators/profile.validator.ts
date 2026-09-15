@@ -8,7 +8,12 @@ const isValidUrl = (val: string) => {
         const url = new URL(val);
         return url.protocol === "http:" || url.protocol === "https:";
     } catch {
-        return false;
+        try {
+            const withHttps = new URL(`https://${val}`);
+            return withHttps.protocol === "https:" && val.includes(".");
+        } catch {
+            return false;
+        }
     }
 };
 
@@ -16,7 +21,7 @@ const optionalUrl = (label: string) =>
     z
         .string()
         .trim()
-        .refine((val) => val === "" || isValidUrl(val), {
+        .refine((val) => val === "" || val.startsWith("/") || isValidUrl(val), {
             message: `${label} must be a valid URL (e.g. https://...)`,
         })
         .nullable()
@@ -65,6 +70,12 @@ export const updateProfileSchema = z.object({
         .max(80, "Experience years cannot exceed 80")
         .nullable()
         .optional(),
+    resume: z
+        .string()
+        .max(1000, "Resume URL cannot exceed 1000 characters")
+        .nullable()
+        .optional()
+        .or(z.literal("")),
     linkedinUrl: optionalUrl("LinkedIn URL"),
     twitterUrl: optionalUrl("Twitter/X URL"),
     websiteUrl: optionalUrl("Website URL"),
@@ -137,6 +148,12 @@ export const updateTeacherProfileSchema = z.object({
         .max(80, "Experience years cannot exceed 80")
         .nullable()
         .optional(),
+    resume: z
+        .string()
+        .max(1000, "Resume URL cannot exceed 1000 characters")
+        .nullable()
+        .optional()
+        .or(z.literal("")),
     linkedinUrl: optionalUrl("LinkedIn URL"),
     twitterUrl: optionalUrl("Twitter/X URL"),
     websiteUrl: optionalUrl("Website URL"),
