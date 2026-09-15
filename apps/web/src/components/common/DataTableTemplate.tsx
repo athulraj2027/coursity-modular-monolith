@@ -1,17 +1,15 @@
 import type { ReactNode } from "react"
 import {
-  Search,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  X,
   Inbox,
   type LucideIcon,
 } from "lucide-react"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { SearchInput } from "./SearchInput"
 
 export interface TableMetricCard {
   label: string
@@ -219,26 +217,13 @@ export function DataTableTemplate<T>({
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-4 rounded-2xl border border-neutral-200/80 dark:border-neutral-900 bg-white dark:bg-neutral-900/40">
         {/* Search Input */}
         {onSearchChange && (
-          <div className="relative flex-1 min-w-[240px]">
-            <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <Input
-              type="text"
-              placeholder={searchPlaceholder}
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-9.5 h-10 text-xs sm:text-sm rounded-xl border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/60"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => onSearchChange("")}
-                aria-label="Clear search query"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 text-xs cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+          <SearchInput
+            placeholder={searchPlaceholder}
+            value={searchQuery}
+            onDebounce={onSearchChange}
+            isLoading={isLoading}
+            containerClassName="flex-1 min-w-[240px]"
+          />
         )}
 
         {/* Filter Controls (Tabs, Dropdowns, Sorting) */}
@@ -386,8 +371,8 @@ export function DataTableTemplate<T>({
                       const cellContent = col.cell
                         ? col.cell(item, rowIdx)
                         : col.accessorKey
-                        ? (item[col.accessorKey] as ReactNode)
-                        : null
+                          ? (item[col.accessorKey] as ReactNode)
+                          : null
 
                       return (
                         <td

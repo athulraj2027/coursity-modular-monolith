@@ -1,95 +1,163 @@
-# Coursity - Dockerized Monorepo
+# 🎓 Coursity - Next-Gen Collaborative Learning Platform
 
-Welcome to the **Coursity** project! This repository is fully containerized using Docker and Docker Compose for fast, consistent local development and production deployments.
-
----
-
-## 🏗️ Architecture Overview
-
-The multi-container setup consists of 4 core services:
-
-| Service | Image / Base | Internal Port | Host Port | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| **`frontend`** | `nginx:1.27-alpine` | `80` | `5173` | React 19 + Vite frontend SPA with client-side routing & caching. |
-| **`backend`** | `node:22-alpine` | `3000` | `3000` | Express REST API server with Prisma ORM & auto-migration. |
-| **`postgres`** | `postgres:16-alpine` | `5432` | `5432` | Relational database with persistent volume. |
-| **`redis`** | `redis:7-alpine` | `6379` | `6379` | In-memory key-value cache and idempotency store. |
+Welcome to **Coursity** — a modular, cloud-ready educational platform designed for modern online learning, live interactive cohorts, teacher verification vetting, and scalable subscription tiers.
 
 ---
 
-## 🚀 Quick Start (Production Mode)
+## 🏛️ System Architecture
 
-### 1. Configure Environment Variables
-Copy the sample environment file to `.env`:
+Coursity is structured as a **Modular Monolith** in a containerized monorepo. It cleanly separates the Single Page Application (SPA) frontend, the domain-driven REST API backend, persistent caching, database engines, and cloud storage:
+
+```mermaid
+graph TD
+    Client[Web Browser / Client]
+
+    subgraph Edge & Ingress
+        Nginx[Nginx Reverse Proxy / Static Server\nPort 5173]
+    end
+
+    subgraph Application Tier
+        Frontend[React 19 + Vite SPA\napps/web]
+        Backend[Node.js + Express 5 Core API\napps/http : Port 3000]
+        Worker[BullMQ Background Queue Worker\nEmail & Async Tasks]
+    end
+
+    subgraph Data & Cloud Tier
+        Postgres[(PostgreSQL 16\nPrimary Database)]
+        Redis[(Redis 7\nCache & Job Queue)]
+        S3[(AWS S3 Storage\nResumes & Media)]
+    end
+
+    Client -->|HTTPS / Port 5173| Nginx
+    Nginx --> Frontend
+    Frontend -->|REST API / Port 3000| Backend
+    Backend --> Postgres
+    Backend --> Redis
+    Backend --> S3
+    Worker --> Redis
+```
+
+---
+
+## 📦 Repository & Service Map
+
+The repository is divided into self-contained applications located in [`/apps`](file:///d:/second-project/coursity-rebuild/apps):
+
+| Service | Path | Tech Stack | Documentation |
+| :--- | :--- | :--- | :--- |
+| **Frontend Web App** | [`apps/web`](file:///d:/second-project/coursity-rebuild/apps/web) | React 19, Vite, Tailwind CSS, TanStack Query | [**Frontend README**](file:///d:/second-project/coursity-rebuild/apps/web/README.md) |
+| **Core REST API** | [`apps/http`](file:///d:/second-project/coursity-rebuild/apps/http) | Express 5, TypeScript, Prisma ORM, BullMQ | [**Backend README**](file:///d:/second-project/coursity-rebuild/apps/http/README.md) |
+| **AI Interview Engine** | `apps/ai-interview` | WebSockets, WebRTC, LLM Voice Orchestration | *(Roadmap)* |
+| **Live Classroom SFU** | `apps/media-sfu` | Mediasoup, C++ Workers, WebRTC Video SFU | *(Roadmap)* |
+
+---
+
+## 🛠️ Technology Stack
+
+* **Frontend:** React 19, Vite 6, TypeScript, Tailwind CSS v4, TanStack Query v5, React Router v7, Lucide Icons.
+* **Backend:** Node.js 22, Express 5, TypeScript, Clean Architecture / DDD, Zod 4 runtime validation.
+* **Database & ORM:** PostgreSQL 16, Prisma ORM 6 (Auto-migrations & Type-safe Client).
+* **Caching & Queues:** Redis 7, BullMQ (Transactional email delivery, async tasks, idempotency).
+* **Storage & Media:** AWS S3 (Presigned direct-to-S3 uploads for resumes and avatars).
+* **DevOps & Containers:** Docker, Docker Compose (Development with live reload & Production multi-stage builds).
+
+---
+
+## 🚀 Quick Start (Dockerized)
+
+The fastest way to spin up the complete Coursity stack (PostgreSQL, Redis, Backend, and Frontend):
+
+### 1. Setup Environment Variables
+Copy `.env.example` to `.env` in the root:
 ```bash
 cp .env.example .env
 ```
 *(On Windows PowerShell: `Copy-Item .env.example .env`)*
 
-### 2. Build and Start All Containers
+### 2. Start Multi-Container Stack
+
+#### 🔹 Development Mode (Hot-Reloading for Code Modifications):
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+- Code changes in `./apps/http/src` trigger hot-reload via `tsx watch`.
+- Code changes in `./apps/web/src` reflect immediately via Vite Hot Module Replacement (HMR).
+
+#### 🔹 Production Mode:
 ```bash
 docker compose up --build -d
 ```
 
-### 3. Access the Application
-- **Frontend Web App:** [http://localhost:5173](http://localhost:5173)
-- **Backend API:** [http://localhost:3000/api](http://localhost:3000/api)
-- **Backend Health Check:** [http://localhost:3000/health](http://localhost:3000/health)
+### 3. Access the Services
+* **Frontend Web App:** [http://localhost:5173](http://localhost:5173)
+* **Backend REST API:** [http://localhost:3000/api](http://localhost:3000/api)
+* **Health Check:** [http://localhost:3000/health](http://localhost:3000/health)
 
 ---
 
-## 🛠️ Development Mode (Hot-Reloading)
+## 💻 Manual Local Development (Without Docker)
 
-To run the stack with live file synchronization and automatic code reload:
+If you prefer running services directly on your host machine:
 
+### Prerequisites
+* **Node.js**: v20 or v22+
+* **PostgreSQL**: Running on port `5432`
+* **Redis**: Running on port `6379`
+
+### 1. Backend Setup (`apps/http`)
 ```bash
-docker compose -f docker-compose.dev.yml up --build
+cd apps/http
+npm install
+npm run prisma:generate
+npm run prisma:migrate
+npm run dev
 ```
 
-- Any modifications to `./apps/http/src` will automatically trigger TypeScript reloads via `tsx watch`.
-- Any modifications to `./apps/web/src` will immediately reflect via Vite's Hot Module Replacement (HMR).
+### 2. Frontend Setup (`apps/web`)
+```bash
+cd apps/web
+npm install
+npm run dev
+```
 
 ---
 
-## 📦 Useful Docker Commands
+## 📊 Core Business Capabilities
 
-### Check Container Status & Health
-```bash
-docker compose ps
-```
+1. **Dual Role Architecture (Students & Teachers)**:
+   - Students can discover courses, subscribe to plans, and track learning progress.
+   - Teachers submit comprehensive verification applications (Resume upload to S3, LinkedIn/Website portfolios, Expertise tags, and Experience level).
 
-### View Live Logs
+2. **Teacher Verification & Approval State Machine**:
+   - Statuses: `PENDING` ➔ `IN_PROGRESS` ➔ `VERIFIED` / `REDO` / `REVOKED`.
+   - Max submission limits (5 attempts) and automated admin review feedback.
+
+3. **Dynamic Plan & Metered Feature Catalog**:
+   - Configurable feature limits (Live viewer minutes, max courses, cloud storage GB).
+   - Real-time quota validation before executing restricted actions.
+
+4. **Universal Debounced Search & Data Table Engine**:
+   - Reusable `<SearchInput />` component ensuring 60fps input responsiveness while debouncing API queries.
+   - Unified `<DataTableTemplate />` with pagination, faceted dropdown filters, and status tabs.
+
+5. **Direct-to-S3 Cloud Storage**:
+   - Direct browser-to-S3 uploads via presigned PUT URLs, eliminating backend memory overhead for large files.
+
+---
+
+## 🐳 Useful Docker Commands
+
 ```bash
-# Follow logs for all services
+# View live container logs
 docker compose logs -f
 
 # Follow logs for backend only
 docker compose logs -f backend
 
-# Follow logs for frontend only
-docker compose logs -f frontend
-```
-
-### Run Prisma Migrations / Database Commands Manually
-```bash
-# Generate Prisma Client
-docker compose exec backend npx prisma generate
-
-# Push database schema updates
-docker compose exec backend npx prisma db push
-
-# Open Prisma Studio (Database GUI)
+# Open Prisma Studio in the container
 docker compose exec backend npx prisma studio
-```
 
-### Restart a Specific Service
-```bash
-docker compose restart backend
-```
-
-### Stop and Remove Containers
-```bash
-# Stop containers (preserves database data)
+# Stop containers (preserves database volumes)
 docker compose down
 
 # Stop containers and wipe database volumes
@@ -98,27 +166,8 @@ docker compose down -v
 
 ---
 
-## 📁 Directory Structure
+## 📚 Detailed Documentation
 
-```
-coursity-rebuild/
-├── apps/
-│   ├── http/                 # Express backend application
-│   │   ├── Dockerfile        # Multi-stage production build
-│   │   ├── Dockerfile.dev    # Development build
-│   │   ├── docker-entrypoint.sh # Database sync & launch script
-│   │   ├── .dockerignore
-│   │   ├── prisma/           # Prisma schema & configs
-│   │   └── src/              # Express source code
-│   └── web/                  # Vite + React frontend
-│       ├── Dockerfile        # Multi-stage production build (Nginx)
-│       ├── Dockerfile.dev    # Development build (Vite HMR)
-│       ├── nginx.conf        # Nginx SPA & caching config
-│       ├── .dockerignore
-│       └── src/              # React source code
-├── docker-compose.yml        # Production Docker Compose definition
-├── docker-compose.dev.yml    # Development Docker Compose definition
-├── .dockerignore             # Root Docker ignore
-├── .env.example              # Sample environment variables
-└── README.md
-```
+For in-depth guides, API endpoint lists, and component architectures, visit:
+* [Backend Core API Guide (`apps/http/README.md`)](file:///d:/second-project/coursity-rebuild/apps/http/README.md)
+* [Frontend Web SPA Guide (`apps/web/README.md`)](file:///d:/second-project/coursity-rebuild/apps/web/README.md)
