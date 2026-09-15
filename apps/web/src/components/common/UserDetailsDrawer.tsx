@@ -20,6 +20,8 @@ import {
   RotateCcw,
   MessageSquare,
   SlidersHorizontal,
+  FileText,
+  Download,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { BackendUser, UserRole, ApprovalStatus } from "@/features/dashboard/types/user-management.types"
@@ -391,6 +393,68 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Teacher Resume / CV Document */}
+              <div className="space-y-2 pt-2 border-t border-neutral-200/60 dark:border-neutral-800/80">
+                <div className="text-neutral-500 text-[10px] uppercase font-semibold flex items-center justify-between">
+                  <span>Teacher Resume & Professional CV</span>
+                  {teacherProfile?.resume && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="w-3 h-3" /> PDF Attached
+                    </span>
+                  )}
+                </div>
+
+                {teacherProfile?.resume ? (
+                  <div className="p-3.5 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0 border border-red-500/20 shadow-xs">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0 space-y-0.5">
+                        <h4 className="text-xs font-bold text-neutral-900 dark:text-white truncate">
+                          Curriculum Vitae (PDF)
+                        </h4>
+                        <p className="text-[11px] text-neutral-500 flex items-center gap-1.5">
+                          <span className="uppercase font-bold text-red-600 dark:text-red-400 text-[10px] px-1.5 py-0.2 rounded-md bg-red-500/10 border border-red-500/20">
+                            PDF
+                          </span>
+                          <span>•</span>
+                          <span>Saved in S3 Storage</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                      <a
+                        href={teacherProfile.resume}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition-colors shadow-xs"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-neutral-500" />
+                        View PDF
+                      </a>
+
+                      <a
+                        href={teacherProfile.resume}
+                        download={`${(user.name || "teacher").toLowerCase().replace(/\s+/g, "_")}_resume.pdf`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 transition-colors shadow-xs cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Download
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl bg-neutral-100/60 dark:bg-neutral-800/40 border border-neutral-200/40 dark:border-neutral-800 flex items-center gap-2 text-neutral-400 italic text-xs">
+                    <FileText className="w-4 h-4 text-neutral-400 shrink-0" />
+                    <span>No resume PDF uploaded by instructor.</span>
+                  </div>
+                )}
               </div>
             </div>
           )}

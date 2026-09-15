@@ -4,11 +4,17 @@ import { ALL_EXPERTISE_TAGS } from "../constants/expertise.constants"
 export const isValidHttpUrl = (val: string): boolean => {
   const trimmed = val.trim()
   if (!trimmed) return true
+  if (trimmed.startsWith("/") || trimmed.startsWith("data:") || trimmed.startsWith("blob:")) return true
   try {
     const parsed = new URL(trimmed)
     return parsed.protocol === "http:" || parsed.protocol === "https:"
   } catch {
-    return false
+    try {
+      const parsedWithHttps = new URL(`https://${trimmed}`)
+      return parsedWithHttps.protocol === "https:" && trimmed.includes(".")
+    } catch {
+      return false
+    }
   }
 }
 
@@ -20,6 +26,7 @@ const optionalUrl = (label: string) =>
       message: `${label} must be a valid URL (e.g. https://...)`,
     })
     .optional()
+    .nullable()
     .or(z.literal(""))
 
 export const studentProfileSchema = z.object({
@@ -35,26 +42,27 @@ export const studentProfileSchema = z.object({
     .refine(
       (val) =>
         val === "" ||
-        isValidHttpUrl(val) ||
-        val.startsWith("data:") ||
-        val.startsWith("blob:"),
+        isValidHttpUrl(val),
       {
         message: "Avatar must be a valid image URL",
       }
     )
     .optional()
+    .nullable()
     .or(z.literal("")),
   phone: z
     .string()
     .trim()
     .max(20, "Phone number cannot exceed 20 characters")
     .optional()
+    .nullable()
     .or(z.literal("")),
   bio: z
     .string()
     .trim()
     .max(1000, "Biography cannot exceed 1000 characters")
     .optional()
+    .nullable()
     .or(z.literal("")),
 })
 
@@ -73,32 +81,34 @@ export const teacherProfileSchema = z.object({
     .refine(
       (val) =>
         val === "" ||
-        isValidHttpUrl(val) ||
-        val.startsWith("data:") ||
-        val.startsWith("blob:"),
+        isValidHttpUrl(val),
       {
         message: "Avatar must be a valid image URL",
       }
     )
     .optional()
+    .nullable()
     .or(z.literal("")),
   phone: z
     .string()
     .trim()
     .max(20, "Phone number cannot exceed 20 characters")
     .optional()
+    .nullable()
     .or(z.literal("")),
   bio: z
     .string()
     .trim()
     .max(1000, "Biography cannot exceed 1000 characters")
     .optional()
+    .nullable()
     .or(z.literal("")),
   qualifications: z
     .string()
     .trim()
     .max(500, "Qualifications cannot exceed 500 characters")
     .optional()
+    .nullable()
     .or(z.literal("")),
   experienceYears: z
     .union([z.number(), z.string()])
@@ -122,6 +132,20 @@ export const teacherProfileSchema = z.object({
       message: "Experience years cannot exceed 80",
     })
     .default(0),
+  resume: z
+    .string()
+    .trim()
+    .refine(
+      (val) =>
+        val === "" ||
+        isValidHttpUrl(val),
+      {
+        message: "Resume must be a valid document URL",
+      }
+    )
+    .optional()
+    .nullable()
+    .or(z.literal("")),
   linkedinUrl: optionalUrl("LinkedIn URL"),
   twitterUrl: optionalUrl("Twitter/X URL"),
   websiteUrl: optionalUrl("Website URL"),

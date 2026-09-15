@@ -1,3 +1,5 @@
+import path from "path";
+import fs from "fs";
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { IStorageService } from "../../domain/interfaces/storage-service.interface";
@@ -11,26 +13,44 @@ export class S3StorageService implements IStorageService {
     private readonly bucketName: string;
     private readonly region: string;
     private readonly cloudFrontUrl?: string;
+    private readonly backendBaseUrl: string;
+    private readonly uploadsDir: string;
 
     constructor(s3ClientOverride?: S3Client | null) {
         this.s3Client = s3ClientOverride !== undefined ? s3ClientOverride : createS3Client();
         this.bucketName = env.AWS_S3_BUCKET_NAME || "";
         this.region = env.AWS_REGION || "us-east-1";
         this.cloudFrontUrl = env.AWS_CLOUDFRONT_URL ? env.AWS_CLOUDFRONT_URL.replace(/^https?:\/\//, "").replace(/\/$/, "") : undefined;
+        this.backendBaseUrl = process.env.API_URL || `http://localhost:${env.PORT}`;
+        this.uploadsDir = path.join(process.cwd(), "uploads");
+
+        if (!fs.existsSync(this.uploadsDir)) {
+            try {
+                fs.mkdirSync(this.uploadsDir, { recursive: true });
+            } catch {
+                // ignore
+            }
+        }
     }
 
     getPublicUrl(key: string): string {
         const cleanKey = key.startsWith("/") ? key.substring(1) : key;
 
-        if (this.cloudFrontUrl) {
-            return `https://${this.cloudFrontUrl}/${cleanKey}`;
+        if (this.s3Client && this.bucketName) {
+            if (this.cloudFrontUrl) {
+                return `https://${this.cloudFrontUrl}/${cleanKey}`;
+            }
+
+            if (env.AWS_S3_ENDPOINT && env.AWS_S3_ENDPOINT.includes("localhost")) {
+                return `${env.AWS_S3_ENDPOINT}/${this.bucketName}/${cleanKey}`;
+            }
+
+            return `https://${this.bucketName}.s3.${this.region}.amazonaws.com/${cleanKey}`;
         }
 
-        if (env.AWS_S3_ENDPOINT && env.AWS_S3_ENDPOINT.includes("localhost")) {
-            return `${env.AWS_S3_ENDPOINT}/${this.bucketName}/${cleanKey}`;
-        }
-
-        return `https://${this.bucketName}.s3.${this.region}.amazonaws.com/${cleanKey}`;
+        console.log(`${this.backendBaseUrl}/uploads/${cleanKey}`)
+        // Local Storage public URL
+        return `${this.backendBaseUrl}/uploads/${cleanKey}`;
     }
 
     async getPresignedPutUrl(input: {
@@ -66,20 +86,13 @@ export class S3StorageService implements IStorageService {
             }
         }
 
-        // 2. Dev Simulation Mode (when AWS credentials are not yet configured in development)
-        console.log(`\n==========================================================`);
-        console.log(`📦 [STORAGE - DEV SIMULATION MODE]`);
-        console.log(`   Object Key:   ${cleanKey}`);
-        console.log(`   Content Type: ${input.contentType}`);
-        console.log(`   Notice:       AWS S3 bucket credentials not configured.`);
-        console.log(`                 Simulating upload URL for local dev.`);
-        console.log(`==========================================================\n`);
-
-        const simulatedFileUrl = `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80`;
+        // 2. Local Storage Mode (when AWS credentials are not configured)
+        const fileUrl = this.getPublicUrl(cleanKey);
+        const uploadUrl = `${this.backendBaseUrl}/api/upload/local?key=${encodeURIComponent(cleanKey)}`;
 
         return {
-            uploadUrl: `https://httpbin.org/put`,
-            fileUrl: simulatedFileUrl,
+            uploadUrl,
+            fileUrl,
             key: cleanKey,
             expiresIn,
         };
@@ -103,7 +116,15 @@ export class S3StorageService implements IStorageService {
             }
         }
 
-        console.log(`[Storage - Dev Simulation] Simulated file deletion for key: ${cleanKey}`);
+        // Local Storage file deletion
+        const localPath = path.join(this.uploadsDir, cleanKey);
+        if (fs.existsSync(localPath)) {
+            try {
+                await fs.promises.unlink(localPath);
+            } catch (e) {
+                console.warn(`[Storage - Local] Could not delete local file at ${localPath}:`, e);
+            }
+        }
         return true;
     }
 
@@ -131,7 +152,13 @@ export class S3StorageService implements IStorageService {
             }
         }
 
-        console.log(`[Storage - Dev Simulation] Simulated buffer upload for key: ${cleanKey}`);
+        // Local Storage buffer upload
+        const localPath = path.join(this.uploadsDir, cleanKey);
+        const dir = path.dirname(localPath);
+        if (!fs.existsSync(dir)) {
+            await fs.promises.mkdir(dir, { recursive: true });
+        }
+        await fs.promises.writeFile(localPath, input.buffer);
         return this.getPublicUrl(cleanKey);
     }
 }

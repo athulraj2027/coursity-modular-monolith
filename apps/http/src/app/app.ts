@@ -5,6 +5,9 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
+import path from "path";
+import fs from "fs";
+
 import router from "./routes";
 import { corsOptions } from "./config/cors";
 import errorMiddleware from "./middlewares/err.middleware";
@@ -13,10 +16,23 @@ import { globalRateLimiter } from "./middlewares/rate-limit.middleware";
 
 const app = express();
 
+// Ensure local uploads directory exists
+const uploadsDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadsDir)) {
+    try {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+    } catch {
+        // ignore
+    }
+}
+
 // 1. CORS Configuration & Preflight
 app.use(cors(corsOptions));
 
-// 2. Body & Cookie Parsing Middleware
+// 2. Serve static uploaded files locally
+app.use("/uploads", express.static(uploadsDir));
+
+// 3. Body & Cookie Parsing Middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());

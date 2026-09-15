@@ -287,4 +287,36 @@ describe("Storage Module Routes", () => {
             assert.strictEqual(res.status, 403);
         });
     });
+
+    describe("PUT /api/upload/local (Local Storage Fallback)", () => {
+        it("should accept binary file PUT upload and save to local storage", async () => {
+            const fileKey = `documents/${teacherId}/test-resume.pdf`;
+            const fakePdfBuffer = Buffer.from("%PDF-1.4 Fake PDF Content for Test");
+
+            const res = await request(testCtx.app)
+                .put(`/api/upload/local?key=${encodeURIComponent(fileKey)}`)
+                .set("Content-Type", "application/pdf")
+                .send(fakePdfBuffer);
+
+            assert.strictEqual(res.status, 200);
+            assert.strictEqual(res.body.success, true);
+            assert.strictEqual(res.body.key, fileKey);
+
+            // Verify the file can be fetched statically
+            const getRes = await request(testCtx.app)
+                .get(`/uploads/${fileKey}`);
+
+            assert.strictEqual(getRes.status, 200);
+            const content = getRes.text || getRes.body?.toString();
+            assert.strictEqual(content, "%PDF-1.4 Fake PDF Content for Test");
+        });
+
+        it("should return 400 if key parameter is missing", async () => {
+            const res = await request(testCtx.app)
+                .put("/api/upload/local")
+                .send(Buffer.from("hello"));
+
+            assert.strictEqual(res.status, 400);
+        });
+    });
 });

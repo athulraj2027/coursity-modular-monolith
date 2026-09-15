@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 import { AuthRoutes } from "../../src/modules/auth/presentation/routes/auth.routes";
 import { SignupUser } from "../../src/modules/auth/application/use-cases/signup.user.usecase";
 import { VerifySignupOtp } from "../../src/modules/auth/application/use-cases/verify-signup-otp.usecase";
@@ -116,6 +117,7 @@ export class InMemoryProfileRepository implements ProfileRepository {
                 expertise: user.profile.teacherProfile.expertise,
                 qualifications: user.profile.teacherProfile.qualifications,
                 experienceYears: user.profile.teacherProfile.experienceYears,
+                resume: user.profile.teacherProfile.resume || null,
                 linkedinUrl: user.profile.teacherProfile.linkedinUrl,
                 twitterUrl: user.profile.teacherProfile.twitterUrl,
                 websiteUrl: user.profile.teacherProfile.websiteUrl,
@@ -168,6 +170,7 @@ export class InMemoryProfileRepository implements ProfileRepository {
                         expertise: user.profile.teacherProfile.expertise,
                         qualifications: user.profile.teacherProfile.qualifications,
                         experienceYears: user.profile.teacherProfile.experienceYears,
+                        resume: user.profile.teacherProfile.resume || null,
                         linkedinUrl: user.profile.teacherProfile.linkedinUrl,
                         twitterUrl: user.profile.teacherProfile.twitterUrl,
                         websiteUrl: user.profile.teacherProfile.websiteUrl,
@@ -226,6 +229,7 @@ export class InMemoryProfileRepository implements ProfileRepository {
             expertise: data.expertise !== undefined ? data.expertise : (existing?.expertise ?? []),
             qualifications: data.qualifications !== undefined ? data.qualifications : (existing?.qualifications ?? null),
             experienceYears: data.experienceYears !== undefined ? data.experienceYears : (existing?.experienceYears ?? null),
+            resume: data.resume !== undefined ? data.resume : (existing?.resume ?? null),
             linkedinUrl: data.linkedinUrl !== undefined ? data.linkedinUrl : (existing?.linkedinUrl ?? null),
             twitterUrl: data.twitterUrl !== undefined ? data.twitterUrl : (existing?.twitterUrl ?? null),
             websiteUrl: data.websiteUrl !== undefined ? data.websiteUrl : (existing?.websiteUrl ?? null),
@@ -245,6 +249,7 @@ export class InMemoryProfileRepository implements ProfileRepository {
                     expertise: profile.expertise,
                     qualifications: profile.qualifications,
                     experienceYears: profile.experienceYears,
+                    resume: profile.resume,
                     linkedinUrl: profile.linkedinUrl,
                     twitterUrl: profile.twitterUrl,
                     websiteUrl: profile.websiteUrl,
@@ -603,6 +608,7 @@ export class MockStorageService implements IStorageService {
         this.files.set(input.key, { contentType: input.contentType });
         return {
             uploadUrl: `https://mock-s3.amazonaws.com/${input.key}?signature=mock-sig`,
+            fileUrl: `https://mock-s3.amazonaws.com/${input.key}`,
             publicUrl: `https://mock-s3.amazonaws.com/${input.key}`,
             key: input.key,
             expiresIn: input.expiresIn || 900,
@@ -754,18 +760,19 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
     const getPresignedUrlUseCase = new GetPresignedUrl(storageService);
     const deleteFileUseCase = new DeleteFile(storageService);
     const uploadController = new UploadController(getPresignedUrlUseCase, deleteFileUseCase);
-    const uploadRoutes = new UploadRoutes(uploadController);
+    const uploadRoutes = new UploadRoutes(uploadController, authMiddleware, isBlockedMiddleware);
 
     const app = express();
+    app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
     app.use(idempotencyMiddleware);
     app.use("/api/auth", authRoutes.router);
+    app.use("/api/upload", uploadRoutes.router);
     app.use(authMiddleware);
     app.use(isBlockedMiddleware);
     app.use("/api/users", userRoutes.router);
     app.use("/api/profile", profileRoutes.router);
-    app.use("/api/upload", uploadRoutes.router);
     app.use(notFoundMiddleware);
     app.use(errorMiddleware);
 

@@ -206,7 +206,7 @@ describe("Profile Module Routes", () => {
     });
 
     describe("PUT & PATCH /api/profile/teacher", () => {
-        it("should update teacher profile via PUT /api/profile/teacher", async () => {
+        it("should update teacher profile via PUT /api/profile/teacher including resume PDF", async () => {
             const res = await request(testCtx.app)
                 .put("/api/profile/teacher")
                 .set("Authorization", `Bearer ${teacherToken}`)
@@ -216,6 +216,7 @@ describe("Profile Module Routes", () => {
                     expertise: ["Rust", "Go", "Distributed Algorithms"],
                     qualifications: "Ph.D. in Computer Science",
                     experienceYears: 15,
+                    resume: "https://s3.amazonaws.com/coursity-bucket/documents/teacher-resume.pdf",
                     linkedinUrl: "https://linkedin.com/in/profbob",
                     twitterUrl: "https://twitter.com/profbob",
                     websiteUrl: "https://profbob.dev",
@@ -227,6 +228,7 @@ describe("Profile Module Routes", () => {
             assert.equal(res.body.data.profile.profile.bio, "20 years of research and teaching");
             assert.equal(res.body.data.profile.teacherProfile.qualifications, "Ph.D. in Computer Science");
             assert.equal(res.body.data.profile.teacherProfile.experienceYears, 15);
+            assert.equal(res.body.data.profile.teacherProfile.resume, "https://s3.amazonaws.com/coursity-bucket/documents/teacher-resume.pdf");
             assert.equal(res.body.data.profile.teacherProfile.linkedinUrl, "https://linkedin.com/in/profbob");
         });
 

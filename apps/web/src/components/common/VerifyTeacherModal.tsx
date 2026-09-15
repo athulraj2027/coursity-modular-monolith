@@ -12,6 +12,8 @@ import {
   AlertTriangle,
   Loader2,
   X,
+  FileText,
+  ExternalLink,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { BackendUser, ApprovalStatus } from "@/features/dashboard/types/user-management.types"
@@ -306,9 +308,9 @@ export const VerifyTeacherModal: React.FC<VerifyTeacherModalProps> = ({
               </div>
             </div>
 
-            {/* Quick credentials */}
-            {(teacherProfile?.qualifications || teacherProfile?.experienceYears != null) && (
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-neutral-200/60 dark:border-neutral-800/80 text-[11px] text-neutral-600 dark:text-neutral-300">
+            {/* Quick credentials & Resume */}
+            {(teacherProfile?.qualifications || teacherProfile?.experienceYears != null || teacherProfile?.resume) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-neutral-200/60 dark:border-neutral-800/80 text-[11px] text-neutral-600 dark:text-neutral-300">
                 {teacherProfile?.qualifications && (
                   <div className="flex items-center gap-1.5 truncate">
                     <Award className="w-3 h-3 text-emerald-500 shrink-0" />
@@ -319,6 +321,23 @@ export const VerifyTeacherModal: React.FC<VerifyTeacherModalProps> = ({
                   <div className="flex items-center gap-1.5">
                     <Briefcase className="w-3 h-3 text-blue-500 shrink-0" />
                     <span>{teacherProfile.experienceYears} Years Exp.</span>
+                  </div>
+                )}
+                {teacherProfile?.resume && (
+                  <div className="col-span-1 sm:col-span-2 pt-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-neutral-500">
+                      <FileText className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                      <span>Resume / CV Document:</span>
+                    </span>
+                    <a
+                      href={teacherProfile.resume}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/20 px-2 py-0.5 rounded-md border border-red-500/20 transition-colors"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      View Resume PDF
+                    </a>
                   </div>
                 )}
               </div>

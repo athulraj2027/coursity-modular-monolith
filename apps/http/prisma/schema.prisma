@@ -111,7 +111,7 @@ model TeacherProfile {
   expertise       String[]                @default([])
   qualifications  String?
   experienceYears Int?
- 
+  resume          String?
   linkedinUrl     String?
   twitterUrl      String?
   websiteUrl      String?
