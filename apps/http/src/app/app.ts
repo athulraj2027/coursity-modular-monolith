@@ -9,6 +9,7 @@ import path from "path";
 import fs from "fs";
 
 import router from "./routes";
+import { internalInterviewRouter } from "@/modules/interview";
 import { corsOptions } from "./config/cors";
 import errorMiddleware from "./middlewares/err.middleware";
 import notFoundMiddleware from "./middlewares/not-found.middleware";
@@ -49,7 +50,10 @@ app.get("/health", (_req, res) => {
     });
 });
 
-// 4. API Routes
+// 4. Internal Microservice Routes (secured via x-internal-secret)
+app.use("/internal/interviews", internalInterviewRouter);
+
+// 5. API Routes
 app.use("/api", router);
 
 // 5. Fallback Error & Not Found Handlers

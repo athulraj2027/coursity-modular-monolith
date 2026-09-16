@@ -13,6 +13,8 @@ enum InterviewStatus {
   INITIALIZING
   IN_PROGRESS
   COMPLETED
+  EVALUATING
+  EVALUATED
   FAILED
   CANCELLED
   ABANDONED
@@ -43,31 +45,58 @@ enum TranscriptRole {
 // ==========================================
 
 model InterviewTemplate {
-  id                 String              @id @default(uuid())
-  title              String              // e.g. "Full-Stack Node.js Teacher Vetting", "Calculus Teaching Assessment"
-  slug               String              @unique
+  id                 String                     @id @default(uuid())
+  title              String                     // e.g. "Full-Stack Node.js Teacher Vetting", "Calculus Teaching Assessment"
+  slug               String                     @unique
   description        String?
-  type               InterviewType       @default(TEACHER_VETTING)
-  domain             String              // e.g. "Computer Science", "Mathematics"
-  difficulty         InterviewDifficulty @default(INTERMEDIATE)
+  type               InterviewType              @default(TEACHER_VETTING)
+  domain             String                     // e.g. "Computer Science", "Mathematics"
+  difficulty         InterviewDifficulty        @default(INTERMEDIATE)
   
   // AI Persona & Voice Settings
-  systemPrompt       String?             @db.Text
-  voiceId            String?             // ElevenLabs / OpenAI / Deepgram voice ID (e.g. "alloy", "echo", "rachel")
-  llmModel           String              @default("gemini-1.5-flash") // e.g. "gemini-1.5-pro", "gpt-4o"
+  systemPrompt       String?                    @db.Text
+  voiceId            String?                    // ElevenLabs / OpenAI / Deepgram voice ID (e.g. "alloy", "echo", "rachel")
+  llmModel           String                     @default("gemini-1.5-flash") // e.g. "gemini-1.5-pro", "gpt-4o"
   
   // Time & Scoring Rules
-  maxDurationMinutes Int                 @default(15)
-  totalQuestions     Int                 @default(5)
-  passingScore       Float               @default(70.0) // Percentage or points out of 100
+  maxDurationMinutes Int                        @default(15)
+  totalQuestions     Int                        @default(5)
+  passingScore       Float                      @default(70.0) // Percentage or points out of 100
   
-  isActive           Boolean             @default(true)
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
+  isActive           Boolean                    @default(true)
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
 
   sessions           InterviewSession[]
+  versions           InterviewTemplateVersion[]
 
   @@map("interview_templates")
+}
+
+// ==========================================
+// TEMPLATE HISTORICAL VERSIONS
+// ==========================================
+
+model InterviewTemplateVersion {
+  id                 String             @id @default(uuid())
+  templateId         String
+  template           InterviewTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  
+  version            Int
+  title              String
+  systemPrompt       String?            @db.Text
+  voiceId            String?
+  llmModel           String
+  maxDurationMinutes Int
+  totalQuestions     Int
+  passingScore       Float
+  changeLog          String?            @db.Text
+  createdBy          String?            // Admin user ID
+
+  createdAt          DateTime           @default(now())
+
+  @@unique([templateId, version])
+  @@map("interview_template_versions")
 }
 
 // ==========================================
@@ -115,6 +144,7 @@ model InterviewSession {
   // Child Relations
   transcripts        InterviewTranscript[]
   criteriaScores     InterviewScore[]
+  auditLogs          InterviewAuditLog[]
 
   @@index([userId, status])
   @@index([teacherProfileId])
@@ -166,4 +196,25 @@ model InterviewScore {
 
   @@unique([sessionId, criterion])
   @@map("interview_scores")
+}
+
+// ==========================================
+// AUDIT LOGS FOR SESSIONS & DECISIONS
+// ==========================================
+
+model InterviewAuditLog {
+  id                 String            @id @default(uuid())
+  sessionId          String
+  session            InterviewSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  actorId            String?           // User ID of Admin or Candidate, or "SYSTEM" / "AI_SERVICE"
+  action             String            // e.g. "SESSION_CREATED", "SESSION_STARTED", "DECISION_OVERRIDDEN", "EVALUATION_ADJUSTED", "SESSION_COMPLETED"
+  previousState      Json?
+  newState           Json?
+  note               String?           @db.Text
+
+  createdAt          DateTime          @default(now())
+
+  @@index([sessionId, createdAt])
+  @@map("interview_audit_logs")
 }
