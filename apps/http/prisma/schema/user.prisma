@@ -1,0 +1,74 @@
+enum UserRole {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
+enum ApprovalStatus {
+  PENDING
+  IN_PROGRESS
+  VERIFIED
+  REVOKED
+  REDO
+}
+
+model User {
+  id           String       @id @default(uuid())
+  name         String
+  email        String       @unique
+  password     String?
+  role         UserRole     @default(STUDENT)
+  authProvider AuthProvider @default(LOCAL)
+  googleId     String?      @unique
+  isBlocked    Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  profile      Profile?
+
+  @@map("users")
+}
+
+model Profile {
+  id             String          @id @default(uuid())
+  userId         String          @unique
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatar         String?
+  bio            String?
+  phone          String?
+
+  teacherProfile TeacherProfile?
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@map("profiles")
+}
+
+model TeacherProfile {
+  id              String                  @id @default(uuid())
+  profileId       String                  @unique
+  profile         Profile                 @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  expertise       String[]                @default([])
+  qualifications  String?
+  experienceYears Int?
+  resume          String?
+  linkedinUrl     String?
+  twitterUrl      String?
+  websiteUrl      String?
+  isApproved      Boolean                 @default(false)
+  approvalStatus  ApprovalStatus          @default(PENDING)
+  rejectionReason String?
+  submissionCount Int                     @default(0)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  subscriptions   TeacherSubscription[]
+
+  @@map("teacher_profiles")
+}
