@@ -30,6 +30,7 @@ model User {
   updatedAt    DateTime     @updatedAt
 
   profile      Profile?
+  interviews   InterviewSession[]
 
   @@map("users")
 }
@@ -61,14 +62,23 @@ model TeacherProfile {
   linkedinUrl     String?
   twitterUrl      String?
   websiteUrl      String?
-  isApproved      Boolean                 @default(false)
-  approvalStatus  ApprovalStatus          @default(PENDING)
-  rejectionReason String?
-  submissionCount Int                     @default(0)
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
+  isApproved            Boolean                 @default(false)
+  approvalStatus        ApprovalStatus          @default(PENDING)
+  rejectionReason       String?
+  submissionCount       Int                     @default(0)
 
-  subscriptions   TeacherSubscription[]
+  // AI Interview & Vetting Verification
+  isInterviewPassed     Boolean                 @default(false)
+  interviewScore        Float?
+  interviewFeedback     String?
+  interviewAttempts     Int                     @default(0)
+  lastInterviewAt       DateTime?
+
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  subscriptions         TeacherSubscription[]
+  interviews            InterviewSession[]
 
   @@map("teacher_profiles")
 }
