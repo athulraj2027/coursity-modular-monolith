@@ -20,6 +20,7 @@ import {
   AdminPlanDetailsPage,
   AdminPlanFormPage,
 } from "@/features/plans"
+import { AdminAIConfigPage } from "@/features/ai-config"
 import {
   SigninPage,
   SignupPage,
@@ -122,6 +123,9 @@ export function AppRoutes() {
             <Route path="new" element={<AdminPlanFormPage />} />
             <Route path=":id" element={<AdminPlanDetailsPage />} />
             <Route path=":id/edit" element={<AdminPlanFormPage />} />
+          </Route>
+          <Route path="/admin/ai-config" element={<DashboardLayout role="admin" />}>
+            <Route index element={<AdminAIConfigPage />} />
           </Route>
           <Route path="/admin/students" element={<Navigate to="/admin/users" replace />} />
         </Route>

@@ -1,0 +1,181 @@
+// ==========================================
+// AI PROVIDER & CREDENTIAL MANAGEMENT
+// ==========================================
+
+enum AIProviderType {
+  LLM
+  STT
+  TTS
+}
+
+enum AIProviderStatus {
+  ACTIVE
+  INACTIVE
+  DEPRECATED
+}
+
+enum AICredentialStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum AIAgentType {
+  SUPERVISOR
+  INTERVIEW_PLANNER
+  QUESTION_GENERATOR
+  ANSWER_ANALYZER
+  EVIDENCE_EXTRACTOR
+  FOLLOW_UP
+  DIFFICULTY_ADAPTER
+  CONVERSATION_QUALITY
+  EVALUATOR
+  REPORT_GENERATOR
+  FEEDBACK
+  INTEGRITY
+}
+
+enum AIConfigVersionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model AIProvider {
+  id          String            @id @default(uuid())
+  slug        String            @unique // e.g. "gemini", "openai", "anthropic", "deepgram", "elevenlabs"
+  name        String            // e.g. "Google Gemini", "OpenAI", "Deepgram", "ElevenLabs"
+  type        AIProviderType    // LLM, STT, TTS
+  status      AIProviderStatus  @default(ACTIVE)
+  metadata    Json?             // baseUrl, docsUrl, supportedFeatures
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  models      AIModel[]
+  credentials AICredential[]
+
+  @@map("ai_providers")
+}
+
+model AIModel {
+  id          String            @id @default(uuid())
+  providerId  String
+  provider    AIProvider        @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  
+  name        String            // e.g. "Gemini 2.5 Flash", "GPT-4o Mini", "Nova-2", "Eleven Turbo v2.5"
+  modelId     String            // Provider's exact model identifier: "gemini-1.5-flash", "gpt-4o-mini", "nova-2", "eleven_turbo_v2_5"
+  type        AIProviderType    // LLM, STT, TTS
+  status      AIProviderStatus  @default(ACTIVE)
+  metadata    Json?             // contextWindow, defaultParams, pricing
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  agentConfigs    AgentConfig[]
+  fallbackConfigs AgentFallbackConfig[]
+
+  @@unique([providerId, modelId])
+  @@map("ai_models")
+}
+
+model AICredential {
+  id              String             @id @default(uuid())
+  providerId      String
+  provider        AIProvider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  
+  name            String             // e.g. "Production Gemini Key", "Backup OpenAI Key"
+  secretReference String             @unique // e.g. "ai-interview/gemini/prod-key-1" (AES-256-GCM encrypted payload or AWS Secrets Manager ref)
+  lastFour        String             // Masked preview: e.g. "7X9A"
+  status          AICredentialStatus @default(ACTIVE)
+  lastUsedAt      DateTime?
+  lastTestedAt    DateTime?
+  lastTestStatus  String?            // "SUCCESS", "FAILED"
+  lastTestLatency Int?               // in ms
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  agentConfigs    AgentConfig[]
+  fallbackConfigs AgentFallbackConfig[]
+
+  @@map("ai_credentials")
+}
+
+model AIConfigVersion {
+  id           String                @id @default(uuid())
+  version      Int                   @unique
+  status       AIConfigVersionStatus @default(DRAFT)
+  name         String?               // e.g. "Production v1 - Initial Launch"
+  description  String?               @db.Text
+  publishedAt  DateTime?
+  publishedBy  String?               // Admin User ID
+  archivedAt   DateTime?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  agentConfigs AgentConfig[]
+  auditLogs    AIAuditLog[]
+  sessions     InterviewSession[]
+
+  @@map("ai_config_versions")
+}
+
+model AgentConfig {
+  id             String          @id @default(uuid())
+  versionId      String
+  version        AIConfigVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  
+  agentType      AIAgentType     // SUPERVISOR, INTERVIEW_PLANNER, QUESTION_GENERATOR, etc.
+  modelId        String
+  model          AIModel         @relation(fields: [modelId], references: [id], onDelete: Restrict)
+  credentialId   String
+  credential     AICredential    @relation(fields: [credentialId], references: [id], onDelete: Restrict)
+  
+  enabled        Boolean         @default(true)
+  temperature    Float           @default(0.2)
+  maxTokens      Int?            @default(2048)
+  systemPrompt   String?         @db.Text
+  customConfig   Json?           // e.g. voiceId, similarityBoost, topP, etc.
+  
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  fallbackConfigs AgentFallbackConfig[]
+
+  @@unique([versionId, agentType])
+  @@map("ai_agent_configs")
+}
+
+model AgentFallbackConfig {
+  id            String       @id @default(uuid())
+  agentConfigId String
+  agentConfig   AgentConfig  @relation(fields: [agentConfigId], references: [id], onDelete: Cascade)
+  
+  priority      Int          @default(1) // 1 = highest priority fallback
+  modelId       String
+  model         AIModel      @relation(fields: [modelId], references: [id], onDelete: Restrict)
+  credentialId  String
+  credential    AICredential @relation(fields: [credentialId], references: [id], onDelete: Restrict)
+  
+  temperature   Float?
+  customConfig  Json?
+  
+  createdAt     DateTime     @default(now())
+
+  @@unique([agentConfigId, priority])
+  @@map("ai_agent_fallback_configs")
+}
+
+model AIAuditLog {
+  id           String           @id @default(uuid())
+  actorId      String?          // Admin user ID
+  action       String           // "CREDENTIAL_CREATED", "CREDENTIAL_ROTATED", "CREDENTIAL_REVOKED", "PROVIDER_UPDATED", "CONFIG_DRAFT_CREATED", "CONFIG_PUBLISHED", "CONFIG_ROLLED_BACK"
+  resourceType String           // "CREDENTIAL", "PROVIDER", "MODEL", "AGENT_CONFIG", "CONFIG_VERSION"
+  resourceId   String
+  versionId    String?
+  version      AIConfigVersion? @relation(fields: [versionId], references: [id], onDelete: SetNull)
+  metadata     Json?            // Audit details without secret values
+  createdAt    DateTime         @default(now())
+
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
+  @@map("ai_audit_logs")
+}

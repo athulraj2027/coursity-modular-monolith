@@ -5,6 +5,7 @@ import profileRouter from '@/modules/profile';
 import planRouter from '@/modules/plan';
 import uploadRouter from '@/modules/storage';
 import { candidateInterviewRouter, adminInterviewRouter } from '@/modules/interview';
+import { adminAIConfigRouter } from '@/modules/ai-config';
 
 import { authMiddleware } from '@/app/middlewares/auth.middleware';
 import { isBlockedMiddleware } from '@/app/middlewares/is-blocked.middleware';
@@ -24,6 +25,7 @@ router.use("/plans", planRouter);
 // 4. AI Interview routes (Candidate endpoints & Admin management)
 router.use("/interviews", candidateInterviewRouter);
 router.use("/admin/interviews", adminInterviewRouter);
+router.use("/admin/ai", adminAIConfigRouter);
 
 // 5. Storage & File Upload routes (contains internal auth for presigned-url and delete, open PUT for local binary upload)
 router.use("/upload", uploadRouter);

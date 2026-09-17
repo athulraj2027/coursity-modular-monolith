@@ -10,6 +10,7 @@ import {
   Users,
   Zap,
   Layers,
+  Cpu,
 } from "lucide-react"
 
 export interface SidebarNavItem {
@@ -120,6 +121,12 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Plans",
         url: "/admin/plans",
         icon: Layers,
+      },
+      {
+        title: "AI & Models Config",
+        url: "/admin/ai-config",
+        icon: Cpu,
+        badge: "v1",
       },
     ],
   },

@@ -137,6 +137,11 @@ model InterviewSession {
   recordingUrl       String?             // Direct S3 URL for full session audio/video recording
   livekitRoomSid     String?             // WebRTC / LiveKit / SFU Room ID if applicable
   meta               Json?               // Latency, token usage, interruption count, model params
+  
+  // AI Config Versioning Snapshot
+  aiConfigVersionId  String?
+  aiConfigVersion    AIConfigVersion?    @relation(fields: [aiConfigVersionId], references: [id], onDelete: SetNull)
+  aiConfigSnapshot   Json?               // Immutable frozen JSON configuration used for this session
 
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
