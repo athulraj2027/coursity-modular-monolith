@@ -23,6 +23,17 @@ export interface UpdateTeacherProfilePayload {
   websiteUrl?: string | null
 }
 
+export interface ChangePasswordPayload {
+  currentPassword?: string
+  newPassword: string
+  confirmPassword: string
+}
+
+export interface ChangePasswordResponse {
+  success: boolean
+  message: string
+}
+
 export interface ProfileApiResponse {
   message: string
   data: {
@@ -76,6 +87,14 @@ export const profileApi = {
       profile: res.data.profile,
       message: res.message,
     }
+  },
+
+  changePassword: async (payload: ChangePasswordPayload): Promise<ChangePasswordResponse> => {
+    const res = await apiClient<ChangePasswordResponse>(PROFILE_API_ROUTES.CHANGE_PASSWORD, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    })
+    return res
   },
 }
 

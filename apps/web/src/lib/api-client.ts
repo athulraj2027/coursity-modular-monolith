@@ -5,11 +5,11 @@ import { AUTH_API_ROUTES } from "@/features/auth/constants/routes.constants"
 
 const API_BASE_URL = env.VITE_API_URL
 
-export class ApiError extends Error {
+export class ApiError<T = unknown> extends Error {
   public status: number
-  public data: any
+  public data?: T
 
-  constructor(message: string, status: number, data?: any) {
+  constructor(message: string, status: number, data?: T) {
     super(message)
     this.name = "ApiError"
     this.status = status
@@ -186,7 +186,7 @@ export async function apiClient<T>(
       headers,
       credentials: "include", // For session / httpOnly cookies
     })
-  } catch (networkErr: any) {
+  } catch (networkErr: unknown) {
     throw new ApiError(
       "Unable to connect to the server. Please ensure the backend is running.",
       0,
@@ -209,7 +209,7 @@ export async function apiClient<T>(
     }
   }
 
-  let responseData: any = null
+  let responseData: unknown = null
   const contentType = response.headers.get("content-type")
   if (contentType && contentType.includes("application/json")) {
     responseData = await response.json()
@@ -220,10 +220,16 @@ export async function apiClient<T>(
   if (!response.ok) {
     let errorMessage = ""
 
+    const errorData = responseData as {
+      errors?: Array<string | { message?: string; msg?: string }>
+      message?: string
+      error?: string
+    } | null
+
     // 1. If backend returns an array of field errors, concatenate them
-    if (responseData?.errors && Array.isArray(responseData.errors) && responseData.errors.length > 0) {
-      const fieldMessages = responseData.errors
-        .map((err: any) => (typeof err === "string" ? err : err.message || err.msg))
+    if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+      const fieldMessages = errorData.errors
+        .map((err) => (typeof err === "string" ? err : err.message || err.msg))
         .filter(Boolean)
 
       if (fieldMessages.length > 0) {
@@ -234,8 +240,8 @@ export async function apiClient<T>(
     // 2. Fall back to responseData.message or responseData.error
     if (!errorMessage) {
       errorMessage =
-        responseData?.message ||
-        responseData?.error ||
+        errorData?.message ||
+        errorData?.error ||
         `Request failed with status ${response.status}`
     }
 

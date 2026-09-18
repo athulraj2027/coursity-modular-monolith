@@ -5,6 +5,8 @@ import { QueueEmailUseCase } from "./application/use-cases/queue-email.usecase";
 import { EmailService } from "./infrastructure/services/email.service.impl";
 import { emailConfig } from "./infrastructure/config/email.config";
 
+import { IEmailService } from "./domain/interfaces/email-service.interface";
+
 // 1. Instantiate Transport, Queue, and Worker
 const emailTransport = new NodemailerTransport();
 const emailQueue = new EmailQueue();
@@ -13,8 +15,8 @@ const emailWorker = new EmailWorker(emailTransport);
 // 2. Instantiate Use Cases
 const queueEmailUseCase = new QueueEmailUseCase(emailQueue);
 
-// 3. Instantiate Public Email Service
-export const emailService = new EmailService(queueEmailUseCase);
+// 3. Instantiate Shared Singleton Email Service implementing IEmailService abstract class
+export const emailService: IEmailService = new EmailService(queueEmailUseCase);
 
 // 4. Worker Lifecycle Control
 export const startEmailWorker = (): void => {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   User,
   Mail,
@@ -34,6 +35,7 @@ interface StudentFormData {
 }
 
 export const StudentProfilePage: React.FC = () => {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<"overview" | "edit">("overview")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { data: profileData, isLoading, isError, error, refetch } = useProfile()
@@ -61,7 +63,7 @@ export const StudentProfilePage: React.FC = () => {
     }
   }, [profileData])
 
-  const handleInputChange = (field: keyof StudentFormData, value: any) => {
+  const handleInputChange = <K extends keyof StudentFormData>(field: K, value: StudentFormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     if (fieldErrors[field]) {
       setFieldErrors((prev) => {
@@ -95,10 +97,11 @@ export const StudentProfilePage: React.FC = () => {
         bio: formData.bio ? formData.bio.trim() : null,
       })
       setActiveTab("overview")
-    } catch (err: any) {
-      if (err?.data?.errors && Array.isArray(err.data.errors)) {
+    } catch (err: unknown) {
+      const errorObj = err as { data?: { errors?: { field: string; message: string }[] }; message?: string }
+      if (errorObj?.data?.errors && Array.isArray(errorObj.data.errors)) {
         const backendErrors: Partial<Record<keyof StudentFormData, string>> = {}
-        err.data.errors.forEach((e: { field: string; message: string }) => {
+        errorObj.data.errors.forEach((e: { field: string; message: string }) => {
           if (e.field && e.message) {
             backendErrors[e.field as keyof StudentFormData] = e.message
           }
@@ -135,7 +138,7 @@ export const StudentProfilePage: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 p-8 text-center rounded-2xl border border-red-200 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20 w-full">
         <p className="text-sm font-semibold text-red-600 dark:text-red-400">
-          {(error as any)?.message || "Failed to load student profile"}
+          {error instanceof Error ? error.message : "Failed to load student profile"}
         </p>
         <Button onClick={() => refetch()} variant="outline" className="gap-2 rounded-xl text-xs cursor-pointer">
           <RefreshCw className="w-3.5 h-3.5" />
@@ -261,6 +264,15 @@ export const StudentProfilePage: React.FC = () => {
           <Edit3 className="w-4 h-4" />
           Edit Profile
         </button>
+        {profileData?.authProvider !== "GOOGLE" && (
+          <button
+            onClick={() => navigate("/students/password")}
+            className="flex items-center gap-2 pb-3 text-sm font-semibold transition-all border-b-2 border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white cursor-pointer"
+          >
+            <KeyRound className="w-4 h-4" />
+            Password & Security
+          </button>
+        )}
       </div>
 
       {/* Tab: Overview (Full-width clean single layout) */}

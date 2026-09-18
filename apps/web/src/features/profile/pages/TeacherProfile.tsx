@@ -142,7 +142,7 @@ export const TeacherProfilePage: React.FC = () => {
     }
   }, [])
 
-  const handleInputChange = (field: keyof TeacherFormData, value: any) => {
+  const handleInputChange = <K extends keyof TeacherFormData>(field: K, value: TeacherFormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     if (fieldErrors[field]) {
       setFieldErrors((prev) => {
@@ -244,10 +244,11 @@ export const TeacherProfilePage: React.FC = () => {
         expertise: formData.expertise,
       })
       setActiveTab("overview")
-    } catch (err: any) {
-      if (err?.data?.errors && Array.isArray(err.data.errors)) {
+    } catch (err: unknown) {
+      const errorObj = err as { data?: { errors?: { field: string; message: string }[] }; message?: string }
+      if (errorObj?.data?.errors && Array.isArray(errorObj.data.errors)) {
         const backendErrors: Partial<Record<keyof TeacherFormData, string>> = {}
-        err.data.errors.forEach((e: { field: string; message: string }) => {
+        errorObj.data.errors.forEach((e: { field: string; message: string }) => {
           if (e.field && e.message) {
             backendErrors[e.field as keyof TeacherFormData] = e.message
           }
@@ -292,7 +293,7 @@ export const TeacherProfilePage: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 p-8 text-center rounded-2xl border border-red-200 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20 w-full">
         <p className="text-sm font-semibold text-red-600 dark:text-red-400">
-          {(error as any)?.message || "Failed to load instructor profile"}
+          {error instanceof Error ? error.message : "Failed to load instructor profile"}
         </p>
         <Button onClick={() => refetch()} variant="outline" className="gap-2 rounded-xl text-xs cursor-pointer">
           <RefreshCw className="w-3.5 h-3.5" />
@@ -372,8 +373,8 @@ export const TeacherProfilePage: React.FC = () => {
       } else {
         toast.error(res.message || "Failed to initialize interview")
       }
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to start AI interview session")
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to start AI interview session")
     } finally {
       setIsStartingInterview(false)
     }
@@ -625,6 +626,15 @@ export const TeacherProfilePage: React.FC = () => {
           <Edit3 className="w-4 h-4" />
           Edit Profile
         </button>
+        {profileData?.authProvider !== "GOOGLE" && (
+          <button
+            onClick={() => navigate("/teachers/password")}
+            className="flex items-center gap-2 pb-3 text-sm font-semibold transition-all border-b-2 border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white cursor-pointer"
+          >
+            <KeyRound className="w-4 h-4" />
+            Password & Security
+          </button>
+        )}
       </div>
 
       {/* Maximum Submissions Reached Banner */}

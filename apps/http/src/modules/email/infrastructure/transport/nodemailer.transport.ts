@@ -4,10 +4,11 @@ import { EmailPayload, EmailSendResult } from "../../domain/entities/email.entit
 import { emailConfig } from "../config/email.config";
 import { EmailSendError } from "../../domain/errors/email.error";
 
-export class NodemailerTransport implements IEmailTransport {
+export class NodemailerTransport extends IEmailTransport {
     private transporter: Transporter | null = null;
 
     constructor() {
+        super();
         if (emailConfig.isConfigured) {
             this.transporter = nodemailer.createTransport({
                 host: emailConfig.smtp.host,
@@ -61,9 +62,10 @@ export class NodemailerTransport implements IEmailTransport {
                 messageId: info.messageId,
                 timestamp: new Date().toISOString(),
             };
-        } catch (error: any) {
-            console.error(`❌ Failed to send email via SMTP to ${payload.to}:`, error?.message || error);
-            throw new EmailSendError(`Failed to send email to ${payload.to}: ${error?.message || "Unknown error"}`);
+        } catch (error: unknown) {
+            const errMsg = error instanceof Error ? error.message : "Unknown error";
+            console.error(`❌ Failed to send email via SMTP to ${payload.to}:`, errMsg);
+            throw new EmailSendError(`Failed to send email to ${payload.to}: ${errMsg}`);
         }
     }
 
@@ -76,8 +78,9 @@ export class NodemailerTransport implements IEmailTransport {
             await this.transporter.verify();
             console.log("✅ SMTP Server connection verified");
             return true;
-        } catch (error: any) {
-            console.warn(`⚠️ SMTP Server connection verification failed: ${error?.message || error}`);
+        } catch (error: unknown) {
+            const errMsg = error instanceof Error ? error.message : "Verification failed";
+            console.warn(`⚠️ SMTP Server connection verification failed: ${errMsg}`);
             return false;
         }
     }

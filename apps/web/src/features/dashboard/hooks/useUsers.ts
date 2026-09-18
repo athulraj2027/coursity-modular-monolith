@@ -39,8 +39,8 @@ export function useBlockUser() {
       queryClient.invalidateQueries({ queryKey: USER_QUERY_KEY })
       toast.success(res?.message || "User status updated successfully")
     },
-    onError: (error: any) => {
-      toast.error(error?.message || "Failed to update user block status")
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update user block status")
     },
   })
 }
@@ -71,8 +71,8 @@ export function useApproveTeacher() {
       queryClient.invalidateQueries({ queryKey: ["currentUser"] })
       toast.success(res?.message || "Teacher verification status updated successfully")
     },
-    onError: (error: any) => {
-      toast.error(error?.message || "Failed to update teacher verification status")
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update teacher verification status")
     },
   })
 }

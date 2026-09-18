@@ -3,13 +3,14 @@ import { AuthTokens, TokenPayload, TokenService } from "../../../domain/services
 import { env } from "@/app/config/env";
 import { UnauthorizedError } from "@/app/errors";
 
-export class JwtTokenService implements TokenService {
+export class JwtTokenService extends TokenService {
     private readonly secret: string;
     private readonly refreshSecret: string;
     private readonly accessExpiresIn: string;
     private readonly refreshExpiresIn: string;
 
     constructor() {
+        super();
         this.secret = env.JWT_SECRET;
         this.refreshSecret = env.JWT_REFRESH_SECRET || env.JWT_SECRET;
         this.accessExpiresIn = env.JWT_ACCESS_EXPIRES_IN || "15m";

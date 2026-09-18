@@ -1,6 +1,7 @@
 export type EmailTemplateType =
     | "SIGNUP_OTP"
     | "RESET_PASSWORD_OTP"
+    | "PASSWORD_CHANGED"
     | "TEACHER_STATUS"
     | "WELCOME"
     | "CUSTOM";

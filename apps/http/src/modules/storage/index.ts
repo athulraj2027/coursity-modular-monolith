@@ -4,8 +4,10 @@ import { DeleteFile } from "./application/use-cases/delete-file.usecase";
 import { UploadController } from "./presentation/controllers/upload.controller";
 import { UploadRoutes } from "./presentation/routes/upload.routes";
 
+import { IStorageService } from "./domain/interfaces/storage-service.interface";
+
 // 1. Infrastructure Services
-const storageService = new S3StorageService();
+const storageService: IStorageService = new S3StorageService();
 
 // 2. Application Use Cases
 const getPresignedUrlUseCase = new GetPresignedUrl(storageService);

@@ -172,7 +172,9 @@ export const AdminPlanFormPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const payload: any = {
+    const payload: Partial<Plan> & {
+      features: { featureId: string; value: string; isUnlimited: boolean }[];
+    } = {
       name: name.trim(),
       slug: slug.trim().toLowerCase(),
       tagline: tagline.trim() || null,

@@ -13,6 +13,8 @@ import {
 import {
   StudentProfilePage,
   TeacherProfilePage,
+  AdminProfilePage,
+  ChangePasswordPage,
 } from "@/features/profile"
 import {
   TeacherPlansPage,
@@ -87,6 +89,9 @@ export function AppRoutes() {
           <Route path="/students/profile" element={<DashboardLayout role="student" />}>
             <Route index element={<StudentProfilePage />} />
           </Route>
+          <Route path="/students/password" element={<DashboardLayout role="student" />}>
+            <Route index element={<ChangePasswordPage role="student" />} />
+          </Route>
           <Route path="/students/interviews" element={<DashboardLayout role="student" />}>
             <Route index element={<CandidateInterviewsPage />} />
           </Route>
@@ -95,6 +100,9 @@ export function AppRoutes() {
           <Route path="/dashboard" element={<Navigate to="/students/dashboard" replace />} />
           <Route path="/profile" element={<Navigate to="/students/profile" replace />} />
           <Route path="/student/profile" element={<Navigate to="/students/profile" replace />} />
+          <Route path="/students/profile/password" element={<Navigate to="/students/password" replace />} />
+          <Route path="/student/password" element={<Navigate to="/students/password" replace />} />
+          <Route path="/password" element={<Navigate to="/students/password" replace />} />
           <Route path="/students/my-interviews" element={<Navigate to="/students/interviews" replace />} />
         </Route>
       </Route>
@@ -108,6 +116,9 @@ export function AppRoutes() {
           <Route path="/teachers/profile" element={<DashboardLayout role="teacher" />}>
             <Route index element={<TeacherProfilePage />} />
           </Route>
+          <Route path="/teachers/password" element={<DashboardLayout role="teacher" />}>
+            <Route index element={<ChangePasswordPage role="teacher" />} />
+          </Route>
           <Route path="/teachers/plans" element={<DashboardLayout role="teacher" />}>
             <Route index element={<TeacherPlansPage />} />
           </Route>
@@ -118,6 +129,8 @@ export function AppRoutes() {
           {/* Aliases for teacher */}
           <Route path="/teacher/dashboard" element={<Navigate to="/teachers/dashboard" replace />} />
           <Route path="/teacher/profile" element={<Navigate to="/teachers/profile" replace />} />
+          <Route path="/teachers/profile/password" element={<Navigate to="/teachers/password" replace />} />
+          <Route path="/teacher/password" element={<Navigate to="/teachers/password" replace />} />
           <Route path="/teacher/plans" element={<Navigate to="/teachers/plans" replace />} />
           <Route path="/teachers/billing" element={<Navigate to="/teachers/plans" replace />} />
           <Route path="/teachers/my-interviews" element={<Navigate to="/teachers/interviews" replace />} />
@@ -131,6 +144,12 @@ export function AppRoutes() {
         <Route element={<RoleGuard allowedRoles={["admin"]} />}>
           <Route path="/admin/dashboard" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminDashboardPage />} />
+          </Route>
+          <Route path="/admin/profile" element={<DashboardLayout role="admin" />}>
+            <Route index element={<AdminProfilePage />} />
+          </Route>
+          <Route path="/admin/password" element={<DashboardLayout role="admin" />}>
+            <Route index element={<ChangePasswordPage role="admin" />} />
           </Route>
           <Route path="/admin/teachers" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminTeachersPage />} />
@@ -151,6 +170,7 @@ export function AppRoutes() {
             <Route index element={<AdminInterviewsPage />} />
             <Route path=":id" element={<AdminInterviewDetailPage />} />
           </Route>
+          <Route path="/admin/profile/password" element={<Navigate to="/admin/password" replace />} />
           <Route path="/admin/students" element={<Navigate to="/admin/users" replace />} />
         </Route>
       </Route>

@@ -45,8 +45,8 @@ export const TeacherDashboardPage: React.FC = () => {
       } else {
         toast.error(res.message || "Failed to initialize interview")
       }
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to start AI interview session")
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to start AI interview session")
     } finally {
       setIsStartingInterview(false)
     }

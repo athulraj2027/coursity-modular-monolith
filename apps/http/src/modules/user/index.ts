@@ -1,7 +1,5 @@
 // Repositories & Services
 import { PrismaUserRepository } from "./infrastructure/repositories/prisma-user.repository";
-import { BcryptPasswordService } from "./infrastructure/services/bcrypt-password.service";
-import { JwtTokenService } from "@/modules/auth/infrastructure/services/jwt/jwt-token.service";
 
 // Use Cases
 import { GetProfile } from "./application/use-cases/get-profile.usecase";
@@ -27,20 +25,17 @@ import { createIsBlockedMiddleware } from "@/app/middlewares/is-blocked.middlewa
 import { requireRoles } from "@/app/middlewares/role.middleware";
 import { UserRoutes } from "./presentation/routes/user.routes";
 
-import { RedisTokenRepository } from "@/modules/auth/infrastructure/repositories/redis-token.repository";
+// Shared Infrastructure Services & Repositories
+import { passwordService, tokenService, tokenRepository } from "@/modules/auth";
+import { emailService } from "@/modules/email";
 
 // 1. Repositories & Services
 const userRepository = new PrismaUserRepository();
-const tokenRepository = new RedisTokenRepository();
-const passwordService = new BcryptPasswordService();
-const tokenService = new JwtTokenService();
 
 // 2. Middlewares
 const authMiddleware = createAuthMiddleware(tokenService);
 const isBlockedMiddleware = createIsBlockedMiddleware(userRepository, tokenRepository);
 const adminMiddleware = requireRoles("ADMIN");
-
-import { emailService } from "@/modules/email";
 
 // 3. Use Cases
 const getProfile = new GetProfile(userRepository);

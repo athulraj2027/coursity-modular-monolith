@@ -7,6 +7,7 @@ import {
   Loader2,
   X,
   FileEdit,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { InterviewSession, InterviewOutcome } from "../types/interview.types";
@@ -66,7 +67,7 @@ export const OverrideDecisionModal: React.FC<OverrideDecisionModalProps> = ({
     value: InterviewOutcome;
     label: string;
     description: string;
-    icon: any;
+    icon: LucideIcon;
     color: string;
     bg: string;
     border: string;

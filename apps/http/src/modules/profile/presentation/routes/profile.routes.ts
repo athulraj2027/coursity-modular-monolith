@@ -4,11 +4,13 @@ import { UpdateProfileController } from "../controllers/update-profile.controlle
 import { UpdateStudentProfileController } from "../controllers/update-student-profile.controller";
 import { UpdateTeacherProfileController } from "../controllers/update-teacher-profile.controller";
 import { SubmitTeacherVerificationController } from "../controllers/submit-teacher-verification.controller";
+import { ChangePasswordController } from "../controllers/change-password.controller";
 import {
     updateProfileSchema,
     updateStudentProfileSchema,
     updateTeacherProfileSchema,
 } from "../validators/profile.validator";
+import { changePasswordSchema } from "../validators/change-password.validator";
 import validate from "@/app/middlewares/validate";
 
 export class ProfileRoutes {
@@ -20,6 +22,7 @@ export class ProfileRoutes {
         private readonly updateStudentProfileController: UpdateStudentProfileController,
         private readonly updateTeacherProfileController: UpdateTeacherProfileController,
         private readonly submitTeacherVerificationController: SubmitTeacherVerificationController,
+        private readonly changePasswordController: ChangePasswordController,
         private readonly authMiddleware?: RequestHandler,
         private readonly isBlockedMiddleware?: RequestHandler
     ) {
@@ -105,6 +108,14 @@ export class ProfileRoutes {
             "/submit-verification",
             ...middlewares,
             this.submitTeacherVerificationController.execute
+        );
+
+        // --- 4. Password Management ---
+        this.router.post(
+            "/change-password",
+            ...middlewares,
+            validate(changePasswordSchema),
+            this.changePasswordController.execute
         );
     }
 }

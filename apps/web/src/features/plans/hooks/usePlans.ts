@@ -37,8 +37,8 @@ export function useSubscribePlan() {
           : "Subscribed to plan successfully!"
       );
     },
-    onError: (error: any) => {
-      toast.error(error?.message || "Failed to subscribe to plan");
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to subscribe to plan");
     },
   });
 }
@@ -56,8 +56,8 @@ export function useCancelSubscription() {
           : "Subscription canceled."
       );
     },
-    onError: (error: any) => {
-      toast.error(error?.message || "Failed to cancel subscription");
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to cancel subscription");
     },
   });
 }
@@ -97,8 +97,8 @@ export function useAdminCreatePlan() {
       queryClient.invalidateQueries({ queryKey: PLANS_QUERY_KEY });
       toast.success("New subscription plan created successfully");
     },
-    onError: (error: any) => {
-      toast.error(error?.message || "Failed to create plan");
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to create plan");
     },
   });
 }
@@ -116,8 +116,8 @@ export function useAdminUpdatePlan() {
       queryClient.invalidateQueries({ queryKey: MY_SUBSCRIPTION_QUERY_KEY });
       toast.success("Plan updated successfully");
     },
-    onError: (error: any) => {
-      toast.error(error?.message || "Failed to update plan");
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update plan");
     },
   });
 }
@@ -132,8 +132,8 @@ export function useAdminDeletePlan() {
       queryClient.invalidateQueries({ queryKey: PLANS_QUERY_KEY });
       toast.success("Plan deleted successfully");
     },
-    onError: (error: any) => {
-      toast.error(error?.message || "Failed to delete plan");
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to delete plan");
     },
   });
 }

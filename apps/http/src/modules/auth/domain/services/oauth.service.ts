@@ -6,8 +6,9 @@ export interface OAuthUserProfile {
     emailVerified: boolean;
 }
 
-export interface OAuthService {
-    getAuthorizationUrl(state?: string): string;
-    verifyIdToken(idToken: string): Promise<OAuthUserProfile>;
-    exchangeCodeForProfile(code: string): Promise<OAuthUserProfile>;
+export abstract class OAuthService {
+    abstract getAuthorizationUrl(state?: string): string;
+    abstract verifyIdToken(idToken: string): Promise<OAuthUserProfile>;
+    abstract exchangeCodeForProfile(code: string): Promise<OAuthUserProfile>;
 }
+

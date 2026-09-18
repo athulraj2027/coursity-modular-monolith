@@ -8,6 +8,7 @@ export const PROFILE_API_ROUTES = {
   TEACHER: "/profile/teacher",
   SUBMIT_VERIFICATION: "/profile/teacher/submit-verification",
   SUBMIT_VERIFICATION_ALT: "/profile/submit-verification",
+  CHANGE_PASSWORD: "/profile/change-password",
 } as const
 
 export default PROFILE_API_ROUTES

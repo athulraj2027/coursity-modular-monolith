@@ -5,6 +5,7 @@ export interface User {
   name: string
   email: string
   role: UserRole | "STUDENT" | "TEACHER" | "ADMIN"
+  authProvider?: "LOCAL" | "GOOGLE"
   avatar?: string
   isEmailVerified?: boolean
   createdAt?: string
