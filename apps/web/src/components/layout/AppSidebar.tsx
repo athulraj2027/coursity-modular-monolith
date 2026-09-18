@@ -24,6 +24,8 @@ import { ThemeToggle } from "@/components/common/ThemeToggle"
 import { LogOut, Sparkles, User, ChevronRight, Shield } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+import { TeacherVerificationMenu } from "./TeacherVerificationMenu"
+
 export interface AppSidebarProps {
   role?: "student" | "teacher" | "admin"
   user?: {
@@ -159,6 +161,13 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
+
+        {/* Teacher Verification Status Menu */}
+        {role === "teacher" && (
+          <div className="mt-auto pt-2">
+            <TeacherVerificationMenu isCollapsed={isCollapsed} />
+          </div>
+        )}
 
         {/* Upgrade / Live Mentorship Promo Banner (if expanded and student) */}
         {!isCollapsed && role === "student" && (

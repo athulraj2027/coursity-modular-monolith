@@ -113,6 +113,7 @@ export function AppRoutes() {
           </Route>
           <Route path="/teachers/interviews" element={<DashboardLayout role="teacher" />}>
             <Route index element={<CandidateInterviewsPage />} />
+            <Route path=":sessionId" element={<InterviewCompletedPage />} />
           </Route>
           {/* Aliases for teacher */}
           <Route path="/teacher/dashboard" element={<Navigate to="/teachers/dashboard" replace />} />
@@ -159,7 +160,7 @@ export function AppRoutes() {
         <Route path="/interview/:sessionId" element={<InterviewLandingPage />} />
         <Route path="/interview/:sessionId/setup" element={<InterviewSetupPage />} />
         <Route path="/interview/:sessionId/room" element={<InterviewRoomPage />} />
-        <Route path="/interview/:sessionId/completed" element={<InterviewCompletedPage />} />
+        <Route path="/interview/:sessionId/completed" element={<CandidateDossierWrapper />} />
         <Route path="/interviews/my-interviews" element={<RoleBasedInterviewRedirect />} />
         <Route path="/interviews" element={<RoleBasedInterviewRedirect />} />
       </Route>
@@ -168,6 +169,22 @@ export function AppRoutes() {
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
+}
+
+function CandidateDossierWrapper() {
+  const { data: user } = useCurrentUser();
+  const role =
+    user?.role === "ADMIN" || user?.role === "admin"
+      ? "admin"
+      : user?.role === "TEACHER" || user?.role === "teacher"
+      ? "teacher"
+      : "student";
+
+  return (
+    <DashboardLayout role={role}>
+      <InterviewCompletedPage />
+    </DashboardLayout>
+  );
 }
 
 function RoleBasedInterviewRedirect() {
