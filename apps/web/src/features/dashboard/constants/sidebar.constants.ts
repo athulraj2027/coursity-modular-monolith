@@ -38,7 +38,7 @@ export const STUDENT_SIDEBAR_GROUPS: SidebarNavGroup[] = [
       },
       {
         title: "AI Interviews",
-        url: "/interviews/my-interviews",
+        url: "/students/interviews",
         icon: Bot,
         badge: "AI",
       },
@@ -72,7 +72,7 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
       },
       {
         title: "AI Vetting Interviews",
-        url: "/interviews/my-interviews",
+        url: "/teachers/interviews",
         icon: Bot,
         badge: "AI",
       },
@@ -134,6 +134,12 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Plans",
         url: "/admin/plans",
         icon: Layers,
+      },
+      {
+        title: "AI Interviews",
+        url: "/admin/interviews",
+        icon: Bot,
+        badge: "AI",
       },
       {
         title: "AI & Models Config",

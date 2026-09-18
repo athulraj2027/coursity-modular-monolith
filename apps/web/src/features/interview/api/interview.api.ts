@@ -7,6 +7,12 @@ import type {
   InterviewReportData,
   InterviewDifficulty,
   InterviewType,
+  AdminSessionFilters,
+  AdminInterviewSessionListResponse,
+  AdminDecisionOverridePayload,
+  AdminEvaluationUpdatePayload,
+  InterviewAuditLog,
+  InterviewAnalyticsOverview,
 } from "../types/interview.types";
 
 export const interviewApi = {
@@ -138,5 +144,99 @@ export const interviewApi = {
     }>(`/interviews/my-interviews${qs}`, {
       method: "GET",
     });
+  },
+
+  // ==========================================
+  // ADMIN INTERVIEW PORTAL METHODS
+  // ==========================================
+
+  // 7. Admin List Sessions
+  adminGetSessions: async (filters?: AdminSessionFilters) => {
+    const params = new URLSearchParams();
+    if (filters?.page) params.set("page", String(filters.page));
+    if (filters?.limit) params.set("limit", String(filters.limit));
+    if (filters?.search) params.set("search", filters.search);
+    if (filters?.status) params.set("status", filters.status);
+    if (filters?.outcome) params.set("outcome", filters.outcome);
+    if (filters?.type) params.set("type", filters.type);
+    if (filters?.difficulty) params.set("difficulty", filters.difficulty);
+    if (filters?.domain) params.set("domain", filters.domain);
+    if (filters?.templateId) params.set("templateId", filters.templateId);
+    if (filters?.sortBy) params.set("sortBy", filters.sortBy);
+    if (filters?.sortOrder) params.set("sortOrder", filters.sortOrder);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+
+    return await apiClient<AdminInterviewSessionListResponse>(`/admin/interviews/sessions${qs}`, {
+      method: "GET",
+    });
+  },
+
+  // 8. Admin Get Session Details
+  adminGetSession: async (id: string) => {
+    return await apiClient<{ success: boolean; data: InterviewSession }>(`/admin/interviews/sessions/${id}`, {
+      method: "GET",
+    });
+  },
+
+  // 9. Admin Get Session Transcripts
+  adminGetTranscripts: async (id: string) => {
+    return await apiClient<{ success: boolean; data: InterviewTranscript[] }>(
+      `/admin/interviews/sessions/${id}/transcripts`,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+  // 10. Admin Get Recording URL
+  adminGetRecording: async (id: string) => {
+    return await apiClient<{ success: boolean; data: { recordingUrl: string | null } }>(
+      `/admin/interviews/sessions/${id}/recording`,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+  // 11. Admin Override Decision
+  adminUpdateDecision: async (id: string, payload: AdminDecisionOverridePayload) => {
+    return await apiClient<{ success: boolean; message: string; data: InterviewSession }>(
+      `/admin/interviews/sessions/${id}/decision`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }
+    );
+  },
+
+  // 12. Admin Adjust Evaluation & Scores
+  adminUpdateEvaluation: async (id: string, payload: AdminEvaluationUpdatePayload) => {
+    return await apiClient<{ success: boolean; message: string; data: InterviewSession }>(
+      `/admin/interviews/sessions/${id}/evaluation`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }
+    );
+  },
+
+  // 13. Admin Get Session Audit Logs
+  adminGetAuditLogs: async (id: string) => {
+    return await apiClient<{ success: boolean; data: InterviewAuditLog[] }>(
+      `/admin/interviews/sessions/${id}/audit`,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+  // 14. Admin Analytics Overview
+  adminGetAnalyticsOverview: async () => {
+    return await apiClient<{ success: boolean; data: InterviewAnalyticsOverview }>(
+      `/admin/interviews/analytics/overview`,
+      {
+        method: "GET",
+      }
+    );
   },
 };

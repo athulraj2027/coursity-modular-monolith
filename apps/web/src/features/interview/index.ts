@@ -19,9 +19,13 @@ export * from "./components/CameraPreview";
 export * from "./components/InterviewTimer";
 export * from "./components/EndInterviewDialog";
 export * from "./components/StartInterviewModal";
+export * from "./components/OverrideDecisionModal";
 
 export * from "./pages/InterviewLandingPage";
 export * from "./pages/InterviewSetupPage";
 export * from "./pages/InterviewRoomPage";
 export * from "./pages/InterviewCompletedPage";
 export * from "./pages/CandidateInterviewsPage";
+export * from "./pages/AdminInterviewsPage";
+export * from "./pages/AdminInterviewDetailPage";
+

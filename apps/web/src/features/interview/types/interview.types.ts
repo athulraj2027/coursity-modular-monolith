@@ -263,3 +263,77 @@ export interface AudioDevice {
   label: string;
   kind: MediaDeviceKind;
 }
+
+// ==========================================
+// ADMIN INTERVIEW TYPES
+// ==========================================
+
+export interface AdminSessionFilters {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: InterviewStatus;
+  outcome?: InterviewOutcome;
+  type?: InterviewType;
+  difficulty?: InterviewDifficulty;
+  domain?: string;
+  templateId?: string;
+  startDate?: string;
+  endDate?: string;
+  sortBy?: "createdAt" | "startedAt" | "overallScore" | "durationSeconds";
+  sortOrder?: "asc" | "desc";
+}
+
+export interface AdminInterviewSessionListResponse {
+  success: boolean;
+  data: InterviewSession[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface AdminDecisionOverridePayload {
+  outcome: InterviewOutcome;
+  overallScore?: number;
+  adminNote?: string;
+}
+
+export interface AdminEvaluationUpdatePayload {
+  overallScore?: number;
+  summaryFeedback?: string;
+  strengths?: string[];
+  improvements?: string[];
+  criteriaScores?: Array<{
+    criterion: string;
+    score: number;
+    feedback?: string;
+  }>;
+  adminNote?: string;
+}
+
+export interface InterviewAuditLog {
+  id: string;
+  sessionId: string;
+  actorId?: string | null;
+  action: string;
+  previousState?: any;
+  newState?: any;
+  note?: string | null;
+  createdAt: string;
+}
+
+export interface InterviewAnalyticsOverview {
+  totalSessions: number;
+  completedSessions: number;
+  passedSessions: number;
+  failedSessions: number;
+  needsReviewSessions: number;
+  inProgressSessions: number;
+  passRatePercentage: number;
+  averageScore: number;
+  averageDurationMinutes: number;
+}
+
