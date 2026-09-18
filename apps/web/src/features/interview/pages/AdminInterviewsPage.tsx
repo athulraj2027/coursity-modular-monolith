@@ -152,6 +152,8 @@ export const AdminInterviewsPage: React.FC = () => {
       setOverrideModalSession(null);
       queryClient.invalidateQueries({ queryKey: ["admin-interviews"] });
       queryClient.invalidateQueries({ queryKey: ["admin-interviews-analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to update decision");

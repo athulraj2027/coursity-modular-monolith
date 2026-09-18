@@ -46,3 +46,13 @@ export class InternalAuthError extends InterviewError {
     this.name = "InternalAuthError";
   }
 }
+
+export class InterviewAlreadyPassedError extends InterviewError {
+  constructor(
+    message: string = "Candidate has already passed the interview assessment. Starting a new interview is not permitted."
+  ) {
+    super(message, 400, "INTERVIEW_ALREADY_PASSED");
+    this.name = "InterviewAlreadyPassedError";
+  }
+}
+

@@ -3,6 +3,7 @@ import {
   InterviewNotFoundError,
   InvalidInterviewStateError,
   TemplateNotFoundError,
+  InterviewAlreadyPassedError,
 } from "../../domain/errors/interview.error";
 import { IInterviewSessionRepository } from "../../domain/repositories/interview-session.repository.interface";
 import { IInterviewTemplateRepository } from "../../domain/repositories/interview-template.repository.interface";
@@ -46,6 +47,18 @@ export class CandidateInterviewUseCases {
   async createSession(
     dto: CreateInterviewSessionDto
   ): Promise<InterviewSessionEntity> {
+    const existing = await this.sessionRepo.findByUserId({
+      userId: dto.userId,
+      page: 1,
+      limit: 20,
+    });
+    const alreadyPassed = existing.sessions.some((s) => s.outcome === "PASSED");
+    if (alreadyPassed) {
+      throw new InterviewAlreadyPassedError(
+        "Candidate has already passed the interview assessment. Starting a new interview is not permitted."
+      );
+    }
+
     let type = dto.type || "TEACHER_VETTING";
     let difficulty = dto.difficulty || "INTERMEDIATE";
     let domain = dto.domain || "General";
@@ -105,6 +118,18 @@ export class CandidateInterviewUseCases {
     const session = await this.sessionRepo.findById(sessionId);
     if (!session) throw new InterviewNotFoundError();
     if (session.userId !== userId) throw new InterviewAccessDeniedError();
+
+    const existing = await this.sessionRepo.findByUserId({
+      userId,
+      page: 1,
+      limit: 20,
+    });
+    const alreadyPassed = existing.sessions.some((s) => s.outcome === "PASSED" && s.id !== sessionId);
+    if (alreadyPassed) {
+      throw new InterviewAlreadyPassedError(
+        "Candidate has already passed the interview assessment. Starting a new interview is not permitted."
+      );
+    }
 
     if (session.status !== "INITIALIZING" && session.status !== "IN_PROGRESS") {
       throw new InvalidInterviewStateError(

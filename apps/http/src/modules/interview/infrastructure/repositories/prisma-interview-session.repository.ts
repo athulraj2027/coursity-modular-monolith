@@ -212,16 +212,70 @@ export class PrismaInterviewSessionRepository
     id: string,
     data: Partial<InterviewSessionEntity>
   ): Promise<InterviewSessionEntity> {
-    const session = await (this.prisma as any).interviewSession.update({
-      where: { id },
-      data: data as any,
-      include: {
-        template: true,
-        criteriaScores: true,
-        user: {
-          select: { id: true, name: true, email: true, role: true },
+    const session = await (this.prisma as any).$transaction(async (tx: any) => {
+      const updatedSession = await tx.interviewSession.update({
+        where: { id },
+        data: data as any,
+        include: {
+          template: true,
+          criteriaScores: true,
+          user: {
+            select: { id: true, name: true, email: true, role: true },
+          },
         },
-      },
+      });
+
+      // Synchronize TeacherProfile if outcome or overallScore is updated
+      if (data.outcome !== undefined || data.overallScore !== undefined || data.summaryFeedback !== undefined) {
+        let teacherProfileId = updatedSession.teacherProfileId;
+        if (!teacherProfileId) {
+          const tp = await tx.teacherProfile.findFirst({
+            where: {
+              profile: {
+                userId: updatedSession.userId,
+              },
+            },
+            select: { id: true },
+          });
+          if (tp) {
+            teacherProfileId = tp.id;
+            await tx.interviewSession.update({
+              where: { id: updatedSession.id },
+              data: { teacherProfileId: tp.id },
+            });
+            updatedSession.teacherProfileId = tp.id;
+          }
+        }
+
+        if (teacherProfileId) {
+          const effectiveOutcome = data.outcome || updatedSession.outcome;
+          const isPassed = effectiveOutcome === "PASSED";
+
+          const updateData: any = {
+            isInterviewPassed: isPassed,
+            lastInterviewAt: new Date(),
+          };
+
+          if (data.overallScore !== undefined && data.overallScore !== null) {
+            updateData.interviewScore = Number(data.overallScore);
+          } else if (updatedSession.overallScore !== null && updatedSession.overallScore !== undefined) {
+            updateData.interviewScore = Number(updatedSession.overallScore);
+          }
+
+          if (data.summaryFeedback !== undefined && data.summaryFeedback !== null) {
+            updateData.interviewFeedback = data.summaryFeedback;
+          } else if (updatedSession.summaryFeedback) {
+            updateData.interviewFeedback = updatedSession.summaryFeedback;
+          }
+
+          await tx.teacherProfile.update({
+            where: { id: teacherProfileId },
+            data: updateData,
+          });
+        }
+      }
+
+      return updatedSession;
     });
 
     return this.mapToEntity(session);
@@ -331,14 +385,34 @@ export class PrismaInterviewSessionRepository
         },
       });
 
-      // Also update TeacherProfile if attached and outcome is set
-      if (updatedSession.teacherProfileId) {
+      // Synchronize TeacherProfile
+      let teacherProfileId = updatedSession.teacherProfileId;
+      if (!teacherProfileId) {
+        const tp = await tx.teacherProfile.findFirst({
+          where: {
+            profile: {
+              userId: updatedSession.userId,
+            },
+          },
+          select: { id: true },
+        });
+        if (tp) {
+          teacherProfileId = tp.id;
+          await tx.interviewSession.update({
+            where: { id: updatedSession.id },
+            data: { teacherProfileId: tp.id },
+          });
+          updatedSession.teacherProfileId = tp.id;
+        }
+      }
+
+      if (teacherProfileId) {
         await tx.teacherProfile.update({
-          where: { id: updatedSession.teacherProfileId },
+          where: { id: teacherProfileId },
           data: {
             isInterviewPassed: data.outcome === "PASSED",
-            interviewScore: data.overallScore,
-            interviewFeedback: data.summaryFeedback,
+            interviewScore: Number(data.overallScore),
+            interviewFeedback: data.summaryFeedback ?? null,
             lastInterviewAt: new Date(),
             interviewAttempts: {
               increment: 1,

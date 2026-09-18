@@ -11,12 +11,14 @@ import {
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";
 import { interviewApi } from "../api/interview.api";
+import { useProfile } from "@/features/profile";
 import type {
   InterviewTemplate,
   InterviewType,
@@ -82,6 +84,9 @@ export const StartInterviewModal: React.FC<StartInterviewModalProps> = ({
   initialDifficulty = "INTERMEDIATE",
 }) => {
   const navigate = useNavigate();
+  const { data: profileData } = useProfile();
+  const isPassed = Boolean(profileData?.teacherProfile?.isInterviewPassed);
+
   const [type, setType] = useState<InterviewType>(defaultType);
   const [domain, setDomain] = useState<string>(initialDomain);
   const [difficulty, setDifficulty] = useState<InterviewDifficulty>(initialDifficulty);
@@ -116,6 +121,11 @@ export const StartInterviewModal: React.FC<StartInterviewModalProps> = ({
 
   const handleLaunch = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isPassed) {
+      toast.error("You have already passed the AI interview assessment.");
+      onClose();
+      return;
+    }
     if (!domain.trim() && !selectedTemplateId) {
       toast.error("Please enter an interview topic or domain.");
       return;
@@ -305,17 +315,31 @@ export const StartInterviewModal: React.FC<StartInterviewModalProps> = ({
           </div>
 
           {/* Info Banner */}
-          <div className="p-3.5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950/80 flex items-start gap-3 text-xs text-neutral-600 dark:text-neutral-400">
-            <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-            <div className="space-y-0.5">
-              <span className="font-semibold text-neutral-900 dark:text-neutral-200">
-                15-20 Min Real-Time Voice Assessment
-              </span>
-              <p className="text-[11px] leading-relaxed">
-                You will enter a hardware check lobby to verify your microphone and camera before starting the live voice session.
-              </p>
+          {isPassed ? (
+            <div className="p-3.5 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 flex items-start gap-3 text-xs text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <span className="font-semibold text-emerald-700 dark:text-emerald-300">
+                  AI Assessment Passed & Certified
+                </span>
+                <p className="text-[11px] leading-relaxed opacity-90">
+                  You have already passed the AI vetting interview. Starting a new interview session is restricted.
+                </p>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="p-3.5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950/80 flex items-start gap-3 text-xs text-neutral-600 dark:text-neutral-400">
+              <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <span className="font-semibold text-neutral-900 dark:text-neutral-200">
+                  15-20 Min Real-Time Voice Assessment
+                </span>
+                <p className="text-[11px] leading-relaxed">
+                  You will enter a hardware check lobby to verify your microphone and camera before starting the live voice session.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Action Footer */}
           <div className="flex items-center justify-end gap-3 pt-2">
@@ -327,24 +351,35 @@ export const StartInterviewModal: React.FC<StartInterviewModalProps> = ({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="gap-2 rounded-xl text-xs font-semibold bg-[#F42A18] hover:bg-[#d92212] text-white cursor-pointer px-5"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Initializing...</span>
-                </>
-              ) : (
-                <>
-                  <Bot className="w-3.5 h-3.5" />
-                  <span>Launch Assessment</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </>
-              )}
-            </Button>
+            {isPassed ? (
+              <Button
+                type="button"
+                onClick={onClose}
+                className="gap-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer px-5"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Assessment Passed</span>
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="gap-2 rounded-xl text-xs font-semibold bg-[#F42A18] hover:bg-[#d92212] text-white cursor-pointer px-5"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Initializing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Bot className="w-3.5 h-3.5" />
+                    <span>Launch Assessment</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </form>
       </div>

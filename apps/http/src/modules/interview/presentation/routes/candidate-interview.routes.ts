@@ -2,6 +2,7 @@ import { Router } from "express";
 import { CandidateInterviewController } from "../controllers/candidate-interview.controller";
 import authMiddleware from "@/app/middlewares/auth.middleware";
 import { isBlockedMiddleware } from "@/app/middlewares/is-blocked.middleware";
+import { restrictPassedInterviewMiddleware } from "../middlewares/restrict-passed-interview.middleware";
 
 export class CandidateInterviewRoutes {
   public router: Router;
@@ -21,13 +22,13 @@ export class CandidateInterviewRoutes {
     this.router.use(isBlockedMiddleware);
 
     // Create & List Sessions
-    this.router.post("/sessions", this.controller.createSession);
+    this.router.post("/sessions", restrictPassedInterviewMiddleware, this.controller.createSession);
     this.router.get("/my-interviews", this.controller.getMyInterviews);
 
     // Specific Session Endpoints
     this.router.get("/sessions/:id", this.controller.getSession);
-    this.router.post("/sessions/:id/start", this.controller.startSession);
-    this.router.post("/sessions/:id/realtime-token", this.controller.getRealtimeToken);
+    this.router.post("/sessions/:id/start", restrictPassedInterviewMiddleware, this.controller.startSession);
+    this.router.post("/sessions/:id/realtime-token", restrictPassedInterviewMiddleware, this.controller.getRealtimeToken);
 
     // Transcripts
     this.router.get("/sessions/:id/transcripts", this.controller.getTranscripts);

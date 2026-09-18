@@ -128,13 +128,20 @@ export const CandidateInterviewsPage: React.FC = () => {
             Refresh
           </Button>
 
-          <Button
-            onClick={() => setIsStartOpen(true)}
-            className="gap-2 rounded-xl text-xs font-semibold bg-[#F42A18] hover:bg-[#F42A18]/90 text-white shadow-md shadow-[#F42A18]/25 h-10 px-5 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Start New AI Interview</span>
-          </Button>
+          {isPassed ? (
+            <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-xs">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <span>Assessment Passed ({highestScore ? `${highestScore.toFixed(0)}%` : "Verified"})</span>
+            </div>
+          ) : (
+            <Button
+              onClick={() => setIsStartOpen(true)}
+              className="gap-2 rounded-xl text-xs font-semibold bg-[#F42A18] hover:bg-[#F42A18]/90 text-white shadow-md shadow-[#F42A18]/25 h-10 px-5 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Start New AI Interview</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -317,13 +324,15 @@ export const CandidateInterviewsPage: React.FC = () => {
               Launch your real-time AI interview session to verify your subject mastery and pedagogical skills.
             </p>
           </div>
-          <Button
-            onClick={() => setIsStartOpen(true)}
-            className="gap-2 rounded-xl text-xs font-semibold bg-[#F42A18] hover:bg-[#F42A18]/90 text-white cursor-pointer px-5"
-          >
-            <Bot className="w-4 h-4" />
-            <span>Launch AI Interview</span>
-          </Button>
+          {!isPassed && (
+            <Button
+              onClick={() => setIsStartOpen(true)}
+              className="gap-2 rounded-xl text-xs font-semibold bg-[#F42A18] hover:bg-[#F42A18]/90 text-white cursor-pointer px-5"
+            >
+              <Bot className="w-4 h-4" />
+              <span>Launch AI Interview</span>
+            </Button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

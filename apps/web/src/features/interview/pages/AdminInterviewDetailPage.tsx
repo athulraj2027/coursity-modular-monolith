@@ -105,6 +105,8 @@ export const AdminInterviewDetailPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-interview-session", id] });
       queryClient.invalidateQueries({ queryKey: ["admin-interview-audit", id] });
       queryClient.invalidateQueries({ queryKey: ["admin-interviews"] });
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to apply decision");

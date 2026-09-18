@@ -75,19 +75,30 @@ export const TeacherDashboardPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            <Button
-              onClick={handleStartAiInterview}
-              disabled={isStartingInterview}
-              className="gap-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-[#F42A18] to-rose-600 hover:from-[#d92212] hover:to-rose-700 text-white px-5 py-3 shadow-md shadow-[#F42A18]/25 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              {isStartingInterview ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Bot className="w-4 h-4" />
-              )}
-              <span>{isStartingInterview ? "Starting..." : "Start AI Interview"}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Button>
+            {teacherProfile?.isInterviewPassed ? (
+              <Button
+                variant="outline"
+                onClick={() => navigate("/teachers/interviews")}
+                className="gap-2 rounded-xl text-xs sm:text-sm font-semibold border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-4 py-2.5 cursor-pointer shadow-xs"
+              >
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <span>AI Vetting Passed {teacherProfile.interviewScore ? `(${teacherProfile.interviewScore}%)` : ""}</span>
+              </Button>
+            ) : (
+              <Button
+                onClick={handleStartAiInterview}
+                disabled={isStartingInterview}
+                className="gap-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-[#F42A18] to-rose-600 hover:from-[#d92212] hover:to-rose-700 text-white px-5 py-3 shadow-md shadow-[#F42A18]/25 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {isStartingInterview ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Bot className="w-4 h-4" />
+                )}
+                <span>{isStartingInterview ? "Starting..." : "Start AI Interview"}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            )}
           </div>
         </div>
       </div>
