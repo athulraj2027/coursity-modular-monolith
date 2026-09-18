@@ -7,8 +7,10 @@ import { renderTeacherStatusEmail, TeacherApprovalStatus } from "../templates/te
 import { renderWelcomeEmail } from "../templates/welcome.template";
 import { renderPasswordChangedEmail } from "../templates/password-changed.template";
 
-export class EmailService implements IEmailService {
-    constructor(private readonly queueEmailUseCase: QueueEmailUseCase) { }
+export class EmailService extends IEmailService {
+    constructor(private readonly queueEmailUseCase: QueueEmailUseCase) {
+        super();
+    }
 
     async sendSignupOtp(email: string, otp: string, name?: string): Promise<void> {
         const { html, text, subject } = renderSignupOtpEmail({ name, otp });

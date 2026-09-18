@@ -35,15 +35,19 @@ import { createAuthMiddleware } from "@/app/middlewares/auth.middleware";
 import { createIsBlockedMiddleware } from "@/app/middlewares/is-blocked.middleware";
 import { AuthRoutes } from "./presentation/routes/auth.routes";
 
+import { PasswordService } from "./domain/services/password.service";
+import { TokenService } from "./domain/services/token.service";
+import { OAuthService } from "./domain/services/oauth.service";
+
 import { emailService } from "@/modules/email";
 
 // 1. Repositories & Services
 const userRepository = new PrismaUserRepository();
-const passwordService = new BcryptPasswordService();
+export const passwordService: PasswordService = new BcryptPasswordService();
 const otpRepository = new RedisOtpRepository();
-const tokenRepository = new RedisTokenRepository();
-const tokenService = new JwtTokenService();
-const oauthService = new GoogleOAuthService();
+export const tokenRepository = new RedisTokenRepository();
+export const tokenService: TokenService = new JwtTokenService();
+export const oauthService: OAuthService = new GoogleOAuthService();
 
 // 2. Use Cases
 const signupUser = new SignupUser(userRepository, passwordService, otpRepository, emailService);
@@ -94,5 +98,9 @@ const authRoutes = new AuthRoutes(
 
 export * from "./application/dtos";
 export * from "./presentation/validators";
+export * from "./domain/services/password.service";
+export * from "./domain/services/token.service";
+export * from "./domain/services/oauth.service";
 export const authRouter = authRoutes.router;
 export default authRouter;
+

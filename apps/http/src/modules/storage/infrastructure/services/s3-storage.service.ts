@@ -8,7 +8,7 @@ import { StorageError } from "../../domain/errors/storage.error";
 import { createS3Client, isS3Configured } from "../config/s3.config";
 import { env } from "@/app/config/env";
 
-export class S3StorageService implements IStorageService {
+export class S3StorageService extends IStorageService {
     private readonly s3Client: S3Client | null;
     private readonly bucketName: string;
     private readonly region: string;
@@ -17,6 +17,7 @@ export class S3StorageService implements IStorageService {
     private readonly uploadsDir: string;
 
     constructor(s3ClientOverride?: S3Client | null) {
+        super();
         this.s3Client = s3ClientOverride !== undefined ? s3ClientOverride : createS3Client();
         this.bucketName = env.AWS_S3_BUCKET_NAME || "";
         this.region = env.AWS_REGION || "us-east-1";

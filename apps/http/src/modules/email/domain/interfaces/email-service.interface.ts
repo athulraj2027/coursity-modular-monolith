@@ -1,20 +1,20 @@
 import { EmailPayload } from "../entities/email.entity";
 
-export interface IEmailService {
+export abstract class IEmailService {
     /**
      * Send OTP email for user registration verification
      */
-    sendSignupOtp(email: string, otp: string, name?: string): Promise<void>;
+    abstract sendSignupOtp(email: string, otp: string, name?: string): Promise<void>;
 
     /**
      * Send OTP email for password reset
      */
-    sendPasswordResetOtp(email: string, otp: string, name?: string): Promise<void>;
+    abstract sendPasswordResetOtp(email: string, otp: string, name?: string): Promise<void>;
 
     /**
      * Send notification email to an instructor when their verification status changes
      */
-    sendTeacherStatusUpdate(
+    abstract sendTeacherStatusUpdate(
         email: string,
         name: string,
         status: "VERIFIED" | "IN_PROGRESS" | "REVOKED" | "REDO" | "PENDING",
@@ -24,16 +24,15 @@ export interface IEmailService {
     /**
      * Send welcome email after account confirmation
      */
-    sendWelcomeEmail(email: string, name: string): Promise<void>;
+    abstract sendWelcomeEmail(email: string, name: string): Promise<void>;
 
     /**
      * Send notification email when user password has been changed
      */
-    sendPasswordChangedNotification(email: string, name?: string): Promise<void>;
+    abstract sendPasswordChangedNotification(email: string, name?: string): Promise<void>;
 
     /**
      * Send generic / custom formatted email
      */
-    sendCustomEmail(payload: EmailPayload): Promise<void>;
+    abstract sendCustomEmail(payload: EmailPayload): Promise<void>;
 }
-

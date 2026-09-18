@@ -2,12 +2,13 @@ import { OAuthService, OAuthUserProfile } from "../../domain/services/oauth.serv
 import { env } from "@/app/config/env";
 import { BadRequestError, UnauthorizedError } from "@/app/errors";
 
-export class GoogleOAuthService implements OAuthService {
+export class GoogleOAuthService extends OAuthService {
     private readonly clientId: string;
     private readonly clientSecret: string;
     private readonly redirectUri: string;
 
     constructor() {
+        super();
         this.clientId = env.GOOGLE_CLIENT_ID || "";
         this.clientSecret = env.GOOGLE_CLIENT_SECRET || "";
         this.redirectUri = env.GOOGLE_REDIRECT_URI || "http://localhost:3000/api/auth/google/callback";

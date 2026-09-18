@@ -4,10 +4,11 @@ import { EmailPayload, EmailSendResult } from "../../domain/entities/email.entit
 import { emailConfig } from "../config/email.config";
 import { EmailSendError } from "../../domain/errors/email.error";
 
-export class NodemailerTransport implements IEmailTransport {
+export class NodemailerTransport extends IEmailTransport {
     private transporter: Transporter | null = null;
 
     constructor() {
+        super();
         if (emailConfig.isConfigured) {
             this.transporter = nodemailer.createTransport({
                 host: emailConfig.smtp.host,

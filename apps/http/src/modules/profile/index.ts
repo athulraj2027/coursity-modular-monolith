@@ -24,6 +24,7 @@ import { ProfileRoutes } from "./presentation/routes/profile.routes";
 const profileRepository = new PrismaProfileRepository();
 
 import { emailService } from "@/modules/email";
+import { passwordService } from "@/modules/auth";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
 
 // 2. Use Cases
@@ -32,7 +33,7 @@ const updateProfile = new UpdateProfile(profileRepository);
 const updateStudentProfile = new UpdateStudentProfile(profileRepository);
 const updateTeacherProfile = new UpdateTeacherProfile(profileRepository);
 const submitTeacherVerification = new SubmitTeacherVerification(profileRepository, emailService);
-const changePassword = new ChangePassword(defaultPrisma, emailService);
+const changePassword = new ChangePassword(defaultPrisma, passwordService, emailService);
 
 // 3. Controllers
 const getProfileController = new GetProfileController(getProfile);

@@ -1,13 +1,14 @@
-import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
 import { IEmailService } from "@/modules/email";
+import { PasswordService } from "@/modules/auth";
 import { BadRequestError, NotFoundError } from "@/app/errors";
 import { ChangePasswordDto, ChangePasswordResultDto } from "../../domain/dtos/change-password.dto";
 
 export class ChangePassword {
     constructor(
         private readonly prisma: PrismaClient = defaultPrisma,
+        private readonly passwordService: PasswordService,
         private readonly emailService: IEmailService
     ) {}
 
@@ -39,20 +40,20 @@ export class ChangePassword {
                 throw new BadRequestError("Current password is required to update your password");
             }
 
-            const isCurrentValid = await bcrypt.compare(dto.currentPassword, user.password);
+            const isCurrentValid = await this.passwordService.compare(dto.currentPassword, user.password);
             if (!isCurrentValid) {
                 throw new BadRequestError("The current password you entered is incorrect");
             }
 
             // Check if new password matches current password
-            const isSame = await bcrypt.compare(dto.newPassword, user.password);
+            const isSame = await this.passwordService.compare(dto.newPassword, user.password);
             if (isSame) {
                 throw new BadRequestError("New password cannot be the same as your current password");
             }
         }
 
         // 3. Hash the new password securely
-        const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+        const hashedPassword = await this.passwordService.hash(dto.newPassword);
 
         // 4. Update password in database
         await this.prisma.user.update({
