@@ -3,6 +3,7 @@ import {
   profileApi,
   type UpdateStudentProfilePayload,
   type UpdateTeacherProfilePayload,
+  type ChangePasswordPayload,
 } from "../api/profile.api"
 import { toast } from "@/lib/toast"
 
@@ -70,3 +71,17 @@ export function useSubmitTeacherVerification() {
     },
   })
 }
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (payload: ChangePasswordPayload) =>
+      profileApi.changePassword(payload),
+    onSuccess: (res) => {
+      toast.success(res.message || "Password updated successfully")
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "Failed to update password")
+    },
+  })
+}
+

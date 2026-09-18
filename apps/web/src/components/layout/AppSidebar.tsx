@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom"
-import { useLogout } from "@/features/auth"
+import { useLogout, useCurrentUser } from "@/features/auth"
+import { useProfile } from "@/features/profile"
 import {
   Sidebar,
   SidebarContent,
@@ -55,8 +56,13 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   const location = useLocation()
   const navigate = useNavigate()
   const logout = useLogout()
+  const { data: currentUser } = useCurrentUser()
+  const { data: profileData } = useProfile()
   const { state } = useSidebar()
   const isCollapsed = state === "collapsed"
+
+  const isGoogleAuth =
+    currentUser?.authProvider === "GOOGLE" || profileData?.authProvider === "GOOGLE"
 
   const handleSignOut = async () => {
     try {
@@ -74,12 +80,22 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
     }
   }
 
-  const navGroups: SidebarNavGroup[] =
+  const rawNavGroups: SidebarNavGroup[] =
     role === "admin"
       ? ADMIN_SIDEBAR_GROUPS
       : role === "teacher"
       ? TEACHER_SIDEBAR_GROUPS
       : STUDENT_SIDEBAR_GROUPS
+
+  const navGroups: SidebarNavGroup[] = rawNavGroups.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => {
+      if (isGoogleAuth && (item.url.includes("/password") || item.title.toLowerCase().includes("password"))) {
+        return false
+      }
+      return true
+    }),
+  }))
 
   return (
     <Sidebar collapsible="icon" className="border-r border-neutral-200/80 dark:border-neutral-900">
@@ -198,7 +214,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               role === "teacher"
                 ? "/teachers/profile"
                 : role === "admin"
-                ? "/admin/dashboard"
+                ? "/admin/profile"
                 : "/students/profile"
             }
             className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-85 transition-opacity"

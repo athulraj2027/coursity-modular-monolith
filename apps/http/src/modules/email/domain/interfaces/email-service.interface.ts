@@ -27,7 +27,13 @@ export interface IEmailService {
     sendWelcomeEmail(email: string, name: string): Promise<void>;
 
     /**
+     * Send notification email when user password has been changed
+     */
+    sendPasswordChangedNotification(email: string, name?: string): Promise<void>;
+
+    /**
      * Send generic / custom formatted email
      */
     sendCustomEmail(payload: EmailPayload): Promise<void>;
 }
+

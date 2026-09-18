@@ -5,6 +5,7 @@ import { renderSignupOtpEmail } from "../templates/signup-otp.template";
 import { renderResetPasswordOtpEmail } from "../templates/reset-password-otp.template";
 import { renderTeacherStatusEmail, TeacherApprovalStatus } from "../templates/teacher-status.template";
 import { renderWelcomeEmail } from "../templates/welcome.template";
+import { renderPasswordChangedEmail } from "../templates/password-changed.template";
 
 export class EmailService implements IEmailService {
     constructor(private readonly queueEmailUseCase: QueueEmailUseCase) { }
@@ -42,6 +43,24 @@ export class EmailService implements IEmailService {
             payload,
             metadata: { email, name, action: "password_reset" },
             priority: 1, // High priority for OTPs
+        });
+    }
+
+    async sendPasswordChangedNotification(email: string, name?: string): Promise<void> {
+        const { html, text, subject } = renderPasswordChangedEmail({ name, email });
+
+        const payload: EmailPayload = {
+            to: email,
+            subject,
+            html,
+            text,
+        };
+
+        await this.queueEmailUseCase.execute({
+            templateType: "PASSWORD_CHANGED",
+            payload,
+            metadata: { email, name, action: "password_changed_notification" },
+            priority: 1, // High priority for security notifications
         });
     }
 
@@ -94,3 +113,4 @@ export class EmailService implements IEmailService {
         });
     }
 }
+

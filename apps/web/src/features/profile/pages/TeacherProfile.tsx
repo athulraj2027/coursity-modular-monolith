@@ -625,6 +625,15 @@ export const TeacherProfilePage: React.FC = () => {
           <Edit3 className="w-4 h-4" />
           Edit Profile
         </button>
+        {profileData?.authProvider !== "GOOGLE" && (
+          <button
+            onClick={() => navigate("/teachers/password")}
+            className="flex items-center gap-2 pb-3 text-sm font-semibold transition-all border-b-2 border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white cursor-pointer"
+          >
+            <KeyRound className="w-4 h-4" />
+            Password & Security
+          </button>
+        )}
       </div>
 
       {/* Maximum Submissions Reached Banner */}

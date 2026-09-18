@@ -12,6 +12,7 @@ import {
   Layers,
   Cpu,
   Bot,
+  KeyRound,
 } from "lucide-react"
 
 export interface SidebarNavItem {
@@ -53,6 +54,11 @@ export const STUDENT_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         icon: User,
       },
       {
+        title: "Password & Security",
+        url: "/students/password",
+        icon: KeyRound,
+      },
+      {
         title: "Settings",
         url: "/settings",
         icon: Settings,
@@ -84,7 +90,7 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
     ],
   },
   {
-    label: "Platform",
+    label: "Platform & Account",
     items: [
       {
         title: "Community & Cohorts",
@@ -95,6 +101,11 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Profile",
         url: "/teachers/profile",
         icon: User,
+      },
+      {
+        title: "Password & Security",
+        url: "/teachers/password",
+        icon: KeyRound,
       },
       {
         title: "Settings",
@@ -150,8 +161,18 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
     ],
   },
   {
-    label: "System & Telemetry",
+    label: "Account & System",
     items: [
+      {
+        title: "Administrator Profile",
+        url: "/admin/profile",
+        icon: User,
+      },
+      {
+        title: "Password & Security",
+        url: "/admin/password",
+        icon: KeyRound,
+      },
       {
         title: "System Health & Nodes",
         url: "/admin/health",
@@ -176,3 +197,4 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
     ],
   },
 ]
+
