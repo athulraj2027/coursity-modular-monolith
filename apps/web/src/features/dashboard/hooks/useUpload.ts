@@ -23,8 +23,8 @@ export function useUploadFile() {
         },
       })
     },
-    onError: (error: any) => {
-      toast.error(error?.message || "Failed to upload file")
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to upload file")
     },
   })
 

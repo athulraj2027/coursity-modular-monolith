@@ -80,9 +80,10 @@ export class S3StorageService implements IStorageService {
                     key: cleanKey,
                     expiresIn,
                 };
-            } catch (error: any) {
+            } catch (error: unknown) {
+                const errMsg = error instanceof Error ? error.message : "Failed to generate storage upload URL";
                 console.error("[S3StorageService] Failed to generate presigned PUT URL:", error);
-                throw new StorageError(error?.message || "Failed to generate storage upload URL");
+                throw new StorageError(errMsg);
             }
         }
 
@@ -110,9 +111,10 @@ export class S3StorageService implements IStorageService {
 
                 await this.s3Client.send(command);
                 return true;
-            } catch (error: any) {
+            } catch (error: unknown) {
+                const errMsg = error instanceof Error ? error.message : "Failed to delete file from storage";
                 console.error("[S3StorageService] Failed to delete file from S3:", error);
-                throw new StorageError(error?.message || "Failed to delete file from storage");
+                throw new StorageError(errMsg);
             }
         }
 
@@ -146,9 +148,10 @@ export class S3StorageService implements IStorageService {
 
                 await this.s3Client.send(command);
                 return this.getPublicUrl(cleanKey);
-            } catch (error: any) {
+            } catch (error: unknown) {
+                const errMsg = error instanceof Error ? error.message : "Failed to upload file to storage";
                 console.error("[S3StorageService] Failed to upload buffer to S3:", error);
-                throw new StorageError(error?.message || "Failed to upload file to storage");
+                throw new StorageError(errMsg);
             }
         }
 

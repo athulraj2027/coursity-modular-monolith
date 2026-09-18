@@ -13,12 +13,13 @@ import {
   Cpu,
   Bot,
   KeyRound,
+  type LucideIcon,
 } from "lucide-react"
 
 export interface SidebarNavItem {
   title: string
   url: string
-  icon: any
+  icon: LucideIcon
   badge?: string
   roles?: ("student" | "teacher" | "admin")[]
 }

@@ -47,18 +47,18 @@ export class PrismaProfileRepository implements ProfileRepository {
                     expertise: teacherProfile.expertise,
                     qualifications: teacherProfile.qualifications,
                     experienceYears: teacherProfile.experienceYears,
-                    resume: (teacherProfile as any).resume ?? null,
+                    resume: teacherProfile.resume ?? null,
                     linkedinUrl: teacherProfile.linkedinUrl,
                     twitterUrl: teacherProfile.twitterUrl,
                     websiteUrl: teacherProfile.websiteUrl,
                     isApproved: isTeacherVerified,
                     approvalStatus:
-                        (teacherProfile.approvalStatus as any) ||
+                        teacherProfile.approvalStatus ||
                         (teacherProfile.isApproved ? "VERIFIED" : "PENDING"),
                     rejectionReason: teacherProfile.rejectionReason ?? null,
                     submissionCount: isTeacherVerified
                         ? 0
-                        : ((teacherProfile as any).submissionCount ?? 0),
+                        : (teacherProfile.submissionCount ?? 0),
                     isInterviewPassed: Boolean(teacherProfile.isInterviewPassed),
                     interviewScore:
                         teacherProfile.interviewScore !== null &&
@@ -114,11 +114,11 @@ export class PrismaProfileRepository implements ProfileRepository {
         data: Partial<Omit<TeacherProfile, "id" | "profileId" | "createdAt" | "updatedAt">>
     ): Promise<TeacherProfile> {
         const isVerified =
-            (data as any).approvalStatus === "VERIFIED" || (data as any).isApproved === true;
-        const effectiveIsApproved = (data as any).isApproved !== undefined
-            ? Boolean((data as any).isApproved)
-            : (data as any).approvalStatus !== undefined
-            ? (data as any).approvalStatus === "VERIFIED"
+            data.approvalStatus === "VERIFIED" || data.isApproved === true;
+        const effectiveIsApproved = data.isApproved !== undefined
+            ? Boolean(data.isApproved)
+            : data.approvalStatus !== undefined
+            ? data.approvalStatus === "VERIFIED"
             : false;
 
         return await this.prisma.teacherProfile.upsert({
@@ -133,9 +133,9 @@ export class PrismaProfileRepository implements ProfileRepository {
                 twitterUrl: data.twitterUrl ?? null,
                 websiteUrl: data.websiteUrl ?? null,
                 isApproved: effectiveIsApproved,
-                approvalStatus: ((data as any).approvalStatus as any) ?? "PENDING",
-                rejectionReason: (data as any).rejectionReason ?? null,
-                submissionCount: isVerified ? 0 : ((data as any).submissionCount ?? 0),
+                approvalStatus: data.approvalStatus ?? "PENDING",
+                rejectionReason: data.rejectionReason ?? null,
+                submissionCount: isVerified ? 0 : (data.submissionCount ?? 0),
             },
             update: {
                 ...(data.expertise !== undefined ? { expertise: data.expertise } : {}),
@@ -145,17 +145,17 @@ export class PrismaProfileRepository implements ProfileRepository {
                 ...(data.linkedinUrl !== undefined ? { linkedinUrl: data.linkedinUrl } : {}),
                 ...(data.twitterUrl !== undefined ? { twitterUrl: data.twitterUrl } : {}),
                 ...(data.websiteUrl !== undefined ? { websiteUrl: data.websiteUrl } : {}),
-                ...((data as any).isApproved !== undefined
-                    ? { isApproved: Boolean((data as any).isApproved) }
-                    : (data as any).approvalStatus !== undefined
-                    ? { isApproved: (data as any).approvalStatus === "VERIFIED" }
+                ...(data.isApproved !== undefined
+                    ? { isApproved: Boolean(data.isApproved) }
+                    : data.approvalStatus !== undefined
+                    ? { isApproved: data.approvalStatus === "VERIFIED" }
                     : {}),
-                ...((data as any).approvalStatus !== undefined ? { approvalStatus: (data as any).approvalStatus as any } : {}),
-                ...((data as any).rejectionReason !== undefined ? { rejectionReason: (data as any).rejectionReason } : {}),
+                ...(data.approvalStatus !== undefined ? { approvalStatus: data.approvalStatus } : {}),
+                ...(data.rejectionReason !== undefined ? { rejectionReason: data.rejectionReason } : {}),
                 ...(isVerified
                     ? { submissionCount: 0 }
-                    : (data as any).submissionCount !== undefined
-                    ? { submissionCount: (data as any).submissionCount }
+                    : data.submissionCount !== undefined
+                    ? { submissionCount: data.submissionCount }
                     : {}),
             },
         });

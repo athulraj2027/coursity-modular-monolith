@@ -98,8 +98,9 @@ export const ChangePasswordPage: React.FC<ChangePasswordPageProps> = ({ role = "
       setNewPassword("")
       setConfirmPassword("")
       toast.success("Your password has been changed successfully! A confirmation email has been dispatched.")
-    } catch (err: any) {
-      const msg = err?.message || err?.data?.message || "Failed to update password. Please verify your current password."
+    } catch (err: unknown) {
+      const errorObj = err as { message?: string; data?: { message?: string } }
+      const msg = errorObj?.data?.message || errorObj?.message || (err instanceof Error ? err.message : "Failed to update password. Please verify your current password.")
       setErrorMsg(msg)
     }
   }

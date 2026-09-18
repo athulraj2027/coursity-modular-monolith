@@ -239,17 +239,18 @@ export const uploadApi = {
     try {
       await uploadApi.uploadDirectToUrl(uploadUrl, blob, fileType, onProgress)
       return fileUrl
-    } catch (directErr: any) {
-      console.warn("Direct upload to primary URL failed, attempting local fallback:", directErr?.message)
+    } catch (directErr: unknown) {
+      const directErrMsg = directErr instanceof Error ? directErr.message : "Storage error"
+      console.warn("Direct upload to primary URL failed, attempting local fallback:", directErrMsg)
 
       // 3. Fallback to Local Storage endpoint if key is available
       if (key) {
         try {
           const localUrl = await uploadApi.uploadDirectToLocal(key, blob, fileType, onProgress)
           return localUrl
-        } catch (localErr: any) {
+        } catch (localErr: unknown) {
           console.error("Local storage fallback failed:", localErr)
-          throw new Error(`Upload failed: ${directErr?.message || "Storage error"}. Local fallback also failed.`)
+          throw new Error(`Upload failed: ${directErrMsg}. Local fallback also failed.`)
         }
       }
 

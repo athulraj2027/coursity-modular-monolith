@@ -29,8 +29,8 @@ export function useUpdateStudentProfile() {
       queryClient.invalidateQueries({ queryKey: ["currentUser"] })
       toast.success("Student profile updated successfully")
     },
-    onError: (error: any) => {
-      toast.error(error?.message || "Failed to update student profile")
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update student profile")
     },
   })
 }
@@ -47,8 +47,8 @@ export function useUpdateTeacherProfile() {
       queryClient.invalidateQueries({ queryKey: ["currentUser"] })
       toast.success("Teacher profile updated successfully")
     },
-    onError: (error: any) => {
-      toast.error(error?.message || "Failed to update teacher profile")
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update teacher profile")
     },
   })
 }
@@ -66,8 +66,8 @@ export function useSubmitTeacherVerification() {
       queryClient.invalidateQueries({ queryKey: ["users"] })
       toast.success(res.message || "Application submitted for verification successfully")
     },
-    onError: (error: any) => {
-      toast.error(error?.message || "Failed to submit application for verification")
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to submit application for verification")
     },
   })
 }
@@ -79,8 +79,8 @@ export function useChangePassword() {
     onSuccess: (res) => {
       toast.success(res.message || "Password updated successfully")
     },
-    onError: (error: any) => {
-      toast.error(error?.message || "Failed to update password")
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update password")
     },
   })
 }

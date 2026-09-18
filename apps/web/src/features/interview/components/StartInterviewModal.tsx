@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   AlertCircle,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +38,7 @@ const INTERVIEW_TYPES: {
   value: InterviewType;
   label: string;
   desc: string;
-  icon: any;
+  icon: LucideIcon;
 }[] = [
   {
     value: "TEACHER_VETTING",
@@ -148,8 +149,8 @@ export const StartInterviewModal: React.FC<StartInterviewModalProps> = ({
       } else {
         toast.error(res.message || "Failed to start interview session");
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to initialize interview session");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to initialize interview session");
     } finally {
       setIsSubmitting(false);
     }

@@ -63,7 +63,7 @@ export const AdminProfilePage: React.FC = () => {
     }
   }, [profileData])
 
-  const handleInputChange = (field: keyof AdminFormData, value: any) => {
+  const handleInputChange = <K extends keyof AdminFormData>(field: K, value: AdminFormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     if (fieldErrors[field]) {
       setFieldErrors((prev) => {
@@ -93,8 +93,8 @@ export const AdminProfilePage: React.FC = () => {
         bio: formData.bio ? formData.bio.trim() : null,
       })
       setActiveTab("overview")
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to update admin profile")
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to update admin profile")
     }
   }
 
@@ -128,7 +128,7 @@ export const AdminProfilePage: React.FC = () => {
         <div className="space-y-1">
           <h3 className="text-base font-bold text-neutral-900 dark:text-white">Unable to Load Profile</h3>
           <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
-            {(error as any)?.message || "An unexpected error occurred while fetching your administrator account."}
+            {error instanceof Error ? error.message : "An unexpected error occurred while fetching your administrator account."}
           </p>
         </div>
         <Button
