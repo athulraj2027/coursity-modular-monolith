@@ -18,8 +18,8 @@ export class VadService extends EventEmitter {
     super();
     this.config = {
       sampleRate: config?.sampleRate || 16000,
-      silenceThresholdRms: config?.silenceThresholdRms || 0.018,
-      silenceDurationMs: config?.silenceDurationMs || 700,
+      silenceThresholdRms: config?.silenceThresholdRms || 0.006,
+      silenceDurationMs: config?.silenceDurationMs || 900,
       minSpeechDurationMs: config?.minSpeechDurationMs || 250,
     };
   }
@@ -80,5 +80,9 @@ export class VadService extends EventEmitter {
     this.isSpeaking = false;
     this.lastSpeechTimestamp = 0;
     this.speechStartTimestamp = 0;
+  }
+
+  getIsSpeaking(): boolean {
+    return this.isSpeaking;
   }
 }

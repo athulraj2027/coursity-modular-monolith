@@ -26,22 +26,28 @@ export async function questionNode(
     performanceTrend: state.performanceTrend,
   });
 
+  const fallbackQuestion = `How do you apply best practices, manage trade-offs, and handle core technical challenges when working with ${targetTopic}?`;
+  const questionText =
+    decision && decision.question && decision.question !== "undefined"
+      ? decision.question
+      : fallbackQuestion;
+
   const isGreeting = state.nextAction === "GREETING" || state.questionIndex === 0;
-  let responseText = decision.question;
+  let responseText = questionText;
 
   if (isGreeting) {
-    responseText = `Hello ${state.candidate.name}! Welcome to your formal technical interview for ${state.domain}. I am Aura, your AI evaluator today. We will cover ${state.totalQuestions} key areas. Let's begin with our first question: ${decision.question}`;
+    responseText = `Hello ${state.candidate.name || "there"}! Welcome to your formal technical interview for ${state.domain}. I am Aura, your AI evaluator today. We will cover ${state.totalQuestions} key areas. Let's begin with our first question: ${questionText}`;
   }
 
   const newQuestionIndex = isGreeting ? 1 : state.questionIndex + 1;
 
   return {
-    currentQuestion: decision.question,
+    currentQuestion: questionText,
     responseText,
     questionIndex: newQuestionIndex,
     consecutiveFollowUps: 0,
     coveredTopics: [targetTopic],
-    previousQuestions: [decision.question],
+    previousQuestions: [questionText],
     phase: "QUESTION_ACTIVE",
     conversation: [
       {

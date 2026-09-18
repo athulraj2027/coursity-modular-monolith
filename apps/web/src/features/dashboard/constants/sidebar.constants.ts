@@ -11,6 +11,7 @@ import {
   Zap,
   Layers,
   Cpu,
+  Bot,
 } from "lucide-react"
 
 export interface SidebarNavItem {
@@ -34,7 +35,13 @@ export const STUDENT_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Dashboard",
         url: "/students/dashboard",
         icon: LayoutDashboard,
-      }
+      },
+      {
+        title: "AI Interviews",
+        url: "/interviews/my-interviews",
+        icon: Bot,
+        badge: "AI",
+      },
     ],
   },
   {
@@ -62,6 +69,12 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Dashboard",
         url: "/teachers/dashboard",
         icon: LayoutDashboard,
+      },
+      {
+        title: "AI Vetting Interviews",
+        url: "/interviews/my-interviews",
+        icon: Bot,
+        badge: "AI",
       },
       {
         title: "Plans & Billing",

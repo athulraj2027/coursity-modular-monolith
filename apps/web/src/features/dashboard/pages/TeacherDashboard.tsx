@@ -1,4 +1,5 @@
-import React from "react"
+import React, { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   Bot,
   CheckCircle2,
@@ -10,9 +11,47 @@ import {
   ScreenShare,
   Star,
   Users,
+  ArrowRight,
+  Loader2,
 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { interviewApi } from "@/features/interview"
+import { useProfile } from "@/features/profile"
+import { toast } from "@/lib/toast"
 
 export const TeacherDashboardPage: React.FC = () => {
+  const navigate = useNavigate()
+  const [isStartingInterview, setIsStartingInterview] = useState(false)
+  const { data: profileData } = useProfile()
+  const teacherProfile = profileData?.teacherProfile
+
+  const handleStartAiInterview = async () => {
+    try {
+      setIsStartingInterview(true)
+      const primaryDomain =
+        teacherProfile?.expertise?.[0] ||
+        teacherProfile?.qualifications ||
+        "Software Engineering & Computer Science"
+
+      const res = await interviewApi.createSession({
+        type: "TEACHER_VETTING",
+        domain: primaryDomain,
+        difficulty: "INTERMEDIATE",
+      })
+
+      if (res.success && res.data) {
+        toast.success("AI Vetting Interview initialized!")
+        navigate(`/interview/${res.data.id}/setup`)
+      } else {
+        toast.error(res.message || "Failed to initialize interview")
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to start AI interview session")
+    } finally {
+      setIsStartingInterview(false)
+    }
+  }
+
   return (
     <div className="flex flex-1 flex-col gap-6 w-full">
       {/* Welcome Banner */}
@@ -21,17 +60,35 @@ export const TeacherDashboardPage: React.FC = () => {
           aria-hidden="true"
           className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[#F42A18]/10 blur-3xl"
         />
-        <div className="relative z-10 max-w-xl space-y-2">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wider bg-[#F42A18]/10 text-[#F42A18] border border-[#F42A18]/20">
-            <GraduationCap className="w-3.5 h-3.5" />
-            Verified Creator & Mentor
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
-            Creator Studio Hub
-          </h1>
-          <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
-            Track learner engagement, manage AI automated evaluation rubrics, and host interactive live coding cohorts.
-          </p>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="max-w-xl space-y-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wider bg-[#F42A18]/10 text-[#F42A18] border border-[#F42A18]/20">
+              <GraduationCap className="w-3.5 h-3.5" />
+              Verified Creator & Mentor
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
+              Creator Studio Hub
+            </h1>
+            <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+              Track learner engagement, conduct real-time AI vetting assessments, and host interactive live coding cohorts.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <Button
+              onClick={handleStartAiInterview}
+              disabled={isStartingInterview}
+              className="gap-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-[#F42A18] to-rose-600 hover:from-[#d92212] hover:to-rose-700 text-white px-5 py-3 shadow-md shadow-[#F42A18]/25 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              {isStartingInterview ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Bot className="w-4 h-4" />
+              )}
+              <span>{isStartingInterview ? "Starting..." : "Start AI Interview"}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         </div>
       </div>
 

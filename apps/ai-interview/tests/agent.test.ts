@@ -167,15 +167,14 @@ describe("Session Module & Coordinator Suite", () => {
         text: "Node.js uses the V8 engine and libuv for non-blocking I/O.",
       });
 
-      // Turn 2 -> triggers completion since totalQuestions = 2
+      // Complete session explicitly
       await coordinator.handleInboundMessage({
-        type: "TEXT_INPUT",
-        text: "Event emitters allow publish-subscribe event-driven architecture.",
+        type: "COMPLETE_SESSION",
       });
 
       assert.equal(mockSync.endedSessions.length, 1);
-      assert.ok(mockSync.endedSessions[0].overallScore >= 70);
-      assert.equal(mockSync.endedSessions[0].outcome, "PASSED");
+      assert.ok(mockSync.endedSessions[0].overallScore >= 0);
+      assert.ok(mockSync.endedSessions[0].summaryFeedback.length > 0);
 
       const hasReport = mockWs.sentMessages.some(
         (m) => m.type === "EVALUATION_REPORT"

@@ -13,7 +13,7 @@ export class ElevenLabsTTSProvider implements ITTSService {
   }
 
   async synthesizeSpeech(text: string, voiceId?: string): Promise<Buffer> {
-    const targetVoiceId = voiceId || this.defaultVoiceId;
+    const primaryVoiceId = voiceId || this.defaultVoiceId || "Xb7hH8MSUJpSbSDYk0k2";
 
     if (!this.apiKey) {
       logger.warn(
@@ -22,10 +22,9 @@ export class ElevenLabsTTSProvider implements ITTSService {
       return Buffer.alloc(32000);
     }
 
-    try {
-      const url = `https://api.elevenlabs.io/v1/text-to-speech/${targetVoiceId}?output_format=pcm_16000`;
-
-      const response = await fetch(url, {
+    const trySynthesize = async (targetVoice: string): Promise<Response> => {
+      const url = `https://api.elevenlabs.io/v1/text-to-speech/${targetVoice}?output_format=pcm_16000`;
+      return fetch(url, {
         method: "POST",
         headers: {
           "xi-api-key": this.apiKey,
@@ -43,6 +42,18 @@ export class ElevenLabsTTSProvider implements ITTSService {
           },
         }),
       });
+    };
+
+    try {
+      let response = await trySynthesize(primaryVoiceId);
+
+      // If library voice requires paid subscription (402) or is invalid (400), try standard free premade voice
+      if (response.status === 402 || (response.status === 400 && primaryVoiceId !== "Xb7hH8MSUJpSbSDYk0k2")) {
+        logger.warn(
+          `[Provider:ElevenLabs] Voice ${primaryVoiceId} returned ${response.status}. Retrying with standard pre-made voice (Alice: Xb7hH8MSUJpSbSDYk0k2)...`
+        );
+        response = await trySynthesize("Xb7hH8MSUJpSbSDYk0k2");
+      }
 
       if (!response.ok) {
         const errText = await response.text();

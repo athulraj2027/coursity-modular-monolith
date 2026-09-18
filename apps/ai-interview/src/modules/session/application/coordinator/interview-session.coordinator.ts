@@ -115,19 +115,22 @@ export class InterviewSessionCoordinator {
     });
 
     this.vad.on("speech_end", async () => {
-      logger.info(`[Coordinator:${this.sessionId}] Candidate stopped speaking`);
+      logger.info(`[Coordinator:${this.sessionId}] Candidate stopped speaking (processing audio)`);
       const turnPcm = this.turnRecorder.getRawPcmBuffer();
       this.turnRecorder.clear();
 
       if (turnPcm.length < 3200) {
+        logger.info(`[Coordinator:${this.sessionId}] Audio snippet too brief (${turnPcm.length} bytes), ignoring.`);
         return;
       }
 
       if (this.isProcessingTurn) {
+        logger.info(`[Coordinator:${this.sessionId}] Already processing turn, ignoring duplicate trigger.`);
         return;
       }
 
       const transcript = await this.stt.transcribeAudio(turnPcm);
+      logger.info(`[Coordinator:${this.sessionId}] STT Result: "${transcript}"`);
       if (transcript && transcript.trim().length > 0) {
         await this.handleCandidateText(transcript.trim());
       }
@@ -161,6 +164,11 @@ export class InterviewSessionCoordinator {
           this.sessionRecorder.appendChunk(chunk);
           this.turnRecorder.appendChunk(chunk);
           this.vad.processAudioChunk(chunk);
+
+          // If candidate is not currently speaking, keep only the latest ~400ms (12,800 bytes) as pre-roll
+          if (!this.vad.getIsSpeaking()) {
+            this.turnRecorder.trimToLastBytes(12800);
+          }
         }
         break;
 

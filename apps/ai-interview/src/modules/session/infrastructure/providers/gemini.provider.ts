@@ -6,31 +6,25 @@ import { logger } from "../../../../shared/logger";
 import { EvaluationReportResult } from "../../../../shared/types/common.types";
 
 export class GeminiProvider implements ILLMService {
-  private model: ChatGoogleGenerativeAI | null = null;
   private apiKey: string;
   private modelName: string;
 
   constructor(apiKey?: string, modelName?: string) {
-    this.apiKey = apiKey || env.LLM_API_KEY;
-    this.modelName = modelName || env.LLM_MODEL || "gemini-1.5-flash";
-
-    if (this.apiKey) {
-      try {
-        this.model = new ChatGoogleGenerativeAI({
-          apiKey: this.apiKey,
-          model: this.modelName,
-          temperature: 0.2,
-        });
-      } catch (err: any) {
-        logger.warn(
-          `[Provider:LLM] Failed to initialize ChatGoogleGenerativeAI: ${err.message}`
-        );
-      }
+    this.apiKey = (apiKey || env.LLM_API_KEY || "").trim();
+    let configuredModel = modelName || env.LLM_MODEL || "gemini-3.6-flash";
+    if (
+      configuredModel.startsWith("gemini-1.") ||
+      configuredModel.startsWith("gemini-2.") ||
+      configuredModel === "gemini-flash" ||
+      configuredModel === "gemini-pro"
+    ) {
+      configuredModel = "gemini-3.6-flash";
     }
+    this.modelName = configuredModel;
   }
 
   async generateText(prompt: string, systemPrompt?: string): Promise<string> {
-    if (!this.apiKey || !this.model) {
+    if (!this.apiKey) {
       logger.warn(
         "[Provider:LLM] No LLM_API_KEY provided. Using simulated response."
       );
@@ -38,15 +32,51 @@ export class GeminiProvider implements ILLMService {
     }
 
     try {
-      const messages = [];
+      const contents: any[] = [];
       if (systemPrompt) {
-        messages.push(new SystemMessage(systemPrompt));
+        contents.push({
+          role: "user",
+          parts: [{ text: `[System Instructions]: ${systemPrompt}` }],
+        });
+        contents.push({
+          role: "model",
+          parts: [{ text: "Understood. I will follow these instructions." }],
+        });
       }
-      messages.push(new HumanMessage(prompt));
+      contents.push({ role: "user", parts: [{ text: prompt }] });
 
-      const res = await this.model.invoke(messages);
-      const text = typeof res.content === "string" ? res.content : JSON.stringify(res.content);
-      return text.trim();
+      const candidateModels = [
+        this.modelName,
+        "gemini-3.6-flash",
+        "gemini-flash-latest",
+        "gemini-2.5-flash-lite",
+      ];
+      let lastError: Error | null = null;
+
+      for (const model of candidateModels) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": this.apiKey,
+          },
+          body: JSON.stringify({ contents }),
+        });
+
+        if (res.ok) {
+          const data: any = await res.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) return text.trim();
+        } else {
+          const errData: any = await res.json().catch(() => ({}));
+          lastError = new Error(
+            errData?.error?.message || `Status ${res.status}`
+          );
+        }
+      }
+
+      throw lastError || new Error("All Gemini model candidates failed");
     } catch (error: any) {
       logger.error("[Provider:Gemini] Text generation failed:", error.message);
       return "Could you please elaborate further on how you would implement that in practice?";
@@ -66,7 +96,7 @@ export class GeminiProvider implements ILLMService {
       .filter(Boolean)
       .join("\n\n");
 
-    if (!this.apiKey || !this.model) {
+    if (!this.apiKey) {
       logger.warn(
         "[Provider:Gemini] No GEMINI_API_KEY provided. Returning fallback structured object."
       );
@@ -74,15 +104,61 @@ export class GeminiProvider implements ILLMService {
     }
 
     try {
-      const messages = [
-        new SystemMessage(fullSystemPrompt),
-        new HumanMessage(prompt),
+      const contents = [
+        {
+          role: "user",
+          parts: [{ text: `[System Instructions]: ${fullSystemPrompt}` }],
+        },
+        {
+          role: "model",
+          parts: [
+            {
+              text: "Understood. I will respond with ONLY valid JSON matching the schema.",
+            },
+          ],
+        },
+        { role: "user", parts: [{ text: prompt }] },
       ];
 
-      const res = await this.model.invoke(messages);
-      const content = typeof res.content === "string" ? res.content : JSON.stringify(res.content);
+      const candidateModels = [
+        this.modelName,
+        "gemini-3.6-flash",
+        "gemini-flash-latest",
+        "gemini-3.5-flash-lite",
+      ];
+      let lastError: Error | null = null;
+      let textContent = "";
 
-      const cleaned = content
+      for (const model of candidateModels) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": this.apiKey,
+          },
+          body: JSON.stringify({ contents }),
+        });
+
+        if (res.ok) {
+          const data: any = await res.json();
+          textContent = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          if (textContent) break;
+        } else {
+          const errData: any = await res.json().catch(() => ({}));
+          lastError = new Error(
+            errData?.error?.message || `Status ${res.status}`
+          );
+        }
+      }
+
+      if (!textContent) {
+        throw (
+          lastError || new Error("Gemini generateContent returned empty text")
+        );
+      }
+
+      const cleaned = textContent
         .replace(/```json/gi, "")
         .replace(/```/g, "")
         .trim();
@@ -135,12 +211,28 @@ Generate a comprehensive evaluation with overallScore (0-100), outcome ("PASSED"
   private generateFallbackStructured<T>(prompt: string): T {
     const p = prompt.toLowerCase();
 
-    // 1. Evaluation check first
+    // 1. Question Generation check (must be checked BEFORE planning so prompts with "explanation" aren't confused)
+    if (
+      p.includes("crafting the next interview question") ||
+      p.includes("questiondecision") ||
+      p.includes("previously asked questions") ||
+      p.includes("assigned difficulty level")
+    ) {
+      return {
+        question: "Could you walk me through how you design, test, and maintain robust solutions when addressing core challenges in this domain?",
+        topic: "Core Domain Competencies",
+        difficulty: "INTERMEDIATE",
+        expectedSignals: ["fundamentals", "system design", "modularity", "best practices"],
+        rationale: "Assessing core technical competencies and practical experience.",
+      } as unknown as T;
+    }
+
+    // 2. Evaluation check
     if (
       p.includes("overallscore") ||
-      p.includes("evaluat") ||
-      p.includes("rubric") ||
-      p.includes("criteriascores")
+      p.includes("criteriascores") ||
+      p.includes("board reviewer") ||
+      p.includes("comprehensive rubric evaluation")
     ) {
       return {
         overallScore: 82,
@@ -180,11 +272,16 @@ Generate a comprehensive evaluation with overallScore (0-100), outcome ("PASSED"
       } as unknown as T;
     }
 
-    // 2. Planning check
-    if (p.includes("plan") || p.includes("strategy") || p.includes("planner")) {
+    // 3. Planning check
+    if (
+      p.includes("dynamic interview plan") ||
+      p.includes("initialdifficulty") ||
+      p.includes("totalplannedquestions") ||
+      p.includes("topics with weights")
+    ) {
       return {
         planId: `plan_${Date.now()}`,
-        domain: "Computer Science",
+        domain: "Technical Evaluation",
         initialDifficulty: "INTERMEDIATE",
         currentDifficulty: "INTERMEDIATE",
         totalPlannedQuestions: 5,
@@ -221,7 +318,7 @@ Generate a comprehensive evaluation with overallScore (0-100), outcome ("PASSED"
       } as unknown as T;
     }
 
-    // 3. Evidence Extraction check
+    // 4. Evidence Extraction check
     if (p.includes("technicalclaims") || p.includes("concreteexamples") || p.includes("metrics")) {
       return {
         technicalClaims: ["Candidate described core architecture principles"],
@@ -231,7 +328,7 @@ Generate a comprehensive evaluation with overallScore (0-100), outcome ("PASSED"
       } as unknown as T;
     }
 
-    // 4. Conversation Quality check
+    // 5. Conversation Quality check
     if (p.includes("isrambling") || p.includes("istooBrief") || p.includes("isofftopic")) {
       return {
         isRambling: false,
@@ -243,7 +340,7 @@ Generate a comprehensive evaluation with overallScore (0-100), outcome ("PASSED"
       } as unknown as T;
     }
 
-    // 5. Integrity check
+    // 6. Integrity check
     if (p.includes("anomaly") || p.includes("prompt_injection") || p.includes("integrity")) {
       return {
         anomalyDetected: false,
@@ -252,7 +349,7 @@ Generate a comprehensive evaluation with overallScore (0-100), outcome ("PASSED"
       } as unknown as T;
     }
 
-    // 6. Answer Analysis check
+    // 7. Answer Analysis check
     if (p.includes("relevance") || p.includes("expected key signals") || p.includes("analyze")) {
       return {
         relevance: 0.88,
@@ -264,7 +361,7 @@ Generate a comprehensive evaluation with overallScore (0-100), outcome ("PASSED"
       } as unknown as T;
     }
 
-    // 7. Follow-up check
+    // 8. Follow-up check
     if (p.includes("follow-up") || p.includes("followup")) {
       return {
         shouldFollowUp: false,
@@ -273,7 +370,7 @@ Generate a comprehensive evaluation with overallScore (0-100), outcome ("PASSED"
       } as unknown as T;
     }
 
-    // 8. Question generation
+    // 9. Default Fallback
     return {
       question: "How do you handle edge cases and maintain maintainability in large scale applications?",
       topic: "Architecture & Problem Solving",

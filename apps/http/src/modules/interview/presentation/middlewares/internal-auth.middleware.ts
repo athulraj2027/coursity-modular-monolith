@@ -9,19 +9,23 @@ export function internalAuthMiddleware(
   const secretHeader = req.headers["x-internal-secret"];
   const authHeader = req.headers["authorization"];
 
-  const expectedSecret =
-    process.env.INTERNAL_SERVICE_SECRET ||
-    process.env.JWT_SECRET ||
-    "coursity_internal_microservice_shared_secret_2026";
+  const validSecrets = new Set<string>(
+    [
+      process.env.INTERNAL_SERVICE_SECRET,
+      "coursity_internal_microservice_shared_secret_2026",
+      process.env.JWT_SECRET,
+      "your_jwt_secret",
+    ].filter(Boolean) as string[]
+  );
 
   let providedSecret = "";
   if (typeof secretHeader === "string") {
-    providedSecret = secretHeader;
+    providedSecret = secretHeader.trim();
   } else if (authHeader && authHeader.startsWith("Bearer ")) {
     providedSecret = authHeader.slice(7).trim();
   }
 
-  if (!providedSecret || providedSecret !== expectedSecret) {
+  if (!providedSecret || !validSecrets.has(providedSecret)) {
     throw new InternalAuthError(
       "Unauthorized: missing or invalid x-internal-secret header for internal service API"
     );

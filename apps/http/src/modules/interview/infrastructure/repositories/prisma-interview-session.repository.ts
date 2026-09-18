@@ -25,10 +25,27 @@ export class PrismaInterviewSessionRepository
     difficulty: string;
     status: InterviewStatus;
   }): Promise<InterviewSessionEntity> {
+    let teacherProfileId = data.teacherProfileId;
+    if (!teacherProfileId) {
+      try {
+        const tp = await (this.prisma as any).teacherProfile.findFirst({
+          where: {
+            profile: {
+              userId: data.userId,
+            },
+          },
+          select: { id: true },
+        });
+        if (tp) {
+          teacherProfileId = tp.id;
+        }
+      } catch {}
+    }
+
     const session = await (this.prisma as any).interviewSession.create({
       data: {
         userId: data.userId,
-        teacherProfileId: data.teacherProfileId,
+        teacherProfileId,
         templateId: data.templateId,
         type: data.type as any,
         domain: data.domain,

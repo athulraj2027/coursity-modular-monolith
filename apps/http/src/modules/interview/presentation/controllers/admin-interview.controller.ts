@@ -19,6 +19,11 @@ export class AdminInterviewController {
     return (param as string) || "";
   }
 
+  private getUserId(req: Request): string {
+    const user = (req as any).user;
+    return user?.userId || user?.id || (req as any).userId || "";
+  }
+
   // ==========================================
   // SESSIONS MANAGEMENT (7 endpoints)
   // ==========================================
@@ -101,7 +106,7 @@ export class AdminInterviewController {
   ): Promise<void> => {
     try {
       const id = this.getIdParam(req.params.id);
-      const adminId = (req as any).user?.id || (req as any).userId;
+      const adminId = this.getUserId(req);
       const validated = AdminOverrideDecisionSchema.parse(req.body);
 
       const session = await this.useCases.overrideDecision({
@@ -130,7 +135,7 @@ export class AdminInterviewController {
   ): Promise<void> => {
     try {
       const id = this.getIdParam(req.params.id);
-      const adminId = (req as any).user?.id || (req as any).userId;
+      const adminId = this.getUserId(req);
       const validated = AdminAdjustEvaluationSchema.parse(req.body);
 
       const session = await this.useCases.adjustEvaluation({

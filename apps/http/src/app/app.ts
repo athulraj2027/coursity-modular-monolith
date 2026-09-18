@@ -39,9 +39,6 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
 
-// 3. Global Rate Limiter
-app.use(globalRateLimiter);
-
 // Health check endpoint (for Docker, load balancers, and monitoring)
 app.get("/health", (_req, res) => {
     res.status(200).json({
@@ -51,12 +48,12 @@ app.get("/health", (_req, res) => {
     });
 });
 
-// 4. Internal Microservice Routes (secured via x-internal-secret)
+// 4. Internal Microservice Routes (secured via x-internal-secret, exempt from client rate limiters)
 app.use("/internal/interviews", internalInterviewRouter);
 app.use("/internal/ai-config", internalAIConfigRouter);
 
-// 5. API Routes
-app.use("/api", router);
+// 5. Client API Routes (protected by global rate limiter)
+app.use("/api", globalRateLimiter, router);
 
 // 5. Fallback Error & Not Found Handlers
 app.use(notFoundMiddleware);

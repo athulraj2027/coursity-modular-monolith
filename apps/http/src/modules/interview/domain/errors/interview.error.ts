@@ -1,10 +1,12 @@
-export class InterviewError extends Error {
+import { AppError } from "@/app/errors/app.error";
+
+export class InterviewError extends AppError {
   constructor(
     message: string,
     public readonly statusCode: number = 400,
     public readonly code: string = "INTERVIEW_ERROR"
   ) {
-    super(message);
+    super(message, statusCode, true);
     this.name = "InterviewError";
     Object.setPrototypeOf(this, new.target.prototype);
   }

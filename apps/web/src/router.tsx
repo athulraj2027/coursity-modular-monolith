@@ -22,6 +22,13 @@ import {
 } from "@/features/plans"
 import { AdminAIConfigPage } from "@/features/ai-config"
 import {
+  InterviewLandingPage,
+  InterviewSetupPage,
+  InterviewRoomPage,
+  InterviewCompletedPage,
+  CandidateInterviewsPage,
+} from "@/features/interview"
+import {
   SigninPage,
   SignupPage,
   VerifyOtpPage,
@@ -131,7 +138,17 @@ export function AppRoutes() {
         </Route>
       </Route>
 
-      {/* 6. Fallback 404 Route */}
+      {/* 6. Candidate Real-Time AI Interview Studio Routes */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/interview/:sessionId" element={<InterviewLandingPage />} />
+        <Route path="/interview/:sessionId/setup" element={<InterviewSetupPage />} />
+        <Route path="/interview/:sessionId/room" element={<InterviewRoomPage />} />
+        <Route path="/interview/:sessionId/completed" element={<InterviewCompletedPage />} />
+        <Route path="/interviews/my-interviews" element={<CandidateInterviewsPage />} />
+        <Route path="/interviews" element={<Navigate to="/interviews/my-interviews" replace />} />
+      </Route>
+
+      {/* 7. Fallback 404 Route */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )

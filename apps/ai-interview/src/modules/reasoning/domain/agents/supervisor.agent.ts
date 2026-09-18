@@ -45,6 +45,16 @@ export class InterviewSupervisorAgent {
       `[Agent:Supervisor] Evaluating state: phase=${phase}, questionIndex=${questionIndex}/${totalQuestions}, coveredTopics=${coveredTopics.length}/${topics.length}`
     );
 
+    // 0. Completed or evaluating state
+    if (phase === "EVALUATING" || phase === "COMPLETED") {
+      return {
+        nextAction: "END_INTERVIEW",
+        targetPhase: "EVALUATING",
+        targetTopic: input.currentTopic || "Evaluation",
+        reason: "Interview session finalized.",
+      };
+    }
+
     // 1. Initial greeting transition
     if (phase === "INITIALIZING" || phase === "PLANNING" || questionIndex === 0) {
       const firstTopic = topics[0] || "Foundational Knowledge";

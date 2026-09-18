@@ -51,6 +51,15 @@ export class AudioRecorderService {
     this.totalByteLength = 0;
   }
 
+  trimToLastBytes(maxBytes: number): void {
+    while (this.chunks.length > 0 && this.totalByteLength > maxBytes) {
+      const removed = this.chunks.shift();
+      if (removed) {
+        this.totalByteLength -= removed.length;
+      }
+    }
+  }
+
   private createWavHeader(dataByteLength: number): Buffer {
     const header = Buffer.alloc(44);
     const byteRate = (this.sampleRate * this.numChannels * this.bitDepth) / 8;

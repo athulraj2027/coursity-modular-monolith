@@ -25,6 +25,9 @@ export class InterviewLangGraph {
 
       // Start Router
       .addConditionalEdges(START, (state: InterviewGraphStateType) => {
+        if (state.phase === "EVALUATING" || state.nextAction === "END_INTERVIEW") {
+          return "evaluate";
+        }
         if (!state.plan && (state.phase === "INITIALIZING" || state.phase === "PLANNING")) {
           return "planner";
         }

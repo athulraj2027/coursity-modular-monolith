@@ -4,6 +4,7 @@ import {
   CandidateListSessionsQuerySchema,
   CreateInterviewSessionSchema,
 } from "../validators/interview.validator";
+import { UnauthorizedError } from "@/app/errors";
 
 export class CandidateInterviewController {
   constructor(private readonly useCases: CandidateInterviewUseCases) {}
@@ -11,6 +12,25 @@ export class CandidateInterviewController {
   private getIdParam(param: string | string[] | undefined): string {
     if (Array.isArray(param)) return param[0];
     return (param as string) || "";
+  }
+
+  private getUserId(req: Request): string {
+    const user = (req as any).user;
+    const userId = user?.userId || user?.id || (req as any).userId;
+    if (!userId) {
+      throw new UnauthorizedError("Authentication required. Please sign in.");
+    }
+    return userId;
+  }
+
+  private getUserRole(req: Request): string {
+    const user = (req as any).user;
+    return user?.role || "STUDENT";
+  }
+
+  private getUserName(req: Request): string {
+    const user = (req as any).user;
+    return user?.name || user?.email || "Candidate";
   }
 
   // 1. GET /api/interviews/templates
@@ -59,7 +79,7 @@ export class CandidateInterviewController {
   ): Promise<void> => {
     try {
       const validated = CreateInterviewSessionSchema.parse(req.body);
-      const userId = (req as any).user?.id || (req as any).userId;
+      const userId = this.getUserId(req);
 
       const session = await this.useCases.createSession({
         userId,
@@ -87,8 +107,8 @@ export class CandidateInterviewController {
   ): Promise<void> => {
     try {
       const id = this.getIdParam(req.params.id);
-      const userId = (req as any).user?.id || (req as any).userId;
-      const userRole = (req as any).user?.role || "STUDENT";
+      const userId = this.getUserId(req);
+      const userRole = this.getUserRole(req);
 
       const session = await this.useCases.getSession(id, userId, userRole);
       res.status(200).json({ success: true, data: session });
@@ -105,7 +125,7 @@ export class CandidateInterviewController {
   ): Promise<void> => {
     try {
       const id = this.getIdParam(req.params.id);
-      const userId = (req as any).user?.id || (req as any).userId;
+      const userId = this.getUserId(req);
 
       const session = await this.useCases.startSession(id, userId);
       res.status(200).json({
@@ -126,9 +146,8 @@ export class CandidateInterviewController {
   ): Promise<void> => {
     try {
       const id = this.getIdParam(req.params.id);
-      const user = (req as any).user || {};
-      const userId = user.id || (req as any).userId;
-      const userName = user.name || "Candidate";
+      const userId = this.getUserId(req);
+      const userName = this.getUserName(req);
 
       const tokenData = await this.useCases.generateRealtimeToken(
         id,
@@ -150,8 +169,8 @@ export class CandidateInterviewController {
   ): Promise<void> => {
     try {
       const id = this.getIdParam(req.params.id);
-      const userId = (req as any).user?.id || (req as any).userId;
-      const userRole = (req as any).user?.role || "STUDENT";
+      const userId = this.getUserId(req);
+      const userRole = this.getUserRole(req);
 
       const transcripts = await this.useCases.getTranscripts(
         id,
@@ -173,7 +192,7 @@ export class CandidateInterviewController {
     try {
       const id = this.getIdParam(req.params.id);
       const limit = req.query.limit ? Number(req.query.limit) : 5;
-      const userId = (req as any).user?.id || (req as any).userId;
+      const userId = this.getUserId(req);
 
       const transcripts = await this.useCases.getLatestTranscripts(
         id,
@@ -194,7 +213,7 @@ export class CandidateInterviewController {
   ): Promise<void> => {
     try {
       const id = this.getIdParam(req.params.id);
-      const userId = (req as any).user?.id || (req as any).userId;
+      const userId = this.getUserId(req);
 
       const session = await this.useCases.completeSession(id, userId);
       res.status(200).json({
@@ -216,7 +235,7 @@ export class CandidateInterviewController {
     try {
       const id = this.getIdParam(req.params.id);
       const { reason } = req.body || {};
-      const userId = (req as any).user?.id || (req as any).userId;
+      const userId = this.getUserId(req);
 
       const session = await this.useCases.cancelSession(id, userId, reason);
       res.status(200).json({
@@ -237,8 +256,8 @@ export class CandidateInterviewController {
   ): Promise<void> => {
     try {
       const id = this.getIdParam(req.params.id);
-      const userId = (req as any).user?.id || (req as any).userId;
-      const userRole = (req as any).user?.role || "STUDENT";
+      const userId = this.getUserId(req);
+      const userRole = this.getUserRole(req);
 
       const session = await this.useCases.getReport(id, userId, userRole);
       res.status(200).json({
@@ -273,8 +292,8 @@ export class CandidateInterviewController {
   ): Promise<void> => {
     try {
       const id = this.getIdParam(req.params.id);
-      const userId = (req as any).user?.id || (req as any).userId;
-      const userRole = (req as any).user?.role || "STUDENT";
+      const userId = this.getUserId(req);
+      const userRole = this.getUserRole(req);
 
       const recordingData = await this.useCases.getRecordingUrl(
         id,
@@ -294,7 +313,7 @@ export class CandidateInterviewController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const userId = (req as any).user?.id || (req as any).userId;
+      const userId = this.getUserId(req);
       const query = CandidateListSessionsQuerySchema.parse(req.query);
 
       const result = await this.useCases.getMyInterviews({
