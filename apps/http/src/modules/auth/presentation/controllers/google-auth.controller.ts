@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { GoogleAuth } from "../../application/use-cases/google-auth.usecase";
 import { STATUS_CODES } from "@/app/config/status";
 import { env } from "@/app/config/env";
-import { UserRole } from "@/modules/user";
+import type { UserRole } from "@/modules/user/domain/entities/user.entity";
 import { setAuthCookies } from "@/app/config/cookie";
 
 export class GoogleAuthController {

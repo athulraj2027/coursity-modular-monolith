@@ -1,4 +1,4 @@
-import { UserRepository } from "@/modules/user";
+import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
 import { OtpRepository } from "../../domain/repositories/redis-otp.repository";
 import { BadRequestError, ConflictError } from "@/app/errors";
 import { ResendOtpInputDTO, ResendOtpOutputDTO } from "../dtos/resend-otp.dto";

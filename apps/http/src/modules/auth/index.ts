@@ -1,5 +1,5 @@
 // Repositories & Infrastructure Services
-import { PrismaUserRepository } from "@/modules/user";
+import { PrismaUserRepository } from "@/modules/user/infrastructure/repositories/prisma-user.repository";
 import { BcryptPasswordService } from "./infrastructure/services/bcrypt/bcrypt-password.service";
 import { RedisOtpRepository } from "./infrastructure/repositories/redis-otp.repository";
 import { RedisTokenRepository } from "./infrastructure/repositories/redis-token.repository";

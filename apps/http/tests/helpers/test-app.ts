@@ -752,6 +752,7 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
         updateStudentProfileController,
         updateTeacherProfileController,
         submitTeacherVerificationController,
+        changePasswordController,
         authMiddleware,
         isBlockedMiddleware
     );

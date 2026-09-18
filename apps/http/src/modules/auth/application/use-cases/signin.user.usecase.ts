@@ -1,4 +1,4 @@
-import { UserRepository } from "@/modules/user";
+import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
 import { PasswordService } from "../../domain/services/password.service";
 import { TokenService } from "../../domain/services/token.service";
 import { TokenRepository } from "../../domain/repositories/token.repository";

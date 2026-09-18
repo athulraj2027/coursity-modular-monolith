@@ -1,4 +1,4 @@
-import { UserRepository } from "@/modules/user";
+import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
 import { TokenService } from "../../domain/services/token.service";
 import { TokenRepository } from "../../domain/repositories/token.repository";
 import { UnauthorizedError, ForbiddenError } from "@/app/errors";

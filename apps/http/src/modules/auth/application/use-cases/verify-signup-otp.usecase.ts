@@ -1,5 +1,5 @@
 import { OtpRepository } from "@/modules/auth/domain/repositories/redis-otp.repository";
-import { UserRepository } from "@/modules/user";
+import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
 import { TokenService } from "../../domain/services/token.service";
 import { TokenRepository } from "../../domain/repositories/token.repository";
 import { BadRequestError, ConflictError } from "@/app/errors";

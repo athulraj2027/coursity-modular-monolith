@@ -1,4 +1,4 @@
-import { UserRole } from "@/modules/user";
+import type { UserRole } from "@/modules/user/domain/entities/user.entity";
 
 export interface TempSignupUser {
     name: string;
