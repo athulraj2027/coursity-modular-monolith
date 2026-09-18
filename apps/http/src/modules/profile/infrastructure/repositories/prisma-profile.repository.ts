@@ -59,6 +59,15 @@ export class PrismaProfileRepository implements ProfileRepository {
                     submissionCount: isTeacherVerified
                         ? 0
                         : ((teacherProfile as any).submissionCount ?? 0),
+                    isInterviewPassed: Boolean(teacherProfile.isInterviewPassed),
+                    interviewScore:
+                        teacherProfile.interviewScore !== null &&
+                        teacherProfile.interviewScore !== undefined
+                            ? Number(teacherProfile.interviewScore)
+                            : null,
+                    interviewFeedback: teacherProfile.interviewFeedback ?? null,
+                    interviewAttempts: teacherProfile.interviewAttempts ?? 0,
+                    lastInterviewAt: teacherProfile.lastInterviewAt ?? null,
                     createdAt: teacherProfile.createdAt,
                     updatedAt: teacherProfile.updatedAt,
                 }

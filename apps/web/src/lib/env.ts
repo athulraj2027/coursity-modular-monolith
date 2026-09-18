@@ -5,6 +5,9 @@ const envSchema = z.object({
     .string()
     .min(1, "VITE_API_URL is required")
     .default("http://localhost:3000/api"),
+  VITE_AI_INTERVIEW_WS_URL: z
+    .string()
+    .default("ws://localhost:4000/interview"),
   VITE_APP_NAME: z.string().default("Coursity"),
   VITE_APP_URL: z.string().default("http://localhost:5173"),
   VITE_GOOGLE_CLIENT_ID: z.string().optional().default(""),
@@ -20,6 +23,7 @@ const envSchema = z.object({
 
 const parsed = envSchema.safeParse({
   VITE_API_URL: import.meta.env.VITE_API_URL,
+  VITE_AI_INTERVIEW_WS_URL: import.meta.env.VITE_AI_INTERVIEW_WS_URL,
   VITE_APP_NAME: import.meta.env.VITE_APP_NAME,
   VITE_APP_URL: import.meta.env.VITE_APP_URL,
   VITE_GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID,

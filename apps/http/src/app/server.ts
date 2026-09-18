@@ -20,7 +20,8 @@ const startServer = async () => {
 
         server.listen(env.PORT, () => {
             console.log(`\n🚀 Server running on http://localhost:${env.PORT}`);
-            console.log(`🌍 Environment: ${env.NODE_ENV}\n`);
+            console.log(`🌍 Environment: ${env.NODE_ENV}`);
+            console.log(`⚡ Internal microservices enabled (Interview & AI-Config)\n`);
         });
     } catch (error) {
         console.error("❌ Failed to start server:", error);

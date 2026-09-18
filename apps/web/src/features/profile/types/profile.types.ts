@@ -26,6 +26,11 @@ export interface TeacherProfileModel {
   approvalStatus: ApprovalStatus
   rejectionReason?: string | null
   submissionCount?: number
+  isInterviewPassed?: boolean
+  interviewScore?: number | null
+  interviewFeedback?: string | null
+  interviewAttempts?: number
+  lastInterviewAt?: string | null
   createdAt: string
   updatedAt: string
 }

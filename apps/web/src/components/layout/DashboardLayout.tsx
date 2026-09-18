@@ -9,10 +9,12 @@ import { useCurrentUser } from "@/features/auth"
 
 export interface DashboardLayoutProps {
   role?: "student" | "teacher" | "admin"
+  children?: React.ReactNode
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   role = "student",
+  children,
 }) => {
   const location = useLocation()
   const { data: user } = useCurrentUser()
@@ -52,7 +54,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
         {/* Nested Route Outlet */}
         <main className="flex-1 flex flex-col p-6 max-w-7xl w-full mx-auto">
-          <Outlet />
+          {children || <Outlet />}
         </main>
       </SidebarInset>
     </SidebarProvider>

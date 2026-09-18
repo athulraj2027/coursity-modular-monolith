@@ -19,6 +19,11 @@ export interface TeacherProfile {
     approvalStatus: ApprovalStatus;
     rejectionReason?: string | null;
     submissionCount?: number;
+    isInterviewPassed: boolean;
+    interviewScore?: number | null;
+    interviewFeedback?: string | null;
+    interviewAttempts?: number;
+    lastInterviewAt?: Date | null;
     createdAt: Date;
     updatedAt: Date;
 }

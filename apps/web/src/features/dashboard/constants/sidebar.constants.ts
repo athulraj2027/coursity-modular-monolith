@@ -10,6 +10,8 @@ import {
   Users,
   Zap,
   Layers,
+  Cpu,
+  Bot,
 } from "lucide-react"
 
 export interface SidebarNavItem {
@@ -33,7 +35,13 @@ export const STUDENT_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Dashboard",
         url: "/students/dashboard",
         icon: LayoutDashboard,
-      }
+      },
+      {
+        title: "AI Interviews",
+        url: "/students/interviews",
+        icon: Bot,
+        badge: "AI",
+      },
     ],
   },
   {
@@ -61,6 +69,12 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Dashboard",
         url: "/teachers/dashboard",
         icon: LayoutDashboard,
+      },
+      {
+        title: "AI Vetting Interviews",
+        url: "/teachers/interviews",
+        icon: Bot,
+        badge: "AI",
       },
       {
         title: "Plans & Billing",
@@ -120,6 +134,18 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Plans",
         url: "/admin/plans",
         icon: Layers,
+      },
+      {
+        title: "AI Interviews",
+        url: "/admin/interviews",
+        icon: Bot,
+        badge: "AI",
+      },
+      {
+        title: "AI & Models Config",
+        url: "/admin/ai-config",
+        icon: Cpu,
+        badge: "v1",
       },
     ],
   },

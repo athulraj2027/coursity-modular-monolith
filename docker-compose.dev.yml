@@ -98,6 +98,36 @@ services:
     networks:
       - coursity-dev-network
 
+  ai-interview:
+    build:
+      context: ./apps/ai-interview
+      dockerfile: Dockerfile.dev
+    container_name: coursity-dev-ai-interview
+    restart: unless-stopped
+    ports:
+      - "${AI_INTERVIEW_PORT:-4000}:4000"
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      HTTP_BACKEND_URL: http://backend:3000
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-coursity_internal_microservice_shared_secret_2026}
+      JWT_SECRET: ${JWT_SECRET:-dev_secret_key_coursity}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      DEEPGRAM_API_KEY: ${DEEPGRAM_API_KEY:-}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME:-}
+    volumes:
+      - ./apps/ai-interview:/app
+      - /app/node_modules
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - coursity-dev-network
+
 volumes:
   postgres_dev_data:
     driver: local

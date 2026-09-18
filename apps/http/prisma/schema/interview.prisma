@@ -1,0 +1,225 @@
+// ==========================================
+// AI INTERVIEW ENUMS
+// ==========================================
+
+enum InterviewType {
+  TEACHER_VETTING
+  TECHNICAL_ASSESSMENT
+  MOCK_INTERVIEW
+  PEDAGOGY_EVALUATION
+}
+
+enum InterviewStatus {
+  INITIALIZING
+  IN_PROGRESS
+  COMPLETED
+  EVALUATING
+  EVALUATED
+  FAILED
+  CANCELLED
+  ABANDONED
+}
+
+enum InterviewOutcome {
+  PENDING
+  PASSED
+  FAILED
+  NEEDS_HUMAN_REVIEW
+}
+
+enum InterviewDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum TranscriptRole {
+  SYSTEM
+  ASSISTANT
+  CANDIDATE
+}
+
+// ==========================================
+// AI INTERVIEW TEMPLATE / CONFIGURATION
+// ==========================================
+
+model InterviewTemplate {
+  id                 String                     @id @default(uuid())
+  title              String                     // e.g. "Full-Stack Node.js Teacher Vetting", "Calculus Teaching Assessment"
+  slug               String                     @unique
+  description        String?
+  type               InterviewType              @default(TEACHER_VETTING)
+  domain             String                     // e.g. "Computer Science", "Mathematics"
+  difficulty         InterviewDifficulty        @default(INTERMEDIATE)
+  
+  // AI Persona & Voice Settings
+  systemPrompt       String?                    @db.Text
+  voiceId            String?                    // ElevenLabs / OpenAI / Deepgram voice ID (e.g. "alloy", "echo", "rachel")
+  llmModel           String                     @default("gemini-1.5-flash") // e.g. "gemini-1.5-pro", "gpt-4o"
+  
+  // Time & Scoring Rules
+  maxDurationMinutes Int                        @default(15)
+  totalQuestions     Int                        @default(5)
+  passingScore       Float                      @default(70.0) // Percentage or points out of 100
+  
+  isActive           Boolean                    @default(true)
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+
+  sessions           InterviewSession[]
+  versions           InterviewTemplateVersion[]
+
+  @@map("interview_templates")
+}
+
+// ==========================================
+// TEMPLATE HISTORICAL VERSIONS
+// ==========================================
+
+model InterviewTemplateVersion {
+  id                 String             @id @default(uuid())
+  templateId         String
+  template           InterviewTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  
+  version            Int
+  title              String
+  systemPrompt       String?            @db.Text
+  voiceId            String?
+  llmModel           String
+  maxDurationMinutes Int
+  totalQuestions     Int
+  passingScore       Float
+  changeLog          String?            @db.Text
+  createdBy          String?            // Admin user ID
+
+  createdAt          DateTime           @default(now())
+
+  @@unique([templateId, version])
+  @@map("interview_template_versions")
+}
+
+// ==========================================
+// INTERVIEW SESSION
+// ==========================================
+
+model InterviewSession {
+  id                 String              @id @default(uuid())
+  
+  // Relations
+  userId             String
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teacherProfileId   String?
+  teacherProfile     TeacherProfile?     @relation(fields: [teacherProfileId], references: [id], onDelete: SetNull)
+  templateId         String?
+  template           InterviewTemplate?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  
+  // Core Session Details
+  type               InterviewType       @default(TEACHER_VETTING)
+  status             InterviewStatus     @default(INITIALIZING)
+  difficulty         InterviewDifficulty @default(INTERMEDIATE)
+  domain             String?             // e.g. "React / TypeScript" or snapshot from teacher expertise
+  
+  // Timing & Duration
+  scheduledAt        DateTime?
+  startedAt          DateTime?
+  endedAt            DateTime?
+  durationSeconds    Int?                @default(0)
+
+  // Overall Scoring & Evaluation Outcome
+  overallScore       Float?              // Score from 0.0 to 100.0
+  outcome            InterviewOutcome    @default(PENDING)
+  summaryFeedback    String?             @db.Text
+  strengths          String[]            @default([])
+  improvements       String[]            @default([])
+
+  // Technical Metadata & Recordings
+  recordingUrl       String?             // Direct S3 URL for full session audio/video recording
+  livekitRoomSid     String?             // WebRTC / LiveKit / SFU Room ID if applicable
+  meta               Json?               // Latency, token usage, interruption count, model params
+  
+  // AI Config Versioning Snapshot
+  aiConfigVersionId  String?
+  aiConfigVersion    AIConfigVersion?    @relation(fields: [aiConfigVersionId], references: [id], onDelete: SetNull)
+  aiConfigSnapshot   Json?               // Immutable frozen JSON configuration used for this session
+
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  // Child Relations
+  transcripts        InterviewTranscript[]
+  criteriaScores     InterviewScore[]
+  auditLogs          InterviewAuditLog[]
+
+  @@index([userId, status])
+  @@index([teacherProfileId])
+  @@index([status])
+  @@map("interview_sessions")
+}
+
+// ==========================================
+// CONVERSATION TRANSCRIPT & SPEECH TURNS
+// ==========================================
+
+model InterviewTranscript {
+  id                 String            @id @default(uuid())
+  sessionId          String
+  session            InterviewSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  role               TranscriptRole    // SYSTEM, ASSISTANT (AI interviewer), CANDIDATE (Teacher / Student)
+  content            String            @db.Text
+  audioUrl           String?           // Individual turn audio chunk URL on S3 (optional)
+  sequenceOrder      Int               // 1, 2, 3... chronological order of dialogue
+  
+  // Real-time speech & turn analysis
+  durationMs         Int?              // Duration of response / speech in milliseconds
+  sentiment          String?           // e.g. "CONFIDENT", "HESITANT", "NEUTRAL"
+  turnFeedback       String?           // Real-time turn critique or relevance note from LLM
+
+  createdAt          DateTime          @default(now())
+
+  @@index([sessionId, sequenceOrder])
+  @@map("interview_transcripts")
+}
+
+// ==========================================
+// DETAILED RUBRIC & CRITERIA EVALUATION
+// ==========================================
+
+model InterviewScore {
+  id                 String            @id @default(uuid())
+  sessionId          String
+  session            InterviewSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  criterion          String            // e.g. "Subject Expertise", "Communication Clarity", "Pedagogy", "Problem Solving"
+  score              Float             // Score for this criterion (0 - 100)
+  maxScore           Float             @default(100)
+  weight             Float             @default(1.0)
+  feedback           String?           @db.Text // Specific feedback / observations for this criterion
+
+  createdAt          DateTime          @default(now())
+
+  @@unique([sessionId, criterion])
+  @@map("interview_scores")
+}
+
+// ==========================================
+// AUDIT LOGS FOR SESSIONS & DECISIONS
+// ==========================================
+
+model InterviewAuditLog {
+  id                 String            @id @default(uuid())
+  sessionId          String
+  session            InterviewSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  actorId            String?           // User ID of Admin or Candidate, or "SYSTEM" / "AI_SERVICE"
+  action             String            // e.g. "SESSION_CREATED", "SESSION_STARTED", "DECISION_OVERRIDDEN", "EVALUATION_ADJUSTED", "SESSION_COMPLETED"
+  previousState      Json?
+  newState           Json?
+  note               String?           @db.Text
+
+  createdAt          DateTime          @default(now())
+
+  @@index([sessionId, createdAt])
+  @@map("interview_audit_logs")
+}
