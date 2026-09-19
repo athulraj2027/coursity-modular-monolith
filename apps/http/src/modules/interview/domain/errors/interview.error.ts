@@ -56,3 +56,13 @@ export class InterviewAlreadyPassedError extends InterviewError {
   }
 }
 
+export class MaxInterviewAttemptsReachedError extends InterviewError {
+  constructor(
+    message: string = "Maximum interview attempts (3) reached. Starting a new interview is not permitted. Please contact admissions support."
+  ) {
+    super(message, 400, "MAX_INTERVIEW_ATTEMPTS_REACHED");
+    this.name = "MaxInterviewAttemptsReachedError";
+  }
+}
+
+

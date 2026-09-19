@@ -29,19 +29,16 @@ const optionalUrl = (label: string) =>
 
 export const qualificationItemValidator = z.object({
     title: z
-        .string()
+        .string({ message: "Degree, course, or job title is required" })
         .trim()
         .min(1, "Degree, course, or job title is required")
         .max(150, "Title cannot exceed 150 characters"),
     institution: z
-        .string()
-        .trim()
-        .max(150, "Institution cannot exceed 150 characters")
-        .nullable()
+        .union([z.string().trim().max(150), z.null(), z.undefined()])
         .optional()
-        .or(z.literal("")),
+        .transform((val) => (val ? val.trim() : null)),
     year: z
-        .string()
+        .string({ message: "Year or duration is required" })
         .trim()
         .min(1, "Year or duration is required")
         .max(50, "Year cannot exceed 50 characters"),
@@ -50,8 +47,8 @@ export const qualificationItemValidator = z.object({
 export const qualificationsFieldValidator = z
     .union([
         z.array(qualificationItemValidator).max(20, "Cannot add more than 20 qualification entries"),
-        z.array(z.string().max(300)).max(20),
-        z.string().max(2000),
+        z.array(z.string().trim().max(300)).max(20),
+        z.string().trim().max(2000),
     ])
     .nullable()
     .optional();

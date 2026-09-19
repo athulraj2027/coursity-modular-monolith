@@ -75,14 +75,10 @@ export const TeacherOnboardingGuard: React.FC<TeacherOnboardingGuardProps> = ({ 
 
   // Stage 3: Credentials Verified, Awaiting AI Interview Pass
   if (approvalStatus === "VERIFIED" && !isInterviewPassed) {
-    // Allowed paths: Onboarding interview page, candidate interviews list, and profile credentials view
+    // Only allow the onboarding interview assessment page and active interview studio session
     const isAllowed =
       pathname === "/teachers/onboarding/interview" ||
-      pathname.startsWith("/teachers/interviews") ||
-      pathname === "/teachers/profile" ||
-      pathname === "/teachers/onboarding/profile" ||
-      pathname.startsWith("/interview/") ||
-      pathname.includes("/password")
+      pathname.startsWith("/interview/")
 
     if (!isAllowed) {
       return <Navigate to="/teachers/onboarding/interview" replace />
@@ -93,5 +89,6 @@ export const TeacherOnboardingGuard: React.FC<TeacherOnboardingGuardProps> = ({ 
   // Fallback
   return children ? <>{children}</> : <Outlet />
 }
+
 
 export default TeacherOnboardingGuard
