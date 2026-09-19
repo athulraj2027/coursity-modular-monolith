@@ -64,7 +64,6 @@ export const ChangePasswordPage: React.FC<ChangePasswordPageProps> = ({ role = "
     role === "admin" ? "ADMIN" : role === "teacher" ? "TEACHER" : "STUDENT"
 
   const userEmail = profileData?.email || authUser?.email || "your registered email"
-  const userName = profileData?.name || authUser?.name || "User"
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

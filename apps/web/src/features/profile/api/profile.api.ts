@@ -1,12 +1,13 @@
 import { apiClient } from "@/lib/api-client"
 import { PROFILE_API_ROUTES } from "../constants/routes.constants"
-import type { FullUserProfileResponse } from "../types/profile.types"
+import type { FullUserProfileResponse, QualificationItem } from "../types/profile.types"
 
 export interface UpdateStudentProfilePayload {
   name?: string
   avatar?: string | null
   bio?: string | null
   phone?: string | null
+  country?: string | null
 }
 
 export interface UpdateTeacherProfilePayload {
@@ -14,10 +15,13 @@ export interface UpdateTeacherProfilePayload {
   avatar?: string | null
   bio?: string | null
   phone?: string | null
+  country?: string | null
   expertise?: string[]
-  qualifications?: string | null
+  qualifications?: QualificationItem[] | string | null
   experienceYears?: number | null
   resume?: string | null
+  credentials?: string[]
+  identityCard?: string | null
   linkedinUrl?: string | null
   twitterUrl?: string | null
   websiteUrl?: string | null

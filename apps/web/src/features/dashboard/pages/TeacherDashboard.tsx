@@ -19,6 +19,8 @@ import { interviewApi } from "@/features/interview"
 import { useProfile } from "@/features/profile"
 import { toast } from "@/lib/toast"
 
+import { normalizeQualifications } from "@/features/profile/types/profile.types"
+
 export const TeacherDashboardPage: React.FC = () => {
   const navigate = useNavigate()
   const [isStartingInterview, setIsStartingInterview] = useState(false)
@@ -28,9 +30,10 @@ export const TeacherDashboardPage: React.FC = () => {
   const handleStartAiInterview = async () => {
     try {
       setIsStartingInterview(true)
+      const qualList = normalizeQualifications(teacherProfile?.qualifications)
       const primaryDomain =
         teacherProfile?.expertise?.[0] ||
-        teacherProfile?.qualifications ||
+        qualList[0]?.title ||
         "Software Engineering & Computer Science"
 
       const res = await interviewApi.createSession({

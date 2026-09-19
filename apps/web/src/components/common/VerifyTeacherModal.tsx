@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button"
 import type { BackendUser, ApprovalStatus } from "@/features/dashboard/types/user-management.types"
 import { verifyTeacherSchema } from "@/features/profile"
+import { normalizeQualifications } from "@/features/profile/types/profile.types"
 
 export interface VerifyTeacherModalProps {
   user: BackendUser | null
@@ -309,12 +310,17 @@ export const VerifyTeacherModal: React.FC<VerifyTeacherModalProps> = ({
             </div>
 
             {/* Quick credentials & Resume */}
-            {(teacherProfile?.qualifications || teacherProfile?.experienceYears != null || teacherProfile?.resume) && (
+            {(normalizeQualifications(teacherProfile?.qualifications).length > 0 || teacherProfile?.experienceYears != null || teacherProfile?.resume) && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-neutral-200/60 dark:border-neutral-800/80 text-[11px] text-neutral-600 dark:text-neutral-300">
-                {teacherProfile?.qualifications && (
+                {normalizeQualifications(teacherProfile?.qualifications).length > 0 && (
                   <div className="flex items-center gap-1.5 truncate">
                     <Award className="w-3 h-3 text-emerald-500 shrink-0" />
-                    <span className="truncate">{teacherProfile.qualifications}</span>
+                    <span className="truncate">
+                      {normalizeQualifications(teacherProfile?.qualifications)[0].title}
+                      {normalizeQualifications(teacherProfile?.qualifications).length > 1
+                        ? ` (+${normalizeQualifications(teacherProfile?.qualifications).length - 1})`
+                        : ""}
+                    </span>
                   </div>
                 )}
                 {teacherProfile?.experienceYears != null && (

@@ -41,11 +41,12 @@ export class UpdateProfile {
             await this.profileRepository.updateUserName(userId, data.name.trim());
         }
 
-        // 2. Upsert common profile (avatar, bio, phone)
+        // 2. Upsert common profile (avatar, bio, phone, country)
         const updatedProfileRecord = await this.profileRepository.upsertProfile(userId, {
             avatar: data.avatar,
             bio: data.bio,
             phone: data.phone,
+            country: data.country,
         });
 
         // 3. If teacher role or teacher-specific fields provided, upsert teacher profile using profileId
@@ -55,6 +56,8 @@ export class UpdateProfile {
             data.qualifications !== undefined ||
             data.experienceYears !== undefined ||
             data.resume !== undefined ||
+            data.credentials !== undefined ||
+            data.identityCard !== undefined ||
             data.linkedinUrl !== undefined ||
             data.twitterUrl !== undefined ||
             data.websiteUrl !== undefined
@@ -64,6 +67,8 @@ export class UpdateProfile {
                 qualifications: data.qualifications,
                 experienceYears: data.experienceYears,
                 resume: data.resume,
+                credentials: data.credentials,
+                identityCard: data.identityCard,
                 linkedinUrl: existingProfile.teacherProfile?.isApproved ? existingProfile.teacherProfile.linkedinUrl : data.linkedinUrl,
                 twitterUrl: existingProfile.teacherProfile?.isApproved ? existingProfile.teacherProfile.twitterUrl : data.twitterUrl,
                 websiteUrl: data.websiteUrl,

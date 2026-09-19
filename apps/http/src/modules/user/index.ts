@@ -83,6 +83,6 @@ export * from "./domain/repositories/user.repository";
 export * from "./infrastructure/repositories/prisma-user.repository";
 export * from "./presentation/validators/user.validator";
 
-export const userRouter = userRoutes.router;
+export const userRouter = userRoutes.router; 78900
 export default userRouter;
 

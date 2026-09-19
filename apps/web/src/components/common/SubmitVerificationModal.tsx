@@ -12,6 +12,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ModalTemplate } from "./ModalTemplate"
 
+import type { QualificationItem } from "@/features/profile/types/profile.types"
+import { normalizeQualifications } from "@/features/profile/types/profile.types"
+
 export interface SubmitVerificationModalProps {
   isOpen: boolean
   onClose: () => void
@@ -20,7 +23,7 @@ export interface SubmitVerificationModalProps {
   submissionCount?: number
   maxSubmissions?: number
   isRedo?: boolean
-  qualifications?: string | null
+  qualifications?: QualificationItem[] | string | null
   bio?: string | null
   expertise?: string[]
 }
@@ -37,6 +40,7 @@ export const SubmitVerificationModal: React.FC<SubmitVerificationModalProps> = (
   bio,
   expertise = [],
 }) => {
+  const normQuals = normalizeQualifications(qualifications)
   const nextAttempt = submissionCount + 1
   const remainingAttempts = Math.max(0, maxSubmissions - nextAttempt)
 
@@ -136,7 +140,9 @@ export const SubmitVerificationModal: React.FC<SubmitVerificationModalProps> = (
               <div className="min-w-0">
                 <span className="font-semibold text-neutral-800 dark:text-neutral-200">Qualifications: </span>
                 <span className="text-neutral-600 dark:text-neutral-400 truncate">
-                  {qualifications?.trim() || "Provided"}
+                  {normQuals.length > 0
+                    ? `${normQuals[0].title}${normQuals.length > 1 ? ` (+${normQuals.length - 1} more)` : ""}`
+                    : "Provided"}
                 </span>
               </div>
             </div>

@@ -21,6 +21,8 @@ export interface UserTeacherProfileDetails {
     qualifications: string | null;
     experienceYears: number | null;
     resume?: string | null;
+    credentials?: string[];
+    identityCard?: string | null;
     linkedinUrl: string | null;
     twitterUrl: string | null;
     websiteUrl: string | null;
@@ -37,6 +39,7 @@ export interface UserProfileDetails {
     avatar: string | null;
     bio: string | null;
     phone: string | null;
+    country?: string | null;
     teacherProfile?: UserTeacherProfileDetails | null;
     createdAt?: Date;
     updatedAt?: Date;

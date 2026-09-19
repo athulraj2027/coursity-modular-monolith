@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Sparkles,
   ArrowRight,
   Bot,
   Calendar,
@@ -11,13 +10,10 @@ import {
   Award,
   AlertCircle,
   XCircle,
-  FileText,
   Mic,
   Brain,
   ShieldCheck,
-  ChevronRight,
   GraduationCap,
-  Play,
   RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,7 +21,7 @@ import { interviewApi } from "../api/interview.api";
 import { StartInterviewModal } from "../components/StartInterviewModal";
 import { useProfile } from "@/features/profile";
 import { useCurrentUser } from "@/features/auth";
-import type { InterviewSession, InterviewOutcome } from "../types/interview.types";
+import type { InterviewSession } from "../types/interview.types";
 
 export const CandidateInterviewsPage: React.FC = () => {
   const navigate = useNavigate();

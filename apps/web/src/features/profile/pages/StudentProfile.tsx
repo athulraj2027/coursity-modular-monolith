@@ -14,15 +14,15 @@ import {
   Clock,
   Loader2,
   RefreshCw,
-  AlertCircle,
   KeyRound,
   FileText,
+  Globe,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { ImageUploadInput } from "@/components/common"
+import { ImageUploadInput, CountrySelect, PhoneInputWithCountry } from "@/components/common"
 import { toast } from "@/lib/toast"
 import { useProfile, useUpdateStudentProfile } from "../hooks/useProfile"
 import { validateStudentForm } from "../schemas/profile.schema"
@@ -31,6 +31,7 @@ interface StudentFormData {
   name: string
   avatar: string
   phone: string
+  country: string
   bio: string
 }
 
@@ -45,6 +46,7 @@ export const StudentProfilePage: React.FC = () => {
     name: "",
     avatar: "",
     phone: "",
+    country: "",
     bio: "",
   })
 
@@ -57,6 +59,7 @@ export const StudentProfilePage: React.FC = () => {
         name: profileData.name || "",
         avatar: profileData.profile?.avatar || "",
         phone: profileData.profile?.phone || "",
+        country: profileData.profile?.country || "",
         bio: profileData.profile?.bio || "",
       })
       setFieldErrors({})
@@ -94,6 +97,7 @@ export const StudentProfilePage: React.FC = () => {
         name: formData.name.trim(),
         avatar: formData.avatar ? formData.avatar.trim() : null,
         phone: formData.phone ? formData.phone.trim() : null,
+        country: formData.country.trim(),
         bio: formData.bio ? formData.bio.trim() : null,
       })
       setActiveTab("overview")
@@ -119,6 +123,7 @@ export const StudentProfilePage: React.FC = () => {
         name: profileData.name || "",
         avatar: profileData.profile?.avatar || "",
         phone: profileData.profile?.phone || "",
+        country: profileData.profile?.country || "",
         bio: profileData.profile?.bio || "",
       })
       setFieldErrors({})
@@ -211,6 +216,12 @@ export const StudentProfilePage: React.FC = () => {
                 <span className="flex items-center gap-1.5">
                   <Phone className="w-3.5 h-3.5 text-neutral-400" />
                   {profile.phone}
+                </span>
+              )}
+              {profile?.country && (
+                <span className="flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-neutral-400" />
+                  {profile.country}
                 </span>
               )}
               {profileData?.createdAt && (
@@ -336,6 +347,13 @@ export const StudentProfilePage: React.FC = () => {
               </div>
 
               <div className="space-y-1">
+                <span className="text-xs text-neutral-400 font-medium">Country</span>
+                <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+                  {profile?.country || "Not specified"}
+                </p>
+              </div>
+
+              <div className="space-y-1">
                 <span className="text-xs text-neutral-400 font-medium">Role</span>
                 <p className="text-sm font-semibold text-neutral-900 dark:text-white">
                   {profileData?.role || "STUDENT"}
@@ -389,7 +407,7 @@ export const StudentProfilePage: React.FC = () => {
 
       {/* Tab: Edit Profile Form (Full-width clean layout) */}
       {activeTab === "edit" && (
-        <form onSubmit={handleSaveChanges} className="w-full space-y-8">
+        <form onSubmit={handleSaveChanges} noValidate className="w-full space-y-8">
           <div className="space-y-1">
             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Edit Profile Details</h2>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -399,28 +417,29 @@ export const StudentProfilePage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
             {/* Full Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Full Name
-              </Label>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="name" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                  Full Name <span className="text-[#F42A18]">*</span>
+                </Label>
+                {fieldErrors.name && (
+                  <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                    {fieldErrors.name}
+                  </span>
+                )}
+              </div>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="Your full name"
-                className={`rounded-xl ${fieldErrors.name ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                className={`rounded-xl ${fieldErrors.name ? "border-[#F42A18] focus-visible:ring-[#F42A18]/25" : ""}`}
                 required
               />
-              {fieldErrors.name && (
-                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {fieldErrors.name}
-                </p>
-              )}
             </div>
 
             {/* Email (Readonly) */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="email" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
                 Email Address (Read-only)
               </Label>
@@ -432,24 +451,48 @@ export const StudentProfilePage: React.FC = () => {
               />
             </div>
 
-            {/* Phone */}
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Phone Number
-              </Label>
-              <Input
+            {/* Country Selection */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="country" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                  Country <span className="text-[#F42A18]">*</span>
+                </Label>
+                {fieldErrors.country && (
+                  <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                    {fieldErrors.country}
+                  </span>
+                )}
+              </div>
+              <CountrySelect
+                id="country"
+                value={formData.country}
+                onChange={(countryName) => handleInputChange("country", countryName)}
+                error={Boolean(fieldErrors.country)}
+                placeholder="Select country"
+              />
+            </div>
+
+            {/* Phone Number with Country Code */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="phone" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                  Phone Number <span className="text-[#F42A18]">*</span>
+                </Label>
+                {fieldErrors.phone && (
+                  <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                    {fieldErrors.phone}
+                  </span>
+                )}
+              </div>
+              <PhoneInputWithCountry
                 id="phone"
                 value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                placeholder="+1 (555) 000-0000"
-                className={`rounded-xl ${fieldErrors.phone ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                country={formData.country}
+                onChange={(val) => handleInputChange("phone", val)}
+                onCountryChange={(countryName) => handleInputChange("country", countryName)}
+                error={Boolean(fieldErrors.phone)}
+                placeholder="555 019 2834"
               />
-              {fieldErrors.phone && (
-                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {fieldErrors.phone}
-                </p>
-              )}
             </div>
 
             {/* Avatar Image Input */}
@@ -465,10 +508,17 @@ export const StudentProfilePage: React.FC = () => {
             </div>
 
             {/* Bio */}
-            <div className="md:col-span-2 space-y-2">
-              <Label htmlFor="bio" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Biography
-              </Label>
+            <div className="md:col-span-2 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="bio" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                  Biography <span className="text-[#F42A18]">*</span>
+                </Label>
+                {fieldErrors.bio && (
+                  <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                    {fieldErrors.bio}
+                  </span>
+                )}
+              </div>
               <textarea
                 id="bio"
                 rows={4}
@@ -477,16 +527,10 @@ export const StudentProfilePage: React.FC = () => {
                 placeholder="Write a brief bio about your background, interests, and learning goals..."
                 className={`w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-sm focus:outline-hidden focus:ring-2 text-neutral-900 dark:text-white ${
                   fieldErrors.bio
-                    ? "border-red-500 focus:ring-red-500/20 focus:border-red-500"
+                    ? "border-[#F42A18] focus:ring-[#F42A18]/20 focus:border-[#F42A18]"
                     : "border-neutral-200 dark:border-neutral-800 focus:ring-[#F42A18]/20 focus:border-[#F42A18]"
                 }`}
               />
-              {fieldErrors.bio && (
-                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {fieldErrors.bio}
-                </p>
-              )}
             </div>
           </div>
 

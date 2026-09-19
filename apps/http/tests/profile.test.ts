@@ -379,5 +379,61 @@ describe("Profile Module Routes", () => {
             assert.deepEqual(res.body.data.profile.teacherProfile.expertise, ["Systems Architecture", "Cloud Native"]);
             assert.equal(res.body.data.profile.teacherProfile.linkedinUrl, "https://linkedin.com/in/approved-teacher");
         });
+
+        it("should allow teacher to update country, multiple credentials certificates, and identityCard", async () => {
+            const res = await request(testCtx.app)
+                .patch("/api/profile/teacher")
+                .set("Authorization", `Bearer ${teacherToken}`)
+                .send({
+                    country: "India",
+                    identityCard: "https://s3.amazonaws.com/coursity-bucket/identity/pan-card.pdf",
+                    credentials: [
+                        "https://s3.amazonaws.com/coursity-bucket/certificates/aws-cert.pdf",
+                        "https://s3.amazonaws.com/coursity-bucket/certificates/kubernetes-cert.pdf",
+                        "https://s3.amazonaws.com/coursity-bucket/certificates/react-expert.png",
+                    ],
+                });
+
+            assert.equal(res.status, 200);
+            assert.equal(res.body.data.profile.profile.country, "India");
+            assert.equal(
+                res.body.data.profile.teacherProfile.identityCard,
+                "https://s3.amazonaws.com/coursity-bucket/identity/pan-card.pdf"
+            );
+            assert.deepEqual(res.body.data.profile.teacherProfile.credentials, [
+                "https://s3.amazonaws.com/coursity-bucket/certificates/aws-cert.pdf",
+                "https://s3.amazonaws.com/coursity-bucket/certificates/kubernetes-cert.pdf",
+                "https://s3.amazonaws.com/coursity-bucket/certificates/react-expert.png",
+            ]);
+        });
+
+        it("should allow teacher to update qualifications as a structured array of course and job entries", async () => {
+            const qualificationItems = [
+                {
+                    title: "Master of Science in Artificial Intelligence",
+                    institution: "Stanford University",
+                    year: "2020 - 2022",
+                },
+                {
+                    title: "Senior Machine Learning Engineer",
+                    institution: "DeepMind / Google",
+                    year: "2022 - Present",
+                },
+            ];
+
+            const res = await request(testCtx.app)
+                .patch("/api/profile/teacher")
+                .set("Authorization", `Bearer ${teacherToken}`)
+                .send({
+                    qualifications: qualificationItems,
+                });
+
+            assert.equal(res.status, 200);
+            assert.deepEqual(
+                res.body.data.profile.teacherProfile.qualifications,
+                qualificationItems
+            );
+        });
     });
 });
+

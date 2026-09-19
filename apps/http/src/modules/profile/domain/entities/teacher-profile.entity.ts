@@ -5,13 +5,21 @@ export type ApprovalStatus =
     | "REVOKED"
     | "REDO";
 
+export interface QualificationItem {
+    title: string;
+    institution?: string | null;
+    year: string;
+}
+
 export interface TeacherProfile {
     id: string;
     profileId: string;
     expertise: string[];
-    qualifications?: string | null;
+    qualifications?: QualificationItem[] | string | null;
     experienceYears?: number | null;
     resume?: string | null;
+    credentials?: string[];
+    identityCard?: string | null;
     linkedinUrl?: string | null;
     twitterUrl?: string | null;
     websiteUrl?: string | null;

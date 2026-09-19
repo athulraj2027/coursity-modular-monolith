@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { planApi } from "../api/plan.api";
+import { planApi, type CreateOrUpdatePlanPayload } from "../api/plan.api";
 import { toast } from "@/lib/toast";
-import type { SubscribePlanInput, Plan } from "../types/plan.types";
+import type { SubscribePlanInput } from "../types/plan.types";
 
 export const PLANS_QUERY_KEY = ["plans"] as const;
 export const MY_SUBSCRIPTION_QUERY_KEY = ["my-subscription"] as const;
@@ -91,7 +91,7 @@ export function useAdminCreatePlan() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: Partial<Plan>) => planApi.adminCreatePlan(payload),
+    mutationFn: (payload: CreateOrUpdatePlanPayload) => planApi.adminCreatePlan(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ADMIN_PLANS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: PLANS_QUERY_KEY });
@@ -107,7 +107,7 @@ export function useAdminUpdatePlan() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Partial<Plan> }) =>
+    mutationFn: ({ id, payload }: { id: string; payload: CreateOrUpdatePlanPayload }) =>
       planApi.adminUpdatePlan(id, payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ADMIN_PLANS_QUERY_KEY });

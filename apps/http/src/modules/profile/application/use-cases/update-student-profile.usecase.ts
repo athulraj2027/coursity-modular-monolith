@@ -20,6 +20,7 @@ export class UpdateStudentProfile {
             avatar: data.avatar,
             bio: data.bio,
             phone: data.phone,
+            country: data.country,
         });
 
         const updatedProfile = await this.profileRepository.getFullProfileByUserId(userId);
