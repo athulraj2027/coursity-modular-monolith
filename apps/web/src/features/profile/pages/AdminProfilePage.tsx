@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { ImageUploadInput, CountrySelect, PhoneInputWithCountry } from "@/components/common"
 import { useConfirmDialog } from "@/hooks/useConfirmDialog"
+import { useUploadFile } from "@/features/dashboard/hooks/useUpload"
 import { toast } from "@/lib/toast"
 import { useProfile, useUpdateStudentProfile } from "../hooks/useProfile"
 
@@ -42,6 +43,7 @@ export const AdminProfilePage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { data: profileData, isLoading, isError, error, refetch } = useProfile()
   const updateMutation = useUpdateStudentProfile()
+  const { uploadFile } = useUploadFile()
 
   const [formData, setFormData] = useState<AdminFormData>({
     name: "",
@@ -50,6 +52,9 @@ export const AdminProfilePage: React.FC = () => {
     country: "",
     bio: "",
   })
+
+  const [stagedAvatar, setStagedAvatar] = useState<File | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof AdminFormData, string>>>({})
 
@@ -113,16 +118,30 @@ export const AdminProfilePage: React.FC = () => {
     setFieldErrors({})
 
     try {
+      setIsUploading(true)
+      let finalAvatarUrl = formData.avatar
+
+      if (stagedAvatar) {
+        const res = await uploadFile({
+          file: stagedAvatar,
+          options: { folder: "avatars", maxDimension: 800, quality: 0.88 },
+        })
+        if (res) finalAvatarUrl = res
+      }
+
       await updateMutation.mutateAsync({
         name: formData.name.trim(),
-        avatar: formData.avatar ? formData.avatar.trim() : null,
+        avatar: finalAvatarUrl?.startsWith("blob:") ? null : finalAvatarUrl || null,
         phone: formData.phone ? formData.phone.trim() : null,
         country: formData.country.trim(),
         bio: formData.bio ? formData.bio.trim() : null,
       })
+      setStagedAvatar(null)
       setActiveTab("overview")
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to update admin profile")
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -144,6 +163,7 @@ export const AdminProfilePage: React.FC = () => {
         if (!confirmed) return
       }
 
+      setStagedAvatar(null)
       setFormData({
         name: profileData.name || "",
         avatar: profileData.profile?.avatar || "",
@@ -381,6 +401,7 @@ export const AdminProfilePage: React.FC = () => {
                 label="Admin Avatar"
                 value={formData.avatar}
                 onChange={(url) => handleInputChange("avatar", url)}
+                onFileSelect={(file) => setStagedAvatar(file)}
                 fallbackName={formData.name || profileData?.name}
                 inputRef={fileInputRef}
               />
@@ -488,7 +509,7 @@ export const AdminProfilePage: React.FC = () => {
               type="button"
               variant="outline"
               onClick={handleResetForm}
-              disabled={updateMutation.isPending}
+              disabled={isUploading || updateMutation.isPending}
               className="gap-1.5 rounded-xl text-xs font-semibold cursor-pointer border-neutral-200 dark:border-neutral-700"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -496,10 +517,10 @@ export const AdminProfilePage: React.FC = () => {
             </Button>
             <Button
               type="submit"
-              disabled={updateMutation.isPending}
+              disabled={isUploading || updateMutation.isPending}
               className="gap-2 rounded-xl text-xs font-semibold bg-[#F42A18] hover:bg-[#d92212] text-white cursor-pointer shadow-md shadow-[#F42A18]/20"
             >
-              {updateMutation.isPending ? (
+              {isUploading || updateMutation.isPending ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   Saving...

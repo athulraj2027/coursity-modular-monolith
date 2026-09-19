@@ -10,6 +10,7 @@ interface ImageUploadInputProps {
   label?: string
   value?: string | null
   onChange: (value: string) => void
+  onFileSelect?: (file: File | null, previewUrl: string) => void
   fallbackName?: string
   folder?: string
   maxSizeMB?: number
@@ -26,6 +27,7 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
   label = "Profile Picture",
   value,
   onChange,
+  onFileSelect,
   fallbackName = "User",
   folder = "avatars",
   maxSizeMB = 5,
@@ -54,6 +56,14 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
 
     if (file.size > maxSizeMB * 1024 * 1024) {
       toast.error(`Image size must be less than ${maxSizeMB}MB`)
+      return
+    }
+
+    if (onFileSelect) {
+      const localUrl = URL.createObjectURL(file)
+      onFileSelect(file, localUrl)
+      onChange(localUrl)
+      toast.success("Image selected")
       return
     }
 
@@ -111,6 +121,9 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
 
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation()
+    if (onFileSelect) {
+      onFileSelect(null, "")
+    }
     onChange("")
   }
 
