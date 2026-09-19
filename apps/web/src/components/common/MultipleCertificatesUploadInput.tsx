@@ -18,6 +18,7 @@ export interface MultipleCertificatesUploadInputProps {
   label?: string
   values?: string[]
   onChange: (values: string[]) => void
+  onFilesSelect?: (stagedFiles: Array<{ file: File; previewUrl: string; name: string }>) => void
   disabled?: boolean
   className?: string
   maxCount?: number
@@ -30,6 +31,7 @@ export const MultipleCertificatesUploadInput: React.FC<MultipleCertificatesUploa
   label = "Professional Certificates & Degrees (Credentials)",
   values = [],
   onChange,
+  onFilesSelect,
   disabled = false,
   className = "",
   maxCount = 20,
@@ -50,6 +52,43 @@ export const MultipleCertificatesUploadInput: React.FC<MultipleCertificatesUploa
 
     if (safeValues.length + files.length > maxCount) {
       toast.error(`You can upload a maximum of ${maxCount} certificates (currently ${safeValues.length})`)
+      return
+    }
+
+    if (onFilesSelect) {
+      const stagedList: Array<{ file: File; previewUrl: string; name: string }> = []
+      const previewUrls: string[] = []
+
+      for (const file of files) {
+        const isAllowed =
+          file.type === "application/pdf" ||
+          file.name.toLowerCase().endsWith(".pdf") ||
+          file.type.startsWith("image/")
+
+        if (!isAllowed) {
+          toast.error(`"${file.name}" is not supported. Please upload PDF or image files.`)
+          continue
+        }
+
+        if (file.size > maxSizeMB * 1024 * 1024) {
+          toast.error(`"${file.name}" exceeds maximum allowed size of ${maxSizeMB}MB`)
+          continue
+        }
+
+        const previewUrl = URL.createObjectURL(file)
+        stagedList.push({ file, previewUrl, name: file.name })
+        previewUrls.push(previewUrl)
+      }
+
+      if (stagedList.length > 0) {
+        onFilesSelect(stagedList)
+        onChange([...safeValues, ...previewUrls])
+        toast.success(
+          stagedList.length === 1
+            ? "Certificate selected"
+            : `${stagedList.length} certificates selected`
+        )
+      }
       return
     }
 

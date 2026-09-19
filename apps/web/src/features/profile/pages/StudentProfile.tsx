@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { ImageUploadInput, CountrySelect, PhoneInputWithCountry } from "@/components/common"
 import { useConfirmDialog } from "@/hooks/useConfirmDialog"
+import { useUploadFile } from "@/features/dashboard/hooks/useUpload"
 import { toast } from "@/lib/toast"
 import { useProfile, useUpdateStudentProfile } from "../hooks/useProfile"
 import { validateStudentForm } from "../schemas/profile.schema"
@@ -42,6 +43,7 @@ export const StudentProfilePage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { data: profileData, isLoading, isError, error, refetch } = useProfile()
   const updateMutation = useUpdateStudentProfile()
+  const { uploadFile } = useUploadFile()
   const { confirm, ConfirmDialog } = useConfirmDialog()
 
   const [formData, setFormData] = useState<StudentFormData>({
@@ -51,6 +53,9 @@ export const StudentProfilePage: React.FC = () => {
     country: "",
     bio: "",
   })
+
+  const [stagedAvatar, setStagedAvatar] = useState<File | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof StudentFormData, string>>>({})
 
@@ -95,13 +100,25 @@ export const StudentProfilePage: React.FC = () => {
     setFieldErrors({})
 
     try {
+      setIsUploading(true)
+      let finalAvatarUrl = formData.avatar
+
+      if (stagedAvatar) {
+        const res = await uploadFile({
+          file: stagedAvatar,
+          options: { folder: "avatars", maxDimension: 800, quality: 0.88 },
+        })
+        if (res) finalAvatarUrl = res
+      }
+
       await updateMutation.mutateAsync({
         name: formData.name.trim(),
-        avatar: formData.avatar ? formData.avatar.trim() : null,
+        avatar: finalAvatarUrl?.startsWith("blob:") ? null : finalAvatarUrl || null,
         phone: formData.phone ? formData.phone.trim() : null,
         country: formData.country.trim(),
         bio: formData.bio ? formData.bio.trim() : null,
       })
+      setStagedAvatar(null)
       setActiveTab("overview")
     } catch (err: unknown) {
       const errorObj = err as { data?: { errors?: { field: string; message: string }[] }; message?: string }
@@ -116,6 +133,8 @@ export const StudentProfilePage: React.FC = () => {
           setFieldErrors(backendErrors)
         }
       }
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -137,6 +156,7 @@ export const StudentProfilePage: React.FC = () => {
         if (!confirmed) return
       }
 
+      setStagedAvatar(null)
       setFormData({
         name: profileData.name || "",
         avatar: profileData.profile?.avatar || "",
@@ -520,6 +540,7 @@ export const StudentProfilePage: React.FC = () => {
                 label="Profile Picture"
                 value={formData.avatar}
                 onChange={(val) => handleInputChange("avatar", val)}
+                onFileSelect={(file) => setStagedAvatar(file)}
                 fallbackName={formData.name || profileData?.name}
                 inputRef={fileInputRef}
               />
@@ -558,7 +579,7 @@ export const StudentProfilePage: React.FC = () => {
               type="button"
               variant="outline"
               onClick={handleResetForm}
-              disabled={updateMutation.isPending}
+              disabled={isUploading || updateMutation.isPending}
               className="gap-2 rounded-xl text-xs cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -566,15 +587,15 @@ export const StudentProfilePage: React.FC = () => {
             </Button>
             <Button
               type="submit"
-              disabled={updateMutation.isPending}
+              disabled={isUploading || updateMutation.isPending}
               className="gap-2 rounded-xl text-xs bg-[#F42A18] hover:bg-[#d92212] text-white cursor-pointer"
             >
-              {updateMutation.isPending ? (
+              {isUploading || updateMutation.isPending ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
                 <Save className="w-3.5 h-3.5" />
               )}
-              {updateMutation.isPending ? "Saving..." : "Save Changes"}
+              {isUploading || updateMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </form>

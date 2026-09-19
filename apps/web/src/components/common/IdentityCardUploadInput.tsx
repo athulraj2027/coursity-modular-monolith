@@ -21,6 +21,7 @@ export interface IdentityCardUploadInputProps {
   label?: string
   value?: string | null
   onChange: (value: string) => void
+  onFileSelect?: (file: File | null, previewUrl: string) => void
   disabled?: boolean
   className?: string
   maxSizeMB?: number
@@ -32,6 +33,7 @@ export const IdentityCardUploadInput: React.FC<IdentityCardUploadInputProps> = (
   label = "Government Identity Document (PAN Card / National ID / Passport)",
   value,
   onChange,
+  onFileSelect,
   disabled = false,
   className = "",
   maxSizeMB = 25,
@@ -56,6 +58,15 @@ export const IdentityCardUploadInput: React.FC<IdentityCardUploadInputProps> = (
 
     if (file.size > maxSizeMB * 1024 * 1024) {
       toast.error(`Identity card file size cannot exceed ${maxSizeMB}MB`)
+      return
+    }
+
+    if (onFileSelect) {
+      setFileName(file.name)
+      const localUrl = URL.createObjectURL(file)
+      onFileSelect(file, localUrl)
+      onChange(localUrl)
+      toast.success("Identity document selected")
       return
     }
 
@@ -111,6 +122,9 @@ export const IdentityCardUploadInput: React.FC<IdentityCardUploadInputProps> = (
 
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation()
+    if (onFileSelect) {
+      onFileSelect(null, "")
+    }
     onChange("")
     setFileName("")
     toast.info("Identity document removed")

@@ -19,6 +19,7 @@ export interface ResumeUploadInputProps {
   label?: string
   value?: string | null
   onChange: (value: string) => void
+  onFileSelect?: (file: File | null, previewUrl: string) => void
   disabled?: boolean
   className?: string
   maxSizeMB?: number
@@ -30,6 +31,7 @@ export const ResumeUploadInput: React.FC<ResumeUploadInputProps> = ({
   label = "Curriculum Vitae / Resume (PDF)",
   value,
   onChange,
+  onFileSelect,
   disabled = false,
   className = "",
   maxSizeMB = 25,
@@ -55,6 +57,15 @@ export const ResumeUploadInput: React.FC<ResumeUploadInputProps> = ({
     // 2. Validate max size
     if (file.size > maxSizeMB * 1024 * 1024) {
       toast.error(`Resume file size cannot exceed ${maxSizeMB}MB`)
+      return
+    }
+
+    if (onFileSelect) {
+      setFileName(file.name)
+      const localUrl = URL.createObjectURL(file)
+      onFileSelect(file, localUrl)
+      onChange(localUrl)
+      toast.success("Resume PDF selected")
       return
     }
 
@@ -110,6 +121,9 @@ export const ResumeUploadInput: React.FC<ResumeUploadInputProps> = ({
 
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation()
+    if (onFileSelect) {
+      onFileSelect(null, "")
+    }
     onChange("")
     setFileName("")
   }

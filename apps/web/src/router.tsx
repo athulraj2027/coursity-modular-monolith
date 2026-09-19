@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom"
 import { MainLayout } from "@/components/layout/MainLayout"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
+import { TeacherOnboardingLayout } from "@/components/layout/TeacherOnboardingLayout"
 import { HomePage } from "@/features/home"
 import { TeachersPage } from "@/features/teachers"
 import {
@@ -15,6 +16,9 @@ import {
   TeacherProfilePage,
   AdminProfilePage,
   ChangePasswordPage,
+  TeacherOnboardingProfilePage,
+  TeacherApplicationReviewPage,
+  TeacherInterviewVettingPage,
 } from "@/features/profile"
 import {
   TeacherPlansPage,
@@ -43,6 +47,7 @@ import {
   RoleGuard,
   GuestGuard,
   PublicRouteGuard,
+  TeacherOnboardingGuard,
   useCurrentUser,
 } from "@/features/auth"
 import { NotFoundPage, UnauthorizedPage } from "@/pages"
@@ -107,34 +112,47 @@ export function AppRoutes() {
         </Route>
       </Route>
 
-      {/* 4. Protected Teacher Portal Routes */}
+      {/* 4. Protected Teacher Portal & Progressive Onboarding Routes */}
       <Route element={<ProtectedRoute />}>
         <Route element={<RoleGuard allowedRoles={["teacher"]} />}>
-          <Route path="/teachers/dashboard" element={<DashboardLayout role="teacher" />}>
-            <Route index element={<TeacherDashboardPage />} />
+          <Route element={<TeacherOnboardingGuard />}>
+            {/* 4.1 Focused Onboarding Flow (No Sidebar, Step Stepper) */}
+            <Route path="/teachers/onboarding" element={<TeacherOnboardingLayout />}>
+              <Route index element={<Navigate to="/teachers/onboarding/profile" replace />} />
+              <Route path="profile" element={<TeacherOnboardingProfilePage />} />
+              <Route path="review" element={<TeacherApplicationReviewPage />} />
+              <Route path="interview" element={<TeacherInterviewVettingPage />} />
+            </Route>
+
+            {/* 4.2 Standard Creator Studio Portal (Full Sidebar, Unlocked after Onboarding) */}
+            <Route path="/teachers/dashboard" element={<DashboardLayout role="teacher" />}>
+              <Route index element={<TeacherDashboardPage />} />
+            </Route>
+            <Route path="/teachers/profile" element={<DashboardLayout role="teacher" />}>
+              <Route index element={<TeacherProfilePage />} />
+            </Route>
+            <Route path="/teachers/password" element={<DashboardLayout role="teacher" />}>
+              <Route index element={<ChangePasswordPage role="teacher" />} />
+            </Route>
+            <Route path="/teachers/plans" element={<DashboardLayout role="teacher" />}>
+              <Route index element={<TeacherPlansPage />} />
+            </Route>
+            <Route path="/teachers/interviews" element={<DashboardLayout role="teacher" />}>
+              <Route index element={<CandidateInterviewsPage />} />
+              <Route path=":sessionId" element={<InterviewCompletedPage />} />
+            </Route>
+
+            {/* Aliases for teacher routes */}
+            <Route path="/teacher/dashboard" element={<Navigate to="/teachers/dashboard" replace />} />
+            <Route path="/teacher/profile" element={<Navigate to="/teachers/profile" replace />} />
+            <Route path="/teacher/onboarding" element={<Navigate to="/teachers/onboarding/profile" replace />} />
+            <Route path="/teachers/profile/password" element={<Navigate to="/teachers/password" replace />} />
+            <Route path="/teacher/password" element={<Navigate to="/teachers/password" replace />} />
+            <Route path="/teacher/plans" element={<Navigate to="/teachers/plans" replace />} />
+            <Route path="/teachers/billing" element={<Navigate to="/teachers/plans" replace />} />
+            <Route path="/teachers/my-interviews" element={<Navigate to="/teachers/interviews" replace />} />
+            <Route path="/teacher/interviews" element={<Navigate to="/teachers/interviews" replace />} />
           </Route>
-          <Route path="/teachers/profile" element={<DashboardLayout role="teacher" />}>
-            <Route index element={<TeacherProfilePage />} />
-          </Route>
-          <Route path="/teachers/password" element={<DashboardLayout role="teacher" />}>
-            <Route index element={<ChangePasswordPage role="teacher" />} />
-          </Route>
-          <Route path="/teachers/plans" element={<DashboardLayout role="teacher" />}>
-            <Route index element={<TeacherPlansPage />} />
-          </Route>
-          <Route path="/teachers/interviews" element={<DashboardLayout role="teacher" />}>
-            <Route index element={<CandidateInterviewsPage />} />
-            <Route path=":sessionId" element={<InterviewCompletedPage />} />
-          </Route>
-          {/* Aliases for teacher */}
-          <Route path="/teacher/dashboard" element={<Navigate to="/teachers/dashboard" replace />} />
-          <Route path="/teacher/profile" element={<Navigate to="/teachers/profile" replace />} />
-          <Route path="/teachers/profile/password" element={<Navigate to="/teachers/password" replace />} />
-          <Route path="/teacher/password" element={<Navigate to="/teachers/password" replace />} />
-          <Route path="/teacher/plans" element={<Navigate to="/teachers/plans" replace />} />
-          <Route path="/teachers/billing" element={<Navigate to="/teachers/plans" replace />} />
-          <Route path="/teachers/my-interviews" element={<Navigate to="/teachers/interviews" replace />} />
-          <Route path="/teacher/interviews" element={<Navigate to="/teachers/interviews" replace />} />
         </Route>
       </Route>
 

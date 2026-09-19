@@ -8,3 +8,5 @@ export * from "./ProtectedRoute"
 export * from "./RoleGuard"
 export * from "./GuestGuard"
 export * from "./PublicRouteGuard"
+export * from "./TeacherOnboardingGuard"
+

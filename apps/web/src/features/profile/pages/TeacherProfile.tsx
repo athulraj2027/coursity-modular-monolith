@@ -58,6 +58,7 @@ import {
 } from "@/components/common"
 import { interviewApi } from "@/features/interview"
 import { toast } from "@/lib/toast"
+import { useUploadFile } from "@/features/dashboard/hooks/useUpload"
 import { useProfile, useUpdateTeacherProfile, useSubmitTeacherVerification } from "../hooks/useProfile"
 import { EXPERTISE_CATEGORIES } from "../constants/expertise.constants"
 import { validateTeacherForm } from "../schemas/profile.schema"
@@ -104,6 +105,7 @@ export const TeacherProfilePage: React.FC = () => {
   const { data: profileData, isLoading, isError, error, refetch } = useProfile()
   const updateMutation = useUpdateTeacherProfile()
   const submitMutation = useSubmitTeacherVerification()
+  const { uploadFile } = useUploadFile()
   const { confirm, ConfirmDialog } = useConfirmDialog()
 
   const [formData, setFormData] = useState<TeacherFormData>({
@@ -122,6 +124,20 @@ export const TeacherProfilePage: React.FC = () => {
     websiteUrl: "",
     expertise: [],
   })
+
+  // Staged files held locally in browser memory until Save Changes / Submit is clicked
+  const [stagedFiles, setStagedFiles] = useState<{
+    avatar: File | null
+    identityCard: File | null
+    resume: File | null
+    credentials: Array<{ file: File; previewUrl: string; name: string }>
+  }>({
+    avatar: null,
+    identityCard: null,
+    resume: null,
+    credentials: [],
+  })
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false)
 
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof TeacherFormData, string>>>({})
   const [expertiseSearch, setExpertiseSearch] = useState("")
@@ -224,6 +240,65 @@ export const TeacherProfilePage: React.FC = () => {
     }
   }).filter(Boolean) as typeof EXPERTISE_CATEGORIES
 
+  const uploadPendingFiles = async () => {
+    let avatarUrl = formData.avatar
+    let identityCardUrl = formData.identityCard
+    let resumeUrl = formData.resume
+    let credentialsUrls = [...formData.credentials]
+
+    // 1. Upload avatar if a new local file was selected
+    if (stagedFiles.avatar) {
+      const res = await uploadFile({
+        file: stagedFiles.avatar,
+        options: { folder: "avatars", maxDimension: 800, quality: 0.88 },
+      })
+      if (res) avatarUrl = res
+    }
+
+    // 2. Upload identity card if a new local file was selected
+    if (stagedFiles.identityCard) {
+      const res = await uploadFile({
+        file: stagedFiles.identityCard,
+        options: { folder: "identity" },
+      })
+      if (res) identityCardUrl = res
+    }
+
+    // 3. Upload resume if a new local file was selected
+    if (stagedFiles.resume) {
+      const res = await uploadFile({
+        file: stagedFiles.resume,
+        options: { folder: "documents" },
+      })
+      if (res) resumeUrl = res
+    }
+
+    // 4. Upload certificates if new local files were selected
+    if (stagedFiles.credentials.length > 0) {
+      const uploadedCerts: string[] = []
+      for (const item of stagedFiles.credentials) {
+        const res = await uploadFile({
+          file: item.file,
+          options: { folder: "certificates" },
+        })
+        if (res) {
+          uploadedCerts.push(res)
+        }
+      }
+      credentialsUrls = [
+        ...credentialsUrls.filter((url) => !url.startsWith("blob:")),
+        ...uploadedCerts,
+      ]
+    }
+
+    return {
+      avatarUrl: avatarUrl?.startsWith("blob:") ? null : avatarUrl || null,
+      identityCardUrl: identityCardUrl?.startsWith("blob:") ? null : identityCardUrl || null,
+      resumeUrl: resumeUrl?.startsWith("blob:") ? null : resumeUrl || null,
+      credentialsUrls: credentialsUrls.filter((url) => !url.startsWith("blob:")),
+    }
+  }
+
   const handleSaveChanges = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -255,22 +330,34 @@ export const TeacherProfilePage: React.FC = () => {
     }
 
     try {
+      setIsUploadingFiles(true)
+      const uploaded = await uploadPendingFiles()
+
       await updateMutation.mutateAsync({
         name: formData.name.trim(),
-        avatar: formData.avatar ? formData.avatar.trim() : null,
+        avatar: uploaded.avatarUrl,
         phone: formData.phone ? formData.phone.trim() : null,
         country: formData.country.trim(),
         bio: formData.bio ? formData.bio.trim() : null,
         qualifications: formData.qualifications,
         experienceYears: Number(formData.experienceYears) || 0,
-        resume: formData.resume ? formData.resume.trim() : null,
-        credentials: formData.credentials,
-        identityCard: formData.identityCard ? formData.identityCard.trim() : null,
+        resume: uploaded.resumeUrl,
+        credentials: uploaded.credentialsUrls,
+        identityCard: uploaded.identityCardUrl,
         linkedinUrl: isSocialLocked ? (teacherProfile?.linkedinUrl || null) : normalizeUrl(formData.linkedinUrl),
         twitterUrl: isSocialLocked ? (teacherProfile?.twitterUrl || null) : normalizeUrl(formData.twitterUrl),
         websiteUrl: normalizeUrl(formData.websiteUrl),
         expertise: formData.expertise,
       })
+
+      setFormData((prev) => ({
+        ...prev,
+        avatar: uploaded.avatarUrl || "",
+        identityCard: uploaded.identityCardUrl || "",
+        resume: uploaded.resumeUrl || "",
+        credentials: uploaded.credentialsUrls,
+      }))
+      setStagedFiles({ avatar: null, identityCard: null, resume: null, credentials: [] })
       setActiveTab("overview")
     } catch (err: unknown) {
       const errorObj = err as { data?: { errors?: { field: string; message: string }[] }; message?: string }
@@ -285,6 +372,8 @@ export const TeacherProfilePage: React.FC = () => {
           setFieldErrors(backendErrors)
         }
       }
+    } finally {
+      setIsUploadingFiles(false)
     }
   }
 
@@ -297,6 +386,8 @@ export const TeacherProfilePage: React.FC = () => {
           "Are you sure you want to revert all changes made to your instructor profile? Any unsaved qualifications, certificates, or bio edits will be lost.",
       })
       if (!confirmed) return
+
+      setStagedFiles({ avatar: null, identityCard: null, resume: null, credentials: [] })
 
       setFormData({
         name: profileData.name || "",
@@ -392,11 +483,49 @@ export const TeacherProfilePage: React.FC = () => {
 
   const handleConfirmSubmitForVerification = async () => {
     try {
+      setIsUploadingFiles(true)
+      const uploaded = await uploadPendingFiles()
+
+      const isSocialLocked =
+        currentApprovalStatus === "IN_PROGRESS" ||
+        currentApprovalStatus === "VERIFIED" ||
+        Boolean(teacherProfile?.isApproved)
+
+      const normalizeUrl = (url?: string | null) => {
+        if (!url) return null
+        const trimmed = url.trim()
+        if (!trimmed) return null
+        if (trimmed.startsWith("/") || trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:") || trimmed.startsWith("blob:")) {
+          return trimmed
+        }
+        return `https://${trimmed}`
+      }
+
+      await updateMutation.mutateAsync({
+        name: formData.name.trim(),
+        avatar: uploaded.avatarUrl,
+        phone: formData.phone ? formData.phone.trim() : null,
+        country: formData.country.trim(),
+        bio: formData.bio ? formData.bio.trim() : null,
+        qualifications: formData.qualifications,
+        experienceYears: Number(formData.experienceYears) || 0,
+        resume: uploaded.resumeUrl,
+        credentials: uploaded.credentialsUrls,
+        identityCard: uploaded.identityCardUrl,
+        linkedinUrl: isSocialLocked ? (teacherProfile?.linkedinUrl || null) : normalizeUrl(formData.linkedinUrl),
+        twitterUrl: isSocialLocked ? (teacherProfile?.twitterUrl || null) : normalizeUrl(formData.twitterUrl),
+        websiteUrl: normalizeUrl(formData.websiteUrl),
+        expertise: formData.expertise,
+      })
+
+      setStagedFiles({ avatar: null, identityCard: null, resume: null, credentials: [] })
       await submitMutation.mutateAsync()
       setIsSubmitModalOpen(false)
       setActiveTab("overview")
     } catch {
       // Handled in mutation hook
+    } finally {
+      setIsUploadingFiles(false)
     }
   }
 
@@ -1367,6 +1496,7 @@ export const TeacherProfilePage: React.FC = () => {
                 label="Instructor Profile Picture"
                 value={formData.avatar}
                 onChange={(val: string) => handleInputChange("avatar", val)}
+                onFileSelect={(file) => setStagedFiles((prev) => ({ ...prev, avatar: file }))}
                 fallbackName={formData.name || profileData?.name}
                 inputRef={fileInputRef}
               />
@@ -1389,6 +1519,7 @@ export const TeacherProfilePage: React.FC = () => {
                 label=""
                 value={formData.resume}
                 onChange={(val: string) => handleInputChange("resume", val)}
+                onFileSelect={(file) => setStagedFiles((prev) => ({ ...prev, resume: file }))}
               />
             </div>
 
@@ -1409,6 +1540,7 @@ export const TeacherProfilePage: React.FC = () => {
                 label=""
                 value={formData.identityCard}
                 onChange={(val: string) => handleInputChange("identityCard", val)}
+                onFileSelect={(file) => setStagedFiles((prev) => ({ ...prev, identityCard: file }))}
               />
             </div>
 
@@ -1428,7 +1560,19 @@ export const TeacherProfilePage: React.FC = () => {
                 id="credentials"
                 label=""
                 values={formData.credentials}
-                onChange={(urls: string[]) => handleInputChange("credentials", urls)}
+                onChange={(urls: string[]) => {
+                  handleInputChange("credentials", urls)
+                  setStagedFiles((prev) => ({
+                    ...prev,
+                    credentials: prev.credentials.filter((item) => urls.includes(item.previewUrl)),
+                  }))
+                }}
+                onFilesSelect={(staged) => {
+                  setStagedFiles((prev) => ({
+                    ...prev,
+                    credentials: [...prev.credentials, ...staged],
+                  }))
+                }}
               />
             </div>
 
@@ -1722,7 +1866,7 @@ export const TeacherProfilePage: React.FC = () => {
               type="button"
               variant="outline"
               onClick={handleResetForm}
-              disabled={updateMutation.isPending}
+              disabled={isUploadingFiles || updateMutation.isPending}
               className="gap-2 rounded-xl text-xs cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -1730,15 +1874,20 @@ export const TeacherProfilePage: React.FC = () => {
             </Button>
             <Button
               type="submit"
-              disabled={updateMutation.isPending}
+              disabled={isUploadingFiles || updateMutation.isPending}
               className="gap-2 rounded-xl text-xs bg-[#F42A18] hover:bg-[#d92212] text-white cursor-pointer"
             >
-              {updateMutation.isPending ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              {isUploadingFiles || updateMutation.isPending ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  {isUploadingFiles ? "Uploading Files..." : "Saving..."}
+                </>
               ) : (
-                <Save className="w-3.5 h-3.5" />
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  Save Changes
+                </>
               )}
-              {updateMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </form>
@@ -1749,7 +1898,7 @@ export const TeacherProfilePage: React.FC = () => {
         isOpen={isSubmitModalOpen}
         onClose={() => setIsSubmitModalOpen(false)}
         onConfirm={handleConfirmSubmitForVerification}
-        isLoading={submitMutation.isPending}
+        isLoading={isUploadingFiles || submitMutation.isPending || updateMutation.isPending}
         submissionCount={submissionCount}
         isRedo={currentApprovalStatus === "REDO"}
         qualifications={formData.qualifications || teacherProfile?.qualifications}

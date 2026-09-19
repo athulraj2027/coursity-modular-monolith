@@ -4,6 +4,7 @@ import {
   InvalidInterviewStateError,
   TemplateNotFoundError,
   InterviewAlreadyPassedError,
+  MaxInterviewAttemptsReachedError,
 } from "../../domain/errors/interview.error";
 import { IInterviewSessionRepository } from "../../domain/repositories/interview-session.repository.interface";
 import { IInterviewTemplateRepository } from "../../domain/repositories/interview-template.repository.interface";
@@ -38,8 +39,8 @@ export class CandidateInterviewUseCases {
 
   async getTemplateBySlug(slug: string): Promise<InterviewTemplateEntity> {
     const template = await this.templateRepo.findBySlug(slug);
-    if (!template || !template.isActive) {
-      throw new TemplateNotFoundError("Interview template not found or inactive");
+    if (!template) {
+      throw new TemplateNotFoundError();
     }
     return template;
   }
@@ -60,6 +61,18 @@ export class CandidateInterviewUseCases {
     }
 
     let type = dto.type || "TEACHER_VETTING";
+
+    if (type === "TEACHER_VETTING") {
+      const vettingAttempts = existing.sessions.filter(
+        (s) => s.type === "TEACHER_VETTING" && s.status !== "CANCELLED"
+      ).length;
+      if (vettingAttempts >= 3) {
+        throw new MaxInterviewAttemptsReachedError(
+          "Maximum interview attempts (3 of 3) reached. Starting a new interview is not permitted. Please contact admissions support."
+        );
+      }
+    }
+
     let difficulty = dto.difficulty || "INTERMEDIATE";
     let domain = dto.domain || "General";
     let templateId = dto.templateId;

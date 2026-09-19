@@ -18,7 +18,7 @@ export type ApprovalStatus =
 export interface UserTeacherProfileDetails {
     id: string;
     expertise: string[];
-    qualifications: string | null;
+    qualifications: any;
     experienceYears: number | null;
     resume?: string | null;
     credentials?: string[];
