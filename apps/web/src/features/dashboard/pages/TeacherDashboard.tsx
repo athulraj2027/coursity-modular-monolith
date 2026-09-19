@@ -1,7 +1,6 @@
-import React, { useState } from "react"
+import React from "react"
 import { useNavigate } from "react-router-dom"
 import {
-  Bot,
   CheckCircle2,
   DollarSign,
   FileCode,
@@ -11,49 +10,12 @@ import {
   ScreenShare,
   Star,
   Users,
-  ArrowRight,
-  Loader2,
+  Bot,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { interviewApi } from "@/features/interview"
-import { useProfile } from "@/features/profile"
-import { toast } from "@/lib/toast"
-
-import { normalizeQualifications } from "@/features/profile/types/profile.types"
-
+import { Badge } from "@/components/ui/badge"
 export const TeacherDashboardPage: React.FC = () => {
   const navigate = useNavigate()
-  const [isStartingInterview, setIsStartingInterview] = useState(false)
-  const { data: profileData } = useProfile()
-  const teacherProfile = profileData?.teacherProfile
-
-  const handleStartAiInterview = async () => {
-    try {
-      setIsStartingInterview(true)
-      const qualList = normalizeQualifications(teacherProfile?.qualifications)
-      const primaryDomain =
-        teacherProfile?.expertise?.[0] ||
-        qualList[0]?.title ||
-        "Software Engineering & Computer Science"
-
-      const res = await interviewApi.createSession({
-        type: "TEACHER_VETTING",
-        domain: primaryDomain,
-        difficulty: "INTERMEDIATE",
-      })
-
-      if (res.success && res.data) {
-        toast.success("AI Vetting Interview initialized!")
-        navigate(`/interview/${res.data.id}/setup`)
-      } else {
-        toast.error(res.message || "Failed to initialize interview")
-      }
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to start AI interview session")
-    } finally {
-      setIsStartingInterview(false)
-    }
-  }
 
   return (
     <div className="flex flex-1 flex-col gap-6 w-full">
@@ -65,46 +27,36 @@ export const TeacherDashboardPage: React.FC = () => {
         />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-xl space-y-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wider bg-[#F42A18]/10 text-[#F42A18] border border-[#F42A18]/20">
-              <GraduationCap className="w-3.5 h-3.5" />
-              Verified Creator & Mentor
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wider bg-[#F42A18]/10 text-[#F42A18] border border-[#F42A18]/20">
+                <GraduationCap className="w-3.5 h-3.5" />
+                Verified Creator & Mentor
+              </span>
+              <Badge variant="outline" className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 border-emerald-500/20 bg-emerald-500/10 gap-1 py-0.5">
+                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                Certified Instructor
+              </Badge>
+            </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
               Creator Studio Hub
             </h1>
             <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
-              Track learner engagement, conduct real-time AI vetting assessments, and host interactive live coding cohorts.
+              Track learner engagement, author interactive courses, and host live coding cohorts on Coursity.
             </p>
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            {teacherProfile?.isInterviewPassed ? (
-              <Button
-                variant="outline"
-                onClick={() => navigate("/teachers/interviews")}
-                className="gap-2 rounded-xl text-xs sm:text-sm font-semibold border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-4 py-2.5 cursor-pointer shadow-xs"
-              >
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span>AI Vetting Passed {teacherProfile.interviewScore ? `(${teacherProfile.interviewScore}%)` : ""}</span>
-              </Button>
-            ) : (
-              <Button
-                onClick={handleStartAiInterview}
-                disabled={isStartingInterview}
-                className="gap-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-[#F42A18] to-rose-600 hover:from-[#d92212] hover:to-rose-700 text-white px-5 py-3 shadow-md shadow-[#F42A18]/25 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
-              >
-                {isStartingInterview ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Bot className="w-4 h-4" />
-                )}
-                <span>{isStartingInterview ? "Starting..." : "Start AI Interview"}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Button>
-            )}
+            <Button
+              onClick={() => navigate("/community")}
+              className="gap-2 rounded-xl text-xs sm:text-sm font-bold bg-[#F42A18] hover:bg-[#d92212] text-white px-5 py-2.5 shadow-md shadow-[#F42A18]/25 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create New Course Track</span>
+            </Button>
           </div>
         </div>
       </div>
+
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

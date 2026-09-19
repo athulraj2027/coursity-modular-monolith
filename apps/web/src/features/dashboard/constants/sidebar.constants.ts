@@ -78,12 +78,6 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         icon: LayoutDashboard,
       },
       {
-        title: "AI Vetting Interviews",
-        url: "/teachers/interviews",
-        icon: Bot,
-        badge: "AI",
-      },
-      {
         title: "Plans & Billing",
         url: "/teachers/plans",
         icon: Zap,

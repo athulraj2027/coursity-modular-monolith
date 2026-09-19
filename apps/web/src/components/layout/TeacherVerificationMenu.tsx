@@ -77,7 +77,7 @@ export const TeacherVerificationMenu: React.FC<TeacherVerificationMenuProps> = (
       <div className="px-2 py-2 flex justify-center">
         <button
           type="button"
-          onClick={() => navigate(isVerified ? "/teachers/interviews" : "/teachers/profile")}
+          onClick={() => navigate(isVerified ? "/teachers/onboarding/interview" : "/teachers/onboarding/profile")}
           title={`Verification Status: ${statusBadgeText}`}
           className="relative w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center hover:bg-amber-500/20 transition-colors cursor-pointer"
         >
@@ -210,7 +210,7 @@ export const TeacherVerificationMenu: React.FC<TeacherVerificationMenuProps> = (
 
           {/* Step 3: Complete AI Interview */}
           <div
-            onClick={() => navigate("/teachers/interviews")}
+            onClick={() => navigate("/teachers/onboarding/interview")}
             className={cn(
               "p-2 rounded-xl border transition-all cursor-pointer flex items-start gap-2.5 group",
               !isInterviewPassed && (isVerified || isProfileComplete)
@@ -233,7 +233,7 @@ export const TeacherVerificationMenu: React.FC<TeacherVerificationMenuProps> = (
                 <ChevronRight className="w-3 h-3 text-[#F42A18] group-hover:translate-x-0.5 transition-transform" />
               </div>
               <p className="text-[10px] text-neutral-500 dark:text-neutral-400 leading-tight mt-0.5">
-                15-min real-time voice vetting (Score $\ge 70\%$ to unlock courses)
+                15-min real-time voice vetting (Score ≥ 70% to unlock studio)
               </p>
             </div>
           </div>
@@ -242,7 +242,7 @@ export const TeacherVerificationMenu: React.FC<TeacherVerificationMenuProps> = (
           <button
             type="button"
             onClick={() =>
-              navigate(isVerified ? "/teachers/interviews" : "/teachers/profile")
+              navigate(isVerified ? "/teachers/onboarding/interview" : "/teachers/onboarding/profile")
             }
             className="w-full mt-1 py-1.5 px-2 rounded-lg bg-[#F42A18] hover:bg-[#d92212] text-white text-[10px] font-bold transition-all shadow-xs flex items-center justify-center gap-1 cursor-pointer"
           >
