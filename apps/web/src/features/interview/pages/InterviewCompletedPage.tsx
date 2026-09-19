@@ -58,11 +58,15 @@ export const InterviewCompletedPage: React.FC = () => {
 
   const handleBack = () => {
     if (isTeacher) {
-      navigate("/teachers/interviews");
+      if (report?.overallScore && report.overallScore >= 70) {
+        navigate("/teachers/dashboard");
+      } else {
+        navigate("/teachers/onboarding/interview");
+      }
     } else if (isAdmin) {
       navigate("/admin/interviews");
     } else {
-      navigate("/dashboard");
+      navigate("/students/interviews");
     }
   };
 

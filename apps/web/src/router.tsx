@@ -137,12 +137,9 @@ export function AppRoutes() {
             <Route path="/teachers/plans" element={<DashboardLayout role="teacher" />}>
               <Route index element={<TeacherPlansPage />} />
             </Route>
-            <Route path="/teachers/interviews" element={<DashboardLayout role="teacher" />}>
-              <Route index element={<CandidateInterviewsPage />} />
-              <Route path=":sessionId" element={<InterviewCompletedPage />} />
-            </Route>
 
             {/* Aliases for teacher routes */}
+            <Route path="/teachers/interviews" element={<Navigate to="/teachers/dashboard" replace />} />
             <Route path="/teacher/dashboard" element={<Navigate to="/teachers/dashboard" replace />} />
             <Route path="/teacher/profile" element={<Navigate to="/teachers/profile" replace />} />
             <Route path="/teacher/onboarding" element={<Navigate to="/teachers/onboarding/profile" replace />} />
@@ -150,8 +147,8 @@ export function AppRoutes() {
             <Route path="/teacher/password" element={<Navigate to="/teachers/password" replace />} />
             <Route path="/teacher/plans" element={<Navigate to="/teachers/plans" replace />} />
             <Route path="/teachers/billing" element={<Navigate to="/teachers/plans" replace />} />
-            <Route path="/teachers/my-interviews" element={<Navigate to="/teachers/interviews" replace />} />
-            <Route path="/teacher/interviews" element={<Navigate to="/teachers/interviews" replace />} />
+            <Route path="/teachers/my-interviews" element={<Navigate to="/teachers/dashboard" replace />} />
+            <Route path="/teacher/interviews" element={<Navigate to="/teachers/dashboard" replace />} />
           </Route>
         </Route>
       </Route>
@@ -228,7 +225,7 @@ function CandidateDossierWrapper() {
 function RoleBasedInterviewRedirect() {
   const { data: user } = useCurrentUser();
   if (user?.role === "TEACHER" || user?.role === "teacher") {
-    return <Navigate to="/teachers/interviews" replace />;
+    return <Navigate to="/teachers/dashboard" replace />;
   }
   if (user?.role === "ADMIN" || user?.role === "admin") {
     return <Navigate to="/admin/interviews" replace />;

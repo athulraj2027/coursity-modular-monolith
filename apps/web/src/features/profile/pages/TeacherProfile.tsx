@@ -32,8 +32,6 @@ import {
   FileText,
   KeyRound,
   Download,
-  Bot,
-  ArrowRight,
   CreditCard,
   Award,
   Building2,
@@ -56,7 +54,6 @@ import {
   QualificationsArrayInput,
   useConfirmDialog,
 } from "@/components/common"
-import { interviewApi } from "@/features/interview"
 import { toast } from "@/lib/toast"
 import { useUploadFile } from "@/features/dashboard/hooks/useUpload"
 import { useProfile, useUpdateTeacherProfile, useSubmitTeacherVerification } from "../hooks/useProfile"
@@ -144,7 +141,6 @@ export const TeacherProfilePage: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>("all")
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false)
-  const [isStartingInterview, setIsStartingInterview] = useState(false)
   const navigate = useNavigate()
 
   // Sync form state when backend profile data is loaded or updated
@@ -529,34 +525,6 @@ export const TeacherProfilePage: React.FC = () => {
     }
   }
 
-  const handleStartAiInterview = async () => {
-    try {
-      setIsStartingInterview(true)
-      const primaryDomain =
-        teacherProfile?.expertise?.[0] ||
-        formData.expertise?.[0] ||
-        formData.qualifications?.[0]?.title ||
-        "Software Engineering & Pedagogy"
-
-      const res = await interviewApi.createSession({
-        type: "TEACHER_VETTING",
-        domain: primaryDomain,
-        difficulty: "INTERMEDIATE",
-      })
-
-      if (res.success && res.data) {
-        toast.success("AI Vetting Interview initialized!")
-        navigate(`/interview/${res.data.id}/setup`)
-      } else {
-        toast.error(res.message || "Failed to initialize interview")
-      }
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to start AI interview session")
-    } finally {
-      setIsStartingInterview(false)
-    }
-  }
-
   const avatarUrl =
     userProfile?.avatar ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData?.name || "Teacher")}&background=F42A18&color=fff`
@@ -717,41 +685,21 @@ export const TeacherProfilePage: React.FC = () => {
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
           {(currentApprovalStatus === "VERIFIED" || teacherProfile?.isApproved) && (
-            teacherProfile?.isInterviewPassed ? (
-              <Button
-                variant="outline"
-                onClick={() => navigate("/teachers/interviews")}
-                className="gap-2 rounded-xl text-xs font-semibold cursor-pointer w-full sm:w-auto border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-                title="AI Vetting Assessment Passed"
-              >
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span>AI Vetting Passed {teacherProfile.interviewScore ? `(${teacherProfile.interviewScore}%)` : ""}</span>
-              </Button>
-            ) : (
-              <Button
-                onClick={handleStartAiInterview}
-                disabled={isStartingInterview}
-                className="gap-2 rounded-xl text-xs font-semibold cursor-pointer w-full sm:w-auto bg-gradient-to-r from-[#F42A18] to-rose-600 hover:from-[#d92212] hover:to-rose-700 text-white shadow-md shadow-red-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                title="Start real-time AI technical and pedagogical vetting interview"
-              >
-                {isStartingInterview ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Bot className="w-3.5 h-3.5" />
-                )}
-                <span>{isStartingInterview ? "Starting..." : "Start AI Interview"}</span>
-              </Button>
-            )
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <span>Certified Instructor</span>
+            </div>
           )}
 
           {(currentApprovalStatus === "PENDING" || currentApprovalStatus === "REDO") && (
             <Button
               onClick={handleSubmitForVerification}
               disabled={submitMutation.isPending || isSubmissionMaxed}
-              className={`gap-2 rounded-xl text-xs font-semibold cursor-pointer w-full sm:w-auto ${isSubmissionMaxed
+              className={`gap-2 rounded-xl text-xs font-semibold cursor-pointer w-full sm:w-auto ${
+                isSubmissionMaxed
                   ? "bg-neutral-600 text-neutral-300 cursor-not-allowed"
                   : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                }`}
+              }`}
               title={
                 isSubmissionMaxed
                   ? "Maximum submission attempts reached (5/5). Contact administrator to reapply."
@@ -776,10 +724,11 @@ export const TeacherProfilePage: React.FC = () => {
           <Button
             variant={activeTab === "edit" ? "outline" : "default"}
             onClick={() => setActiveTab(activeTab === "edit" ? "overview" : "edit")}
-            className={`gap-2 rounded-xl text-xs font-semibold cursor-pointer w-full sm:w-auto ${activeTab === "overview"
+            className={`gap-2 rounded-xl text-xs font-semibold cursor-pointer w-full sm:w-auto ${
+              activeTab === "overview"
                 ? "bg-[#F42A18] hover:bg-[#d92212] text-white"
                 : ""
-              }`}
+            }`}
           >
             <Edit3 className="w-4 h-4" />
             {activeTab === "edit" ? "View Overview" : "Edit Profile"}
@@ -1297,69 +1246,30 @@ export const TeacherProfilePage: React.FC = () => {
           </div>
 
           {/* Verified Instructor AI Assessment & Vetting Card */}
-          {(currentApprovalStatus === "VERIFIED" || teacherProfile?.isApproved) && (
-            <div className="relative overflow-hidden rounded-3xl border border-neutral-200/80 dark:border-neutral-800 bg-gradient-to-br from-neutral-900 via-neutral-900/95 to-neutral-950 p-6 sm:p-8 text-white shadow-xl space-y-4">
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[#F42A18]/25 blur-3xl"
-              />
-              <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                <div className="space-y-2.5 max-w-2xl">
-                  <div className="flex flex-wrap items-center gap-2">
+          {teacherProfile?.isInterviewPassed && (
+            <div className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-neutral-900 via-neutral-900 to-emerald-950/40 p-6 sm:p-8 text-left shadow-lg">
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-2 max-w-2xl">
+                  <div className="flex items-center gap-2">
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      Verified Instructor Status
+                      Verified & Certified Instructor
                     </span>
-                    {teacherProfile?.isInterviewPassed ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        AI Assessment Passed ({teacherProfile.interviewScore ? `${teacherProfile.interviewScore}%` : "Verified"})
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#F42A18]/20 text-red-400 border border-[#F42A18]/30">
-                        <Bot className="w-3.5 h-3.5" />
-                        Real-Time AI Studio
-                      </span>
-                    )}
                   </div>
                   <h3 className="text-lg sm:text-xl font-bold tracking-tight text-white">
-                    {teacherProfile?.isInterviewPassed
-                      ? "Instructor AI Vetting & Pedagogical Certification"
-                      : "Instructor AI Vetting & Pedagogical Evaluation"}
+                    Instructor Pedagogical & Technical Certification
                   </h3>
                   <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed">
-                    {teacherProfile?.isInterviewPassed
-                      ? teacherProfile.interviewFeedback ||
-                        "You have successfully passed the multi-agent AI technical and pedagogical evaluation. Your instructor credentials and course publishing rights are fully activated."
-                      : "Test your syllabus presentation, practice live technical Q&A, and generate comprehensive cognitive scorecards powered by Coursity's 12 multi-agent reasoning architecture."}
+                    {teacherProfile.interviewFeedback ||
+                      "You have successfully passed the AI technical and pedagogical evaluation. Your instructor credentials and course publishing rights are fully activated on Coursity."}
                   </p>
                 </div>
-                {teacherProfile?.isInterviewPassed ? (
-                  <Button
-                    type="button"
-                    onClick={() => navigate("/teachers/interviews")}
-                    className="gap-2.5 rounded-2xl text-xs sm:text-sm font-bold bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3.5 shadow-lg shadow-emerald-500/25 shrink-0 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>View AI Vetting Results</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    onClick={handleStartAiInterview}
-                    disabled={isStartingInterview}
-                    className="gap-2.5 rounded-2xl text-xs sm:text-sm font-bold bg-gradient-to-r from-[#F42A18] to-rose-600 hover:from-[#d92212] hover:to-rose-700 text-white px-6 py-3.5 shadow-lg shadow-[#F42A18]/30 shrink-0 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    {isStartingInterview ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Bot className="w-4 h-4" />
-                    )}
-                    <span>{isStartingInterview ? "Starting Interview..." : "Start AI Interview"}</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                )}
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge variant="outline" className="text-xs font-semibold text-emerald-400 border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Assessment Passed {teacherProfile.interviewScore ? `(${teacherProfile.interviewScore}%)` : ""}</span>
+                  </Badge>
+                </div>
               </div>
             </div>
           )}
