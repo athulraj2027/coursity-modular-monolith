@@ -1,4 +1,4 @@
-import { UserRepository } from "@/modules/user";
+import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
 import { PasswordService } from "../../domain/services/password.service";
 import { ConflictError, BadRequestError } from "@/app/errors";
 import { SignupUserInputDTO, SignupUserOutputDTO } from "../dtos/signup.dto";

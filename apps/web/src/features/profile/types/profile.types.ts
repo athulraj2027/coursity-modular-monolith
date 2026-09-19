@@ -8,17 +8,55 @@ export interface UserProfileModel {
   avatar: string | null
   bio: string | null
   phone: string | null
+  country: string | null
   createdAt: string
   updatedAt: string
+}
+
+export interface QualificationItem {
+  title: string
+  institution?: string | null
+  year: string
+}
+
+export function normalizeQualifications(raw: any): QualificationItem[] {
+  if (!raw) return []
+  if (Array.isArray(raw)) {
+    const results: QualificationItem[] = []
+    for (const item of raw) {
+      if (typeof item === "string") {
+        const trimmed = item.trim()
+        if (trimmed) {
+          results.push({ title: trimmed, institution: null, year: "" })
+        }
+      } else if (typeof item === "object" && item !== null) {
+        const title = String(item.title || "").trim()
+        if (title) {
+          results.push({
+            title,
+            institution: item.institution ? String(item.institution).trim() : null,
+            year: String(item.year || "").trim(),
+          })
+        }
+      }
+    }
+    return results
+  }
+  if (typeof raw === "string" && raw.trim()) {
+    return [{ title: raw.trim(), institution: null, year: "" }]
+  }
+  return []
 }
 
 export interface TeacherProfileModel {
   id: string
   profileId: string
   expertise: string[]
-  qualifications: string | null
+  qualifications: QualificationItem[] | string | null
   experienceYears: number | null
   resume?: string | null
+  credentials?: string[]
+  identityCard?: string | null
   linkedinUrl: string | null
   twitterUrl: string | null
   websiteUrl: string | null

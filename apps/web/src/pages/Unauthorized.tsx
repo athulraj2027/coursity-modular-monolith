@@ -1,6 +1,7 @@
 import React from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useCurrentUser, useLogout } from "@/features/auth"
+import { useConfirmDialog } from "@/hooks/useConfirmDialog"
 import { Button } from "@/components/ui/button"
 import { ShieldAlert, Home, LayoutDashboard, LogOut, Loader2 } from "lucide-react"
 
@@ -8,6 +9,7 @@ export const UnauthorizedPage: React.FC = () => {
   const { data: user } = useCurrentUser()
   const logout = useLogout()
   const navigate = useNavigate()
+  const { confirm, ConfirmDialog } = useConfirmDialog()
 
   const userRole = user?.role?.toLowerCase()
   let dashboardPath = "/students/dashboard"
@@ -22,6 +24,13 @@ export const UnauthorizedPage: React.FC = () => {
   }
 
   const handleSignOut = async () => {
+    const confirmed = await confirm({
+      actionType: "logout",
+      title: "Sign Out / Switch Account",
+      description: "Are you sure you want to sign out of your current account?",
+    })
+    if (!confirmed) return
+
     try {
       await logout.mutateAsync()
       navigate("/signin", { replace: true })
@@ -121,6 +130,7 @@ export const UnauthorizedPage: React.FC = () => {
           </div>
         )}
       </div>
+      <ConfirmDialog />
     </div>
   )
 }

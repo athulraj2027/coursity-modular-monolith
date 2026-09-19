@@ -4,6 +4,7 @@ export const STORAGE_FOLDERS = [
     "courses",
     "thumbnails",
     "documents",
+    "identity",
     "general",
 ] as const;
 

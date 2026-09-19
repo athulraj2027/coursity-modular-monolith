@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   ShieldAlert,
   Sparkles,
-  TrendingUp,
   FileText,
   RotateCcw,
   MessageSquare,
@@ -28,8 +27,6 @@ import { interviewApi } from "../api/interview.api";
 import { OverrideDecisionModal } from "../components/OverrideDecisionModal";
 import type {
   InterviewOutcome,
-  InterviewDifficulty,
-  TranscriptRole,
 } from "../types/interview.types";
 import { toast } from "react-toastify";
 

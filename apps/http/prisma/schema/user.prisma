@@ -42,6 +42,7 @@ model Profile {
   avatar         String?
   bio            String?
   phone          String?
+  country        String?
 
   teacherProfile TeacherProfile?
 
@@ -56,9 +57,11 @@ model TeacherProfile {
   profileId       String                  @unique
   profile         Profile                 @relation(fields: [profileId], references: [id], onDelete: Cascade)
   expertise       String[]                @default([])
-  qualifications  String?
+  qualifications  Json?                   @default("[]")
   experienceYears Int?
   resume          String?
+  credentials     String[]                @default([])
+  identityCard    String?
   linkedinUrl     String?
   twitterUrl      String?
   websiteUrl      String?

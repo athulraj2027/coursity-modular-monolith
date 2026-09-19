@@ -26,11 +26,16 @@ import { requireRoles } from "@/app/middlewares/role.middleware";
 import { UserRoutes } from "./presentation/routes/user.routes";
 
 // Shared Infrastructure Services & Repositories
-import { passwordService, tokenService, tokenRepository } from "@/modules/auth";
+import { BcryptPasswordService } from "@/modules/auth/infrastructure/services/bcrypt/bcrypt-password.service";
+import { RedisTokenRepository } from "@/modules/auth/infrastructure/repositories/redis-token.repository";
+import { JwtTokenService } from "@/modules/auth/infrastructure/services/jwt/jwt-token.service";
 import { emailService } from "@/modules/email";
 
 // 1. Repositories & Services
 const userRepository = new PrismaUserRepository();
+const passwordService = new BcryptPasswordService();
+const tokenRepository = new RedisTokenRepository();
+const tokenService = new JwtTokenService();
 
 // 2. Middlewares
 const authMiddleware = createAuthMiddleware(tokenService);
@@ -78,6 +83,6 @@ export * from "./domain/repositories/user.repository";
 export * from "./infrastructure/repositories/prisma-user.repository";
 export * from "./presentation/validators/user.validator";
 
-export const userRouter = userRoutes.router;
+export const userRouter = userRoutes.router; 78900
 export default userRouter;
 

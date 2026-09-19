@@ -22,6 +22,7 @@ import {
   useAdminCreatePlan,
   useAdminUpdatePlan,
 } from "../hooks/usePlans";
+import { type CreateOrUpdatePlanPayload } from "../api/plan.api";
 import type { BillingCycle, Feature } from "../types/plan.types";
 
 interface FormFeatureState {
@@ -172,9 +173,7 @@ export const AdminPlanFormPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const payload: Partial<Plan> & {
-      features: { featureId: string; value: string; isUnlimited: boolean }[];
-    } = {
+    const payload: CreateOrUpdatePlanPayload = {
       name: name.trim(),
       slug: slug.trim().toLowerCase(),
       tagline: tagline.trim() || null,

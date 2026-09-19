@@ -26,6 +26,16 @@ export interface SubscribeResponse {
   data: TeacherSubscription;
 }
 
+export interface CreateOrUpdatePlanPayload extends Omit<Partial<Plan>, "features"> {
+  features?: {
+    featureId: string;
+    value: string;
+    isUnlimited: boolean;
+    id?: string;
+    planId?: string;
+  }[];
+}
+
 export const planApi = {
   // 1. Get all public active plans and features
   getPublicPlans: async (): Promise<{ plans: Plan[]; features: Feature[] }> => {
@@ -70,7 +80,7 @@ export const planApi = {
   },
 
   // 6. Admin: Create plan
-  adminCreatePlan: async (payload: Partial<Plan>): Promise<Plan> => {
+  adminCreatePlan: async (payload: CreateOrUpdatePlanPayload): Promise<Plan> => {
     const res = await apiClient<{ success: boolean; message: string; data: Plan }>("/plans/admin", {
       method: "POST",
       body: JSON.stringify(payload),
@@ -79,7 +89,7 @@ export const planApi = {
   },
 
   // 7. Admin: Update plan
-  adminUpdatePlan: async (id: string, payload: Partial<Plan>): Promise<Plan> => {
+  adminUpdatePlan: async (id: string, payload: CreateOrUpdatePlanPayload): Promise<Plan> => {
     const res = await apiClient<{ success: boolean; message: string; data: Plan }>(`/plans/admin/${id}`, {
       method: "PUT",
       body: JSON.stringify(payload),

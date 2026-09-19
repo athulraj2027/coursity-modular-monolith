@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ModalTemplate } from "@/components/common/ModalTemplate";
 import { useAdminFeatures, useAdminCreatePlan, useAdminUpdatePlan } from "../hooks/usePlans";
+import { type CreateOrUpdatePlanPayload } from "../api/plan.api";
 import type { Plan, BillingCycle, Feature } from "../types/plan.types";
 
 interface PlanFormModalProps {
@@ -189,9 +190,7 @@ export const PlanFormModal: React.FC<PlanFormModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const payload: Partial<Plan> & {
-      features: { featureId: string; value: string; isUnlimited: boolean }[];
-    } = {
+    const payload: CreateOrUpdatePlanPayload = {
       name: name.trim(),
       slug: slug.trim().toLowerCase(),
       tagline: tagline.trim() || null,

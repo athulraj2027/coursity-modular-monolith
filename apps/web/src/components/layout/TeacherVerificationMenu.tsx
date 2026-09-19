@@ -4,17 +4,16 @@ import {
   ShieldAlert,
   CheckCircle2,
   Clock,
-  RotateCcw,
   Bot,
   ChevronDown,
   ChevronRight,
   ArrowRight,
   Edit3,
   AlertTriangle,
-  Sparkles,
   Send,
 } from "lucide-react"
 import { useProfile } from "@/features/profile"
+import { normalizeQualifications } from "@/features/profile/types/profile.types"
 import { cn } from "@/lib/utils"
 
 export interface TeacherVerificationMenuProps {
@@ -38,7 +37,7 @@ export const TeacherVerificationMenu: React.FC<TeacherVerificationMenuProps> = (
 
   // Calculate profile completion and status flags
   const hasBioOrQual = Boolean(
-    userProfile?.bio?.trim() || teacherProfile?.qualifications?.trim()
+    userProfile?.bio?.trim() || normalizeQualifications(teacherProfile?.qualifications).length > 0
   )
   const hasExpertise = Boolean(
     teacherProfile?.expertise && teacherProfile.expertise.length > 0

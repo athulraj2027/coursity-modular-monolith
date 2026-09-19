@@ -40,9 +40,7 @@ export const studentProfileSchema = z.object({
     .string()
     .trim()
     .refine(
-      (val) =>
-        val === "" ||
-        isValidHttpUrl(val),
+      (val) => val === "" || isValidHttpUrl(val),
       {
         message: "Avatar must be a valid image URL",
       }
@@ -50,23 +48,47 @@ export const studentProfileSchema = z.object({
     .optional()
     .nullable()
     .or(z.literal("")),
+  country: z
+    .string()
+    .trim()
+    .min(1, "Country is required")
+    .max(100, "Country cannot exceed 100 characters"),
   phone: z
     .string()
     .trim()
-    .max(20, "Phone number cannot exceed 20 characters")
-    .optional()
-    .nullable()
-    .or(z.literal("")),
+    .min(1, "Phone number is required")
+    .min(5, "Phone number must be at least 5 digits")
+    .max(25, "Phone number cannot exceed 25 characters"),
   bio: z
     .string()
     .trim()
-    .max(1000, "Biography cannot exceed 1000 characters")
-    .optional()
-    .nullable()
-    .or(z.literal("")),
+    .min(1, "Biography is required")
+    .min(10, "Biography must be at least 10 characters")
+    .max(1000, "Biography cannot exceed 1000 characters"),
 })
 
 export type StudentProfileInput = z.infer<typeof studentProfileSchema>
+
+export const qualificationItemSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, "Degree, course, or job title is required")
+    .max(150, "Title cannot exceed 150 characters"),
+  institution: z
+    .string()
+    .trim()
+    .max(150, "Institution cannot exceed 150 characters")
+    .optional()
+    .default(""),
+  year: z
+    .string()
+    .trim()
+    .min(1, "Year or duration is required (e.g. 2022 or 2018-2022)")
+    .max(50, "Year cannot exceed 50 characters"),
+})
+
+export type QualificationItemInput = z.infer<typeof qualificationItemSchema>
 
 export const teacherProfileSchema = z.object({
   name: z
@@ -79,9 +101,7 @@ export const teacherProfileSchema = z.object({
     .string()
     .trim()
     .refine(
-      (val) =>
-        val === "" ||
-        isValidHttpUrl(val),
+      (val) => val === "" || isValidHttpUrl(val),
       {
         message: "Avatar must be a valid image URL",
       }
@@ -89,27 +109,27 @@ export const teacherProfileSchema = z.object({
     .optional()
     .nullable()
     .or(z.literal("")),
+  country: z
+    .string()
+    .trim()
+    .min(1, "Country is required")
+    .max(100, "Country cannot exceed 100 characters"),
   phone: z
     .string()
     .trim()
-    .max(20, "Phone number cannot exceed 20 characters")
-    .optional()
-    .nullable()
-    .or(z.literal("")),
+    .min(1, "Phone number is required")
+    .min(5, "Phone number must be at least 5 digits")
+    .max(25, "Phone number cannot exceed 25 characters"),
   bio: z
     .string()
     .trim()
-    .max(1000, "Biography cannot exceed 1000 characters")
-    .optional()
-    .nullable()
-    .or(z.literal("")),
+    .min(1, "Biography is required")
+    .min(10, "Biography must be at least 10 characters")
+    .max(1000, "Biography cannot exceed 1000 characters"),
   qualifications: z
-    .string()
-    .trim()
-    .max(500, "Qualifications cannot exceed 500 characters")
-    .optional()
-    .nullable()
-    .or(z.literal("")),
+    .array(qualificationItemSchema)
+    .min(1, "At least one qualification or experience entry is required")
+    .max(20, "Cannot add more than 20 qualification entries"),
   experienceYears: z
     .union([z.number(), z.string()])
     .transform((val) => {
@@ -135,29 +155,42 @@ export const teacherProfileSchema = z.object({
   resume: z
     .string()
     .trim()
+    .min(1, "Resume (CV) document is required")
     .refine(
-      (val) =>
-        val === "" ||
-        isValidHttpUrl(val),
+      (val) => isValidHttpUrl(val),
       {
         message: "Resume must be a valid document URL",
       }
+    ),
+  credentials: z
+    .array(
+      z.string().trim().refine((val) => isValidHttpUrl(val), {
+        message: "Certificate URL must be valid",
+      })
     )
-    .optional()
-    .nullable()
-    .or(z.literal("")),
-  linkedinUrl: optionalUrl("LinkedIn URL"),
-  twitterUrl: optionalUrl("Twitter/X URL"),
-  websiteUrl: optionalUrl("Website URL"),
+    .min(1, "Please upload at least 1 certificate / credential")
+    .max(20, "You can upload up to 20 certificates"),
+  identityCard: z
+    .string()
+    .trim()
+    .min(1, "Government identity document (PAN / National ID) is required")
+    .refine(
+      (val) => isValidHttpUrl(val),
+      {
+        message: "Identity card must be a valid document URL",
+      }
+    ),
   expertise: z
     .array(
       z.string().refine((t) => ALL_EXPERTISE_TAGS.includes(t), {
         message: "Invalid domain of expertise selected",
       })
     )
-    .max(15, "You can select up to 15 domains of expertise")
-    .optional()
-    .default([]),
+    .min(1, "Please select at least 1 domain of expertise")
+    .max(15, "You can select up to 15 domains of expertise"),
+  linkedinUrl: optionalUrl("LinkedIn URL"),
+  twitterUrl: optionalUrl("Twitter/X URL"),
+  websiteUrl: optionalUrl("Website URL"),
 })
 
 export type TeacherProfileInput = z.infer<typeof teacherProfileSchema>

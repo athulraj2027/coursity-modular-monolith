@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
 import { ProfileRepository } from "../../domain/repositories/profile.repository";
 import { FullUserProfile, UserProfile, TeacherProfile } from "../../domain/entities/profile.entity";
@@ -36,6 +36,7 @@ export class PrismaProfileRepository implements ProfileRepository {
                     avatar: profile.avatar,
                     bio: profile.bio,
                     phone: profile.phone,
+                    country: profile.country ?? null,
                     createdAt: profile.createdAt,
                     updatedAt: profile.updatedAt,
                 }
@@ -45,9 +46,11 @@ export class PrismaProfileRepository implements ProfileRepository {
                     id: teacherProfile.id,
                     profileId: teacherProfile.profileId,
                     expertise: teacherProfile.expertise,
-                    qualifications: teacherProfile.qualifications,
+                    qualifications: teacherProfile.qualifications as any,
                     experienceYears: teacherProfile.experienceYears,
                     resume: teacherProfile.resume ?? null,
+                    credentials: teacherProfile.credentials ?? [],
+                    identityCard: teacherProfile.identityCard ?? null,
                     linkedinUrl: teacherProfile.linkedinUrl,
                     twitterUrl: teacherProfile.twitterUrl,
                     websiteUrl: teacherProfile.websiteUrl,
@@ -86,7 +89,11 @@ export class PrismaProfileRepository implements ProfileRepository {
         const profile = await this.prisma.teacherProfile.findUnique({
             where: { profileId },
         });
-        return profile;
+        if (!profile) return null;
+        return {
+            ...profile,
+            qualifications: profile.qualifications as any,
+        } as TeacherProfile;
     }
 
     async upsertProfile(
@@ -100,11 +107,13 @@ export class PrismaProfileRepository implements ProfileRepository {
                 avatar: data.avatar ?? null,
                 bio: data.bio ?? null,
                 phone: data.phone ?? null,
+                country: data.country ?? null,
             },
             update: {
                 ...(data.avatar !== undefined ? { avatar: data.avatar } : {}),
                 ...(data.bio !== undefined ? { bio: data.bio } : {}),
                 ...(data.phone !== undefined ? { phone: data.phone } : {}),
+                ...(data.country !== undefined ? { country: data.country } : {}),
             },
         });
     }
@@ -121,14 +130,23 @@ export class PrismaProfileRepository implements ProfileRepository {
             ? data.approvalStatus === "VERIFIED"
             : false;
 
-        return await this.prisma.teacherProfile.upsert({
+        const qualificationsInput =
+            data.qualifications === null
+                ? Prisma.JsonNull
+                : data.qualifications !== undefined
+                ? (data.qualifications as any)
+                : undefined;
+
+        const result = await this.prisma.teacherProfile.upsert({
             where: { profileId },
             create: {
                 profileId,
                 expertise: data.expertise ?? [],
-                qualifications: data.qualifications ?? null,
+                qualifications: qualificationsInput ?? Prisma.JsonNull,
                 experienceYears: data.experienceYears ?? null,
                 resume: data.resume ?? null,
+                credentials: data.credentials ?? [],
+                identityCard: data.identityCard ?? null,
                 linkedinUrl: data.linkedinUrl ?? null,
                 twitterUrl: data.twitterUrl ?? null,
                 websiteUrl: data.websiteUrl ?? null,
@@ -139,9 +157,11 @@ export class PrismaProfileRepository implements ProfileRepository {
             },
             update: {
                 ...(data.expertise !== undefined ? { expertise: data.expertise } : {}),
-                ...(data.qualifications !== undefined ? { qualifications: data.qualifications } : {}),
+                ...(data.qualifications !== undefined ? { qualifications: qualificationsInput } : {}),
                 ...(data.experienceYears !== undefined ? { experienceYears: data.experienceYears } : {}),
                 ...(data.resume !== undefined ? { resume: data.resume } : {}),
+                ...(data.credentials !== undefined ? { credentials: data.credentials } : {}),
+                ...(data.identityCard !== undefined ? { identityCard: data.identityCard } : {}),
                 ...(data.linkedinUrl !== undefined ? { linkedinUrl: data.linkedinUrl } : {}),
                 ...(data.twitterUrl !== undefined ? { twitterUrl: data.twitterUrl } : {}),
                 ...(data.websiteUrl !== undefined ? { websiteUrl: data.websiteUrl } : {}),
@@ -159,6 +179,11 @@ export class PrismaProfileRepository implements ProfileRepository {
                     : {}),
             },
         });
+
+        return {
+            ...result,
+            qualifications: result.qualifications as any,
+        } as TeacherProfile;
     }
 
     async updateUserName(userId: string, name: string): Promise<void> {

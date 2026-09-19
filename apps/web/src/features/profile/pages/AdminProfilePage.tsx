@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import {
   User,
   Mail,
@@ -10,21 +10,20 @@ import {
   Save,
   RotateCcw,
   ShieldCheck,
-  ShieldAlert,
-  Clock,
   Loader2,
   RefreshCw,
   AlertCircle,
   KeyRound,
   FileText,
   Shield,
-  Layers,
+  Globe,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { ImageUploadInput } from "@/components/common"
+import { ImageUploadInput, CountrySelect, PhoneInputWithCountry } from "@/components/common"
+import { useConfirmDialog } from "@/hooks/useConfirmDialog"
 import { toast } from "@/lib/toast"
 import { useProfile, useUpdateStudentProfile } from "../hooks/useProfile"
 
@@ -32,11 +31,13 @@ interface AdminFormData {
   name: string
   avatar: string
   phone: string
+  country: string
   bio: string
 }
 
 export const AdminProfilePage: React.FC = () => {
   const navigate = useNavigate()
+  const { confirm, ConfirmDialog } = useConfirmDialog()
   const [activeTab, setActiveTab] = useState<"overview" | "edit">("overview")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { data: profileData, isLoading, isError, error, refetch } = useProfile()
@@ -46,6 +47,7 @@ export const AdminProfilePage: React.FC = () => {
     name: "",
     avatar: "",
     phone: "",
+    country: "",
     bio: "",
   })
 
@@ -57,6 +59,7 @@ export const AdminProfilePage: React.FC = () => {
         name: profileData.name || "",
         avatar: profileData.profile?.avatar || "",
         phone: profileData.profile?.phone || "",
+        country: profileData.profile?.country || "",
         bio: profileData.profile?.bio || "",
       })
       setFieldErrors({})
@@ -77,9 +80,33 @@ export const AdminProfilePage: React.FC = () => {
   const handleSaveChanges = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    const errors: Partial<Record<keyof AdminFormData, string>> = {}
     if (!formData.name.trim()) {
-      setFieldErrors({ name: "Full name is required" })
-      toast.error("Full name is required")
+      errors.name = "Full name is required"
+    } else if (formData.name.trim().length < 2) {
+      errors.name = "Full name must be at least 2 characters"
+    }
+
+    if (!formData.country.trim()) {
+      errors.country = "Country is required"
+    }
+
+    if (!formData.phone.trim()) {
+      errors.phone = "Phone number is required"
+    } else if (formData.phone.trim().length < 5) {
+      errors.phone = "Phone number must be at least 5 digits"
+    }
+
+    if (!formData.bio.trim()) {
+      errors.bio = "Biography & Notes is required"
+    } else if (formData.bio.trim().length < 10) {
+      errors.bio = "Biography must be at least 10 characters"
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      const first = Object.values(errors)[0]
+      if (first) toast.error(first)
       return
     }
 
@@ -90,6 +117,7 @@ export const AdminProfilePage: React.FC = () => {
         name: formData.name.trim(),
         avatar: formData.avatar ? formData.avatar.trim() : null,
         phone: formData.phone ? formData.phone.trim() : null,
+        country: formData.country.trim(),
         bio: formData.bio ? formData.bio.trim() : null,
       })
       setActiveTab("overview")
@@ -98,12 +126,29 @@ export const AdminProfilePage: React.FC = () => {
     }
   }
 
-  const handleResetForm = () => {
+  const handleResetForm = async () => {
     if (profileData) {
+      const isDirty =
+        formData.name !== (profileData.name || "") ||
+        formData.avatar !== (profileData.profile?.avatar || "") ||
+        formData.phone !== (profileData.profile?.phone || "") ||
+        formData.country !== (profileData.profile?.country || "") ||
+        formData.bio !== (profileData.profile?.bio || "")
+
+      if (isDirty) {
+        const confirmed = await confirm({
+          actionType: "discard",
+          title: "Discard Unsaved Changes?",
+          description: "Are you sure you want to revert all changes made to your administrator profile?",
+        })
+        if (!confirmed) return
+      }
+
       setFormData({
         name: profileData.name || "",
         avatar: profileData.profile?.avatar || "",
         phone: profileData.profile?.phone || "",
+        country: profileData.profile?.country || "",
         bio: profileData.profile?.bio || "",
       })
       setFieldErrors({})
@@ -198,6 +243,12 @@ export const AdminProfilePage: React.FC = () => {
                 <span className="flex items-center gap-1.5">
                   <Phone className="w-3.5 h-3.5 text-neutral-400" />
                   {profileData.profile.phone}
+                </span>
+              )}
+              {profileData?.profile?.country && (
+                <span className="flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-neutral-400" />
+                  {profileData.profile.country}
                 </span>
               )}
               {profileData?.createdAt && (
@@ -319,62 +370,115 @@ export const AdminProfilePage: React.FC = () => {
 
       {/* Edit Profile Tab */}
       {activeTab === "edit" && (
-        <form onSubmit={handleSaveChanges} className="space-y-6">
+        <form onSubmit={handleSaveChanges} noValidate className="space-y-6">
           <div className="rounded-2xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900/40 p-6 space-y-6">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
                 Profile Avatar
               </Label>
               <ImageUploadInput
+                id="adminAvatar"
+                label="Admin Avatar"
                 value={formData.avatar}
                 onChange={(url) => handleInputChange("avatar", url)}
-                label="Admin Avatar"
-                description="Upload an avatar image or paste a valid image URL."
+                fallbackName={formData.name || profileData?.name}
+                inputRef={fileInputRef}
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="adminName" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                  Full Name <span className="text-[#F42A18]">*</span>
-                </Label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              {/* Full Name */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="adminName" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                    Full Name <span className="text-[#F42A18]">*</span>
+                  </Label>
+                  {fieldErrors.name && (
+                    <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                      {fieldErrors.name}
+                    </span>
+                  )}
+                </div>
                 <Input
                   id="adminName"
                   value={formData.name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
                   placeholder="Administrator Name"
-                  className="rounded-xl text-xs bg-neutral-50 dark:bg-neutral-800/50"
+                  className={`rounded-xl text-xs bg-neutral-50 dark:bg-neutral-800/50 ${
+                    fieldErrors.name ? "border-[#F42A18] focus-visible:ring-[#F42A18]/25" : ""
+                  }`}
+                  required
                 />
-                {fieldErrors.name && (
-                  <p className="text-[11px] text-red-500 font-medium">{fieldErrors.name}</p>
-                )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="adminPhone" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                  Contact Phone
-                </Label>
-                <Input
+              {/* Country Selection */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="adminCountry" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                    Country <span className="text-[#F42A18]">*</span>
+                  </Label>
+                  {fieldErrors.country && (
+                    <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                      {fieldErrors.country}
+                    </span>
+                  )}
+                </div>
+                <CountrySelect
+                  id="adminCountry"
+                  value={formData.country}
+                  onChange={(countryName) => handleInputChange("country", countryName)}
+                  error={Boolean(fieldErrors.country)}
+                  placeholder="Select country"
+                />
+              </div>
+
+              {/* Phone with Country Code */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="adminPhone" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                    Contact Phone <span className="text-[#F42A18]">*</span>
+                  </Label>
+                  {fieldErrors.phone && (
+                    <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                      {fieldErrors.phone}
+                    </span>
+                  )}
+                </div>
+                <PhoneInputWithCountry
                   id="adminPhone"
                   value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                  placeholder="+1 (555) 000-0000"
-                  className="rounded-xl text-xs bg-neutral-50 dark:bg-neutral-800/50"
+                  country={formData.country}
+                  onChange={(val) => handleInputChange("phone", val)}
+                  onCountryChange={(countryName) => handleInputChange("country", countryName)}
+                  error={Boolean(fieldErrors.phone)}
+                  placeholder="555 000 0000"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="adminBio" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Administrator Bio & Notes
-              </Label>
+            {/* Bio */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="adminBio" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                  Administrator Bio & Notes <span className="text-[#F42A18]">*</span>
+                </Label>
+                {fieldErrors.bio && (
+                  <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                    {fieldErrors.bio}
+                  </span>
+                )}
+              </div>
               <textarea
                 id="adminBio"
                 value={formData.bio}
                 onChange={(e) => handleInputChange("bio", e.target.value)}
-                placeholder="Write a brief overview of your role..."
+                placeholder="Write a brief overview of your role and responsibilities..."
                 rows={4}
-                className="w-full rounded-xl text-xs p-3 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-[#F42A18]/20 focus:border-[#F42A18]"
+                className={`w-full rounded-xl text-xs p-3 bg-neutral-50 dark:bg-neutral-800/50 border ${
+                  fieldErrors.bio
+                    ? "border-[#F42A18] focus:ring-[#F42A18]/20 focus:border-[#F42A18]"
+                    : "border-neutral-200 dark:border-neutral-700 focus:ring-[#F42A18]/20 focus:border-[#F42A18]"
+                } focus:outline-none focus:ring-2`}
               />
             </div>
           </div>
@@ -410,6 +514,9 @@ export const AdminProfilePage: React.FC = () => {
           </div>
         </form>
       )}
+
+      {/* Confirmation Dialog for Discarding Changes */}
+      <ConfirmDialog />
     </div>
   )
 }

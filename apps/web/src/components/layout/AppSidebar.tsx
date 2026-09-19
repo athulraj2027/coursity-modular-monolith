@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useLogout, useCurrentUser } from "@/features/auth"
 import { useProfile } from "@/features/profile"
+import { useConfirmDialog } from "@/hooks/useConfirmDialog"
 import {
   Sidebar,
   SidebarContent,
@@ -60,11 +61,20 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   const { data: profileData } = useProfile()
   const { state } = useSidebar()
   const isCollapsed = state === "collapsed"
+  const { confirm, ConfirmDialog } = useConfirmDialog()
 
   const isGoogleAuth =
     currentUser?.authProvider === "GOOGLE" || profileData?.authProvider === "GOOGLE"
 
   const handleSignOut = async () => {
+    const confirmed = await confirm({
+      actionType: "logout",
+      title: "Sign Out of Coursity",
+      description: "Are you sure you want to sign out of your account?",
+    })
+
+    if (!confirmed) return
+
     try {
       await logout.mutateAsync()
     } catch {
@@ -251,6 +261,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           )}
         </div>
       </SidebarFooter>
+      <ConfirmDialog />
     </Sidebar>
   )
 }

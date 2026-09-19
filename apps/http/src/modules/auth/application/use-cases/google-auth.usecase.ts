@@ -1,4 +1,5 @@
-import { UserRepository, UserRole } from "@/modules/user";
+import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
+import type { UserRole } from "@/modules/user/domain/entities/user.entity";
 import { OAuthService, OAuthUserProfile } from "../../domain/services/oauth.service";
 import { TokenService } from "../../domain/services/token.service";
 import { TokenRepository } from "../../domain/repositories/token.repository";

@@ -23,7 +23,6 @@ import {
   RefreshCw,
   Calendar,
   Lock,
-  AlertCircle,
   Check,
   Sparkles,
   UserX,
@@ -35,19 +34,35 @@ import {
   Download,
   Bot,
   ArrowRight,
+  CreditCard,
+  Award,
+  Building2,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { ImageUploadInput, ResumeUploadInput, LoadingScreen, SubmitVerificationModal, SearchInput } from "@/components/common"
+import {
+  ImageUploadInput,
+  ResumeUploadInput,
+  MultipleCertificatesUploadInput,
+  IdentityCardUploadInput,
+  CountrySelect,
+  PhoneInputWithCountry,
+  LoadingScreen,
+  SubmitVerificationModal,
+  SearchInput,
+  QualificationsArrayInput,
+  useConfirmDialog,
+} from "@/components/common"
 import { interviewApi } from "@/features/interview"
 import { toast } from "@/lib/toast"
 import { useProfile, useUpdateTeacherProfile, useSubmitTeacherVerification } from "../hooks/useProfile"
 import { EXPERTISE_CATEGORIES } from "../constants/expertise.constants"
 import { validateTeacherForm } from "../schemas/profile.schema"
-import type { ApprovalStatus } from "../types/profile.types"
+import type { ApprovalStatus, QualificationItem } from "../types/profile.types"
+import { normalizeQualifications } from "../types/profile.types"
 
 const POPULAR_SUGGESTIONS = [
   "Web Development",
@@ -69,10 +84,13 @@ interface TeacherFormData {
   name: string
   avatar: string
   phone: string
-  qualifications: string
+  country: string
+  qualifications: QualificationItem[]
   experienceYears: number
   bio: string
   resume: string
+  credentials: string[]
+  identityCard: string
   linkedinUrl: string
   twitterUrl: string
   websiteUrl: string
@@ -86,15 +104,19 @@ export const TeacherProfilePage: React.FC = () => {
   const { data: profileData, isLoading, isError, error, refetch } = useProfile()
   const updateMutation = useUpdateTeacherProfile()
   const submitMutation = useSubmitTeacherVerification()
+  const { confirm, ConfirmDialog } = useConfirmDialog()
 
   const [formData, setFormData] = useState<TeacherFormData>({
     name: "",
     avatar: "",
     phone: "",
-    qualifications: "",
+    country: "",
+    qualifications: [],
     experienceYears: 0,
     bio: "",
     resume: "",
+    credentials: [],
+    identityCard: "",
     linkedinUrl: "",
     twitterUrl: "",
     websiteUrl: "",
@@ -116,10 +138,13 @@ export const TeacherProfilePage: React.FC = () => {
         name: profileData.name || "",
         avatar: profileData.profile?.avatar || "",
         phone: profileData.profile?.phone || "",
+        country: profileData.profile?.country || "",
         bio: profileData.profile?.bio || "",
-        qualifications: profileData.teacherProfile?.qualifications || "",
+        qualifications: normalizeQualifications(profileData.teacherProfile?.qualifications),
         experienceYears: profileData.teacherProfile?.experienceYears ?? 0,
         resume: profileData.teacherProfile?.resume || "",
+        credentials: profileData.teacherProfile?.credentials || [],
+        identityCard: profileData.teacherProfile?.identityCard || "",
         linkedinUrl: profileData.teacherProfile?.linkedinUrl || "",
         twitterUrl: profileData.teacherProfile?.twitterUrl || "",
         websiteUrl: profileData.teacherProfile?.websiteUrl || "",
@@ -234,10 +259,13 @@ export const TeacherProfilePage: React.FC = () => {
         name: formData.name.trim(),
         avatar: formData.avatar ? formData.avatar.trim() : null,
         phone: formData.phone ? formData.phone.trim() : null,
+        country: formData.country.trim(),
         bio: formData.bio ? formData.bio.trim() : null,
-        qualifications: formData.qualifications ? formData.qualifications.trim() : null,
+        qualifications: formData.qualifications,
         experienceYears: Number(formData.experienceYears) || 0,
         resume: formData.resume ? formData.resume.trim() : null,
+        credentials: formData.credentials,
+        identityCard: formData.identityCard ? formData.identityCard.trim() : null,
         linkedinUrl: isSocialLocked ? (teacherProfile?.linkedinUrl || null) : normalizeUrl(formData.linkedinUrl),
         twitterUrl: isSocialLocked ? (teacherProfile?.twitterUrl || null) : normalizeUrl(formData.twitterUrl),
         websiteUrl: normalizeUrl(formData.websiteUrl),
@@ -260,16 +288,27 @@ export const TeacherProfilePage: React.FC = () => {
     }
   }
 
-  const handleResetForm = () => {
+  const handleResetForm = async () => {
     if (profileData) {
+      const confirmed = await confirm({
+        actionType: "discard",
+        title: "Discard Unsaved Changes?",
+        description:
+          "Are you sure you want to revert all changes made to your instructor profile? Any unsaved qualifications, certificates, or bio edits will be lost.",
+      })
+      if (!confirmed) return
+
       setFormData({
         name: profileData.name || "",
         avatar: profileData.profile?.avatar || "",
         phone: profileData.profile?.phone || "",
+        country: profileData.profile?.country || "",
         bio: profileData.profile?.bio || "",
-        qualifications: profileData.teacherProfile?.qualifications || "",
+        qualifications: normalizeQualifications(profileData.teacherProfile?.qualifications),
         experienceYears: profileData.teacherProfile?.experienceYears ?? 0,
         resume: profileData.teacherProfile?.resume || "",
+        credentials: profileData.teacherProfile?.credentials || [],
+        identityCard: profileData.teacherProfile?.identityCard || "",
         linkedinUrl: profileData.teacherProfile?.linkedinUrl || "",
         twitterUrl: profileData.teacherProfile?.twitterUrl || "",
         websiteUrl: profileData.teacherProfile?.websiteUrl || "",
@@ -320,7 +359,16 @@ export const TeacherProfilePage: React.FC = () => {
       return
     }
 
-    const hasQualifications = Boolean(teacherProfile?.qualifications?.trim() || formData.qualifications?.trim())
+    const hasCountry = Boolean(userProfile?.country?.trim() || formData.country?.trim())
+    if (!hasCountry) {
+      toast.error("Please specify your country before submitting your application for verification.")
+      setActiveTab("edit")
+      return
+    }
+
+    const hasQualifications =
+      formData.qualifications.length > 0 ||
+      normalizeQualifications(teacherProfile?.qualifications).length > 0
     const hasBio = Boolean(userProfile?.bio?.trim() || formData.bio?.trim())
     const hasExpertise =
       (teacherProfile?.expertise && teacherProfile.expertise.length > 0) ||
@@ -358,7 +406,7 @@ export const TeacherProfilePage: React.FC = () => {
       const primaryDomain =
         teacherProfile?.expertise?.[0] ||
         formData.expertise?.[0] ||
-        teacherProfile?.qualifications ||
+        formData.qualifications?.[0]?.title ||
         "Software Engineering & Pedagogy"
 
       const res = await interviewApi.createSession({
@@ -469,6 +517,12 @@ export const TeacherProfilePage: React.FC = () => {
                 <Mail className="w-3.5 h-3.5 text-neutral-400" />
                 {profileData?.email}
               </span>
+              {userProfile?.country && (
+                <span className="flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-neutral-400" />
+                  {userProfile.country}
+                </span>
+              )}
               {userProfile?.phone && (
                 <span className="flex items-center gap-1.5">
                   <Phone className="w-3.5 h-3.5 text-neutral-400" />
@@ -738,14 +792,14 @@ export const TeacherProfilePage: React.FC = () => {
             )}
           </div>
 
-          {/* Qualifications & Credentials */}
+          {/* Qualifications & Academic Degrees / Experience */}
           <div className="space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-neutral-100 dark:border-neutral-800/80">
               <h2 className="text-base font-bold text-neutral-900 dark:text-white flex items-center gap-2">
                 <GraduationCap className="w-4 h-4 text-[#F42A18]" />
-                Qualifications & Credentials
+                Qualifications & Academic Degrees / Experience
               </h2>
-              {!teacherProfile?.qualifications && (
+              {normalizeQualifications(teacherProfile?.qualifications).length === 0 && (
                 <button
                   type="button"
                   onClick={() => setActiveTab("edit")}
@@ -755,21 +809,39 @@ export const TeacherProfilePage: React.FC = () => {
                 </button>
               )}
             </div>
-            {teacherProfile?.qualifications ? (
-              <div className="flex items-start gap-3 py-1">
-                <div className="p-2 rounded-lg bg-[#F42A18]/10 text-[#F42A18] shrink-0">
-                  <GraduationCap className="w-5 h-5" />
-                </div>
-                <div className="space-y-0.5">
-                  <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                    {teacherProfile.qualifications}
-                  </h3>
-                  <p className="text-xs text-neutral-500">Academic & Professional Credentials</p>
-                </div>
+            {normalizeQualifications(teacherProfile?.qualifications).length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {normalizeQualifications(teacherProfile?.qualifications).map((qual, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-start gap-3 p-3 rounded-xl bg-neutral-50/80 dark:bg-neutral-900/80 border border-neutral-200/70 dark:border-neutral-800 shadow-xs"
+                  >
+                    <div className="p-2 rounded-lg bg-[#F42A18]/10 text-[#F42A18] shrink-0 mt-0.5">
+                      <GraduationCap className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <h3 className="text-xs font-bold text-neutral-900 dark:text-white truncate" title={qual.title}>
+                        {qual.title}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
+                        {qual.institution && (
+                          <span className="flex items-center gap-1 truncate max-w-[150px]" title={qual.institution}>
+                            <Building2 className="w-3 h-3 text-neutral-400 shrink-0" />
+                            <span className="truncate">{qual.institution}</span>
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1 font-medium text-neutral-600 dark:text-neutral-300">
+                          <Calendar className="w-3 h-3 text-[#F42A18] shrink-0" />
+                          <span>{qual.year}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <p className="text-sm text-neutral-400 italic">
-                No qualifications listed yet. Click "Edit Profile" to add your academic degrees or certifications.
+                No qualifications listed yet. Click "Edit Profile" to add your academic degrees or experience.
               </p>
             )}
           </div>
@@ -836,6 +908,158 @@ export const TeacherProfilePage: React.FC = () => {
             ) : (
               <p className="text-sm text-neutral-400 italic">
                 No resume uploaded yet. Click "Edit Profile" to upload your CV in PDF format for administrative verification.
+              </p>
+            )}
+          </div>
+
+          {/* Government Identity Document (PAN / National ID) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-neutral-100 dark:border-neutral-800/80">
+              <h2 className="text-base font-bold text-neutral-900 dark:text-white flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-[#F42A18]" />
+                Government Identity Document (PAN / National ID)
+              </h2>
+              {!teacherProfile?.identityCard && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("edit")}
+                  className="text-xs text-[#F42A18] hover:underline font-medium cursor-pointer"
+                >
+                  + Upload identity card
+                </button>
+              )}
+            </div>
+            {teacherProfile?.identityCard ? (
+              <div className="p-4 rounded-2xl border border-neutral-200/90 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-4xl">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-11 h-11 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/20 shadow-xs">
+                    <CreditCard className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0 space-y-0.5">
+                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-white truncate">
+                      Government Identity Card / PAN Card
+                    </h3>
+                    <p className="text-xs text-neutral-500 flex items-center gap-1.5">
+                      <span className="uppercase font-bold text-blue-600 dark:text-blue-400 text-[10px] px-1.5 py-0.2 rounded-md bg-blue-500/10 border border-blue-500/20">
+                        {teacherProfile.identityCard.toLowerCase().includes(".pdf") ? "PDF" : "IMAGE"}
+                      </span>
+                      <span>•</span>
+                      <span>Stored securely for admin verification</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <a
+                    href={teacherProfile.identityCard}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700/80 transition-colors shadow-xs"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-neutral-500" />
+                    View ID
+                  </a>
+                  <a
+                    href={teacherProfile.identityCard}
+                    download="teacher-identity-card"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700/80 transition-colors shadow-xs cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-neutral-500" />
+                    Download ID
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-neutral-400 italic">
+                No identity document uploaded yet. Click "Edit Profile" to upload your PAN Card, Aadhaar, Passport, or National ID.
+              </p>
+            )}
+          </div>
+
+          {/* Uploaded Certificates & Credentials */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-neutral-100 dark:border-neutral-800/80">
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-neutral-900 dark:text-white flex items-center gap-2">
+                  <Award className="w-4 h-4 text-[#F42A18]" />
+                  Uploaded Certificates & Degrees (Credentials)
+                </h2>
+                {teacherProfile?.credentials && teacherProfile.credentials.length > 0 && (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                    {teacherProfile.credentials.length} {teacherProfile.credentials.length === 1 ? "certificate" : "certificates"}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab("edit")}
+                className="text-xs text-[#F42A18] hover:underline font-medium cursor-pointer"
+              >
+                + Manage certificates
+              </button>
+            </div>
+            {teacherProfile?.credentials && teacherProfile.credentials.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {teacherProfile.credentials.map((certUrl, idx) => {
+                  const isPdf = certUrl.toLowerCase().includes(".pdf")
+                  return (
+                    <div
+                      key={idx}
+                      className="p-3.5 rounded-2xl border border-neutral-200/90 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-900/50 flex items-center justify-between gap-3 shadow-xs hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+                            isPdf
+                              ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
+                              : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                          }`}
+                        >
+                          <Award className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 space-y-0.5">
+                          <h4 className="text-xs font-bold text-neutral-900 dark:text-white truncate">
+                            Certificate #{idx + 1}
+                          </h4>
+                          <p className="text-[10px] text-neutral-400 flex items-center gap-1.5">
+                            <span className="uppercase font-bold text-[9px] px-1 py-0.2 rounded bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
+                              {isPdf ? "PDF" : "IMAGE"}
+                            </span>
+                            <span>•</span>
+                            <span>Credential</span>
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <a
+                          href={certUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="View certificate"
+                          className="p-1.5 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-300 transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                        <a
+                          href={certUrl}
+                          download={`certificate_${idx + 1}.${isPdf ? "pdf" : "png"}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Download certificate"
+                          className="p-1.5 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-300 transition-colors cursor-pointer"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-neutral-400 italic">
+                No certificates uploaded yet. Click "Edit Profile" to upload your degrees and accreditation certificates.
               </p>
             )}
           </div>
@@ -1015,7 +1239,7 @@ export const TeacherProfilePage: React.FC = () => {
 
       {/* Tab: Edit Instructor Profile Form (Full-width clean layout) */}
       {activeTab === "edit" && (
-        <form onSubmit={handleSaveChanges} className="w-full space-y-8">
+        <form onSubmit={handleSaveChanges} noValidate className="w-full space-y-8">
           <div className="space-y-1">
             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Edit Instructor Profile</h2>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -1025,28 +1249,29 @@ export const TeacherProfilePage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
             {/* Full Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Display Name
-              </Label>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="name" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                  Display Name <span className="text-[#F42A18]">*</span>
+                </Label>
+                {fieldErrors.name && (
+                  <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                    {fieldErrors.name}
+                  </span>
+                )}
+              </div>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="e.g. Dr. Jane Doe"
-                className={`rounded-xl ${fieldErrors.name ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                className={`rounded-xl ${fieldErrors.name ? "border-[#F42A18] focus-visible:ring-[#F42A18]/25" : ""}`}
                 required
               />
-              {fieldErrors.name && (
-                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {fieldErrors.name}
-                </p>
-              )}
             </div>
 
             {/* Email (Readonly) */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="email" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
                 Email Address (Read-only)
               </Label>
@@ -1058,31 +1283,62 @@ export const TeacherProfilePage: React.FC = () => {
               />
             </div>
 
-            {/* Phone */}
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Phone Number
-              </Label>
-              <Input
+            {/* Country Selection */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="country" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                  Country / Region <span className="text-[#F42A18]">*</span>
+                </Label>
+                {fieldErrors.country && (
+                  <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                    {fieldErrors.country}
+                  </span>
+                )}
+              </div>
+              <CountrySelect
+                id="country"
+                value={formData.country}
+                onChange={(countryName) => handleInputChange("country", countryName)}
+                error={Boolean(fieldErrors.country)}
+                placeholder="Select country"
+              />
+            </div>
+
+            {/* Phone Number with Country Code */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="phone" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                  Phone Number <span className="text-[#F42A18]">*</span>
+                </Label>
+                {fieldErrors.phone && (
+                  <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                    {fieldErrors.phone}
+                  </span>
+                )}
+              </div>
+              <PhoneInputWithCountry
                 id="phone"
                 value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                placeholder="+1 (555) 000-0000"
-                className={`rounded-xl ${fieldErrors.phone ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                country={formData.country}
+                onChange={(val) => handleInputChange("phone", val)}
+                onCountryChange={(countryName) => handleInputChange("country", countryName)}
+                error={Boolean(fieldErrors.phone)}
+                placeholder="555 019 2834"
               />
-              {fieldErrors.phone && (
-                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {fieldErrors.phone}
-                </p>
-              )}
             </div>
 
             {/* Experience Years */}
-            <div className="space-y-2">
-              <Label htmlFor="experienceYears" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Industry Experience (Years)
-              </Label>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="experienceYears" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                  Industry Experience (Years) <span className="text-[#F42A18]">*</span>
+                </Label>
+                {fieldErrors.experienceYears && (
+                  <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                    {fieldErrors.experienceYears}
+                  </span>
+                )}
+              </div>
               <Input
                 id="experienceYears"
                 type="number"
@@ -1090,14 +1346,18 @@ export const TeacherProfilePage: React.FC = () => {
                 max={80}
                 value={formData.experienceYears}
                 onChange={(e) => handleInputChange("experienceYears", parseInt(e.target.value) || 0)}
-                className={`rounded-xl ${fieldErrors.experienceYears ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                className={`rounded-xl ${fieldErrors.experienceYears ? "border-[#F42A18] focus-visible:ring-[#F42A18]/25" : ""}`}
               />
-              {fieldErrors.experienceYears && (
-                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {fieldErrors.experienceYears}
-                </p>
-              )}
+            </div>
+
+            {/* Qualifications & Academic Degrees / Experience Array Input */}
+            <div className="md:col-span-2">
+              <QualificationsArrayInput
+                id="qualifications"
+                value={formData.qualifications}
+                onChange={(items) => handleInputChange("qualifications", items)}
+                error={fieldErrors.qualifications}
+              />
             </div>
 
             {/* Avatar Image Input */}
@@ -1112,77 +1372,108 @@ export const TeacherProfilePage: React.FC = () => {
               />
             </div>
 
-            {/* Qualifications */}
-            <div className="md:col-span-2 space-y-2">
-              <Label htmlFor="qualifications" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Qualifications & Academic Credentials
-              </Label>
-              <Input
-                id="qualifications"
-                value={formData.qualifications}
-                onChange={(e) => handleInputChange("qualifications", e.target.value)}
-                placeholder="e.g. Ph.D. in Computer Science • Stanford University"
-                className={`rounded-xl ${fieldErrors.qualifications ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-              />
-              {fieldErrors.qualifications && (
-                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {fieldErrors.qualifications}
-                </p>
-              )}
-            </div>
-
             {/* Resume / Curriculum Vitae PDF */}
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                  Curriculum Vitae / Resume (PDF) <span className="text-[#F42A18]">*</span>
+                </Label>
+                {fieldErrors.resume && (
+                  <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                    {fieldErrors.resume}
+                  </span>
+                )}
+              </div>
               <ResumeUploadInput
                 id="resume"
-                label="Curriculum Vitae / Resume (PDF)"
+                label=""
                 value={formData.resume}
                 onChange={(val: string) => handleInputChange("resume", val)}
               />
-              {fieldErrors.resume && (
-                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {fieldErrors.resume}
-                </p>
-              )}
+            </div>
+
+            {/* Government Identity Document (PAN / National ID) */}
+            <div className="md:col-span-2 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                  Government Identity Document (PAN Card / National ID / Passport) <span className="text-[#F42A18]">*</span>
+                </Label>
+                {fieldErrors.identityCard && (
+                  <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                    {fieldErrors.identityCard}
+                  </span>
+                )}
+              </div>
+              <IdentityCardUploadInput
+                id="identityCard"
+                label=""
+                value={formData.identityCard}
+                onChange={(val: string) => handleInputChange("identityCard", val)}
+              />
+            </div>
+
+            {/* Professional Credentials & Certificates (Multiple) */}
+            <div className="md:col-span-2 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                  Professional Accreditation Certificates & Degrees (Credentials) <span className="text-[#F42A18]">*</span>
+                </Label>
+                {fieldErrors.credentials && (
+                  <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                    {fieldErrors.credentials}
+                  </span>
+                )}
+              </div>
+              <MultipleCertificatesUploadInput
+                id="credentials"
+                label=""
+                values={formData.credentials}
+                onChange={(urls: string[]) => handleInputChange("credentials", urls)}
+              />
             </div>
 
             {/* Bio */}
-            <div className="md:col-span-2 space-y-2">
-              <Label htmlFor="bio" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Biography & Teaching Philosophy
-              </Label>
+            <div className="md:col-span-2 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="bio" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                  Biography & Teaching Philosophy <span className="text-[#F42A18]">*</span>
+                </Label>
+                {fieldErrors.bio && (
+                  <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                    {fieldErrors.bio}
+                  </span>
+                )}
+              </div>
               <textarea
                 id="bio"
                 rows={4}
                 value={formData.bio}
                 onChange={(e) => handleInputChange("bio", e.target.value)}
                 placeholder="Share your industry background, teaching style, and areas of expertise..."
-                className={`w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-sm focus:outline-hidden focus:ring-2 text-neutral-900 dark:text-white ${fieldErrors.bio
-                    ? "border-red-500 focus:ring-red-500/20 focus:border-red-500"
+                className={`w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-sm focus:outline-hidden focus:ring-2 text-neutral-900 dark:text-white ${
+                  fieldErrors.bio
+                    ? "border-[#F42A18] focus:ring-[#F42A18]/20 focus:border-[#F42A18]"
                     : "border-neutral-200 dark:border-neutral-800 focus:ring-[#F42A18]/20 focus:border-[#F42A18]"
-                  }`}
+                }`}
               />
-              {fieldErrors.bio && (
-                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {fieldErrors.bio}
-                </p>
-              )}
             </div>
 
-            {/* LinkedIn URL */}
-            <div className="space-y-2">
+            {/* LinkedIn URL (Optional) */}
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="linkedinUrl" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-                  LinkedIn URL
+                  LinkedIn URL (Optional)
                   {(currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || teacherProfile?.isApproved) && (
                     <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-normal">
                       <Lock className="w-3 h-3" /> Locked
                     </span>
                   )}
                 </Label>
+                {fieldErrors.linkedinUrl && (
+                  <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                    {fieldErrors.linkedinUrl}
+                  </span>
+                )}
               </div>
               <Input
                 id="linkedinUrl"
@@ -1190,31 +1481,32 @@ export const TeacherProfilePage: React.FC = () => {
                 onChange={(e) => handleInputChange("linkedinUrl", e.target.value)}
                 placeholder="https://linkedin.com/in/username"
                 disabled={currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || Boolean(teacherProfile?.isApproved)}
-                className={`rounded-xl ${fieldErrors.linkedinUrl ? "border-red-500 focus-visible:ring-red-500" : ""
-                  } ${currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || teacherProfile?.isApproved
+                className={`rounded-xl ${
+                  fieldErrors.linkedinUrl ? "border-[#F42A18] focus-visible:ring-[#F42A18]/25" : ""
+                } ${
+                  currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || teacherProfile?.isApproved
                     ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed"
                     : ""
-                  }`}
+                }`}
               />
-              {fieldErrors.linkedinUrl && (
-                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {fieldErrors.linkedinUrl}
-                </p>
-              )}
             </div>
 
-            {/* Twitter / X URL */}
-            <div className="space-y-2">
+            {/* Twitter / X URL (Optional) */}
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="twitterUrl" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-                  Twitter / X URL
+                  Twitter / X URL (Optional)
                   {(currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || teacherProfile?.isApproved) && (
                     <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-normal">
                       <Lock className="w-3 h-3" /> Locked
                     </span>
                   )}
                 </Label>
+                {fieldErrors.twitterUrl && (
+                  <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                    {fieldErrors.twitterUrl}
+                  </span>
+                )}
               </div>
               <Input
                 id="twitterUrl"
@@ -1222,38 +1514,35 @@ export const TeacherProfilePage: React.FC = () => {
                 onChange={(e) => handleInputChange("twitterUrl", e.target.value)}
                 placeholder="https://x.com/username"
                 disabled={currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || Boolean(teacherProfile?.isApproved)}
-                className={`rounded-xl ${fieldErrors.twitterUrl ? "border-red-500 focus-visible:ring-red-500" : ""
-                  } ${currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || teacherProfile?.isApproved
+                className={`rounded-xl ${
+                  fieldErrors.twitterUrl ? "border-[#F42A18] focus-visible:ring-[#F42A18]/25" : ""
+                } ${
+                  currentApprovalStatus === "IN_PROGRESS" || currentApprovalStatus === "VERIFIED" || teacherProfile?.isApproved
                     ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed"
                     : ""
-                  }`}
+                }`}
               />
-              {fieldErrors.twitterUrl && (
-                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {fieldErrors.twitterUrl}
-                </p>
-              )}
             </div>
 
-            {/* Website URL */}
-            <div className="md:col-span-2 space-y-2">
-              <Label htmlFor="websiteUrl" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Portfolio / Personal Website URL
-              </Label>
+            {/* Website URL (Optional) */}
+            <div className="md:col-span-2 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="websiteUrl" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                  Portfolio / Personal Website URL (Optional)
+                </Label>
+                {fieldErrors.websiteUrl && (
+                  <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                    {fieldErrors.websiteUrl}
+                  </span>
+                )}
+              </div>
               <Input
                 id="websiteUrl"
                 value={formData.websiteUrl}
                 onChange={(e) => handleInputChange("websiteUrl", e.target.value)}
                 placeholder="https://yourwebsite.com"
-                className={`rounded-xl ${fieldErrors.websiteUrl ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                className={`rounded-xl ${fieldErrors.websiteUrl ? "border-[#F42A18] focus-visible:ring-[#F42A18]/25" : ""}`}
               />
-              {fieldErrors.websiteUrl && (
-                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {fieldErrors.websiteUrl}
-                </p>
-              )}
             </div>
 
             {/* Domains of Expertise Selector */}
@@ -1261,15 +1550,28 @@ export const TeacherProfilePage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <Label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-[#F42A18]" />
-                  Domains of Expertise
+                  Domains of Expertise <span className="text-[#F42A18]">*</span>
                 </Label>
-                <span className="text-[11px] font-medium text-neutral-400">
-                  {formData.expertise.length} / 15 selected
-                </span>
+                <div className="flex items-center gap-2">
+                  {fieldErrors.expertise && (
+                    <span className="text-[11px] font-medium text-[#F42A18] animate-in fade-in slide-in-from-right-1 duration-150">
+                      {fieldErrors.expertise}
+                    </span>
+                  )}
+                  <span className="text-[11px] font-medium text-neutral-400">
+                    {formData.expertise.length} / 15 selected
+                  </span>
+                </div>
               </div>
 
               {/* Selected Tags Display */}
-              <div className="flex flex-wrap gap-2 p-3 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/40 min-h-12 items-center">
+              <div
+                className={`flex flex-wrap gap-2 p-3 rounded-2xl border bg-neutral-50/50 dark:bg-neutral-900/40 min-h-12 items-center ${
+                  fieldErrors.expertise
+                    ? "border-[#F42A18] ring-1 ring-[#F42A18]/20"
+                    : "border-neutral-200 dark:border-neutral-800"
+                }`}
+              >
                 {formData.expertise.length > 0 ? (
                   formData.expertise.map((tag, idx) => (
                     <span
@@ -1293,12 +1595,6 @@ export const TeacherProfilePage: React.FC = () => {
                   </span>
                 )}
               </div>
-              {fieldErrors.expertise && (
-                <p className="text-xs text-red-500 flex items-center gap-1">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {fieldErrors.expertise}
-                </p>
-              )}
 
               {/* Search & Selection Dropdown */}
               <div className="relative">
@@ -1464,6 +1760,7 @@ export const TeacherProfilePage: React.FC = () => {
             : teacherProfile?.expertise || []
         }
       />
+      <ConfirmDialog />
     </div>
   )
 }

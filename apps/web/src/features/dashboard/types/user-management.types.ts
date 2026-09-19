@@ -8,6 +8,8 @@ export interface BackendTeacherProfile {
   qualifications?: string | null
   experienceYears?: number | null
   resume?: string | null
+  credentials?: string[]
+  identityCard?: string | null
   linkedinUrl?: string | null
   twitterUrl?: string | null
   websiteUrl?: string | null
@@ -24,6 +26,7 @@ export interface BackendUserProfile {
   avatar?: string | null
   bio?: string | null
   phone?: string | null
+  country?: string | null
   teacherProfile?: BackendTeacherProfile | null
   createdAt?: string
   updatedAt?: string

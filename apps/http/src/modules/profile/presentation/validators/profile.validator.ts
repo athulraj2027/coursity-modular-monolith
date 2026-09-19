@@ -27,26 +27,65 @@ const optionalUrl = (label: string) =>
         .nullable()
         .optional();
 
+export const qualificationItemValidator = z.object({
+    title: z
+        .string()
+        .trim()
+        .min(1, "Degree, course, or job title is required")
+        .max(150, "Title cannot exceed 150 characters"),
+    institution: z
+        .string()
+        .trim()
+        .max(150, "Institution cannot exceed 150 characters")
+        .nullable()
+        .optional()
+        .or(z.literal("")),
+    year: z
+        .string()
+        .trim()
+        .min(1, "Year or duration is required")
+        .max(50, "Year cannot exceed 50 characters"),
+});
+
+export const qualificationsFieldValidator = z
+    .union([
+        z.array(qualificationItemValidator).max(20, "Cannot add more than 20 qualification entries"),
+        z.array(z.string().max(300)).max(20),
+        z.string().max(2000),
+    ])
+    .nullable()
+    .optional();
+
 export const updateProfileSchema = z.object({
     name: z
         .string()
         .trim()
         .min(2, "Name must be at least 2 characters")
-        .max(100, "Name cannot exceed 100 characters")
+        .max(50, "Name cannot exceed 50 characters")
         .optional(),
     avatar: z
         .string()
+        .trim()
+        .refine((val) => val === "" || val.startsWith("/") || isValidUrl(val), {
+            message: "Avatar must be a valid URL",
+        })
         .nullable()
         .optional()
         .or(z.literal("")),
     bio: z
         .string()
-        .max(1000, "Bio cannot exceed 1000 characters")
+        .max(500, "Bio cannot exceed 500 characters")
         .nullable()
         .optional(),
     phone: z
         .string()
-        .max(20, "Phone number cannot exceed 20 characters")
+        .regex(/^\+?[1-9]\d{1,14}$/, "Phone number must be in international format (E.164)")
+        .nullable()
+        .optional(),
+    country: z
+        .string()
+        .trim()
+        .max(100, "Country cannot exceed 100 characters")
         .nullable()
         .optional(),
     expertise: z
@@ -57,11 +96,7 @@ export const updateProfileSchema = z.object({
         )
         .max(15, "Cannot select more than 15 expertise domains")
         .optional(),
-    qualifications: z
-        .string()
-        .max(500, "Qualifications cannot exceed 500 characters")
-        .nullable()
-        .optional(),
+    qualifications: qualificationsFieldValidator,
     experienceYears: z
         .coerce
         .number()
@@ -76,6 +111,15 @@ export const updateProfileSchema = z.object({
         .nullable()
         .optional()
         .or(z.literal("")),
+    credentials: z
+        .array(
+            z.string().trim().refine((val) => val === "" || val.startsWith("/") || isValidUrl(val), {
+                message: "Each credential must be a valid URL",
+            })
+        )
+        .max(20, "Cannot upload more than 20 credential certificates")
+        .optional(),
+    identityCard: optionalUrl("Identity Card URL"),
     linkedinUrl: optionalUrl("LinkedIn URL"),
     twitterUrl: optionalUrl("Twitter/X URL"),
     websiteUrl: optionalUrl("Website URL"),
@@ -103,6 +147,12 @@ export const updateStudentProfileSchema = z.object({
         .max(20, "Phone number cannot exceed 20 characters")
         .nullable()
         .optional(),
+    country: z
+        .string()
+        .trim()
+        .max(100, "Country cannot exceed 100 characters")
+        .nullable()
+        .optional(),
 });
 
 export const updateTeacherProfileSchema = z.object({
@@ -127,6 +177,12 @@ export const updateTeacherProfileSchema = z.object({
         .max(20, "Phone number cannot exceed 20 characters")
         .nullable()
         .optional(),
+    country: z
+        .string()
+        .trim()
+        .max(100, "Country cannot exceed 100 characters")
+        .nullable()
+        .optional(),
     expertise: z
         .array(
             z.enum(EXPERTISE_DOMAINS, {
@@ -135,11 +191,7 @@ export const updateTeacherProfileSchema = z.object({
         )
         .max(15, "Cannot select more than 15 expertise domains")
         .optional(),
-    qualifications: z
-        .string()
-        .max(500, "Qualifications cannot exceed 500 characters")
-        .nullable()
-        .optional(),
+    qualifications: qualificationsFieldValidator,
     experienceYears: z
         .coerce
         .number()
@@ -154,6 +206,15 @@ export const updateTeacherProfileSchema = z.object({
         .nullable()
         .optional()
         .or(z.literal("")),
+    credentials: z
+        .array(
+            z.string().trim().refine((val) => val === "" || val.startsWith("/") || isValidUrl(val), {
+                message: "Each credential must be a valid URL",
+            })
+        )
+        .max(20, "Cannot upload more than 20 credential certificates")
+        .optional(),
+    identityCard: optionalUrl("Identity Card URL"),
     linkedinUrl: optionalUrl("LinkedIn URL"),
     twitterUrl: optionalUrl("Twitter/X URL"),
     websiteUrl: optionalUrl("Website URL"),

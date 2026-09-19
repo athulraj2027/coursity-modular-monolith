@@ -347,13 +347,16 @@ export class PrismaUserRepository implements UserRepository {
                       avatar: raw.profile.avatar ?? null,
                       bio: raw.profile.bio ?? null,
                       phone: raw.profile.phone ?? null,
+                      country: raw.profile.country ?? null,
                       teacherProfile: rawTeacherProfile
                           ? {
                                 id: rawTeacherProfile.id,
                                 expertise: rawTeacherProfile.expertise || [],
-                                qualifications: rawTeacherProfile.qualifications ?? null,
+                                qualifications: (rawTeacherProfile.qualifications as any) ?? null,
                                 experienceYears: rawTeacherProfile.experienceYears ?? null,
                                 resume: rawTeacherProfile.resume ?? null,
+                                credentials: rawTeacherProfile.credentials || [],
+                                identityCard: rawTeacherProfile.identityCard ?? null,
                                 linkedinUrl: rawTeacherProfile.linkedinUrl ?? null,
                                 twitterUrl: rawTeacherProfile.twitterUrl ?? null,
                                 websiteUrl: rawTeacherProfile.websiteUrl ?? null,

@@ -1,4 +1,4 @@
-import { UserRepository } from "@/modules/user";
+import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
 import { UnauthorizedError } from "@/app/errors";
 
 export class GetCurrentUser {

@@ -60,6 +60,7 @@ export class UpdateTeacherProfile {
             avatar: data.avatar,
             bio: data.bio,
             phone: data.phone,
+            country: data.country,
         });
 
         await this.profileRepository.upsertTeacherProfile(profileRecord.id, {
@@ -67,6 +68,8 @@ export class UpdateTeacherProfile {
             qualifications: data.qualifications,
             experienceYears: data.experienceYears,
             resume: data.resume,
+            credentials: data.credentials,
+            identityCard: data.identityCard,
             linkedinUrl: isSocialLocked ? existingProfile.teacherProfile?.linkedinUrl : data.linkedinUrl,
             twitterUrl: isSocialLocked ? existingProfile.teacherProfile?.twitterUrl : data.twitterUrl,
             websiteUrl: data.websiteUrl,
