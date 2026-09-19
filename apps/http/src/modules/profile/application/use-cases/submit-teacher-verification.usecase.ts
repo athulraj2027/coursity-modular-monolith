@@ -45,7 +45,12 @@ export class SubmitTeacherVerification {
         }
 
         // Validate basic profile completeness before submitting
-        const hasQualifications = Boolean(existingProfile.teacherProfile?.qualifications?.trim());
+        const qualifications = existingProfile.teacherProfile?.qualifications;
+        const hasQualifications = Array.isArray(qualifications)
+            ? qualifications.length > 0
+            : typeof qualifications === "string"
+            ? Boolean(qualifications.trim())
+            : Boolean(qualifications);
         const hasBio = Boolean(existingProfile.profile?.bio?.trim());
         const hasExpertise =
             Array.isArray(existingProfile.teacherProfile?.expertise) &&

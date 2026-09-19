@@ -9,6 +9,7 @@ import { HERO_CONTENT } from "@/features/home"
 import { ThemeToggle } from "@/components/common/ThemeToggle"
 import { Sparkles, X, LayoutDashboard, LogOut, Loader2 } from "lucide-react"
 import { useCurrentUser, useLogout } from "@/features/auth"
+import { useConfirmDialog } from "@/hooks/useConfirmDialog"
 import { cn } from "@/lib/utils"
 
 export const Navbar: React.FC = () => {
@@ -24,7 +25,19 @@ export const Navbar: React.FC = () => {
 
   const { data: user } = useCurrentUser()
   const logout = useLogout()
+  const { confirm, ConfirmDialog } = useConfirmDialog()
   const isStudent = user?.role?.toLowerCase() === "student"
+
+  const handleSignOut = async () => {
+    const confirmed = await confirm({
+      actionType: "logout",
+      title: "Sign Out of Coursity",
+      description: "Are you sure you want to sign out of your account?",
+    })
+    if (confirmed) {
+      logout.mutate()
+    }
+  }
 
   const baseNavLinks = isTeachersRoute ? TEACHER_NAV_LINKS : NAV_LINKS
   const activeNavLinks = isStudent
@@ -198,7 +211,7 @@ export const Navbar: React.FC = () => {
                   </Link>
                   <button
                     type="button"
-                    onClick={() => logout.mutate()}
+                    onClick={handleSignOut}
                     disabled={logout.isPending}
                     title="Sign Out"
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-neutral-200 dark:border-neutral-800 bg-transparent text-neutral-700 dark:text-neutral-300 hover:text-[#F42A18] hover:border-[#F42A18]/30 hover:bg-[#F42A18]/5 text-xs font-medium transition-all cursor-pointer disabled:opacity-50"
@@ -216,6 +229,7 @@ export const Navbar: React.FC = () => {
           )}
         </div>
       </div>
+      <ConfirmDialog />
     </header>
   )
 }

@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { ImageUploadInput, CountrySelect, PhoneInputWithCountry } from "@/components/common"
+import { useConfirmDialog } from "@/hooks/useConfirmDialog"
 import { toast } from "@/lib/toast"
 import { useProfile, useUpdateStudentProfile } from "../hooks/useProfile"
 
@@ -36,6 +37,7 @@ interface AdminFormData {
 
 export const AdminProfilePage: React.FC = () => {
   const navigate = useNavigate()
+  const { confirm, ConfirmDialog } = useConfirmDialog()
   const [activeTab, setActiveTab] = useState<"overview" | "edit">("overview")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { data: profileData, isLoading, isError, error, refetch } = useProfile()
@@ -124,8 +126,24 @@ export const AdminProfilePage: React.FC = () => {
     }
   }
 
-  const handleResetForm = () => {
+  const handleResetForm = async () => {
     if (profileData) {
+      const isDirty =
+        formData.name !== (profileData.name || "") ||
+        formData.avatar !== (profileData.profile?.avatar || "") ||
+        formData.phone !== (profileData.profile?.phone || "") ||
+        formData.country !== (profileData.profile?.country || "") ||
+        formData.bio !== (profileData.profile?.bio || "")
+
+      if (isDirty) {
+        const confirmed = await confirm({
+          actionType: "discard",
+          title: "Discard Unsaved Changes?",
+          description: "Are you sure you want to revert all changes made to your administrator profile?",
+        })
+        if (!confirmed) return
+      }
+
       setFormData({
         name: profileData.name || "",
         avatar: profileData.profile?.avatar || "",
@@ -496,6 +514,9 @@ export const AdminProfilePage: React.FC = () => {
           </div>
         </form>
       )}
+
+      {/* Confirmation Dialog for Discarding Changes */}
+      <ConfirmDialog />
     </div>
   )
 }

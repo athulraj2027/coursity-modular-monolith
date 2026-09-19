@@ -54,6 +54,7 @@ import {
   SubmitVerificationModal,
   SearchInput,
   QualificationsArrayInput,
+  useConfirmDialog,
 } from "@/components/common"
 import { interviewApi } from "@/features/interview"
 import { toast } from "@/lib/toast"
@@ -103,6 +104,7 @@ export const TeacherProfilePage: React.FC = () => {
   const { data: profileData, isLoading, isError, error, refetch } = useProfile()
   const updateMutation = useUpdateTeacherProfile()
   const submitMutation = useSubmitTeacherVerification()
+  const { confirm, ConfirmDialog } = useConfirmDialog()
 
   const [formData, setFormData] = useState<TeacherFormData>({
     name: "",
@@ -286,8 +288,16 @@ export const TeacherProfilePage: React.FC = () => {
     }
   }
 
-  const handleResetForm = () => {
+  const handleResetForm = async () => {
     if (profileData) {
+      const confirmed = await confirm({
+        actionType: "discard",
+        title: "Discard Unsaved Changes?",
+        description:
+          "Are you sure you want to revert all changes made to your instructor profile? Any unsaved qualifications, certificates, or bio edits will be lost.",
+      })
+      if (!confirmed) return
+
       setFormData({
         name: profileData.name || "",
         avatar: profileData.profile?.avatar || "",
@@ -1750,6 +1760,7 @@ export const TeacherProfilePage: React.FC = () => {
             : teacherProfile?.expertise || []
         }
       />
+      <ConfirmDialog />
     </div>
   )
 }
