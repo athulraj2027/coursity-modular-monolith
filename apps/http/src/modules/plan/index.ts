@@ -81,6 +81,7 @@ export * from "./application/use-cases/admin-manage-plans.usecase";
 export * from "./presentation/controllers/plan.controller";
 export * from "./presentation/validators/plan.validator";
 export * from "./presentation/routes/plan.routes";
+export * from "./infrastructure/seed/default-plans.seed";
 
 export const planRouter = planRoutes.router;
 export { quotaEnforcementService };

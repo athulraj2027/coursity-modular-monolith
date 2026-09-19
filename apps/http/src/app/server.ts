@@ -3,6 +3,7 @@ import app from "./app";
 import { env } from "./config/env";
 import { redis } from "@/infrastructure/redis/redis.client";
 import { startEmailWorker, closeEmailWorker } from "@/modules/email";
+import { seedPlansIfEmpty } from "@/modules/plan";
 
 const server = http.createServer(app);
 
@@ -17,6 +18,13 @@ const startServer = async () => {
 
         // Initialize background email queue processor
         startEmailWorker();
+
+        // Seed standard subscription plans if no plans exist in the database
+        try {
+            await seedPlansIfEmpty();
+        } catch (seedError) {
+            console.error("⚠️ Failed to verify or seed standard plans on startup:", seedError);
+        }
 
         server.listen(env.PORT, () => {
             console.log(`\n🚀 Server running on http://localhost:${env.PORT}`);
