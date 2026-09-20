@@ -3,6 +3,8 @@ import app from "./app";
 import { env } from "./config/env";
 import { redis } from "@/infrastructure/redis/redis.client";
 import { startEmailWorker, closeEmailWorker } from "@/modules/email";
+import { seedPlansIfEmpty } from "@/modules/plan";
+import { seedCategoriesIfEmpty } from "@/modules/category";
 
 const server = http.createServer(app);
 
@@ -17,6 +19,20 @@ const startServer = async () => {
 
         // Initialize background email queue processor
         startEmailWorker();
+
+        // Seed standard subscription plans if no plans exist in the database
+        try {
+            await seedPlansIfEmpty();
+        } catch (seedError) {
+            console.error("⚠️ Failed to verify or seed standard plans on startup:", seedError);
+        }
+
+        // Seed standard category hierarchy if no categories exist in the database
+        try {
+            await seedCategoriesIfEmpty();
+        } catch (seedError) {
+            console.error("⚠️ Failed to verify or seed standard categories on startup:", seedError);
+        }
 
         server.listen(env.PORT, () => {
             console.log(`\n🚀 Server running on http://localhost:${env.PORT}`);
