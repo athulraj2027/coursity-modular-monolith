@@ -1,0 +1,162 @@
+// ==========================================
+// COURSE & CURRICULUM SCHEMA
+// ==========================================
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  ALL_LEVELS
+}
+
+enum CoursePricingType {
+  FREE
+  PAID
+}
+
+enum CourseStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+  ARCHIVED
+}
+
+enum LessonType {
+  VIDEO
+  ARTICLE
+  QUIZ
+  LIVE_CLASS
+  ATTACHMENT
+}
+
+enum VideoProvider {
+  LOCAL
+  S3
+  CLOUDFRONT
+  YOUTUBE
+  VIMEO
+  MUX
+}
+
+// ==========================================
+// 1. MAIN COURSE MODEL
+// ==========================================
+
+model Course {
+  id                 String             @id @default(uuid())
+  title              String
+  slug               String             @unique
+  subtitle           String?            // Short elevator pitch
+  description        String?            @db.Text // Full overview / syllabus details
+  thumbnail          String?            // Cover image URL
+  promoVideoUrl      String?            // Trailer / intro preview video URL
+  startingDate       DateTime?          // Date when the course / live batch begins
+  
+  // Classification & Level
+  level              CourseLevel        @default(ALL_LEVELS)
+  language           String             @default("English")
+  pricingType        CoursePricingType  @default(FREE)
+  price              Decimal            @default(0.00) @db.Decimal(10, 2)
+  currency           String             @default("USD")
+  
+  // Structured Outcomes & Prerequisites
+  learningOutcomes   String[]           @default([]) // "What you'll learn" bullet points
+  requirements       String[]           @default([]) // Prerequisites
+  targetAudience     String[]           @default([]) // Target learner profiles
+  tags               String[]           @default([]) // Keywords for search & discovery
+
+  // Creator & Taxonomy Relations
+  teacherProfileId   String
+  teacherProfile     TeacherProfile     @relation(fields: [teacherProfileId], references: [id], onDelete: Cascade)
+  
+  categoryId         String
+  category           Category           @relation("CoursePrimaryCategory", fields: [categoryId], references: [id], onDelete: Restrict)
+  
+  subcategoryId      String?
+  subcategory        Category?          @relation("CourseSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
+
+  // Publishing & Vetting Lifecycle
+  status             CourseStatus       @default(PUBLISHED)
+  rejectionReason    String?            @db.Text
+  submittedAt        DateTime?
+  publishedAt        DateTime?          @default(now())
+  isApproved         Boolean            @default(true)
+  approvedByAdminId  String?
+
+  // Aggregated Counters & Highlights
+  totalDurationSeconds Int              @default(0)
+  totalLessons       Int                @default(0)
+  totalModules       Int                @default(0)
+  isFeatured         Boolean            @default(false)
+  isTrending         Boolean            @default(false)
+  sortOrder          Int                @default(0)
+
+  // Soft Deletion & Timestamps
+  isDeleted          Boolean            @default(false)
+  deletedAt          DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  // Curriculum Relations
+  modules            CourseModule[]
+
+  @@index([teacherProfileId, status])
+  @@index([categoryId, subcategoryId, status])
+  @@index([status, isDeleted, isFeatured])
+  @@map("courses")
+}
+
+// ==========================================
+// 2. CURRICULUM MODULES (CHAPTERS / MODULES)
+// ==========================================
+
+model CourseModule {
+  id          String         @id @default(uuid())
+  courseId    String
+  course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  title       String         // e.g. "Module 1: Foundations & Architecture"
+  description String?        @db.Text
+  sortOrder   Int            @default(0)
+  isPublished Boolean        @default(true)
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  lessons     CourseLesson[]
+
+  @@index([courseId, sortOrder])
+  @@map("course_modules")
+}
+
+// ==========================================
+// 3. CURRICULUM LESSONS (LECTURES & CONTENT)
+// ==========================================
+
+model CourseLesson {
+  id              String           @id @default(uuid())
+  moduleId        String
+  module          CourseModule     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  title           String           // e.g. "Lesson 3: Implementing Token Auth"
+  description     String?          @db.Text
+  lessonType      LessonType       @default(VIDEO)
+  durationSeconds Int              @default(0)
+  sortOrder       Int              @default(0)
+  isFreePreview   Boolean          @default(false) // Allows guest preview
+  isPublished     Boolean          @default(true)
+
+  // Multi-format Content Payloads
+  videoUrl        String?          // Stored video or stream manifest URL
+  videoProvider   VideoProvider?   @default(S3)
+  videoThumbnail  String?
+  articleBody     String?          @db.Text // Markdown / HTML text reading content
+  attachments     Json?            @default("[]") // [{ name: string, url: string, sizeBytes: number, type: string }]
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([moduleId, sortOrder])
+  @@map("course_lessons")
+}

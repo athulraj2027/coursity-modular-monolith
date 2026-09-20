@@ -16,6 +16,12 @@ const ALLOWED_MIME_MAP: Record<string, string> = {
   webp: "image/webp",
   gif: "image/gif",
   svg: "image/svg+xml",
+  mp4: "video/mp4",
+  webm: "video/webm",
+  mov: "video/quicktime",
+  mkv: "video/x-matroska",
+  ogg: "video/ogg",
+  m4v: "video/m4v",
 }
 
 /**

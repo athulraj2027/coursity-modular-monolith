@@ -10,6 +10,7 @@ import {
   AdminDashboardPage,
   AdminTeachersPage,
   AdminStudentsPage,
+  AdminUserDetailPage,
 } from "@/features/dashboard"
 import {
   StudentProfilePage,
@@ -27,6 +28,13 @@ import {
   AdminPlanFormPage,
 } from "@/features/plans"
 import { AdminCategoriesPage } from "@/features/categories"
+import {
+  TeacherCoursesPage,
+  TeacherCourseDetailPage,
+  TeacherCurriculumPage,
+  AdminCoursesPage,
+  AdminCourseDetailPage,
+} from "@/features/course"
 import { AdminAIConfigPage } from "@/features/ai-config"
 import {
   InterviewLandingPage,
@@ -129,6 +137,11 @@ export function AppRoutes() {
             <Route path="/teachers/dashboard" element={<DashboardLayout role="teacher" />}>
               <Route index element={<TeacherDashboardPage />} />
             </Route>
+            <Route path="/teachers/courses" element={<DashboardLayout role="teacher" />}>
+              <Route index element={<TeacherCoursesPage />} />
+              <Route path=":id" element={<TeacherCourseDetailPage />} />
+              <Route path=":id/curriculum" element={<TeacherCurriculumPage />} />
+            </Route>
             <Route path="/teachers/profile" element={<DashboardLayout role="teacher" />}>
               <Route index element={<TeacherProfilePage />} />
             </Route>
@@ -142,6 +155,9 @@ export function AppRoutes() {
             {/* Aliases for teacher routes */}
             <Route path="/teachers/interviews" element={<Navigate to="/teachers/dashboard" replace />} />
             <Route path="/teacher/dashboard" element={<Navigate to="/teachers/dashboard" replace />} />
+            <Route path="/teacher/courses" element={<Navigate to="/teachers/courses" replace />} />
+            <Route path="/courses/teacher" element={<Navigate to="/teachers/courses" replace />} />
+            <Route path="/courses/teachers" element={<Navigate to="/teachers/courses" replace />} />
             <Route path="/teacher/profile" element={<Navigate to="/teachers/profile" replace />} />
             <Route path="/teacher/onboarding" element={<Navigate to="/teachers/onboarding/profile" replace />} />
             <Route path="/teachers/profile/password" element={<Navigate to="/teachers/password" replace />} />
@@ -169,9 +185,15 @@ export function AppRoutes() {
           </Route>
           <Route path="/admin/teachers" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminTeachersPage />} />
+            <Route path=":id" element={<AdminUserDetailPage />} />
           </Route>
           <Route path="/admin/users" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminStudentsPage />} />
+            <Route path=":id" element={<AdminUserDetailPage />} />
+          </Route>
+          <Route path="/admin/courses" element={<DashboardLayout role="admin" />}>
+            <Route index element={<AdminCoursesPage />} />
+            <Route path=":id" element={<AdminCourseDetailPage />} />
           </Route>
           <Route path="/admin/plans" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminPlansPage />} />
@@ -191,6 +213,8 @@ export function AppRoutes() {
           </Route>
           <Route path="/admin/profile/password" element={<Navigate to="/admin/password" replace />} />
           <Route path="/admin/students" element={<Navigate to="/admin/users" replace />} />
+          <Route path="/admin/course" element={<Navigate to="/admin/courses" replace />} />
+          <Route path="/courses/admin" element={<Navigate to="/admin/courses" replace />} />
         </Route>
       </Route>
 

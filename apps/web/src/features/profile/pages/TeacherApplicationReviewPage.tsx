@@ -6,14 +6,12 @@ import {
   FileText,
   ShieldCheck,
   Award,
-  CreditCard,
-  ExternalLink,
-  Eye,
   CheckCircle2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ModalTemplate } from "@/components/common/ModalTemplate"
+import { FileDocumentCard, FilePreviewModal } from "@/components/common/FileDocumentCard"
 import { toast } from "@/lib/toast"
 import { useProfile } from "../hooks/useProfile"
 import { normalizeQualifications } from "../types/profile.types"
@@ -22,6 +20,25 @@ export const TeacherApplicationReviewPage: React.FC = () => {
   const navigate = useNavigate()
   const { data: profileData, refetch, isFetching } = useProfile()
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [filePreview, setFilePreview] = useState<{
+    isOpen: boolean
+    title: string
+    url: string
+    type?: "pdf" | "image" | "document"
+  }>({
+    isOpen: false,
+    title: "",
+    url: "",
+  })
+
+  const handlePreviewFile = (url: string, title: string, type: "pdf" | "image" | "document") => {
+    setFilePreview({
+      isOpen: true,
+      title,
+      url,
+      type,
+    })
+  }
 
   const teacherProfile = profileData?.teacherProfile
   const approvalStatus = teacherProfile?.approvalStatus || (teacherProfile?.isApproved ? "VERIFIED" : "PENDING")
@@ -173,206 +190,60 @@ export const TeacherApplicationReviewPage: React.FC = () => {
           </div>
 
           {/* Attached Documents with Live Previews */}
-          <div className="space-y-3 pt-1">
-            <span className="text-[11px] font-bold text-neutral-900 dark:text-white uppercase tracking-wider">
-              Submitted Document Previews
-            </span>
+          {(teacherProfile?.resume || teacherProfile?.identityCard || (teacherProfile?.credentials && teacherProfile.credentials.length > 0)) && (
+            <div className="space-y-3 pt-1">
+              <span className="text-[11px] font-bold text-neutral-900 dark:text-white uppercase tracking-wider">
+                Submitted Verification Documents & Credentials
+              </span>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Government ID / PAN Card Preview */}
-              <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-800 flex flex-col justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/20">
-                    <CreditCard className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-1">
-                      <h4 className="text-xs font-bold text-neutral-900 dark:text-white truncate">
-                        Government ID / PAN
-                      </h4>
-                      {teacherProfile?.identityCard ? (
-                        <Badge variant="outline" className="text-[10px] text-emerald-600 dark:text-emerald-400 border-emerald-500/20 bg-emerald-500/5 py-0 px-1.5">
-                          Attached
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[10px] text-neutral-400 py-0 px-1.5">
-                          Missing
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-neutral-400 mt-0.5">
-                      Identity document
-                    </p>
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Government ID / PAN Card Preview */}
+                {teacherProfile?.identityCard && (
+                  <FileDocumentCard
+                    title="Government ID / PAN Card"
+                    url={teacherProfile.identityCard}
+                    category="identity"
+                    subtitle="Identity Document"
+                    onPreview={handlePreviewFile}
+                  />
+                )}
 
-                {teacherProfile?.identityCard ? (
-                  <div className="space-y-2">
-                    {!teacherProfile.identityCard.toLowerCase().includes(".pdf") ? (
-                      <div className="relative group rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 h-28 flex items-center justify-center">
-                        <img
-                          src={teacherProfile.identityCard}
-                          alt="Government ID"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                        />
-                        <a
-                          href={teacherProfile.identityCard}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 text-white text-xs font-semibold transition-opacity duration-200"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>View Full Image</span>
-                        </a>
-                      </div>
-                    ) : (
-                      <div className="p-2.5 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 flex items-center justify-between text-xs">
-                        <span className="font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-                          <FileText className="w-3.5 h-3.5 text-blue-500" />
-                          ID Document (PDF)
-                        </span>
-                        <a
-                          href={teacherProfile.identityCard}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          <span>Open</span>
-                        </a>
-                      </div>
-                    )}
-
-                    <a
-                      href={teacherProfile.identityCard}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 hover:text-blue-600 py-1 bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 transition-colors"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      <span>Open ID Document</span>
-                    </a>
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-neutral-400 italic">No document attached</p>
+                {/* Resume / CV Preview */}
+                {teacherProfile?.resume && (
+                  <FileDocumentCard
+                    title="Curriculum Vitae / Resume"
+                    url={teacherProfile.resume}
+                    category="resume"
+                    subtitle="Professional Background"
+                    onPreview={handlePreviewFile}
+                  />
                 )}
               </div>
 
-              {/* Resume / CV Preview */}
-              <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-800 flex flex-col justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-[#F42A18] flex items-center justify-center shrink-0 border border-[#F42A18]/20">
-                    <FileText className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-1">
-                      <h4 className="text-xs font-bold text-neutral-900 dark:text-white truncate">
-                        Curriculum Vitae / Resume
-                      </h4>
-                      {teacherProfile?.resume ? (
-                        <Badge variant="outline" className="text-[10px] text-emerald-600 dark:text-emerald-400 border-emerald-500/20 bg-emerald-500/5 py-0 px-1.5">
-                          Attached
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[10px] text-neutral-400 py-0 px-1.5">
-                          Missing
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-neutral-400 mt-0.5">
-                      Professional background
-                    </p>
-                  </div>
-                </div>
+              {/* Certificate Credentials Grid */}
+              {teacherProfile?.credentials && teacherProfile.credentials.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  <span className="text-[11px] font-bold text-neutral-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <Award className="w-3.5 h-3.5 text-neutral-500" />
+                    Academic & Professional Certificates ({teacherProfile.credentials.length})
+                  </span>
 
-                {teacherProfile?.resume ? (
-                  <div className="space-y-2">
-                    <div className="h-28 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200/80 dark:border-neutral-700/80 flex flex-col items-center justify-center gap-1.5 text-neutral-500 p-2">
-                      <FileText className="w-7 h-7 text-[#F42A18]" />
-                      <span className="text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">Resume / CV Document</span>
-                    </div>
-
-                    <a
-                      href={teacherProfile.resume}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-[#F42A18] hover:underline py-1 bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 transition-colors"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      <span>Preview Resume File</span>
-                    </a>
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-neutral-400 italic">No resume attached</p>
-                )}
-              </div>
-            </div>
-
-            {/* Certificate Credentials Grid */}
-            {teacherProfile?.credentials && teacherProfile.credentials.length > 0 && (
-              <div className="space-y-2 pt-2">
-                <span className="text-[11px] font-bold text-neutral-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                  <Award className="w-3.5 h-3.5 text-neutral-500" />
-                  Academic & Professional Certificates ({teacherProfile.credentials.length})
-                </span>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {teacherProfile.credentials.map((certUrl, idx) => {
-                    const isPdf = certUrl.toLowerCase().includes(".pdf")
-                    return (
-                      <div
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {teacherProfile.credentials.map((certUrl, idx) => (
+                      <FileDocumentCard
                         key={idx}
-                        className="rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-800/40 p-3 space-y-2 flex flex-col justify-between"
-                      >
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-semibold text-neutral-800 dark:text-neutral-200 truncate">
-                            Certificate #{idx + 1}
-                          </span>
-                          <span className="text-[10px] uppercase font-bold text-neutral-400">
-                            {isPdf ? "PDF" : "IMAGE"}
-                          </span>
-                        </div>
-
-                        {!isPdf ? (
-                          <div className="relative group rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 h-24 flex items-center justify-center">
-                            <img
-                              src={certUrl}
-                              alt={`Certificate ${idx + 1}`}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                            />
-                            <a
-                              href={certUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1 text-white text-[11px] font-semibold transition-opacity duration-200"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                              <span>View</span>
-                            </a>
-                          </div>
-                        ) : (
-                          <div className="h-24 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex flex-col items-center justify-center gap-1 text-neutral-500 border border-neutral-200/80 dark:border-neutral-700/80">
-                            <FileText className="w-6 h-6 text-neutral-400" />
-                            <span className="text-[11px] font-medium">PDF Document</span>
-                          </div>
-                        )}
-
-                        <a
-                          href={certUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full inline-flex items-center justify-center gap-1 text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 hover:text-[#F42A18] py-1 bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 transition-colors"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          <span>Open Certificate</span>
-                        </a>
-                      </div>
-                    )
-                  })}
+                        title={`Certificate #${idx + 1}`}
+                        url={certUrl}
+                        category="certificate"
+                        subtitle="Accreditation Credential"
+                        onPreview={handlePreviewFile}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           {/* Qualifications & Degrees */}
           {qualList.length > 0 && (
@@ -422,6 +293,15 @@ export const TeacherApplicationReviewPage: React.FC = () => {
           )}
         </div>
       </ModalTemplate>
+
+      {/* Interactive File Preview Modal */}
+      <FilePreviewModal
+        isOpen={filePreview.isOpen}
+        title={filePreview.title}
+        url={filePreview.url}
+        fileType={filePreview.type}
+        onClose={() => setFilePreview((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   )
 }

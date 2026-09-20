@@ -26,6 +26,14 @@ export function useUsers(params: GetUsersParams = {}) {
   })
 }
 
+export function useUser(id: string) {
+  return useQuery({
+    queryKey: [...USER_QUERY_KEY, "detail", id],
+    queryFn: () => userApi.getUserById(id),
+    enabled: !!id,
+  })
+}
+
 export function useBlockUser() {
   const queryClient = useQueryClient()
 

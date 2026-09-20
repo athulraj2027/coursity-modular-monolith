@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   Users,
   ShieldCheck,
@@ -30,6 +31,7 @@ import { useDebounce } from "@/hooks/use-debounce"
 import type { BackendUser, AuthProvider, ApprovalStatus } from "../types/user-management.types"
 
 export const AdminTeachersPage = () => {
+  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState("")
   const debouncedSearch = useDebounce(searchQuery, 300)
 
@@ -254,20 +256,23 @@ export const AdminTeachersPage = () => {
           : "IN"
 
         return (
-          <div className="flex items-center gap-3">
+          <div
+            onClick={() => navigate(`/admin/teachers/${teacher.id}`)}
+            className="flex items-center gap-3 cursor-pointer group"
+          >
             {teacher.profile?.avatar ? (
               <img
                 src={teacher.profile.avatar}
                 alt={teacher.name}
-                className="w-9 h-9 rounded-xl object-cover border border-neutral-200 dark:border-neutral-800 shrink-0"
+                className="w-9 h-9 rounded-xl object-cover border border-neutral-200 dark:border-neutral-800 shrink-0 group-hover:ring-2 group-hover:ring-[#F42A18]/30 transition-all"
               />
             ) : (
-              <div className="w-9 h-9 rounded-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 font-bold text-xs flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 font-bold text-xs flex items-center justify-center shrink-0 group-hover:ring-2 group-hover:ring-[#F42A18]/30 transition-all">
                 {initials}
               </div>
             )}
             <div className="min-w-0">
-              <div className="font-semibold text-neutral-900 dark:text-white truncate flex items-center gap-1.5">
+              <div className="font-semibold text-neutral-900 dark:text-white truncate flex items-center gap-1.5 group-hover:text-[#F42A18] transition-colors">
                 <span>{teacher.name}</span>
                 {teacher.isBlocked && (
                   <span className="text-[10px] px-1.5 py-0.2 rounded bg-red-500/10 text-red-500 font-medium border border-red-500/20">
@@ -404,8 +409,8 @@ export const AdminTeachersPage = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setSelectedTeacher(teacher)}
-            className="h-8 px-2.5 text-xs rounded-lg border-neutral-200 dark:border-neutral-800 hover:border-[#F42A18] hover:text-[#F42A18]"
+            onClick={() => navigate(`/admin/teachers/${teacher.id}`)}
+            className="h-8 px-2.5 text-xs rounded-lg border-neutral-200 dark:border-neutral-800 hover:border-[#F42A18] hover:text-[#F42A18] cursor-pointer"
           >
             Details
           </Button>

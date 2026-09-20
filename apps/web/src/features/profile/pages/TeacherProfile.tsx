@@ -31,7 +31,6 @@ import {
   Send,
   FileText,
   KeyRound,
-  Download,
   CreditCard,
   Award,
   Building2,
@@ -53,6 +52,8 @@ import {
   SearchInput,
   QualificationsArrayInput,
   useConfirmDialog,
+  FileDocumentCard,
+  FilePreviewModal,
 } from "@/components/common"
 import { toast } from "@/lib/toast"
 import { useUploadFile } from "@/features/dashboard/hooks/useUpload"
@@ -141,6 +142,26 @@ export const TeacherProfilePage: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>("all")
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false)
+  const [filePreview, setFilePreview] = useState<{
+    isOpen: boolean
+    title: string
+    url: string
+    type?: "pdf" | "image" | "document"
+  }>({
+    isOpen: false,
+    title: "",
+    url: "",
+  })
+
+  const handlePreviewFile = (url: string, title: string, type: "pdf" | "image" | "document") => {
+    setFilePreview({
+      isOpen: true,
+      title,
+      url,
+      type,
+    })
+  }
+
   const navigate = useNavigate()
 
   // Sync form state when backend profile data is loaded or updated
@@ -942,46 +963,14 @@ export const TeacherProfilePage: React.FC = () => {
               )}
             </div>
             {teacherProfile?.resume ? (
-              <div className="p-4 rounded-2xl border border-neutral-200/90 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-4xl">
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-11 h-11 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0 border border-red-500/20 shadow-xs">
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0 space-y-0.5">
-                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-white truncate">
-                      Instructor Resume & Professional CV
-                    </h3>
-                    <p className="text-xs text-neutral-500 flex items-center gap-1.5">
-                      <span className="uppercase font-bold text-red-600 dark:text-red-400 text-[10px] px-1.5 py-0.2 rounded-md bg-red-500/10 border border-red-500/20">
-                        PDF
-                      </span>
-                      <span>•</span>
-                      <span>Saved securely in S3</span>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                  <a
-                    href={teacherProfile.resume}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700/80 transition-colors shadow-xs"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5 text-neutral-500" />
-                    View Resume
-                  </a>
-                  <a
-                    href={teacherProfile.resume}
-                    download="instructor-resume.pdf"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700/80 transition-colors shadow-xs cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5 text-neutral-500" />
-                    Download PDF
-                  </a>
-                </div>
+              <div className="max-w-4xl">
+                <FileDocumentCard
+                  title="Instructor Resume & Professional CV"
+                  url={teacherProfile.resume}
+                  category="resume"
+                  subtitle="Saved securely in S3 storage"
+                  onPreview={handlePreviewFile}
+                />
               </div>
             ) : (
               <p className="text-sm text-neutral-400 italic">
@@ -1008,46 +997,14 @@ export const TeacherProfilePage: React.FC = () => {
               )}
             </div>
             {teacherProfile?.identityCard ? (
-              <div className="p-4 rounded-2xl border border-neutral-200/90 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-4xl">
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-11 h-11 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/20 shadow-xs">
-                    <CreditCard className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0 space-y-0.5">
-                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-white truncate">
-                      Government Identity Card / PAN Card
-                    </h3>
-                    <p className="text-xs text-neutral-500 flex items-center gap-1.5">
-                      <span className="uppercase font-bold text-blue-600 dark:text-blue-400 text-[10px] px-1.5 py-0.2 rounded-md bg-blue-500/10 border border-blue-500/20">
-                        {teacherProfile.identityCard.toLowerCase().includes(".pdf") ? "PDF" : "IMAGE"}
-                      </span>
-                      <span>•</span>
-                      <span>Stored securely for admin verification</span>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                  <a
-                    href={teacherProfile.identityCard}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700/80 transition-colors shadow-xs"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5 text-neutral-500" />
-                    View ID
-                  </a>
-                  <a
-                    href={teacherProfile.identityCard}
-                    download="teacher-identity-card"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700/80 transition-colors shadow-xs cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5 text-neutral-500" />
-                    Download ID
-                  </a>
-                </div>
+              <div className="max-w-4xl">
+                <FileDocumentCard
+                  title="Government Identity Card / PAN Card"
+                  url={teacherProfile.identityCard}
+                  category="identity"
+                  subtitle="Stored securely for admin verification"
+                  onPreview={handlePreviewFile}
+                />
               </div>
             ) : (
               <p className="text-sm text-neutral-400 italic">
@@ -1080,60 +1037,16 @@ export const TeacherProfilePage: React.FC = () => {
             </div>
             {teacherProfile?.credentials && teacherProfile.credentials.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {teacherProfile.credentials.map((certUrl, idx) => {
-                  const isPdf = certUrl.toLowerCase().includes(".pdf")
-                  return (
-                    <div
-                      key={idx}
-                      className="p-3.5 rounded-2xl border border-neutral-200/90 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-900/50 flex items-center justify-between gap-3 shadow-xs hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
-                            isPdf
-                              ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
-                              : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-                          }`}
-                        >
-                          <Award className="w-4 h-4" />
-                        </div>
-                        <div className="min-w-0 space-y-0.5">
-                          <h4 className="text-xs font-bold text-neutral-900 dark:text-white truncate">
-                            Certificate #{idx + 1}
-                          </h4>
-                          <p className="text-[10px] text-neutral-400 flex items-center gap-1.5">
-                            <span className="uppercase font-bold text-[9px] px-1 py-0.2 rounded bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
-                              {isPdf ? "PDF" : "IMAGE"}
-                            </span>
-                            <span>•</span>
-                            <span>Credential</span>
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <a
-                          href={certUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="View certificate"
-                          className="p-1.5 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-300 transition-colors"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                        <a
-                          href={certUrl}
-                          download={`certificate_${idx + 1}.${isPdf ? "pdf" : "png"}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="Download certificate"
-                          className="p-1.5 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-300 transition-colors cursor-pointer"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                        </a>
-                      </div>
-                    </div>
-                  )
-                })}
+                {teacherProfile.credentials.map((certUrl, idx) => (
+                  <FileDocumentCard
+                    key={idx}
+                    title={`Certificate #${idx + 1}`}
+                    url={certUrl}
+                    category="certificate"
+                    subtitle="Accreditation Credential"
+                    onPreview={handlePreviewFile}
+                  />
+                ))}
               </div>
             ) : (
               <p className="text-sm text-neutral-400 italic">
@@ -1820,6 +1733,15 @@ export const TeacherProfilePage: React.FC = () => {
         }
       />
       <ConfirmDialog />
+
+      {/* Interactive File Preview Modal */}
+      <FilePreviewModal
+        isOpen={filePreview.isOpen}
+        title={filePreview.title}
+        url={filePreview.url}
+        fileType={filePreview.type}
+        onClose={() => setFilePreview((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   )
 }

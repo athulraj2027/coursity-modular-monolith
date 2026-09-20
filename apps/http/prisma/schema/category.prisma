@@ -27,6 +27,9 @@ model Category {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
+  primaryCourses     Course[] @relation("CoursePrimaryCategory")
+  subcategoryCourses Course[] @relation("CourseSubcategory")
+
   @@index([parentId])
   @@index([isActive, isDeleted, sortOrder])
   @@map("categories")

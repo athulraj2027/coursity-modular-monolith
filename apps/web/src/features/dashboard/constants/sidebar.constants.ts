@@ -76,6 +76,11 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         icon: LayoutDashboard,
       },
       {
+        title: "Courses & Studio",
+        url: "/teachers/courses",
+        icon: GraduationCap,
+      },
+      {
         title: "Plans & Billing",
         url: "/teachers/plans",
         icon: Zap,

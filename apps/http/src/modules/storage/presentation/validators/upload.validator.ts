@@ -11,7 +11,7 @@ export const getPresignedUrlSchema = z.object({
         .refine(
             (val) => ALL_ALLOWED_MIME_TYPES.includes(val.toLowerCase() as any),
             {
-                message: "Unsupported fileType. Allowed types: JPEG, PNG, WebP, GIF, SVG, PDF",
+                message: "Unsupported fileType. Allowed types: JPEG, PNG, WebP, GIF, SVG, PDF, MP4, WebM, MOV, MKV",
             }
         ),
     folder: z
@@ -24,7 +24,7 @@ export const getPresignedUrlSchema = z.object({
         .coerce
         .number()
         .min(0, "fileSize cannot be negative")
-        .max(25 * 1024 * 1024, "fileSize cannot exceed 25MB")
+        .max(500 * 1024 * 1024, "fileSize cannot exceed 500MB")
         .optional(),
 });
 
