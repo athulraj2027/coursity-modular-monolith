@@ -10,7 +10,8 @@ import {
   createLessonSchema,
   updateLessonSchema,
   reorderItemsSchema,
-  adminReviewCourseSchema,
+  adminDelistCourseSchema,
+  adminFreezeCourseSchema,
   queryCoursesSchema,
 } from "../validators/course.validator";
 import { BadRequestError, ForbiddenError, UnauthorizedError } from "@/app/errors";
@@ -242,25 +243,6 @@ export class CourseController {
     }
   };
 
-  // POST /api/courses/teacher/:id/submit-review (Protected - Teacher: Submit for review)
-  submitCourseForReview = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-
-      const course = await this.teacherCourseUseCase.submitCourseForReview(teacherProfileId, id);
-
-      res.status(200).json({
-        success: true,
-        message: "Course submitted for review successfully",
-        data: course,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
   // ================= 3. TEACHER CURRICULUM ENDPOINTS =================
 
   // POST /api/courses/teacher/:id/modules (Add Module)
@@ -477,29 +459,6 @@ export class CourseController {
     }
   };
 
-  // POST /api/courses/admin/:id/review (Protected - Admin: Review course - Approve/Reject)
-  adminReviewCourse = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      const validated = adminReviewCourseSchema.parse(req.body);
-
-      const course = await this.adminManageCoursesUseCase.reviewCourse(id, {
-        ...validated,
-        adminId: req.user.userId,
-      });
-
-      res.status(200).json({
-        success: true,
-        message: `Course ${validated.action === "APPROVE" ? "approved and published" : "rejected"} successfully`,
-        data: course,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
   // PATCH /api/courses/admin/:id/featured (Protected - Admin: Toggle featured)
   adminToggleFeatured = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -538,12 +497,68 @@ export class CourseController {
     }
   };
 
+  // POST /api/courses/admin/:id/delist (Protected - Admin: Delist unstarted course with reason)
+  adminDelistCourse = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      this.ensureAdmin(req);
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
+      const validated = adminDelistCourseSchema.parse(req.body);
+
+      const course = await this.adminManageCoursesUseCase.delistCourse(id, validated);
+
+      res.status(200).json({
+        success: true,
+        message: "Course delisted successfully and instructor notified via email",
+        data: course,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // POST /api/courses/admin/:id/freeze (Protected - Admin: Freeze started course with reason)
+  adminFreezeCourse = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      this.ensureAdmin(req);
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
+      const validated = adminFreezeCourseSchema.parse(req.body);
+
+      const course = await this.adminManageCoursesUseCase.freezeCourse(id, validated);
+
+      res.status(200).json({
+        success: true,
+        message: "Course frozen successfully and instructor notified via email",
+        data: course,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // POST /api/courses/admin/:id/unfreeze (Protected - Admin: Unfreeze course)
+  adminUnfreezeCourse = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      this.ensureAdmin(req);
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
+      const course = await this.adminManageCoursesUseCase.unfreezeCourse(id);
+
+      res.status(200).json({
+        success: true,
+        message: "Course unfrozen successfully",
+        data: course,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   // DELETE /api/courses/admin/:id (Protected - Admin: Soft delete)
   adminSoftDeleteCourse = async (req: Request, res: Response, next: NextFunction) => {
     try {
       this.ensureAdmin(req);
       const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      const course = await this.adminManageCoursesUseCase.softDelete(id);
+      const reason = typeof req.body?.reason === "string" ? req.body.reason : undefined;
+      const course = await this.adminManageCoursesUseCase.softDelete(id, reason);
 
       res.status(200).json({
         success: true,

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const courseLevelSchema = z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "ALL_LEVELS"]);
 export const coursePricingTypeSchema = z.enum(["FREE", "PAID"]);
-export const courseStatusSchema = z.enum(["DRAFT", "PENDING_REVIEW", "PUBLISHED", "REJECTED", "ARCHIVED"]);
+export const courseStatusSchema = z.enum(["DRAFT", "PUBLISHED", "ARCHIVED", "FROZEN"]);
 export const lessonTypeSchema = z.enum(["VIDEO", "ARTICLE", "QUIZ", "LIVE_CLASS", "ATTACHMENT"]);
 export const videoProviderSchema = z.enum(["LOCAL", "S3", "CLOUDFRONT", "YOUTUBE", "VIMEO", "MUX"]);
 
@@ -142,9 +142,12 @@ export const reorderItemsSchema = z.object({
   ).min(1),
 });
 
-export const adminReviewCourseSchema = z.object({
-  action: z.enum(["APPROVE", "REJECT"]),
-  rejectionReason: z.string().max(2000).optional(),
+export const adminDelistCourseSchema = z.object({
+  reason: z.string().min(5, "Delist message/reason must be at least 5 characters").max(2000),
+});
+
+export const adminFreezeCourseSchema = z.object({
+  reason: z.string().min(5, "Freeze message/reason must be at least 5 characters").max(2000),
 });
 
 export const queryCoursesSchema = z.object({
@@ -161,6 +164,10 @@ export const queryCoursesSchema = z.object({
     .transform((v) => (v === "true" ? true : v === "false" ? false : undefined))
     .optional(),
   isTrending: z
+    .string()
+    .transform((v) => (v === "true" ? true : v === "false" ? false : undefined))
+    .optional(),
+  isFrozen: z
     .string()
     .transform((v) => (v === "true" ? true : v === "false" ? false : undefined))
     .optional(),
@@ -189,3 +196,5 @@ export type UpdateModuleInput = z.infer<typeof updateModuleSchema>;
 export type CreateLessonInput = z.infer<typeof createLessonSchema>;
 export type UpdateLessonInput = z.infer<typeof updateLessonSchema>;
 export type QueryCoursesInput = z.infer<typeof queryCoursesSchema>;
+export type AdminDelistCourseInput = z.infer<typeof adminDelistCourseSchema>;
+export type AdminFreezeCourseInput = z.infer<typeof adminFreezeCourseSchema>;

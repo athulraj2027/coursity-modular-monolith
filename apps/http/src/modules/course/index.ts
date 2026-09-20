@@ -11,6 +11,8 @@ import { AdminManageCoursesUseCase } from "./application/use-cases/admin-manage-
 import { CourseController } from "./presentation/controllers/course.controller";
 import { CourseRoutes } from "./presentation/routes/course.routes";
 
+import { emailService } from "@/modules/email";
+
 // 1. Instantiate Repositories
 const courseRepository = new PrismaCourseRepository();
 const curriculumRepository = new PrismaCurriculumRepository();
@@ -18,7 +20,7 @@ const curriculumRepository = new PrismaCurriculumRepository();
 // 2. Instantiate Use Cases
 const getCoursesUseCase = new GetCoursesUseCase(courseRepository);
 const teacherCourseUseCase = new TeacherCourseUseCase(courseRepository, curriculumRepository);
-const adminManageCoursesUseCase = new AdminManageCoursesUseCase(courseRepository);
+const adminManageCoursesUseCase = new AdminManageCoursesUseCase(courseRepository, emailService);
 
 // 3. Instantiate Controller & Router
 const courseController = new CourseController(

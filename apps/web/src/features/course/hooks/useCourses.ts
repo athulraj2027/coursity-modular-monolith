@@ -124,20 +124,6 @@ export const useTeacherDeleteCourse = () => {
   });
 };
 
-export const useTeacherSubmitForReview = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => courseApi.submitForReview(id),
-    onSuccess: (data) => {
-      toast.success(`Course "${data.title}" submitted for review!`);
-      queryClient.invalidateQueries({ queryKey: COURSE_QUERY_KEYS.all });
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || error?.message || "Failed to submit course for review");
-    },
-  });
-};
-
 // Curriculum Module Mutations
 export const useTeacherCreateModule = () => {
   const queryClient = useQueryClient();
@@ -273,21 +259,6 @@ export const useAdminCourse = (id: string) => {
   });
 };
 
-export const useAdminReviewCourse = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, action, rejectionReason }: { id: string; action: "APPROVE" | "REJECT"; rejectionReason?: string }) =>
-      courseApi.adminReviewCourse(id, action, rejectionReason),
-    onSuccess: (data) => {
-      toast.success(`Course "${data.title}" review processed`);
-      queryClient.invalidateQueries({ queryKey: COURSE_QUERY_KEYS.all });
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || error?.message || "Failed to review course");
-    },
-  });
-};
-
 export const useAdminToggleFeaturedCourse = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -318,10 +289,54 @@ export const useAdminToggleTrendingCourse = () => {
   });
 };
 
+export const useAdminDelistCourse = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      courseApi.adminDelistCourse(id, reason),
+    onSuccess: (data) => {
+      toast.success(`Course "${data.title}" delisted & instructor notified`);
+      queryClient.invalidateQueries({ queryKey: COURSE_QUERY_KEYS.all });
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || error?.message || "Failed to delist course");
+    },
+  });
+};
+
+export const useAdminFreezeCourse = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      courseApi.adminFreezeCourse(id, reason),
+    onSuccess: (data) => {
+      toast.success(`Course "${data.title}" frozen & instructor notified`);
+      queryClient.invalidateQueries({ queryKey: COURSE_QUERY_KEYS.all });
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || error?.message || "Failed to freeze course");
+    },
+  });
+};
+
+export const useAdminUnfreezeCourse = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => courseApi.adminUnfreezeCourse(id),
+    onSuccess: (data) => {
+      toast.success(`Course "${data.title}" unfrozen and active`);
+      queryClient.invalidateQueries({ queryKey: COURSE_QUERY_KEYS.all });
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || error?.message || "Failed to unfreeze course");
+    },
+  });
+};
+
 export const useAdminSoftDeleteCourse = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => courseApi.adminSoftDelete(id),
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) => courseApi.adminSoftDelete(id, reason),
     onSuccess: (data) => {
       toast.success(`Course "${data.title}" moved to archive`);
       queryClient.invalidateQueries({ queryKey: COURSE_QUERY_KEYS.all });
@@ -337,7 +352,7 @@ export const useAdminRestoreCourse = () => {
   return useMutation({
     mutationFn: (id: string) => courseApi.adminRestore(id),
     onSuccess: (data) => {
-      toast.success(`Course "${data.title}" restored to drafts`);
+      toast.success(`Course "${data.title}" restored to published catalog`);
       queryClient.invalidateQueries({ queryKey: COURSE_QUERY_KEYS.all });
     },
     onError: (error: any) => {

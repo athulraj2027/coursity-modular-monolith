@@ -75,13 +75,6 @@ export class CourseRoutes {
       this.courseController.deleteCourse
     );
 
-    this.router.post(
-      "/teacher/:id/submit-review",
-      authMiddleware,
-      isBlockedMiddleware,
-      this.courseController.submitCourseForReview
-    );
-
     // Modules
     this.router.post(
       "/teacher/:id/modules",
@@ -169,13 +162,6 @@ export class CourseRoutes {
       this.courseController.adminGetCourseById
     );
 
-    this.router.post(
-      "/admin/:id/review",
-      authMiddleware,
-      isBlockedMiddleware,
-      this.courseController.adminReviewCourse
-    );
-
     this.router.patch(
       "/admin/:id/featured",
       authMiddleware,
@@ -188,6 +174,27 @@ export class CourseRoutes {
       authMiddleware,
       isBlockedMiddleware,
       this.courseController.adminToggleTrending
+    );
+
+    this.router.post(
+      "/admin/:id/delist",
+      authMiddleware,
+      isBlockedMiddleware,
+      this.courseController.adminDelistCourse
+    );
+
+    this.router.post(
+      "/admin/:id/freeze",
+      authMiddleware,
+      isBlockedMiddleware,
+      this.courseController.adminFreezeCourse
+    );
+
+    this.router.post(
+      "/admin/:id/unfreeze",
+      authMiddleware,
+      isBlockedMiddleware,
+      this.courseController.adminUnfreezeCourse
     );
 
     this.router.delete(

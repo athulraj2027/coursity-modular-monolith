@@ -16,6 +16,7 @@ import {
   FileText,
   Check,
   Share2,
+  Snowflake,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -116,6 +117,8 @@ export const TeacherCourseDetailPage: React.FC = () => {
     );
   }
 
+  const isFrozen = course.isFrozen || course.status === "FROZEN";
+
   // Format Starting Date
   const startingDateFormatted = course.startingDate
     ? new Date(course.startingDate).toLocaleDateString(undefined, {
@@ -163,26 +166,49 @@ export const TeacherCourseDetailPage: React.FC = () => {
             <span>Share</span>
           </Button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditModalOpen(true)}
-            className="gap-1.5 text-xs font-semibold border-neutral-200 dark:border-neutral-800 rounded-xl cursor-pointer"
-          >
-            <Edit className="w-3.5 h-3.5" />
-            Edit Info
-          </Button>
+          {!isFrozen && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditModalOpen(true)}
+              className="gap-1.5 text-xs font-semibold border-neutral-200 dark:border-neutral-800 rounded-xl cursor-pointer"
+            >
+              <Edit className="w-3.5 h-3.5" />
+              Edit Info
+            </Button>
+          )}
 
           <Button
             size="sm"
             onClick={() => navigate(`/teachers/courses/${course.id}/curriculum`)}
-            className="gap-1.5 text-xs font-semibold bg-[#F42A18] hover:bg-[#D92212] text-white rounded-xl shadow-sm cursor-pointer"
+            className={`gap-1.5 text-xs font-semibold rounded-xl shadow-sm cursor-pointer ${
+              isFrozen
+                ? "bg-sky-600 hover:bg-sky-700 text-white"
+                : "bg-[#F42A18] hover:bg-[#D92212] text-white"
+            }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            Manage Curriculum
+            <span>{isFrozen ? "View Curriculum (Read-Only)" : "Manage Curriculum"}</span>
           </Button>
         </div>
       </div>
+
+      {/* Frozen Administration Notice Banner */}
+      {isFrozen && (
+        <div className="p-4 rounded-2xl bg-sky-500/10 border border-sky-500/30 text-sky-900 dark:text-sky-100 flex items-start gap-3">
+          <Snowflake className="w-5 h-5 text-sky-500 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-xs">
+            <p className="font-bold text-sm">This course cohort is currently frozen by administration</p>
+            <p className="text-neutral-700 dark:text-neutral-300">
+              <span className="font-semibold text-neutral-900 dark:text-white">Admin Reason:</span> {course.freezeReason || "Administrative review"}
+            </p>
+            <p className="text-neutral-500 text-[11px]">
+              {course.frozenAt && `Frozen on ${new Date(course.frozenAt).toLocaleDateString()} • `}
+              All course curriculum and details are locked in read-only mode. Content cannot be edited or deleted while frozen.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Hero Header Card */}
       <div className="relative overflow-hidden rounded-3xl bg-neutral-900 text-white p-6 md:p-8 shadow-xl border border-neutral-800">
@@ -248,10 +274,17 @@ export const TeacherCourseDetailPage: React.FC = () => {
               </Badge>
 
               {/* Status Badge */}
-              <Badge variant="outline" className="text-xs px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 border-emerald-500/30 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" />
-                Live on Platform
-              </Badge>
+              {isFrozen ? (
+                <Badge variant="outline" className="text-xs px-2.5 py-0.5 bg-sky-500/20 text-sky-300 border-sky-500/30 flex items-center gap-1">
+                  <Snowflake className="w-3 h-3" />
+                  Frozen by Administration
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-xs px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 border-emerald-500/30 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" />
+                  Live on Platform
+                </Badge>
+              )}
             </div>
 
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
@@ -273,8 +306,8 @@ export const TeacherCourseDetailPage: React.FC = () => {
                 {startingDateFull && <span className="text-neutral-400">({startingDateFull})</span>}
               </div>
 
-              <span className="text-emerald-400 font-medium">
-                Instant Student Access Active
+              <span className={isFrozen ? "text-sky-400 font-medium" : "text-emerald-400 font-medium"}>
+                {isFrozen ? "Read-Only Archive Mode" : "Instant Student Access Active"}
               </span>
             </div>
           </div>

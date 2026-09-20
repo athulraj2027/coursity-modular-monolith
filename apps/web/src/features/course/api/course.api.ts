@@ -130,14 +130,6 @@ export const courseApi = {
     return res.data;
   },
 
-  submitForReview: async (id: string): Promise<Course> => {
-    const res = await apiClient<{ success: boolean; message: string; data: Course }>(
-      `/courses/teacher/${id}/submit-review`,
-      { method: "POST" }
-    );
-    return res.data;
-  },
-
   // Modules
   createModule: async (courseId: string, payload: CreateModulePayload): Promise<CourseModule> => {
     const res = await apiClient<{ success: boolean; message: string; data: CourseModule }>(
@@ -259,17 +251,6 @@ export const courseApi = {
     return res.data;
   },
 
-  adminReviewCourse: async (id: string, action: "APPROVE" | "REJECT", rejectionReason?: string): Promise<Course> => {
-    const res = await apiClient<{ success: boolean; message: string; data: Course }>(
-      `/courses/admin/${id}/review`,
-      {
-        method: "POST",
-        body: JSON.stringify({ action, rejectionReason }),
-      }
-    );
-    return res.data;
-  },
-
   adminToggleFeatured: async (id: string, isFeatured: boolean): Promise<Course> => {
     const res = await apiClient<{ success: boolean; message: string; data: Course }>(
       `/courses/admin/${id}/featured`,
@@ -292,10 +273,45 @@ export const courseApi = {
     return res.data;
   },
 
-  adminSoftDelete: async (id: string): Promise<Course> => {
+  adminDelistCourse: async (id: string, reason: string): Promise<Course> => {
+    const res = await apiClient<{ success: boolean; message: string; data: Course }>(
+      `/courses/admin/${id}/delist`,
+      {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }
+    );
+    return res.data;
+  },
+
+  adminFreezeCourse: async (id: string, reason: string): Promise<Course> => {
+    const res = await apiClient<{ success: boolean; message: string; data: Course }>(
+      `/courses/admin/${id}/freeze`,
+      {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }
+    );
+    return res.data;
+  },
+
+  adminUnfreezeCourse: async (id: string): Promise<Course> => {
+    const res = await apiClient<{ success: boolean; message: string; data: Course }>(
+      `/courses/admin/${id}/unfreeze`,
+      {
+        method: "POST",
+      }
+    );
+    return res.data;
+  },
+
+  adminSoftDelete: async (id: string, reason?: string): Promise<Course> => {
     const res = await apiClient<{ success: boolean; message: string; data: Course }>(
       `/courses/admin/${id}`,
-      { method: "DELETE" }
+      {
+        method: "DELETE",
+        body: reason ? JSON.stringify({ reason }) : undefined,
+      }
     );
     return res.data;
   },

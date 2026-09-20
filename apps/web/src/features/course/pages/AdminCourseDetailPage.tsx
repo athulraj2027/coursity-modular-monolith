@@ -23,15 +23,20 @@ import {
   Copy,
   Check,
   Info,
+  Snowflake,
+  EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmationModal } from "@/components/common/ConfirmationModal";
+import { AdminCourseReasonModal } from "../components/AdminCourseReasonModal";
 import {
   useAdminCourse,
   useAdminToggleFeaturedCourse,
   useAdminToggleTrendingCourse,
-  useAdminSoftDeleteCourse,
+  useAdminDelistCourse,
+  useAdminFreezeCourse,
+  useAdminUnfreezeCourse,
   useAdminRestoreCourse,
   useAdminHardDeleteCourse,
 } from "../hooks/useCourses";
@@ -47,7 +52,8 @@ export const AdminCourseDetailPage: React.FC = () => {
   const [copiedId, setCopiedId] = useState(false);
 
   // Modals
-  const [showDelistModal, setShowDelistModal] = useState(false);
+  const [reasonModalAction, setReasonModalAction] = useState<"delist" | "freeze" | null>(null);
+  const [showUnfreezeModal, setShowUnfreezeModal] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [showPurgeModal, setShowPurgeModal] = useState(false);
 
@@ -56,7 +62,9 @@ export const AdminCourseDetailPage: React.FC = () => {
 
   const toggleFeaturedMutation = useAdminToggleFeaturedCourse();
   const toggleTrendingMutation = useAdminToggleTrendingCourse();
-  const softDeleteMutation = useAdminSoftDeleteCourse();
+  const delistMutation = useAdminDelistCourse();
+  const freezeMutation = useAdminFreezeCourse();
+  const unfreezeMutation = useAdminUnfreezeCourse();
   const restoreMutation = useAdminRestoreCourse();
   const hardDeleteMutation = useAdminHardDeleteCourse();
 
@@ -93,17 +101,17 @@ export const AdminCourseDetailPage: React.FC = () => {
     setTimeout(() => setCopiedId(false), 2000);
   };
 
-  const handleConfirmDelist = async () => {
-    if (!id) return;
-    await softDeleteMutation.mutateAsync(id);
-    setShowDelistModal(false);
-    refetch();
-  };
-
   const handleConfirmRestore = async () => {
     if (!id) return;
     await restoreMutation.mutateAsync(id);
     setShowRestoreModal(false);
+    refetch();
+  };
+
+  const handleConfirmUnfreeze = async () => {
+    if (!id) return;
+    await unfreezeMutation.mutateAsync(id);
+    setShowUnfreezeModal(false);
     refetch();
   };
 
@@ -152,6 +160,8 @@ export const AdminCourseDetailPage: React.FC = () => {
   const teacherProfile = course.teacherProfile;
   const instructorId = instructor?.id || teacherProfile?.userId || teacherProfile?.id;
   const isArchived = course.isDeleted;
+  const isFrozen = course.isFrozen || course.status === "FROZEN";
+  const hasStarted = Boolean(course.startingDate && new Date(course.startingDate).getTime() <= Date.now());
 
   // Format Starting Date
   const startingDateFormatted = course.startingDate
@@ -226,43 +236,98 @@ export const AdminCourseDetailPage: React.FC = () => {
             <span>{course.isTrending ? "Trending Spotlight" : "Set Trending"}</span>
           </Button>
 
-          {/* Delist or Relist Moderation */}
+          {/* Moderation Controls: Freeze, Unfreeze, Delist, Relist */}
           {isArchived ? (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowRestoreModal(true)}
+                className="gap-1.5 text-xs font-semibold border-emerald-500/30 text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Relist on Platform
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowPurgeModal(true)}
+                className="gap-1.5 text-xs font-semibold rounded-xl cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Purge
+              </Button>
+            </>
+          ) : isFrozen ? (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowRestoreModal(true)}
-              className="gap-1.5 text-xs font-semibold border-emerald-500/30 text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl cursor-pointer"
+              onClick={() => setShowUnfreezeModal(true)}
+              className="gap-1.5 text-xs font-semibold border-sky-500/30 text-sky-600 bg-sky-500/10 hover:bg-sky-500/20 rounded-xl cursor-pointer"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              Relist on Platform
+              <Snowflake className="w-3.5 h-3.5" />
+              Unfreeze Course
+            </Button>
+          ) : hasStarted ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setReasonModalAction("freeze")}
+              className="gap-1.5 text-xs font-semibold border-sky-500/30 text-sky-600 bg-sky-500/10 hover:bg-sky-500/20 rounded-xl cursor-pointer"
+              title="Freeze active cohort"
+            >
+              <Snowflake className="w-3.5 h-3.5" />
+              Freeze Course
             </Button>
           ) : (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowDelistModal(true)}
+              onClick={() => setReasonModalAction("delist")}
               className="gap-1.5 text-xs font-semibold border-red-500/30 text-red-600 hover:bg-red-500/10 rounded-xl cursor-pointer"
+              title="Delist unstarted cohort"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <EyeOff className="w-3.5 h-3.5" />
               Delist from Platform
-            </Button>
-          )}
-
-          {/* Permanent Delete (Purge) if already archived */}
-          {isArchived && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setShowPurgeModal(true)}
-              className="gap-1.5 text-xs font-semibold rounded-xl cursor-pointer"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              Purge
             </Button>
           )}
         </div>
       </div>
+
+      {/* Moderation Status Banner if Frozen or Delisted */}
+      {isFrozen && (
+        <div className="p-4 rounded-2xl bg-sky-500/10 border border-sky-500/30 text-sky-900 dark:text-sky-100 flex items-start gap-3">
+          <Snowflake className="w-5 h-5 text-sky-500 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-xs">
+            <p className="font-bold text-sm">Course Cohort Frozen by Administration</p>
+            <p className="text-neutral-700 dark:text-neutral-300">
+              <span className="font-semibold text-neutral-900 dark:text-white">Freeze Reason:</span> {course.freezeReason || "Administrative compliance lock"}
+            </p>
+            {course.frozenAt && (
+              <p className="text-neutral-500 text-[11px]">
+                Frozen on {new Date(course.frozenAt).toLocaleString()} • Instructor access locked in read-only mode
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isArchived && course.delistReason && (
+        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-900 dark:text-red-100 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-xs">
+            <p className="font-bold text-sm">Course Delisted from Public Catalog</p>
+            <p className="text-neutral-700 dark:text-neutral-300">
+              <span className="font-semibold text-neutral-900 dark:text-white">Delist Reason:</span> {course.delistReason}
+            </p>
+            {course.delistedAt && (
+              <p className="text-neutral-500 text-[11px]">
+                Delisted on {new Date(course.delistedAt).toLocaleString()}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Hero Header Card */}
       <div className="relative overflow-hidden rounded-3xl bg-neutral-900 text-white p-6 md:p-8 shadow-xl border border-neutral-800">
@@ -327,10 +392,29 @@ export const AdminCourseDetailPage: React.FC = () => {
                 {course.level}
               </Badge>
 
+              {/* Start Status Pill */}
+              {course.startingDate && (
+                <Badge
+                  variant="outline"
+                  className={`text-xs px-2.5 py-0.5 ${
+                    hasStarted
+                      ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                      : "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                  }`}
+                >
+                  {hasStarted ? "Cohort Started / Active" : "Unstarted Cohort"}
+                </Badge>
+              )}
+
               {/* Status Badge */}
               {isArchived ? (
                 <Badge variant="destructive" className="text-xs px-2.5 py-0.5 bg-red-500/30 text-red-200 border-red-500/40">
                   Delisted / Archived
+                </Badge>
+              ) : isFrozen ? (
+                <Badge variant="outline" className="text-xs px-2.5 py-0.5 bg-sky-500/20 text-sky-300 border-sky-500/30 flex items-center gap-1">
+                  <Snowflake className="w-3 h-3" />
+                  Frozen by Administration
                 </Badge>
               ) : (
                 <Badge variant="outline" className="text-xs px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 border-emerald-500/30 flex items-center gap-1">
@@ -802,8 +886,20 @@ export const AdminCourseDetailPage: React.FC = () => {
 
             <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-100 dark:border-neutral-800 space-y-1">
               <span className="text-neutral-400 block">Catalog Visibility</span>
-              <span className={`font-semibold ${isArchived ? "text-red-500" : "text-emerald-500"}`}>
-                {isArchived ? "DELISTED / ARCHIVED" : "LIVE & LISTED"}
+              <span
+                className={`font-semibold ${
+                  isArchived
+                    ? "text-red-500"
+                    : isFrozen
+                    ? "text-sky-500"
+                    : "text-emerald-500"
+                }`}
+              >
+                {isArchived
+                  ? "DELISTED / ARCHIVED"
+                  : isFrozen
+                  ? "FROZEN BY ADMIN"
+                  : "LIVE & LISTED"}
               </span>
             </div>
 
@@ -858,18 +954,39 @@ export const AdminCourseDetailPage: React.FC = () => {
         </div>
       )}
 
-      {/* Confirmation Modals */}
+      {/* Delist or Freeze with Reason Modal */}
+      {reasonModalAction && (
+        <AdminCourseReasonModal
+          isOpen={Boolean(reasonModalAction)}
+          action={reasonModalAction}
+          course={course}
+          isLoading={delistMutation.isPending || freezeMutation.isPending}
+          onClose={() => setReasonModalAction(null)}
+          onConfirm={async (reason) => {
+            if (reasonModalAction === "delist") {
+              await delistMutation.mutateAsync({ id: course.id, reason });
+            } else {
+              await freezeMutation.mutateAsync({ id: course.id, reason });
+            }
+            setReasonModalAction(null);
+            refetch();
+          }}
+        />
+      )}
+
+      {/* Unfreeze Confirmation */}
       <ConfirmationModal
-        isOpen={showDelistModal}
-        onClose={() => setShowDelistModal(false)}
-        onConfirm={handleConfirmDelist}
-        title="Delist Course from Platform"
-        description={`Are you sure you want to delist "${course.title}"? Students will no longer be able to discover or enroll in this course.`}
-        confirmText="Delist Course"
-        variant="danger"
-        isLoading={softDeleteMutation.isPending}
+        isOpen={showUnfreezeModal}
+        onClose={() => setShowUnfreezeModal(false)}
+        onConfirm={handleConfirmUnfreeze}
+        title="Unfreeze Course"
+        description={`Are you sure you want to unfreeze "${course.title}"? The course will return to active live status and the instructor will regain full editing access.`}
+        confirmText="Unfreeze Course"
+        variant="success"
+        isLoading={unfreezeMutation.isPending}
       />
 
+      {/* Relist Confirmation */}
       <ConfirmationModal
         isOpen={showRestoreModal}
         onClose={() => setShowRestoreModal(false)}
@@ -881,6 +998,7 @@ export const AdminCourseDetailPage: React.FC = () => {
         isLoading={restoreMutation.isPending}
       />
 
+      {/* Hard Delete Confirmation */}
       <ConfirmationModal
         isOpen={showPurgeModal}
         onClose={() => setShowPurgeModal(false)}
@@ -896,3 +1014,4 @@ export const AdminCourseDetailPage: React.FC = () => {
 };
 
 export default AdminCourseDetailPage;
+

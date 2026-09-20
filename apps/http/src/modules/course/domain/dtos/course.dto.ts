@@ -128,8 +128,11 @@ export interface ReorderItemDTO {
   sortOrder: number;
 }
 
-export interface AdminReviewCourseDTO {
-  action: "APPROVE" | "REJECT";
-  rejectionReason?: string;
-  adminId: string;
+export interface AdminDelistCourseDTO {
+  reason: string;
 }
+
+export interface AdminFreezeCourseDTO {
+  reason: string;
+}
+

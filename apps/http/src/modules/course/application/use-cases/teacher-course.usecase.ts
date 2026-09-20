@@ -75,6 +75,9 @@ export class TeacherCourseUseCase {
     if (course.teacherProfileId !== teacherProfileId) {
       throw new ForbiddenError("You do not have permission to modify this course.");
     }
+    if (course.isFrozen || course.status === "FROZEN") {
+      throw new ForbiddenError("This course has been frozen by administration and cannot be modified. It is in read-only mode.");
+    }
 
     // Slug conflict validation
     if (dto.slug && dto.slug !== course.slug) {
@@ -95,39 +98,11 @@ export class TeacherCourseUseCase {
     if (course.teacherProfileId !== teacherProfileId) {
       throw new ForbiddenError("You do not have permission to delete this course.");
     }
+    if (course.isFrozen || course.status === "FROZEN") {
+      throw new ForbiddenError("This course has been frozen by administration and cannot be deleted.");
+    }
 
     return this.courseRepository.softDelete(courseId);
-  }
-
-  async submitCourseForReview(teacherProfileId: string, courseId: string): Promise<CourseEntity> {
-    const course = await this.courseRepository.findById(courseId, false, true);
-    if (!course) {
-      throw new NotFoundError(`Course with ID '${courseId}' was not found.`);
-    }
-    if (course.teacherProfileId !== teacherProfileId) {
-      throw new ForbiddenError("You do not have permission to submit this course.");
-    }
-
-    // Requirements validation for review submission
-    if (!course.title || course.title.trim().length < 5) {
-      throw new BadRequestError("Course must have a descriptive title (at least 5 characters).");
-    }
-    if (!course.categoryId) {
-      throw new BadRequestError("Course must be assigned to a category before submission.");
-    }
-    if (!course.modules || course.modules.length === 0) {
-      throw new BadRequestError("Course must contain at least 1 module before submission.");
-    }
-
-    const totalLessons = course.modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0);
-    if (totalLessons === 0) {
-      throw new BadRequestError("Course must contain at least 1 published lesson before submission.");
-    }
-
-    return this.courseRepository.updateStatus(courseId, "PENDING_REVIEW", {
-      submittedAt: new Date(),
-      rejectionReason: null,
-    });
   }
 
   // ================= MODULE OPERATIONS =================
@@ -139,6 +114,9 @@ export class TeacherCourseUseCase {
     }
     if (course.teacherProfileId !== teacherProfileId) {
       throw new ForbiddenError("You do not have permission to add modules to this course.");
+    }
+    if (course.isFrozen || course.status === "FROZEN") {
+      throw new ForbiddenError("This course has been frozen by administration. Curriculum modifications are locked.");
     }
 
     return this.curriculumRepository.createModule(dto);
@@ -157,6 +135,9 @@ export class TeacherCourseUseCase {
     if (!course || course.teacherProfileId !== teacherProfileId) {
       throw new ForbiddenError("You do not have permission to modify this module.");
     }
+    if (course.isFrozen || course.status === "FROZEN") {
+      throw new ForbiddenError("This course has been frozen by administration. Curriculum modifications are locked.");
+    }
 
     return this.curriculumRepository.updateModule(moduleId, dto);
   }
@@ -169,6 +150,9 @@ export class TeacherCourseUseCase {
     const course = await this.courseRepository.findById(module.courseId, false);
     if (!course || course.teacherProfileId !== teacherProfileId) {
       throw new ForbiddenError("You do not have permission to delete this module.");
+    }
+    if (course.isFrozen || course.status === "FROZEN") {
+      throw new ForbiddenError("This course has been frozen by administration. Curriculum modifications are locked.");
     }
 
     return this.curriculumRepository.deleteModule(moduleId);
@@ -186,6 +170,9 @@ export class TeacherCourseUseCase {
     if (course.teacherProfileId !== teacherProfileId) {
       throw new ForbiddenError("You do not have permission to reorder modules in this course.");
     }
+    if (course.isFrozen || course.status === "FROZEN") {
+      throw new ForbiddenError("This course has been frozen by administration. Curriculum modifications are locked.");
+    }
 
     await this.curriculumRepository.reorderModules(courseId, items);
   }
@@ -200,6 +187,9 @@ export class TeacherCourseUseCase {
     const course = await this.courseRepository.findById(module.courseId, false);
     if (!course || course.teacherProfileId !== teacherProfileId) {
       throw new ForbiddenError("You do not have permission to add lessons to this course.");
+    }
+    if (course.isFrozen || course.status === "FROZEN") {
+      throw new ForbiddenError("This course has been frozen by administration. Curriculum modifications are locked.");
     }
 
     return this.curriculumRepository.createLesson(dto);
@@ -222,6 +212,9 @@ export class TeacherCourseUseCase {
     if (!course || course.teacherProfileId !== teacherProfileId) {
       throw new ForbiddenError("You do not have permission to modify this lesson.");
     }
+    if (course.isFrozen || course.status === "FROZEN") {
+      throw new ForbiddenError("This course has been frozen by administration. Curriculum modifications are locked.");
+    }
 
     return this.curriculumRepository.updateLesson(lessonId, dto);
   }
@@ -239,6 +232,9 @@ export class TeacherCourseUseCase {
     if (!course || course.teacherProfileId !== teacherProfileId) {
       throw new ForbiddenError("You do not have permission to delete this lesson.");
     }
+    if (course.isFrozen || course.status === "FROZEN") {
+      throw new ForbiddenError("This course has been frozen by administration. Curriculum modifications are locked.");
+    }
 
     return this.curriculumRepository.deleteLesson(lessonId);
   }
@@ -255,6 +251,9 @@ export class TeacherCourseUseCase {
     const course = await this.courseRepository.findById(module.courseId, false);
     if (!course || course.teacherProfileId !== teacherProfileId) {
       throw new ForbiddenError("You do not have permission to reorder lessons in this course.");
+    }
+    if (course.isFrozen || course.status === "FROZEN") {
+      throw new ForbiddenError("This course has been frozen by administration. Curriculum modifications are locked.");
     }
 
     await this.curriculumRepository.reorderLessons(moduleId, items);

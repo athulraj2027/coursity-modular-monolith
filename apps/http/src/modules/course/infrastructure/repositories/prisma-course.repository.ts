@@ -168,62 +168,20 @@ export class PrismaCourseRepository implements ICourseRepository {
   async create(data: CreateCourseDTO): Promise<CourseEntity> {
     const slug = data.slug || this.generateSlug(data.title);
 
-    let totalModules = 0;
-    let totalLessons = 0;
-    let totalDurationSeconds = 0;
-
-    let modulesCreate: any = undefined;
-    if (data.modules && data.modules.length > 0) {
-      totalModules = data.modules.length;
-      modulesCreate = {
-        create: data.modules.map((m, mIdx) => {
-          const lessons = m.lessons || [];
-          totalLessons += lessons.length;
-          const lessonDuration = lessons.reduce((sum, l) => sum + (l.durationSeconds || 0), 0);
-          totalDurationSeconds += lessonDuration;
-
-          return {
-            title: m.title,
-            description: m.description || null,
-            sortOrder: m.sortOrder ?? mIdx,
-            isPublished: true,
-            lessons:
-              lessons.length > 0
-                ? {
-                    create: lessons.map((l, lIdx) => ({
-                      title: l.title,
-                      description: l.description || null,
-                      lessonType: l.lessonType || "VIDEO",
-                      durationSeconds: l.durationSeconds || 0,
-                      sortOrder: l.sortOrder ?? lIdx,
-                      isFreePreview: l.isFreePreview || false,
-                      isPublished: true,
-                      videoUrl: l.videoUrl || null,
-                      videoProvider: l.videoProvider || (l.videoUrl ? "S3" : null),
-                      videoThumbnail: l.videoThumbnail || null,
-                      articleBody: l.articleBody || null,
-                      attachments: l.attachments ? (l.attachments as any) : [],
-                    })),
-                  }
-                : undefined,
-          };
-        }),
-      };
-    }
-
+    const initialModules = data.modules || [];
     const created = await (this.prisma as any).course.create({
       data: {
         title: data.title,
         slug,
-        subtitle: data.subtitle || null,
-        description: data.description || null,
-        thumbnail: data.thumbnail || null,
-        promoVideoUrl: data.promoVideoUrl || null,
+        subtitle: data.subtitle,
+        description: data.description,
+        thumbnail: data.thumbnail,
+        promoVideoUrl: data.promoVideoUrl,
         startingDate: data.startingDate ? new Date(data.startingDate) : null,
         level: data.level || "ALL_LEVELS",
         language: data.language || "English",
         pricingType: data.pricingType || "FREE",
-        price: data.price ?? 0,
+        price: data.pricingType === "FREE" ? 0 : data.price || 0,
         currency: data.currency || "USD",
         learningOutcomes: data.learningOutcomes || [],
         requirements: data.requirements || [],
@@ -235,13 +193,40 @@ export class PrismaCourseRepository implements ICourseRepository {
         status: data.status || "PUBLISHED",
         isApproved: true,
         publishedAt: new Date(),
-        isDeleted: false,
-        totalModules,
-        totalLessons,
-        totalDurationSeconds,
-        modules: modulesCreate,
+        totalModules: initialModules.length,
+        totalLessons: initialModules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0),
+        totalDurationSeconds: initialModules.reduce(
+          (acc, m) => acc + (m.lessons?.reduce((lAcc, l) => lAcc + (l.durationSeconds || 0), 0) || 0),
+          0
+        ),
+        ...(initialModules.length > 0
+          ? {
+              modules: {
+                create: initialModules.map((m, mIdx) => ({
+                  title: m.title,
+                  description: m.description,
+                  sortOrder: m.sortOrder ?? mIdx,
+                  lessons: {
+                    create: (m.lessons || []).map((l, lIdx) => ({
+                      title: l.title,
+                      description: l.description,
+                      lessonType: l.lessonType || "VIDEO",
+                      durationSeconds: l.durationSeconds || 0,
+                      sortOrder: l.sortOrder ?? lIdx,
+                      isFreePreview: l.isFreePreview ?? false,
+                      videoUrl: l.videoUrl,
+                      videoProvider: l.videoProvider,
+                      videoThumbnail: l.videoThumbnail,
+                      articleBody: l.articleBody,
+                      attachments: l.attachments || [],
+                    })),
+                  },
+                })),
+              },
+            }
+          : {}),
       },
-      include: this.getInclude(false),
+      include: this.getInclude(true),
     });
 
     return created as CourseEntity;
@@ -249,20 +234,25 @@ export class PrismaCourseRepository implements ICourseRepository {
 
   async update(id: string, data: UpdateCourseDTO): Promise<CourseEntity> {
     const updateData: any = {};
+
     if (data.title !== undefined) updateData.title = data.title;
     if (data.slug !== undefined) updateData.slug = data.slug;
     if (data.subtitle !== undefined) updateData.subtitle = data.subtitle;
     if (data.description !== undefined) updateData.description = data.description;
-    if (data.status !== undefined) updateData.status = data.status;
     if (data.thumbnail !== undefined) updateData.thumbnail = data.thumbnail;
     if (data.promoVideoUrl !== undefined) updateData.promoVideoUrl = data.promoVideoUrl;
-    if (data.startingDate !== undefined) {
-      updateData.startingDate = data.startingDate ? new Date(data.startingDate) : null;
-    }
+    if (data.startingDate !== undefined) updateData.startingDate = data.startingDate ? new Date(data.startingDate) : null;
     if (data.level !== undefined) updateData.level = data.level;
     if (data.language !== undefined) updateData.language = data.language;
-    if (data.pricingType !== undefined) updateData.pricingType = data.pricingType;
-    if (data.price !== undefined) updateData.price = data.price;
+    if (data.pricingType !== undefined) {
+      updateData.pricingType = data.pricingType;
+      if (data.pricingType === "FREE") {
+        updateData.price = 0;
+      }
+    }
+    if (data.price !== undefined && data.pricingType !== "FREE") {
+      updateData.price = data.price;
+    }
     if (data.currency !== undefined) updateData.currency = data.currency;
     if (data.learningOutcomes !== undefined) updateData.learningOutcomes = data.learningOutcomes;
     if (data.requirements !== undefined) updateData.requirements = data.requirements;
@@ -270,6 +260,7 @@ export class PrismaCourseRepository implements ICourseRepository {
     if (data.tags !== undefined) updateData.tags = data.tags;
     if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
     if (data.subcategoryId !== undefined) updateData.subcategoryId = data.subcategoryId;
+    if (data.status !== undefined) updateData.status = data.status;
     if (data.isFeatured !== undefined) updateData.isFeatured = data.isFeatured;
     if (data.isTrending !== undefined) updateData.isTrending = data.isTrending;
     if (data.sortOrder !== undefined) updateData.sortOrder = data.sortOrder;
@@ -286,9 +277,16 @@ export class PrismaCourseRepository implements ICourseRepository {
   async updateStatus(
     id: string,
     status: CourseEntity["status"],
-    extras: { rejectionReason?: string | null; isApproved?: boolean; approvedByAdminId?: string | null; publishedAt?: Date | null; submittedAt?: Date | null } = {}
+    extras: {
+      rejectionReason?: string | null;
+      isApproved?: boolean;
+      approvedByAdminId?: string | null;
+      publishedAt?: Date | null;
+      submittedAt?: Date | null;
+    } = {}
   ): Promise<CourseEntity> {
     const data: any = { status };
+
     if (extras.rejectionReason !== undefined) data.rejectionReason = extras.rejectionReason;
     if (extras.isApproved !== undefined) data.isApproved = extras.isApproved;
     if (extras.approvedByAdminId !== undefined) data.approvedByAdminId = extras.approvedByAdminId;
@@ -304,13 +302,15 @@ export class PrismaCourseRepository implements ICourseRepository {
     return updated as CourseEntity;
   }
 
-  async softDelete(id: string): Promise<CourseEntity> {
+  async softDelete(id: string, delistReason?: string): Promise<CourseEntity> {
     const updated = await (this.prisma as any).course.update({
       where: { id },
       data: {
         isDeleted: true,
         deletedAt: new Date(),
         status: "ARCHIVED",
+        delistReason: delistReason || null,
+        delistedAt: new Date(),
       },
       include: this.getInclude(false),
     });
@@ -325,6 +325,39 @@ export class PrismaCourseRepository implements ICourseRepository {
         deletedAt: null,
         status: "PUBLISHED",
         isApproved: true,
+        delistReason: null,
+        delistedAt: null,
+        isFrozen: false,
+        freezeReason: null,
+        frozenAt: null,
+      },
+      include: this.getInclude(false),
+    });
+    return updated as CourseEntity;
+  }
+
+  async freeze(id: string, freezeReason: string): Promise<CourseEntity> {
+    const updated = await (this.prisma as any).course.update({
+      where: { id },
+      data: {
+        isFrozen: true,
+        frozenAt: new Date(),
+        freezeReason,
+        status: "FROZEN",
+      },
+      include: this.getInclude(false),
+    });
+    return updated as CourseEntity;
+  }
+
+  async unfreeze(id: string): Promise<CourseEntity> {
+    const updated = await (this.prisma as any).course.update({
+      where: { id },
+      data: {
+        isFrozen: false,
+        frozenAt: null,
+        freezeReason: null,
+        status: "PUBLISHED",
       },
       include: this.getInclude(false),
     });
@@ -344,14 +377,13 @@ export class PrismaCourseRepository implements ICourseRepository {
       baseWhere.teacherProfileId = teacherProfileId;
     }
 
-    const [total, published, draft, pendingReview, rejected, archived, featured, freeCourses, paidCourses] =
+    const [total, published, draft, archived, frozen, featured, freeCourses, paidCourses] =
       await Promise.all([
         (this.prisma as any).course.count({ where: baseWhere }),
         (this.prisma as any).course.count({ where: { ...baseWhere, status: "PUBLISHED" } }),
         (this.prisma as any).course.count({ where: { ...baseWhere, status: "DRAFT" } }),
-        (this.prisma as any).course.count({ where: { ...baseWhere, status: "PENDING_REVIEW" } }),
-        (this.prisma as any).course.count({ where: { ...baseWhere, status: "REJECTED" } }),
         (this.prisma as any).course.count({ where: { isDeleted: true, ...(teacherProfileId ? { teacherProfileId } : {}) } }),
+        (this.prisma as any).course.count({ where: { ...baseWhere, isFrozen: true } }),
         (this.prisma as any).course.count({ where: { ...baseWhere, isFeatured: true } }),
         (this.prisma as any).course.count({ where: { ...baseWhere, pricingType: "FREE" } }),
         (this.prisma as any).course.count({ where: { ...baseWhere, pricingType: { not: "FREE" } } }),
@@ -361,9 +393,8 @@ export class PrismaCourseRepository implements ICourseRepository {
       total,
       published,
       draft,
-      pendingReview,
-      rejected,
       archived,
+      frozen,
       featured,
       freeCourses,
       paidCourses,

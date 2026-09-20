@@ -10,8 +10,8 @@ import {
   CheckCircle2,
   BookOpen,
   DollarSign,
-  Sparkles,
   Eye,
+  Snowflake,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -67,15 +67,15 @@ export const TeacherCoursesPage: React.FC = () => {
       },
       {
         label: "Live & Published",
-        val: metrics?.published ?? allCourses.filter((c) => c.status === "PUBLISHED").length,
+        val: metrics?.published ?? allCourses.filter((c) => c.status === "PUBLISHED" && !c.isFrozen).length,
         icon: CheckCircle2,
         color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20",
       },
       {
-        label: "Free Cohorts",
-        val: metrics?.freeCourses ?? allCourses.filter((c) => c.pricingType === "FREE").length,
-        icon: Sparkles,
-        color: "text-purple-600 bg-purple-500/10 border-purple-500/20",
+        label: "Frozen by Admin",
+        val: metrics?.frozen ?? allCourses.filter((c) => c.status === "FROZEN" || c.isFrozen).length,
+        icon: Snowflake,
+        color: "text-sky-600 bg-sky-500/10 border-sky-500/20",
       },
       {
         label: "Paid Cohorts",
@@ -93,7 +93,12 @@ export const TeacherCoursesPage: React.FC = () => {
       {
         key: "published",
         label: "Live & Listed",
-        count: allCourses.filter((c) => c.status === "PUBLISHED").length,
+        count: allCourses.filter((c) => c.status === "PUBLISHED" && !c.isFrozen).length,
+      },
+      {
+        key: "frozen",
+        label: "Frozen by Admin",
+        count: allCourses.filter((c) => c.status === "FROZEN" || c.isFrozen).length,
       },
       {
         key: "free",
@@ -120,7 +125,9 @@ export const TeacherCoursesPage: React.FC = () => {
     let result = [...allCourses];
 
     if (activeTab === "published") {
-      result = result.filter((c) => c.status === "PUBLISHED");
+      result = result.filter((c) => c.status === "PUBLISHED" && !c.isFrozen);
+    } else if (activeTab === "frozen") {
+      result = result.filter((c) => c.status === "FROZEN" || c.isFrozen);
     } else if (activeTab === "free") {
       result = result.filter((c) => c.pricingType === "FREE");
     } else if (activeTab === "paid") {
@@ -246,6 +253,15 @@ export const TeacherCoursesPage: React.FC = () => {
       header: "Status",
       align: "center",
       cell: (course) => {
+        const isFrozen = course.isFrozen || course.status === "FROZEN";
+        if (isFrozen) {
+          return (
+            <Badge variant="outline" className="bg-sky-500/10 text-sky-600 border-sky-500/20 text-xs flex items-center gap-1 font-medium">
+              <Snowflake className="w-3 h-3 text-sky-500" />
+              Frozen by Admin
+            </Badge>
+          );
+        }
         switch (course.status) {
           case "PUBLISHED":
             return (
@@ -272,58 +288,89 @@ export const TeacherCoursesPage: React.FC = () => {
     {
       header: "Actions",
       align: "right",
-      cell: (course) => (
-        <div className="flex items-center justify-end gap-1.5">
-          {/* Details / Overview */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(`/teachers/courses/${course.id}`)}
-            className="h-8 px-2 text-xs text-neutral-700 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white cursor-pointer"
-            title="View Course Details"
-          >
-            <Eye className="w-3.5 h-3.5 mr-1" />
-            Overview
-          </Button>
+      cell: (course) => {
+        const isFrozen = course.isFrozen || course.status === "FROZEN";
 
-          {/* Curriculum Builder Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(`/teachers/courses/${course.id}/curriculum`)}
-            className="h-8 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 cursor-pointer"
-            title="Open Curriculum Builder"
-          >
-            <Layers className="w-3.5 h-3.5 mr-1" />
-            Curriculum
-          </Button>
+        if (isFrozen) {
+          return (
+            <div className="flex items-center justify-end gap-1.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(`/teachers/courses/${course.id}`)}
+                className="h-8 px-2 text-xs text-neutral-700 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white cursor-pointer"
+                title="View Course Details"
+              >
+                <Eye className="w-3.5 h-3.5 mr-1" />
+                Overview
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(`/teachers/courses/${course.id}/curriculum`)}
+                className="h-8 px-2 text-xs text-sky-600 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/40 cursor-pointer"
+                title="View Curriculum (Read-Only)"
+              >
+                <Layers className="w-3.5 h-3.5 mr-1" />
+                Curriculum
+              </Button>
+            </div>
+          );
+        }
 
-          {/* Edit Details */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setCourseToEdit(course);
-              setIsCreateModalOpen(true);
-            }}
-            className="h-8 px-2 text-xs text-neutral-600 hover:text-neutral-900 dark:hover:text-neutral-100 cursor-pointer"
-            title="Edit Details"
-          >
-            <Edit2 className="w-3.5 h-3.5" />
-          </Button>
+        return (
+          <div className="flex items-center justify-end gap-1.5">
+            {/* Details / Overview */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`/teachers/courses/${course.id}`)}
+              className="h-8 px-2 text-xs text-neutral-700 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white cursor-pointer"
+              title="View Course Details"
+            >
+              <Eye className="w-3.5 h-3.5 mr-1" />
+              Overview
+            </Button>
 
-          {/* Delete / Archive */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setCourseToDelete(course)}
-            className="h-8 px-2 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
-            title="Archive Course"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-      ),
+            {/* Curriculum Builder Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`/teachers/courses/${course.id}/curriculum`)}
+              className="h-8 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 cursor-pointer"
+              title="Open Curriculum Builder"
+            >
+              <Layers className="w-3.5 h-3.5 mr-1" />
+              Curriculum
+            </Button>
+
+            {/* Edit Details */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setCourseToEdit(course);
+                setIsCreateModalOpen(true);
+              }}
+              className="h-8 px-2 text-xs text-neutral-600 hover:text-neutral-900 dark:hover:text-neutral-100 cursor-pointer"
+              title="Edit Details"
+            >
+              <Edit2 className="w-3.5 h-3.5" />
+            </Button>
+
+            {/* Delete / Archive */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setCourseToDelete(course)}
+              className="h-8 px-2 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
+              title="Archive Course"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 

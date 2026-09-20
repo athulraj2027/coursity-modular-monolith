@@ -11,6 +11,7 @@ import {
   Star,
   EyeOff,
   Eye,
+  Snowflake,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,13 +24,16 @@ import {
   type TableSortOption,
 } from "@/components/common/DataTableTemplate";
 import { ConfirmationModal } from "@/components/common/ConfirmationModal";
+import { AdminCourseReasonModal } from "../components/AdminCourseReasonModal";
 import { useAdminCategories } from "@/features/categories";
 import {
   useAdminCourses,
   useAdminCourseMetrics,
   useAdminToggleFeaturedCourse,
   useAdminToggleTrendingCourse,
-  useAdminSoftDeleteCourse,
+  useAdminDelistCourse,
+  useAdminFreezeCourse,
+  useAdminUnfreezeCourse,
   useAdminRestoreCourse,
   useAdminHardDeleteCourse,
 } from "../hooks/useCourses";
@@ -47,7 +51,9 @@ export const AdminCoursesPage: React.FC = () => {
 
   const toggleFeaturedMutation = useAdminToggleFeaturedCourse();
   const toggleTrendingMutation = useAdminToggleTrendingCourse();
-  const softDeleteMutation = useAdminSoftDeleteCourse();
+  const delistMutation = useAdminDelistCourse();
+  const freezeMutation = useAdminFreezeCourse();
+  const unfreezeMutation = useAdminUnfreezeCourse();
   const restoreMutation = useAdminRestoreCourse();
   const hardDeleteMutation = useAdminHardDeleteCourse();
 
@@ -59,7 +65,9 @@ export const AdminCoursesPage: React.FC = () => {
   const [sortOption, setSortOption] = useState<string>("created-desc");
 
   // Modals state
-  const [courseToSoftDelete, setCourseToSoftDelete] = useState<Course | null>(null);
+  const [reasonModalAction, setReasonModalAction] = useState<"delist" | "freeze" | null>(null);
+  const [courseForReasonModal, setCourseForReasonModal] = useState<Course | null>(null);
+  const [courseToUnfreeze, setCourseToUnfreeze] = useState<Course | null>(null);
   const [courseToRestore, setCourseToRestore] = useState<Course | null>(null);
   const [courseToHardDelete, setCourseToHardDelete] = useState<Course | null>(null);
 
@@ -81,9 +89,15 @@ export const AdminCoursesPage: React.FC = () => {
       },
       {
         label: "Live on Platform",
-        val: metrics?.published ?? allCourses.filter((c) => !c.isDeleted).length,
+        val: metrics?.published ?? allCourses.filter((c) => !c.isDeleted && !c.isFrozen && c.status !== "FROZEN").length,
         icon: CheckCircle2,
         color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20",
+      },
+      {
+        label: "Frozen Cohorts",
+        val: metrics?.frozen ?? allCourses.filter((c) => !c.isDeleted && (c.isFrozen || c.status === "FROZEN")).length,
+        icon: Snowflake,
+        color: "text-sky-600 bg-sky-500/10 border-sky-500/20",
       },
       {
         label: "Featured Highlights",
@@ -103,6 +117,8 @@ export const AdminCoursesPage: React.FC = () => {
   // Tab Options
   const tabOptions: TableTabOption[] = useMemo(() => {
     const activeNonDeleted = allCourses.filter((c) => !c.isDeleted);
+    const liveListed = activeNonDeleted.filter((c) => !c.isFrozen && c.status !== "FROZEN");
+    const frozen = activeNonDeleted.filter((c) => c.isFrozen || c.status === "FROZEN");
     const featured = activeNonDeleted.filter((c) => c.isFeatured);
     const freeCourses = activeNonDeleted.filter((c) => c.pricingType === "FREE");
     const paidCourses = activeNonDeleted.filter((c) => c.pricingType === "PAID");
@@ -110,6 +126,8 @@ export const AdminCoursesPage: React.FC = () => {
 
     return [
       { key: "all", label: "All Active", count: activeNonDeleted.length },
+      { key: "live", label: "Live & Listed", count: liveListed.length },
+      { key: "frozen", label: "Frozen", count: frozen.length },
       { key: "featured", label: "Featured", count: featured.length },
       { key: "free", label: "Free Courses", count: freeCourses.length },
       { key: "paid", label: "Paid Courses", count: paidCourses.length },
@@ -150,7 +168,11 @@ export const AdminCoursesPage: React.FC = () => {
       result = result.filter((c) => c.isDeleted);
     } else {
       result = result.filter((c) => !c.isDeleted);
-      if (activeTab === "featured") {
+      if (activeTab === "live") {
+        result = result.filter((c) => !c.isFrozen && c.status !== "FROZEN");
+      } else if (activeTab === "frozen") {
+        result = result.filter((c) => c.isFrozen || c.status === "FROZEN");
+      } else if (activeTab === "featured") {
         result = result.filter((c) => c.isFeatured);
       } else if (activeTab === "free") {
         result = result.filter((c) => c.pricingType === "FREE");
@@ -288,10 +310,19 @@ export const AdminCoursesPage: React.FC = () => {
       header: "Status",
       align: "center",
       cell: (course) => {
+        const isFrozen = course.isFrozen || course.status === "FROZEN";
         if (course.isDeleted) {
           return (
             <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20 text-xs font-medium">
               Delisted / Archived
+            </Badge>
+          );
+        }
+        if (isFrozen) {
+          return (
+            <Badge variant="outline" className="bg-sky-500/10 text-sky-600 border-sky-500/20 text-xs font-medium flex items-center gap-1">
+              <Snowflake className="w-3 h-3 text-sky-500" />
+              Frozen by Admin
             </Badge>
           );
         }
@@ -341,6 +372,9 @@ export const AdminCoursesPage: React.FC = () => {
       header: "Actions",
       align: "right",
       cell: (course) => {
+        const isFrozen = course.isFrozen || course.status === "FROZEN";
+        const hasStarted = Boolean(course.startingDate && new Date(course.startingDate).getTime() <= Date.now());
+
         if (course.isDeleted) {
           return (
             <div className="flex items-center justify-end gap-1.5">
@@ -375,6 +409,31 @@ export const AdminCoursesPage: React.FC = () => {
           );
         }
 
+        if (isFrozen) {
+          return (
+            <div className="flex items-center justify-end gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/admin/courses/${course.id}`)}
+                className="h-8 px-2.5 text-xs rounded-xl border-neutral-200 dark:border-neutral-800 hover:border-[#F42A18] hover:text-[#F42A18] cursor-pointer"
+              >
+                <Eye className="w-3.5 h-3.5 mr-1" />
+                Details
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCourseToUnfreeze(course)}
+                className="h-8 px-2.5 text-xs text-sky-600 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/40 border-sky-500/20 rounded-xl cursor-pointer"
+              >
+                <Snowflake className="w-3.5 h-3.5 mr-1" />
+                Unfreeze
+              </Button>
+            </div>
+          );
+        }
+
         return (
           <div className="flex items-center justify-end gap-1.5">
             <Button
@@ -386,15 +445,35 @@ export const AdminCoursesPage: React.FC = () => {
               <Eye className="w-3.5 h-3.5 mr-1" />
               Details
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCourseToSoftDelete(course)}
-              className="h-8 px-2.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border-red-500/20 rounded-xl cursor-pointer"
-            >
-              <EyeOff className="w-3.5 h-3.5 mr-1" />
-              Delist
-            </Button>
+            {hasStarted ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setReasonModalAction("freeze");
+                  setCourseForReasonModal(course);
+                }}
+                className="h-8 px-2.5 text-xs text-sky-600 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/40 border-sky-500/20 rounded-xl cursor-pointer"
+                title="Freeze In-Progress Course"
+              >
+                <Snowflake className="w-3.5 h-3.5 mr-1" />
+                Freeze
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setReasonModalAction("delist");
+                  setCourseForReasonModal(course);
+                }}
+                className="h-8 px-2.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border-red-500/20 rounded-xl cursor-pointer"
+                title="Delist Unstarted Course"
+              >
+                <EyeOff className="w-3.5 h-3.5 mr-1" />
+                Delist
+              </Button>
+            )}
           </div>
         );
       },
@@ -409,7 +488,7 @@ export const AdminCoursesPage: React.FC = () => {
           label: "Platform Catalog Moderation",
         }}
         title="Platform Course Directory"
-        description="Audit live courses across the platform, feature top cohorts, or delist non-compliant courses from student discovery."
+        description="Audit live courses across the platform, feature top cohorts, freeze active cohorts, or delist unstarted courses with instant instructor notifications."
         headerActions={
           <Button
             variant="outline"
@@ -460,20 +539,45 @@ export const AdminCoursesPage: React.FC = () => {
         }}
       />
 
-      {/* Delist Confirmation */}
+      {/* Delist or Freeze with Reason Modal */}
+      {reasonModalAction && courseForReasonModal && (
+        <AdminCourseReasonModal
+          isOpen={Boolean(reasonModalAction && courseForReasonModal)}
+          action={reasonModalAction}
+          course={courseForReasonModal}
+          isLoading={delistMutation.isPending || freezeMutation.isPending}
+          onClose={() => {
+            setReasonModalAction(null);
+            setCourseForReasonModal(null);
+          }}
+          onConfirm={async (reason) => {
+            if (reasonModalAction === "delist") {
+              await delistMutation.mutateAsync({ id: courseForReasonModal.id, reason });
+            } else {
+              await freezeMutation.mutateAsync({ id: courseForReasonModal.id, reason });
+            }
+            setReasonModalAction(null);
+            setCourseForReasonModal(null);
+            refetch();
+          }}
+        />
+      )}
+
+      {/* Unfreeze Confirmation */}
       <ConfirmationModal
-        isOpen={Boolean(courseToSoftDelete)}
-        onClose={() => setCourseToSoftDelete(null)}
-        actionType="delete"
-        title={`Delist "${courseToSoftDelete?.title}"?`}
-        description="This course will be immediately hidden and delisted from student search and public discovery catalogs."
-        confirmText="Delist Course"
-        variant="danger"
-        isLoading={softDeleteMutation.isPending}
+        isOpen={Boolean(courseToUnfreeze)}
+        onClose={() => setCourseToUnfreeze(null)}
+        actionType="save"
+        title={`Unfreeze "${courseToUnfreeze?.title}"?`}
+        description="This course will be returned to active live status. The instructor will regain curriculum editing and lecture management access."
+        confirmText="Unfreeze Course"
+        variant="success"
+        isLoading={unfreezeMutation.isPending}
         onConfirm={async () => {
-          if (courseToSoftDelete) {
-            await softDeleteMutation.mutateAsync(courseToSoftDelete.id);
-            setCourseToSoftDelete(null);
+          if (courseToUnfreeze) {
+            await unfreezeMutation.mutateAsync(courseToUnfreeze.id);
+            setCourseToUnfreeze(null);
+            refetch();
           }
         }}
       />
@@ -492,6 +596,7 @@ export const AdminCoursesPage: React.FC = () => {
           if (courseToRestore) {
             await restoreMutation.mutateAsync(courseToRestore.id);
             setCourseToRestore(null);
+            refetch();
           }
         }}
       />
@@ -510,6 +615,7 @@ export const AdminCoursesPage: React.FC = () => {
           if (courseToHardDelete) {
             await hardDeleteMutation.mutateAsync(courseToHardDelete.id);
             setCourseToHardDelete(null);
+            refetch();
           }
         }}
       />
@@ -518,3 +624,4 @@ export const AdminCoursesPage: React.FC = () => {
 };
 
 export default AdminCoursesPage;
+

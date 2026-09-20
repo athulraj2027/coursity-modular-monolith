@@ -26,8 +26,10 @@ export interface ICourseRepository {
     status: CourseEntity["status"],
     extras?: { rejectionReason?: string | null; isApproved?: boolean; approvedByAdminId?: string | null; publishedAt?: Date | null; submittedAt?: Date | null }
   ): Promise<CourseEntity>;
-  softDelete(id: string): Promise<CourseEntity>;
+  softDelete(id: string, delistReason?: string): Promise<CourseEntity>;
   restore(id: string): Promise<CourseEntity>;
+  freeze(id: string, freezeReason: string): Promise<CourseEntity>;
+  unfreeze(id: string): Promise<CourseEntity>;
   hardDelete(id: string): Promise<boolean>;
   getMetrics(teacherProfileId?: string): Promise<CourseMetrics>;
   countByTeacher(teacherProfileId: string, status?: CourseEntity["status"]): Promise<number>;

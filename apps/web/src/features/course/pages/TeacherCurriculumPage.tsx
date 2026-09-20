@@ -18,6 +18,8 @@ import {
   ChevronDown,
   ChevronUp,
   Calendar,
+  Snowflake,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,6 +74,7 @@ export const TeacherCurriculumPage: React.FC = () => {
     );
   }
 
+  const isFrozen = course.isFrozen || course.status === "FROZEN";
   const toggleCollapse = (modId: string) => {
     setCollapsedModules((prev) => ({ ...prev, [modId]: !prev[modId] }));
   };
@@ -93,13 +96,23 @@ export const TeacherCurriculumPage: React.FC = () => {
           </button>
 
           <div className="flex items-center gap-2">
-            <Badge
-              variant="outline"
-              className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs font-semibold"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-              Live on Platform
-            </Badge>
+            {isFrozen ? (
+              <Badge
+                variant="outline"
+                className="bg-sky-500/10 text-sky-600 border-sky-500/20 text-xs font-semibold flex items-center gap-1"
+              >
+                <Snowflake className="w-3.5 h-3.5 text-sky-500" />
+                Frozen (Read-Only)
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs font-semibold"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                Live on Platform
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -134,6 +147,23 @@ export const TeacherCurriculumPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Frozen Administration Notice Banner */}
+      {isFrozen && (
+        <div className="p-4 rounded-2xl bg-sky-500/10 border border-sky-500/30 text-sky-900 dark:text-sky-100 flex items-start gap-3">
+          <Snowflake className="w-5 h-5 text-sky-500 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-xs">
+            <p className="font-bold text-sm">Curriculum Studio Locked — Course Cohort is Frozen</p>
+            <p className="text-neutral-700 dark:text-neutral-300">
+              <span className="font-semibold text-neutral-900 dark:text-white">Admin Reason:</span> {course.freezeReason || "Administrative review"}
+            </p>
+            <p className="text-neutral-500 text-[11px]">
+              {course.frozenAt && `Frozen on ${new Date(course.frozenAt).toLocaleDateString()} • `}
+              You are viewing this curriculum in read-only mode. Adding new modules, modifying lessons, or deleting content is locked.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Curriculum Toolbar */}
       <div className="flex items-center justify-between">
         <div>
@@ -141,21 +171,30 @@ export const TeacherCurriculumPage: React.FC = () => {
             Course Curriculum
           </h2>
           <p className="text-xs text-neutral-500">
-            Organize lectures into structured chapters and configure video, articles, and previews.
+            {isFrozen
+              ? "Inspection mode: Review module structure and syllabus materials."
+              : "Organize lectures into structured chapters and configure video, articles, and previews."}
           </p>
         </div>
 
-        <Button
-          size="sm"
-          onClick={() => {
-            setModuleToEdit(null);
-            setIsModuleModalOpen(true);
-          }}
-          className="text-xs h-9 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-neutral-100 dark:hover:bg-neutral-200 text-white dark:text-neutral-900 shadow-sm cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5 mr-1.5" />
-          Add Module
-        </Button>
+        {!isFrozen ? (
+          <Button
+            size="sm"
+            onClick={() => {
+              setModuleToEdit(null);
+              setIsModuleModalOpen(true);
+            }}
+            className="text-xs h-9 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-neutral-100 dark:hover:bg-neutral-200 text-white dark:text-neutral-900 shadow-sm cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5 mr-1.5" />
+            Add Module
+          </Button>
+        ) : (
+          <Badge variant="outline" className="bg-neutral-100 dark:bg-neutral-800 text-neutral-500 border-neutral-300 dark:border-neutral-700 text-xs px-3 py-1 flex items-center gap-1.5">
+            <Lock className="w-3 h-3" />
+            Locked (Read-Only)
+          </Badge>
+        )}
       </div>
 
       {/* Modules & Lessons List */}
@@ -169,20 +208,24 @@ export const TeacherCurriculumPage: React.FC = () => {
               No Curriculum Modules Yet
             </h3>
             <p className="text-xs text-neutral-500 max-w-sm mx-auto mt-1">
-              Click &quot;Add Module&quot; to create your first course chapter and begin adding video lectures and articles.
+              {isFrozen
+                ? "This course does not have curriculum chapters."
+                : "Click \"Add Module\" to create your first course chapter and begin adding video lectures and articles."}
             </p>
           </div>
-          <Button
-            size="sm"
-            onClick={() => {
-              setModuleToEdit(null);
-              setIsModuleModalOpen(true);
-            }}
-            className="text-xs rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5 mr-1" />
-            Add First Module
-          </Button>
+          {!isFrozen && (
+            <Button
+              size="sm"
+              onClick={() => {
+                setModuleToEdit(null);
+                setIsModuleModalOpen(true);
+              }}
+              className="text-xs rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5 mr-1" />
+              Add First Module
+            </Button>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
@@ -221,42 +264,48 @@ export const TeacherCurriculumPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setTargetModuleId(mod.id);
-                        setLessonToEdit(null);
-                        setIsLessonModalOpen(true);
-                      }}
-                      className="text-xs h-7 px-2 rounded-lg border-blue-500/20 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 cursor-pointer"
-                    >
-                      <Plus className="w-3 h-3 mr-1" />
-                      Add Lesson
-                    </Button>
+                  {!isFrozen ? (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setTargetModuleId(mod.id);
+                          setLessonToEdit(null);
+                          setIsLessonModalOpen(true);
+                        }}
+                        className="text-xs h-7 px-2 rounded-lg border-blue-500/20 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        Add Lesson
+                      </Button>
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setModuleToEdit(mod);
-                        setIsModuleModalOpen(true);
-                      }}
-                      className="h-7 w-7 p-0 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setModuleToEdit(mod);
+                          setIsModuleModalOpen(true);
+                        }}
+                        className="h-7 w-7 p-0 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 cursor-pointer"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </Button>
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setModuleToDelete(mod)}
-                      className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setModuleToDelete(mod)}
+                        className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-neutral-400 font-medium">
+                      {lessons.length} {lessons.length === 1 ? "lesson" : "lessons"}
+                    </span>
+                  )}
                 </div>
 
                 {/* Lessons inside Module */}
@@ -264,7 +313,9 @@ export const TeacherCurriculumPage: React.FC = () => {
                   <div className="p-3 space-y-2">
                     {lessons.length === 0 ? (
                       <div className="text-center py-6 text-xs text-neutral-400 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl">
-                        No lessons in this module. Click &quot;Add Lesson&quot; above to add content.
+                        {isFrozen
+                          ? "No lessons in this module."
+                          : "No lessons in this module. Click \"Add Lesson\" above to add content."}
                       </div>
                     ) : (
                       lessons.map((les, lesIdx) => (
@@ -306,28 +357,30 @@ export const TeacherCurriculumPage: React.FC = () => {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setTargetModuleId(mod.id);
-                                setLessonToEdit(les);
-                                setIsLessonModalOpen(true);
-                              }}
-                              className="h-7 w-7 p-0 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setLessonToDelete(les)}
-                              className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
+                          {!isFrozen && (
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setTargetModuleId(mod.id);
+                                  setLessonToEdit(les);
+                                  setIsLessonModalOpen(true);
+                                }}
+                                className="h-7 w-7 p-0 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 cursor-pointer"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setLessonToDelete(les)}
+                                className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       ))
                     )}

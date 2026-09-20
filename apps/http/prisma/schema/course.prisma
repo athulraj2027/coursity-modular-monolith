@@ -16,10 +16,9 @@ enum CoursePricingType {
 
 enum CourseStatus {
   DRAFT
-  PENDING_REVIEW
   PUBLISHED
-  REJECTED
   ARCHIVED
+  FROZEN
 }
 
 enum LessonType {
@@ -76,13 +75,15 @@ model Course {
   subcategoryId      String?
   subcategory        Category?          @relation("CourseSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
 
-  // Publishing & Vetting Lifecycle
+  // Publishing & Moderation Lifecycle
   status             CourseStatus       @default(PUBLISHED)
-  rejectionReason    String?            @db.Text
-  submittedAt        DateTime?
+  delistReason       String?            @db.Text
+  delistedAt         DateTime?
+  freezeReason       String?            @db.Text
+  isFrozen           Boolean            @default(false)
+  frozenAt           DateTime?
   publishedAt        DateTime?          @default(now())
   isApproved         Boolean            @default(true)
-  approvedByAdminId  String?
 
   // Aggregated Counters & Highlights
   totalDurationSeconds Int              @default(0)
@@ -103,7 +104,7 @@ model Course {
 
   @@index([teacherProfileId, status])
   @@index([categoryId, subcategoryId, status])
-  @@index([status, isDeleted, isFeatured])
+  @@index([status, isDeleted, isFeatured, isFrozen])
   @@map("courses")
 }
 

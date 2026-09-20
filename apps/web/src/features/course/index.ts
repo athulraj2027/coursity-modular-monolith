@@ -4,7 +4,6 @@ export * from "./hooks/useCourses";
 export * from "./components/CourseFormModal";
 export * from "./components/ModuleFormModal";
 export * from "./components/LessonFormModal";
-export * from "./components/CourseReviewModal";
 export * from "./components/CourseMediaUpload";
 export * from "./pages/TeacherCoursesPage";
 export * from "./pages/TeacherCurriculumPage";

@@ -1,6 +1,6 @@
 export type CourseLevel = "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "ALL_LEVELS";
 export type CoursePricingType = "FREE" | "PAID";
-export type CourseStatus = "DRAFT" | "PENDING_REVIEW" | "PUBLISHED" | "REJECTED" | "ARCHIVED";
+export type CourseStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED" | "FROZEN";
 export type LessonType = "VIDEO" | "ARTICLE" | "QUIZ" | "LIVE_CLASS" | "ATTACHMENT";
 export type VideoProvider = "LOCAL" | "S3" | "CLOUDFRONT" | "YOUTUBE" | "VIMEO" | "MUX";
 
@@ -67,11 +67,13 @@ export interface Course {
   categoryId: string;
   subcategoryId: string | null;
   status: CourseStatus;
-  rejectionReason: string | null;
-  submittedAt: string | null;
+  delistReason?: string | null;
+  delistedAt?: string | null;
+  freezeReason?: string | null;
+  isFrozen?: boolean;
+  frozenAt?: string | null;
   publishedAt: string | null;
   isApproved: boolean;
-  approvedByAdminId: string | null;
   totalDurationSeconds: number;
   totalLessons: number;
   totalModules: number;
@@ -120,9 +122,8 @@ export interface CourseMetrics {
   total: number;
   published: number;
   draft: number;
-  pendingReview: number;
-  rejected: number;
   archived: number;
+  frozen: number;
   featured: number;
   freeCourses: number;
   paidCourses: number;
@@ -221,6 +222,7 @@ export interface CourseQueryParams {
   status?: CourseStatus;
   isFeatured?: boolean;
   isTrending?: boolean;
+  isFrozen?: boolean;
   isDeleted?: boolean;
   includeDeleted?: boolean;
   minPrice?: number;
