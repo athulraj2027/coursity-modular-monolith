@@ -3,6 +3,7 @@ import authRouter from '@/modules/auth';
 import userRouter from '@/modules/user';
 import profileRouter from '@/modules/profile';
 import planRouter from '@/modules/plan';
+import categoryRouter from '@/modules/category';
 import uploadRouter from '@/modules/storage';
 import { candidateInterviewRouter, adminInterviewRouter } from '@/modules/interview';
 import { adminAIConfigRouter } from '@/modules/ai-config';
@@ -21,6 +22,9 @@ router.use("/auth", authRouter);
 
 // 3. Subscription & Pricing Plan routes (Public listing + protected teacher/admin operations)
 router.use("/plans", planRouter);
+
+// 4. Categories & Hierarchy routes (Public listing + protected admin management)
+router.use("/categories", categoryRouter);
 
 // 4. AI Interview routes (Candidate endpoints & Admin management)
 router.use("/interviews", candidateInterviewRouter);

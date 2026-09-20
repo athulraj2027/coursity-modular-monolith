@@ -1,10 +1,7 @@
 import {
-  Database,
   GraduationCap,
   LayoutDashboard,
-  Server,
   Settings,
-  ShieldCheck,
   User,
   UserCheck,
   Users,
@@ -13,6 +10,7 @@ import {
   Cpu,
   Bot,
   KeyRound,
+  FolderTree,
   type LucideIcon,
 } from "lucide-react"
 
@@ -137,6 +135,11 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         icon: GraduationCap,
       },
       {
+        title: "Categories",
+        url: "/admin/categories",
+        icon: FolderTree,
+      },
+      {
         title: "Plans",
         url: "/admin/plans",
         icon: Layers,
@@ -167,27 +170,6 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Password & Security",
         url: "/admin/password",
         icon: KeyRound,
-      },
-      {
-        title: "System Health & Nodes",
-        url: "/admin/health",
-        icon: Server,
-        badge: "99.98%",
-      },
-      {
-        title: "Database & AI Clusters",
-        url: "/admin/clusters",
-        icon: Database,
-      },
-      {
-        title: "Audit & Security Logs",
-        url: "/admin/audit",
-        icon: ShieldCheck,
-      },
-      {
-        title: "Platform Settings",
-        url: "/settings",
-        icon: Settings,
       },
     ],
   },
