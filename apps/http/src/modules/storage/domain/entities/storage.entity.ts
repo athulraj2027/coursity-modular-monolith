@@ -3,6 +3,7 @@ export const STORAGE_FOLDERS = [
     "certificates",
     "courses",
     "thumbnails",
+    "videos",
     "documents",
     "identity",
     "general",
@@ -23,9 +24,19 @@ export const ALLOWED_DOCUMENT_MIME_TYPES = [
     "application/pdf",
 ] as const;
 
+export const ALLOWED_VIDEO_MIME_TYPES = [
+    "video/mp4",
+    "video/webm",
+    "video/quicktime",
+    "video/x-matroska",
+    "video/ogg",
+    "video/m4v",
+] as const;
+
 export const ALL_ALLOWED_MIME_TYPES = [
     ...ALLOWED_IMAGE_MIME_TYPES,
     ...ALLOWED_DOCUMENT_MIME_TYPES,
+    ...ALLOWED_VIDEO_MIME_TYPES,
 ] as const;
 
 export type AllowedMimeType = (typeof ALL_ALLOWED_MIME_TYPES)[number];

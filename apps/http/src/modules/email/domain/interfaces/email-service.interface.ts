@@ -32,6 +32,28 @@ export abstract class IEmailService {
     abstract sendPasswordChangedNotification(email: string, name?: string): Promise<void>;
 
     /**
+     * Send notification email to an instructor when their course has been delisted by administration
+     */
+    abstract sendCourseDelistedNotification(
+        email: string,
+        teacherName: string,
+        courseTitle: string,
+        delistReason: string,
+        courseSlug?: string
+    ): Promise<void>;
+
+    /**
+     * Send notification email to an instructor when their started course has been frozen by administration
+     */
+    abstract sendCourseFrozenNotification(
+        email: string,
+        teacherName: string,
+        courseTitle: string,
+        freezeReason: string,
+        courseSlug?: string
+    ): Promise<void>;
+
+    /**
      * Send generic / custom formatted email
      */
     abstract sendCustomEmail(payload: EmailPayload): Promise<void>;

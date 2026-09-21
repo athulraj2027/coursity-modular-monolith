@@ -6,6 +6,7 @@ import { startEmailWorker, closeEmailWorker } from "@/modules/email";
 import { seedPlansIfEmpty } from "@/modules/plan";
 import { seedCategoriesIfEmpty } from "@/modules/category";
 
+// Trigger reload: updated queryCoursesSchema limit
 const server = http.createServer(app);
 
 const startServer = async () => {

@@ -30,7 +30,7 @@ export class UploadRoutes {
         // 2. Direct binary local upload endpoint (handles PUT from client when S3 is unconfigured)
         this.router.put(
             "/local",
-            express.raw({ type: "*/*", limit: "50mb" }),
+            express.raw({ type: "*/*", limit: "500mb" }),
             this.uploadController.handleLocalUpload
         );
 

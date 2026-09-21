@@ -20,15 +20,12 @@ import {
   RotateCcw,
   MessageSquare,
   SlidersHorizontal,
-  FileText,
-  Download,
-  CreditCard,
-  FileCheck,
   Building2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { BackendUser, UserRole, ApprovalStatus } from "@/features/dashboard/types/user-management.types"
 import { normalizeQualifications } from "@/features/profile/types/profile.types"
+import { FileDocumentCard, FilePreviewModal } from "./FileDocumentCard"
 
 export interface UserDetailsDrawerProps {
   user: BackendUser | null
@@ -58,6 +55,25 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
   customActions,
 }) => {
   const [avatarError, setAvatarError] = useState(false)
+  const [filePreview, setFilePreview] = useState<{
+    isOpen: boolean
+    title: string
+    url: string
+    type?: "pdf" | "image" | "document"
+  }>({
+    isOpen: false,
+    title: "",
+    url: "",
+  })
+
+  const handlePreviewFile = (url: string, title: string, type: "pdf" | "image" | "document") => {
+    setFilePreview({
+      isOpen: true,
+      title,
+      url,
+      type,
+    })
+  }
 
   // Reset avatar error on user change
   useEffect(() => {
@@ -448,192 +464,54 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                 </div>
               </div>
 
-              {/* Teacher Resume / CV Document */}
-              <div className="space-y-2 pt-2 border-t border-neutral-200/60 dark:border-neutral-800/80">
-                <div className="text-neutral-500 text-[10px] uppercase font-semibold flex items-center justify-between">
-                  <span>Teacher Resume & Professional CV</span>
-                  {teacherProfile?.resume && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 className="w-3 h-3" /> PDF Attached
-                    </span>
-                  )}
-                </div>
-
-                {teacherProfile?.resume ? (
-                  <div className="p-3.5 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0 border border-red-500/20 shadow-xs">
-                        <FileText className="w-5 h-5" />
-                      </div>
-                      <div className="min-w-0 space-y-0.5">
-                        <h4 className="text-xs font-bold text-neutral-900 dark:text-white truncate">
-                          Curriculum Vitae (PDF)
-                        </h4>
-                        <p className="text-[11px] text-neutral-500 flex items-center gap-1.5">
-                          <span className="uppercase font-bold text-red-600 dark:text-red-400 text-[10px] px-1.5 py-0.2 rounded-md bg-red-500/10 border border-red-500/20">
-                            PDF
-                          </span>
-                          <span>•</span>
-                          <span>Saved in S3 Storage</span>
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                      <a
-                        href={teacherProfile.resume}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition-colors shadow-xs"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5 text-neutral-500" />
-                        View PDF
-                      </a>
-
-                      <a
-                        href={teacherProfile.resume}
-                        download={`${(user.name || "teacher").toLowerCase().replace(/\s+/g, "_")}_resume.pdf`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 transition-colors shadow-xs cursor-pointer"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        Download
-                      </a>
-                    </div>
+              {/* Teacher Files & Documents (Resume, ID, Credentials) */}
+              {(teacherProfile?.resume || teacherProfile?.identityCard || (teacherProfile?.credentials && teacherProfile.credentials.length > 0)) && (
+                <div className="space-y-3 pt-2 border-t border-neutral-200/60 dark:border-neutral-800/80">
+                  <div className="text-neutral-500 text-[10px] uppercase font-semibold flex items-center justify-between">
+                    <span>Verification Files & Documents</span>
+                    <span className="text-[10px] text-neutral-400">Click preview to inspect</span>
                   </div>
-                ) : (
-                  <div className="p-3 rounded-xl bg-neutral-100/60 dark:bg-neutral-800/40 border border-neutral-200/40 dark:border-neutral-800 flex items-center gap-2 text-neutral-400 italic text-xs">
-                    <FileText className="w-4 h-4 text-neutral-400 shrink-0" />
-                    <span>No resume PDF uploaded by instructor.</span>
-                  </div>
-                )}
-              </div>
 
-              {/* Government ID Document (PAN / National ID) */}
-              <div className="space-y-2 pt-2 border-t border-neutral-200/60 dark:border-neutral-800/80">
-                <div className="text-neutral-500 text-[10px] uppercase font-semibold flex items-center justify-between">
-                  <span>Government Identity Document (PAN / National ID)</span>
-                  {teacherProfile?.identityCard && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 dark:text-blue-400">
-                      <CheckCircle2 className="w-3 h-3" /> ID Attached
-                    </span>
-                  )}
-                </div>
+                  <div className="grid grid-cols-1 gap-2.5">
+                    {/* Resume File Card */}
+                    {teacherProfile?.resume && (
+                      <FileDocumentCard
+                        title="Resume / Curriculum Vitae"
+                        url={teacherProfile.resume}
+                        category="resume"
+                        subtitle="Professional CV"
+                        showThumbnail={false}
+                        onPreview={handlePreviewFile}
+                      />
+                    )}
 
-                {teacherProfile?.identityCard ? (
-                  <div className="p-3.5 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/20 shadow-xs">
-                        <CreditCard className="w-5 h-5" />
-                      </div>
-                      <div className="min-w-0 space-y-0.5">
-                        <h4 className="text-xs font-bold text-neutral-900 dark:text-white truncate">
-                          Government ID / PAN Card
-                        </h4>
-                        <p className="text-[11px] text-neutral-500 flex items-center gap-1.5">
-                          <span className="uppercase font-bold text-blue-600 dark:text-blue-400 text-[10px] px-1.5 py-0.2 rounded-md bg-blue-500/10 border border-blue-500/20">
-                            Identity
-                          </span>
-                          <span>•</span>
-                          <span>Saved in S3 Storage</span>
-                        </p>
-                      </div>
-                    </div>
+                    {/* Government ID File Card */}
+                    {teacherProfile?.identityCard && (
+                      <FileDocumentCard
+                        title="Government ID / PAN Card"
+                        url={teacherProfile.identityCard}
+                        category="identity"
+                        subtitle="Identity Document"
+                        showThumbnail={false}
+                        onPreview={handlePreviewFile}
+                      />
+                    )}
 
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                      <a
-                        href={teacherProfile.identityCard}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition-colors shadow-xs"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5 text-neutral-500" />
-                        View ID
-                      </a>
-
-                      <a
-                        href={teacherProfile.identityCard}
-                        download={`${(user.name || "teacher").toLowerCase().replace(/\s+/g, "_")}_identity`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 transition-colors shadow-xs cursor-pointer"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        Download
-                      </a>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-3 rounded-xl bg-neutral-100/60 dark:bg-neutral-800/40 border border-neutral-200/40 dark:border-neutral-800 flex items-center gap-2 text-neutral-400 italic text-xs">
-                    <CreditCard className="w-4 h-4 text-neutral-400 shrink-0" />
-                    <span>No identity card uploaded by instructor.</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Uploaded Certificates & Credentials */}
-              <div className="space-y-2 pt-2 border-t border-neutral-200/60 dark:border-neutral-800/80">
-                <div className="text-neutral-500 text-[10px] uppercase font-semibold flex items-center justify-between">
-                  <span>Accreditation Certificates & Credentials</span>
-                  <span className="text-[10px] font-semibold text-neutral-400">
-                    {teacherProfile?.credentials?.length || 0} attached
-                  </span>
-                </div>
-
-                {teacherProfile?.credentials && teacherProfile.credentials.length > 0 ? (
-                  <div className="space-y-2">
-                    {teacherProfile.credentials.map((certUrl, idx) => (
-                      <div
+                    {/* Certificate Credentials */}
+                    {teacherProfile?.credentials?.map((certUrl, idx) => (
+                      <FileDocumentCard
                         key={idx}
-                        className="p-3 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
-                            <FileCheck className="w-4 h-4" />
-                          </div>
-                          <div className="min-w-0 space-y-0.5">
-                            <h4 className="text-xs font-bold text-neutral-900 dark:text-white truncate">
-                              Certificate #{idx + 1}
-                            </h4>
-                            <p className="text-[10px] text-neutral-400 truncate max-w-xs font-mono">
-                              {certUrl.split("/").pop() || certUrl}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                          <a
-                            href={certUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition-colors shadow-xs"
-                          >
-                            <ExternalLink className="w-3 h-3 text-neutral-500" />
-                            View
-                          </a>
-
-                          <a
-                            href={certUrl}
-                            download={`certificate_${idx + 1}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 transition-colors shadow-xs cursor-pointer"
-                          >
-                            <Download className="w-3 h-3" />
-                            Download
-                          </a>
-                        </div>
-                      </div>
+                        title={`Certificate #${idx + 1}`}
+                        url={certUrl}
+                        category="certificate"
+                        subtitle="Accreditation Credential"
+                        showThumbnail={false}
+                        onPreview={handlePreviewFile}
+                      />
                     ))}
                   </div>
-                ) : (
-                  <div className="p-3 rounded-xl bg-neutral-100/60 dark:bg-neutral-800/40 border border-neutral-200/40 dark:border-neutral-800 flex items-center gap-2 text-neutral-400 italic text-xs">
-                    <Award className="w-4 h-4 text-neutral-400 shrink-0" />
-                    <span>No additional certificates or credentials uploaded.</span>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -728,6 +606,15 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
           </Button>
         </div>
       </div>
+
+      {/* Interactive File Preview Modal */}
+      <FilePreviewModal
+        isOpen={filePreview.isOpen}
+        title={filePreview.title}
+        url={filePreview.url}
+        fileType={filePreview.type}
+        onClose={() => setFilePreview((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   )
 }

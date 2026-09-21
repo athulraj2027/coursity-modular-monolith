@@ -13,12 +13,12 @@ import {
   Loader2,
   X,
   FileText,
-  ExternalLink,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { BackendUser, ApprovalStatus } from "@/features/dashboard/types/user-management.types"
 import { verifyTeacherSchema } from "@/features/profile"
 import { normalizeQualifications } from "@/features/profile/types/profile.types"
+import { FileDocumentCard, FilePreviewModal } from "./FileDocumentCard"
 
 export interface VerifyTeacherModalProps {
   user: BackendUser | null
@@ -57,6 +57,25 @@ export const VerifyTeacherModal: React.FC<VerifyTeacherModalProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<ApprovalStatus>("VERIFIED")
   const [feedback, setFeedback] = useState<string>("")
   const [feedbackTouched, setFeedbackTouched] = useState<boolean>(false)
+  const [filePreview, setFilePreview] = useState<{
+    isOpen: boolean
+    title: string
+    url: string
+    type?: "pdf" | "image" | "document"
+  }>({
+    isOpen: false,
+    title: "",
+    url: "",
+  })
+
+  const handlePreviewFile = (url: string, title: string, type: "pdf" | "image" | "document") => {
+    setFilePreview({
+      isOpen: true,
+      title,
+      url,
+      type,
+    })
+  }
 
   const profile = user?.profile
   const teacherProfile = profile?.teacherProfile
@@ -309,8 +328,8 @@ export const VerifyTeacherModal: React.FC<VerifyTeacherModalProps> = ({
               </div>
             </div>
 
-            {/* Quick credentials & Resume */}
-            {(normalizeQualifications(teacherProfile?.qualifications).length > 0 || teacherProfile?.experienceYears != null || teacherProfile?.resume) && (
+            {/* Quick qualifications summary */}
+            {(normalizeQualifications(teacherProfile?.qualifications).length > 0 || teacherProfile?.experienceYears != null) && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-neutral-200/60 dark:border-neutral-800/80 text-[11px] text-neutral-600 dark:text-neutral-300">
                 {normalizeQualifications(teacherProfile?.qualifications).length > 0 && (
                   <div className="flex items-center gap-1.5 truncate">
@@ -329,26 +348,63 @@ export const VerifyTeacherModal: React.FC<VerifyTeacherModalProps> = ({
                     <span>{teacherProfile.experienceYears} Years Exp.</span>
                   </div>
                 )}
-                {teacherProfile?.resume && (
-                  <div className="col-span-1 sm:col-span-2 pt-1 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 text-neutral-500">
-                      <FileText className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                      <span>Resume / CV Document:</span>
-                    </span>
-                    <a
-                      href={teacherProfile.resume}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/20 px-2 py-0.5 rounded-md border border-red-500/20 transition-colors"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      View Resume PDF
-                    </a>
-                  </div>
-                )}
               </div>
             )}
           </div>
+
+          {/* Verification Document File Cards */}
+          {(teacherProfile?.resume || teacherProfile?.identityCard || (teacherProfile?.credentials && teacherProfile.credentials.length > 0)) && (
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] uppercase tracking-wider font-bold text-neutral-600 dark:text-neutral-300 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-[#F42A18]" />
+                  <span>Submitted Files & Credentials</span>
+                </label>
+                <span className="text-[10px] text-neutral-400">
+                  Click preview to inspect document
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Government Identity File Card */}
+                {teacherProfile?.identityCard && (
+                  <FileDocumentCard
+                    title="Government ID / PAN"
+                    url={teacherProfile.identityCard}
+                    category="identity"
+                    subtitle="Official Identity Verification"
+                    showThumbnail={false}
+                    onPreview={handlePreviewFile}
+                  />
+                )}
+
+                {/* Resume / CV File Card */}
+                {teacherProfile?.resume && (
+                  <FileDocumentCard
+                    title="Resume / Curriculum Vitae"
+                    url={teacherProfile.resume}
+                    category="resume"
+                    subtitle="Professional Work History"
+                    showThumbnail={false}
+                    onPreview={handlePreviewFile}
+                  />
+                )}
+
+                {/* Certificate Files */}
+                {teacherProfile?.credentials?.map((certUrl, idx) => (
+                  <FileDocumentCard
+                    key={idx}
+                    title={`Certificate #${idx + 1}`}
+                    url={certUrl}
+                    category="certificate"
+                    subtitle="Accreditation Credential"
+                    showThumbnail={false}
+                    onPreview={handlePreviewFile}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Lifecycle Status Selector */}
           <div className="space-y-2">
@@ -506,6 +562,15 @@ export const VerifyTeacherModal: React.FC<VerifyTeacherModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Interactive File Preview Modal */}
+      <FilePreviewModal
+        isOpen={filePreview.isOpen}
+        title={filePreview.title}
+        url={filePreview.url}
+        fileType={filePreview.type}
+        onClose={() => setFilePreview((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   )
 }

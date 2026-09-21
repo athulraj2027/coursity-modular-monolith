@@ -6,6 +6,10 @@ import { renderResetPasswordOtpEmail } from "../templates/reset-password-otp.tem
 import { renderTeacherStatusEmail, TeacherApprovalStatus } from "../templates/teacher-status.template";
 import { renderWelcomeEmail } from "../templates/welcome.template";
 import { renderPasswordChangedEmail } from "../templates/password-changed.template";
+import {
+    renderCourseDelistedEmail,
+    renderCourseFrozenEmail,
+} from "../templates/course-moderation.template";
 
 export class EmailService extends IEmailService {
     constructor(private readonly queueEmailUseCase: QueueEmailUseCase) {
@@ -85,6 +89,64 @@ export class EmailService extends IEmailService {
             templateType: "TEACHER_STATUS",
             payload,
             metadata: { email, name, status, feedback, action: "instructor_status_update" },
+            priority: 2,
+        });
+    }
+
+    async sendCourseDelistedNotification(
+        email: string,
+        teacherName: string,
+        courseTitle: string,
+        delistReason: string,
+        courseSlug?: string
+    ): Promise<void> {
+        const { html, text, subject } = renderCourseDelistedEmail({
+            teacherName,
+            courseTitle,
+            delistReason,
+            courseSlug,
+        });
+
+        const payload: EmailPayload = {
+            to: email,
+            subject,
+            html,
+            text,
+        };
+
+        await this.queueEmailUseCase.execute({
+            templateType: "CUSTOM",
+            payload,
+            metadata: { email, teacherName, courseTitle, delistReason, action: "course_delisted_notification" },
+            priority: 2,
+        });
+    }
+
+    async sendCourseFrozenNotification(
+        email: string,
+        teacherName: string,
+        courseTitle: string,
+        freezeReason: string,
+        courseSlug?: string
+    ): Promise<void> {
+        const { html, text, subject } = renderCourseFrozenEmail({
+            teacherName,
+            courseTitle,
+            freezeReason,
+            courseSlug,
+        });
+
+        const payload: EmailPayload = {
+            to: email,
+            subject,
+            html,
+            text,
+        };
+
+        await this.queueEmailUseCase.execute({
+            templateType: "CUSTOM",
+            payload,
+            metadata: { email, teacherName, courseTitle, freezeReason, action: "course_frozen_notification" },
             priority: 2,
         });
     }

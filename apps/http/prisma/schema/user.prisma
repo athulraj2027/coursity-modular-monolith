@@ -82,6 +82,7 @@ model TeacherProfile {
 
   subscriptions         TeacherSubscription[]
   interviews            InterviewSession[]
+  courses               Course[]
 
   @@map("teacher_profiles")
 }
