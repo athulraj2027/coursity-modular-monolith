@@ -2,7 +2,7 @@ import { UserRepository } from "@/modules/user/domain/repositories/user.reposito
 import { OtpRepository } from "../../domain/repositories/redis-otp.repository";
 import { BadRequestError, ConflictError } from "@/app/errors";
 import { ResendOtpInputDTO, ResendOtpOutputDTO } from "../dtos/resend-otp.dto";
-import { IEmailService } from "@/modules/email";
+import { IEmailService } from "@/infrastructure/email";
 
 export class ResendSignupOtp {
     private readonly RESEND_COOLDOWN_MS = 1 * 60 * 1000; // 1 minute

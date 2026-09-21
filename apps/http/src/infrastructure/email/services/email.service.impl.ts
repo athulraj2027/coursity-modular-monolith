@@ -1,0 +1,179 @@
+import { IEmailService } from "../contracts/email-service.abstract";
+import { EmailPayload } from "../entities/email.entity";
+import { QueueEmailUseCase } from "../use-cases/queue-email.usecase";
+import { renderSignupOtpEmail } from "../templates/signup-otp.template";
+import { renderResetPasswordOtpEmail } from "../templates/reset-password-otp.template";
+import { renderTeacherStatusEmail, TeacherApprovalStatus } from "../templates/teacher-status.template";
+import { renderWelcomeEmail } from "../templates/welcome.template";
+import { renderPasswordChangedEmail } from "../templates/password-changed.template";
+import {
+    renderCourseDelistedEmail,
+    renderCourseFrozenEmail,
+} from "../templates/course-moderation.template";
+
+export class EmailService extends IEmailService {
+    constructor(private readonly queueEmailUseCase: QueueEmailUseCase) {
+        super();
+    }
+
+    async sendSignupOtp(email: string, otp: string, name?: string): Promise<void> {
+        const { html, text, subject } = renderSignupOtpEmail({ name, otp });
+
+        const payload: EmailPayload = {
+            to: email,
+            subject,
+            html,
+            text,
+        };
+
+        await this.queueEmailUseCase.execute({
+            templateType: "SIGNUP_OTP",
+            payload,
+            metadata: { email, name, action: "signup_verification" },
+            priority: 1, // High priority for OTPs
+        });
+    }
+
+    async sendPasswordResetOtp(email: string, otp: string, name?: string): Promise<void> {
+        const { html, text, subject } = renderResetPasswordOtpEmail({ name, otp });
+
+        const payload: EmailPayload = {
+            to: email,
+            subject,
+            html,
+            text,
+        };
+
+        await this.queueEmailUseCase.execute({
+            templateType: "RESET_PASSWORD_OTP",
+            payload,
+            metadata: { email, name, action: "password_reset" },
+            priority: 1, // High priority for OTPs
+        });
+    }
+
+    async sendPasswordChangedNotification(email: string, name?: string): Promise<void> {
+        const { html, text, subject } = renderPasswordChangedEmail({ name, email });
+
+        const payload: EmailPayload = {
+            to: email,
+            subject,
+            html,
+            text,
+        };
+
+        await this.queueEmailUseCase.execute({
+            templateType: "PASSWORD_CHANGED",
+            payload,
+            metadata: { email, name, action: "password_changed_notification" },
+            priority: 1, // High priority for security notifications
+        });
+    }
+
+    async sendTeacherStatusUpdate(
+        email: string,
+        name: string,
+        status: TeacherApprovalStatus,
+        feedback?: string | null
+    ): Promise<void> {
+        const { html, text, subject } = renderTeacherStatusEmail({ name, status, feedback });
+
+        const payload: EmailPayload = {
+            to: email,
+            subject,
+            html,
+            text,
+        };
+
+        await this.queueEmailUseCase.execute({
+            templateType: "TEACHER_STATUS",
+            payload,
+            metadata: { email, name, status, feedback, action: "instructor_status_update" },
+            priority: 2,
+        });
+    }
+
+    async sendCourseDelistedNotification(
+        email: string,
+        teacherName: string,
+        courseTitle: string,
+        delistReason: string,
+        courseSlug?: string
+    ): Promise<void> {
+        const { html, text, subject } = renderCourseDelistedEmail({
+            teacherName,
+            courseTitle,
+            delistReason,
+            courseSlug,
+        });
+
+        const payload: EmailPayload = {
+            to: email,
+            subject,
+            html,
+            text,
+        };
+
+        await this.queueEmailUseCase.execute({
+            templateType: "CUSTOM",
+            payload,
+            metadata: { email, teacherName, courseTitle, delistReason, action: "course_delisted_notification" },
+            priority: 2,
+        });
+    }
+
+    async sendCourseFrozenNotification(
+        email: string,
+        teacherName: string,
+        courseTitle: string,
+        freezeReason: string,
+        courseSlug?: string
+    ): Promise<void> {
+        const { html, text, subject } = renderCourseFrozenEmail({
+            teacherName,
+            courseTitle,
+            freezeReason,
+            courseSlug,
+        });
+
+        const payload: EmailPayload = {
+            to: email,
+            subject,
+            html,
+            text,
+        };
+
+        await this.queueEmailUseCase.execute({
+            templateType: "CUSTOM",
+            payload,
+            metadata: { email, teacherName, courseTitle, freezeReason, action: "course_frozen_notification" },
+            priority: 2,
+        });
+    }
+
+    async sendWelcomeEmail(email: string, name: string): Promise<void> {
+        const { html, text, subject } = renderWelcomeEmail({ name });
+
+        const payload: EmailPayload = {
+            to: email,
+            subject,
+            html,
+            text,
+        };
+
+        await this.queueEmailUseCase.execute({
+            templateType: "WELCOME",
+            payload,
+            metadata: { email, name, action: "welcome_onboarding" },
+            priority: 3,
+        });
+    }
+
+    async sendCustomEmail(payload: EmailPayload): Promise<void> {
+        await this.queueEmailUseCase.execute({
+            templateType: "CUSTOM",
+            payload,
+            priority: 3,
+        });
+    }
+}

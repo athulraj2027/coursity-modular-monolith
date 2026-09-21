@@ -2,7 +2,7 @@ import http from "http";
 import app from "./app";
 import { env } from "./config/env";
 import { redis } from "@/infrastructure/redis/redis.client";
-import { startEmailWorker, closeEmailWorker } from "@/modules/email";
+import { startEmailWorker, closeEmailWorker } from "@/infrastructure/email";
 import { seedPlansIfEmpty } from "@/modules/plan";
 import { seedCategoriesIfEmpty } from "@/modules/category";
 

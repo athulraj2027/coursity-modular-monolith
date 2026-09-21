@@ -23,8 +23,8 @@ import { ProfileRoutes } from "./presentation/routes/profile.routes";
 // 1. Repositories
 const profileRepository = new PrismaProfileRepository();
 
-import { emailService } from "@/modules/email";
-import { BcryptPasswordService } from "@/modules/auth/infrastructure/services/bcrypt/bcrypt-password.service";
+import { emailService } from "@/infrastructure/email";
+import { BcryptPasswordService } from "@/infrastructure/security";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
 
 const passwordService = new BcryptPasswordService();

@@ -8,7 +8,7 @@ import {
   AdminDelistCourseDTO,
   AdminFreezeCourseDTO,
 } from "../../domain/dtos/course.dto";
-import { IEmailService } from "@/modules/email";
+import { IEmailService } from "@/infrastructure/email";
 import { BadRequestError, NotFoundError } from "@/app/errors";
 
 export class AdminManageCoursesUseCase {

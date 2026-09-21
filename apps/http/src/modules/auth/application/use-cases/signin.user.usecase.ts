@@ -1,6 +1,5 @@
 import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
-import { PasswordService } from "../../domain/services/password.service";
-import { TokenService } from "../../domain/services/token.service";
+import { PasswordService, TokenService } from "@/infrastructure/security";
 import { TokenRepository } from "../../domain/repositories/token.repository";
 import { BadRequestError, UnauthorizedError, ForbiddenError } from "@/app/errors";
 import { SigninInputDTO, SigninOutputDTO } from "../dtos/signin.dto";

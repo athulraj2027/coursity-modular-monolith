@@ -1,6 +1,6 @@
 import { BadRequestError, NotFoundError } from "@/app/errors";
 import { UserRepository } from "../../domain/repositories/user.repository";
-import { PasswordService } from "../../domain/services/password.service";
+import { PasswordService } from "@/infrastructure/security";
 import { ChangePasswordData } from "../../domain/dtos/change-password.dto";
 
 export class ChangePassword {

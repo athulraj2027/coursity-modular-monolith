@@ -9,7 +9,7 @@ export interface ApproveTeacherDTO {
     rejectionReason?: string | null;
 }
 
-import { IEmailService } from "@/modules/email";
+import { IEmailService } from "@/infrastructure/email";
 
 export const ALLOWED_APPROVAL_TRANSITIONS: Record<ApprovalStatus, ApprovalStatus[]> = {
     PENDING: [],

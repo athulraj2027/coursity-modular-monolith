@@ -7,14 +7,17 @@ import {
     IdempotencyRecord,
     LockAcquisitionResult,
 } from "./idempotency.types";
+import { IIdempotencyService } from "./contracts/idempotency-service.abstract";
 
-export class IdempotencyService {
+export class IdempotencyService extends IIdempotencyService {
     private readonly redisPrefix = "idempotency:";
 
     constructor(
         private readonly prisma: PrismaClient = defaultPrisma,
         private readonly redis: Redis = defaultRedis
-    ) { }
+    ) {
+        super();
+    }
 
     /**
      * Computes a SHA-256 hash representing the exact payload and context of the request.

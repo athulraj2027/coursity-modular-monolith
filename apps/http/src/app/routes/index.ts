@@ -5,7 +5,7 @@ import profileRouter from '@/modules/profile';
 import planRouter from '@/modules/plan';
 import categoryRouter from '@/modules/category';
 import courseRouter from '@/modules/course';
-import uploadRouter from '@/modules/storage';
+import uploadRouter from '@/infrastructure/storage';
 import { candidateInterviewRouter, adminInterviewRouter } from '@/modules/interview';
 import { adminAIConfigRouter } from '@/modules/ai-config';
 

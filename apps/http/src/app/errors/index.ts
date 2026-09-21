@@ -1,4 +1,4 @@
 export * from "./app.error";
 export * from "./http-errors";
-export * from "../../modules/storage/domain/errors/storage.error";
+export * from "../../infrastructure/storage/errors/storage.error";
 

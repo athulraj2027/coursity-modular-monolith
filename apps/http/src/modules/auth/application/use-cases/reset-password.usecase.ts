@@ -1,5 +1,5 @@
 import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
-import { PasswordService } from "../../domain/services/password.service";
+import { PasswordService } from "@/infrastructure/security";
 import { OtpRepository } from "../../domain/repositories/redis-otp.repository";
 import { TokenRepository } from "../../domain/repositories/token.repository";
 import { BadRequestError, NotFoundError } from "@/app/errors";

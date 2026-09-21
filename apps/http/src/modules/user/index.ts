@@ -26,10 +26,9 @@ import { requireRoles } from "@/app/middlewares/role.middleware";
 import { UserRoutes } from "./presentation/routes/user.routes";
 
 // Shared Infrastructure Services & Repositories
-import { BcryptPasswordService } from "@/modules/auth/infrastructure/services/bcrypt/bcrypt-password.service";
+import { BcryptPasswordService, JwtTokenService } from "@/infrastructure/security";
 import { RedisTokenRepository } from "@/modules/auth/infrastructure/repositories/redis-token.repository";
-import { JwtTokenService } from "@/modules/auth/infrastructure/services/jwt/jwt-token.service";
-import { emailService } from "@/modules/email";
+import { emailService } from "@/infrastructure/email";
 
 // 1. Repositories & Services
 const userRepository = new PrismaUserRepository();
