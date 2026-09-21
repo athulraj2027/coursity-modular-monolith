@@ -94,6 +94,7 @@ export interface Course {
     approvalStatus?: string;
     profile?: {
       avatar?: string | null;
+      bio?: string | null;
       user?: {
         id?: string;
         name: string;

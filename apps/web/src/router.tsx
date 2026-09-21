@@ -34,6 +34,8 @@ import {
   TeacherCurriculumPage,
   AdminCoursesPage,
   AdminCourseDetailPage,
+  PublicCoursesPage,
+  PublicCourseDetailPage,
 } from "@/features/course"
 import { AdminAIConfigPage } from "@/features/ai-config"
 import {
@@ -68,6 +70,8 @@ export function AppRoutes() {
       <Route element={<PublicRouteGuard />}>
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
+          <Route path="/courses" element={<PublicCoursesPage />} />
+          <Route path="/courses/:slug" element={<PublicCourseDetailPage />} />
           <Route path="/teachers" element={<TeachersPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />

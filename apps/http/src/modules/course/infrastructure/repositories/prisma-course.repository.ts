@@ -66,7 +66,9 @@ export class PrismaCourseRepository implements ICourseRepository {
   }
 
   async findBySlug(slug: string, includeDeleted = false, includeCurriculum = true): Promise<CourseEntity | null> {
-    const where: any = { slug };
+    const where: any = {
+      OR: [{ slug }, { id: slug }],
+    };
     if (!includeDeleted) {
       where.isDeleted = false;
     }
