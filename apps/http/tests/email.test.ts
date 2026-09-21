@@ -1,15 +1,17 @@
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { renderSignupOtpEmail } from "../src/modules/email/infrastructure/templates/signup-otp.template";
-import { renderResetPasswordOtpEmail } from "../src/modules/email/infrastructure/templates/reset-password-otp.template";
-import { renderTeacherStatusEmail } from "../src/modules/email/infrastructure/templates/teacher-status.template";
-import { renderWelcomeEmail } from "../src/modules/email/infrastructure/templates/welcome.template";
-import { NodemailerTransport } from "../src/modules/email/infrastructure/transport/nodemailer.transport";
-import { EmailQueue } from "../src/modules/email/infrastructure/queue/email.queue";
-import { EmailWorker } from "../src/modules/email/infrastructure/queue/email.worker";
-import { QueueEmailUseCase } from "../src/modules/email/application/use-cases/queue-email.usecase";
-import { EmailService } from "../src/modules/email/infrastructure/services/email.service.impl";
-describe("📧 Email Module & Worker Queue Tests", () => {
+import {
+    renderSignupOtpEmail,
+    renderResetPasswordOtpEmail,
+    renderTeacherStatusEmail,
+    renderWelcomeEmail,
+    NodemailerTransport,
+    EmailQueue,
+    EmailWorker,
+    QueueEmailUseCase,
+    EmailService,
+} from "../src/infrastructure/email";
+describe("📧 Email Infrastructure & Worker Queue Tests", () => {
 
     describe("1. Template Rendering", () => {
         it("should render signup OTP template with code and name", () => {

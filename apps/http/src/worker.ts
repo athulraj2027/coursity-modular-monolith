@@ -1,6 +1,5 @@
 import "dotenv/config";
-import { NodemailerTransport } from "./modules/email/infrastructure/transport/nodemailer.transport";
-import { EmailWorker } from "./modules/email/infrastructure/queue/email.worker";
+import { NodemailerTransport, EmailWorker } from "./infrastructure/email";
 import { redis } from "./infrastructure/redis/redis.client";
 
 console.log("\n=======================================================");

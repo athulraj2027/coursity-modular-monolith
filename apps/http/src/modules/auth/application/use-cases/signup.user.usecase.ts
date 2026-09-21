@@ -1,9 +1,9 @@
 import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
-import { PasswordService } from "../../domain/services/password.service";
+import { PasswordService } from "@/infrastructure/security";
 import { ConflictError, BadRequestError } from "@/app/errors";
 import { SignupUserInputDTO, SignupUserOutputDTO } from "../dtos/signup.dto";
 import { OtpRepository } from "../../domain/repositories/redis-otp.repository";
-import { IEmailService } from "@/modules/email";
+import { IEmailService } from "@/infrastructure/email";
 
 export class SignupUser {
     private readonly RESEND_COOLDOWN_MS = 1 * 60 * 1000; // 1 minute (60 seconds)

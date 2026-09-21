@@ -1,5 +1,5 @@
 import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
-import { TokenService } from "../../domain/services/token.service";
+import { TokenService } from "@/infrastructure/security";
 import { TokenRepository } from "../../domain/repositories/token.repository";
 import { UnauthorizedError, ForbiddenError } from "@/app/errors";
 import { RefreshTokenInputDTO, RefreshTokenOutputDTO } from "../dtos/refresh-token.dto";

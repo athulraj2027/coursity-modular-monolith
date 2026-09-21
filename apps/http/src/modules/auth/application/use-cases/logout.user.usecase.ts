@@ -1,5 +1,5 @@
 import { TokenRepository } from "../../domain/repositories/token.repository";
-import { TokenService } from "../../domain/services/token.service";
+import { TokenService } from "@/infrastructure/security";
 import { LogoutInputDTO, LogoutOutputDTO } from "../dtos/logout.dto";
 
 export class LogoutUser {

@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
-import { IEmailService } from "@/modules/email";
-import { PasswordService } from "@/modules/auth/domain/services/password.service";
+import { IEmailService } from "@/infrastructure/email";
+import { PasswordService } from "@/infrastructure/security";
 import { BadRequestError, NotFoundError } from "@/app/errors";
 import { ChangePasswordDto, ChangePasswordResultDto } from "../../domain/dtos/change-password.dto";
 

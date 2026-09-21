@@ -21,8 +21,7 @@ import { ForgotPasswordController } from "../../src/modules/auth/presentation/co
 import { ResetPasswordController } from "../../src/modules/auth/presentation/controllers/reset-password.controller";
 import { GoogleAuthController } from "../../src/modules/auth/presentation/controllers/google-auth.controller";
 import { MeController } from "../../src/modules/auth/presentation/controllers/me.controller";
-import { BcryptPasswordService } from "../../src/modules/auth/infrastructure/services/bcrypt/bcrypt-password.service";
-import { JwtTokenService } from "../../src/modules/auth/infrastructure/services/jwt/jwt-token.service";
+import { BcryptPasswordService, JwtTokenService } from "../../src/infrastructure/security";
 import { createAuthMiddleware } from "../../src/app/middlewares/auth.middleware";
 import { createIsBlockedMiddleware } from "../../src/app/middlewares/is-blocked.middleware";
 import { requireRoles } from "../../src/app/middlewares/role.middleware";
@@ -83,7 +82,7 @@ import {
     DeleteFile,
     UploadController,
     UploadRoutes,
-} from "../../src/modules/storage";
+} from "../../src/infrastructure/storage";
 
 export class InMemoryProfileRepository implements ProfileRepository {
     public profiles = new Map<string, UserProfile>();

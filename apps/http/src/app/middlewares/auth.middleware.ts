@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { UnauthorizedError } from "@/app/errors";
-import { TokenService } from "@/modules/auth/domain/services/token.service";
-import { JwtTokenService } from "@/modules/auth/infrastructure/services/jwt/jwt-token.service";
+import { TokenService, JwtTokenService } from "@/infrastructure/security";
 
 declare global {
     namespace Express {

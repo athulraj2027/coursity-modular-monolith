@@ -1,7 +1,7 @@
 import { NotFoundError, BadRequestError } from "@/app/errors";
 import { ProfileRepository } from "../../domain/repositories/profile.repository";
 import { FullUserProfile } from "../../domain/entities/profile.entity";
-import { IEmailService } from "@/modules/email";
+import { IEmailService } from "@/infrastructure/email";
 
 export const MAX_SUBMISSION_ATTEMPTS = 5;
 

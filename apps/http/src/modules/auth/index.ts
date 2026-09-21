@@ -1,10 +1,16 @@
 // Repositories & Infrastructure Services
 import { PrismaUserRepository } from "@/modules/user/infrastructure/repositories/prisma-user.repository";
-import { BcryptPasswordService } from "./infrastructure/services/bcrypt/bcrypt-password.service";
+import {
+    BcryptPasswordService,
+    JwtTokenService,
+    PasswordService,
+    TokenService,
+} from "@/infrastructure/security";
 import { RedisOtpRepository } from "./infrastructure/repositories/redis-otp.repository";
 import { RedisTokenRepository } from "./infrastructure/repositories/redis-token.repository";
-import { JwtTokenService } from "./infrastructure/services/jwt/jwt-token.service";
 import { GoogleOAuthService } from "./infrastructure/oauth/google-oauth.service";
+import { OAuthService } from "./domain/services/oauth.service";
+import { emailService } from "@/infrastructure/email";
 
 // Use Cases
 import { SignupUser } from "./application/use-cases/signup.user.usecase";
@@ -34,12 +40,6 @@ import { MeController } from "./presentation/controllers/me.controller";
 import { createAuthMiddleware } from "@/app/middlewares/auth.middleware";
 import { createIsBlockedMiddleware } from "@/app/middlewares/is-blocked.middleware";
 import { AuthRoutes } from "./presentation/routes/auth.routes";
-
-import { PasswordService } from "./domain/services/password.service";
-import { TokenService } from "./domain/services/token.service";
-import { OAuthService } from "./domain/services/oauth.service";
-
-import { emailService } from "@/modules/email";
 
 // 1. Repositories & Services
 const userRepository = new PrismaUserRepository();
@@ -98,9 +98,7 @@ const authRoutes = new AuthRoutes(
 
 export * from "./application/dtos";
 export * from "./presentation/validators";
-export * from "./domain/services/password.service";
-export * from "./domain/services/token.service";
 export * from "./domain/services/oauth.service";
+export { PasswordService, TokenService, BcryptPasswordService, JwtTokenService } from "@/infrastructure/security";
 export const authRouter = authRoutes.router;
 export default authRouter;
-
