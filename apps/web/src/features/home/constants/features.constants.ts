@@ -4,51 +4,51 @@ export interface FeatureItem {
   subtitle: string
   description: string
   badge: string
-  iconName: "Video" | "Bot" | "HelpCircle" | "Zap"
+  iconName: "Video" | "Mic" | "Layers" | "Zap"
   highlights: string[]
 }
 
 export const FEATURES_DATA: FeatureItem[] = [
   {
     id: "live-classes",
-    title: "Interactive Live Classes",
-    subtitle: "Real-time mentorship & pair programming",
+    title: "Interactive Live Classrooms",
+    subtitle: "Low-latency HD streaming with real-time Q&A",
     description:
-      "Join weekly live build sessions with experienced engineers. Ask questions in real time, debug live architectures, and collaborate on production codebases.",
-    badge: "Realtime",
+      "Join weekly interactive build sessions with experienced engineers. Ask questions via live chat, debug complex systems in real time, and access automated cloud recordings right after class.",
+    badge: "Live Broadcast",
     iconName: "Video",
     highlights: [
-      "Live terminal & pair coding",
-      "Direct Q&A with lead mentors",
-      "Instant session recordings & notes",
+      "Low-latency WebRTC & HLS streaming",
+      "Real-time classroom chat & instant Q&A",
+      "Automatic cloud recording playback",
     ],
   },
   {
-    id: "ai-assessments",
-    title: "Intelligent AI Assessments",
-    subtitle: "Instant automated code review & feedback",
+    id: "ai-interviews",
+    title: "AI Voice Interview Studio",
+    subtitle: "Low-latency voice simulations with rubric scoring",
     description:
-      "Get real-time static analysis, time/space complexity evaluation, and targeted AI hints on your code submissions to refine your problem-solving.",
+      "Practice technical and architectural interviews with our low-latency conversational AI engine powered by Gemini, Deepgram, and ElevenLabs. Get multi-dimensional evaluation dossiers across code depth, pedagogy, and problem solving.",
     badge: "AI Powered",
-    iconName: "Bot",
+    iconName: "Mic",
     highlights: [
-      "Sub-second test suite validation",
-      "Complexity analysis & hints",
-      "Automated edge case diagnostics",
+      "Real-time conversational voice with barge-in detection",
+      "Multi-dimensional rubric scoring & feedback dossiers",
+      "Adaptive technical probing & scenario questions",
     ],
   },
   {
-    id: "quizzes",
-    title: "Adaptive Quizzes & Drills",
-    subtitle: "Spaced repetition & concept mastery",
+    id: "modular-curriculum",
+    title: "Production Video Curriculum",
+    subtitle: "Modular tracks designed for real-world engineering",
     description:
-      "Reinforce theoretical fundamentals and architecture patterns with interactive bite-sized quizzes, timed drills, and progress benchmarks.",
-    badge: "Mastery",
-    iconName: "HelpCircle",
+      "Master end-to-end architectures from scalable microservices to autonomous AI agents and cloud infrastructure. Structured into bite-sized lessons with high-bitrate video streaming and downloadable resources.",
+    badge: "Modular",
+    iconName: "Layers",
     highlights: [
-      "Algorithmic benchmark drills",
-      "Topic-specific milestone checks",
-      "Adaptive difficulty scaling",
+      "Step-by-step categorized module roadmaps",
+      "Production-grade code patterns & architectures",
+      "Continuous progress tracking & verifiable skills",
     ],
   },
 ]

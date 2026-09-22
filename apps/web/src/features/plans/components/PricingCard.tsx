@@ -5,18 +5,20 @@ import { Check, Sparkles, ArrowRight } from "lucide-react";
 
 interface PricingCardProps {
   plan: Plan;
-  isCurrentPlan: boolean;
-  onSelectPlan: (plan: Plan) => void;
+  isCurrentPlan?: boolean;
+  onSelectPlan?: (plan: Plan) => void;
   isLoading?: boolean;
   billingCycle?: "MONTHLY" | "YEARLY";
+  showActionButton?: boolean;
 }
 
 export const PricingCard: React.FC<PricingCardProps> = ({
   plan,
-  isCurrentPlan,
+  isCurrentPlan = false,
   onSelectPlan,
-  isLoading,
+  isLoading = false,
   billingCycle = "MONTHLY",
+  showActionButton = true,
 }) => {
   const isFree = plan.price === 0;
   // Convert from paise to rupees: 349900 paise -> ₹3,499.00
@@ -125,31 +127,33 @@ export const PricingCard: React.FC<PricingCardProps> = ({
         </div>
       </div>
 
-      {/* Action Button */}
-      <div className="pt-8">
-        <Button
-          onClick={() => onSelectPlan(plan)}
-          disabled={isCurrentPlan || isLoading}
-          className={`w-full gap-2 rounded-xl text-xs font-semibold py-2.5 cursor-pointer ${
-            isCurrentPlan
-              ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed"
-              : plan.isFeatured
-              ? "bg-[#F42A18] hover:bg-[#d92212] text-white shadow-md shadow-[#F42A18]/20"
-              : "bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
-          }`}
-        >
-          {isCurrentPlan ? (
-            <span>Current Subscription</span>
-          ) : (
-            <>
-              <span>
-                {isFree ? "Get Started Free" : "Upgrade to " + plan.name}
-              </span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </>
-          )}
-        </Button>
-      </div>
+      {/* Action Button (Optional) */}
+      {showActionButton && onSelectPlan && (
+        <div className="pt-8">
+          <Button
+            onClick={() => onSelectPlan(plan)}
+            disabled={isCurrentPlan || isLoading}
+            className={`w-full gap-2 rounded-xl text-xs font-semibold py-2.5 cursor-pointer ${
+              isCurrentPlan
+                ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed"
+                : plan.isFeatured
+                ? "bg-[#F42A18] hover:bg-[#d92212] text-white shadow-md shadow-[#F42A18]/20"
+                : "bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
+            }`}
+          >
+            {isCurrentPlan ? (
+              <span>Current Plan</span>
+            ) : (
+              <>
+                <span>
+                  {isFree ? "Get Started Free" : "Select " + plan.name}
+                </span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

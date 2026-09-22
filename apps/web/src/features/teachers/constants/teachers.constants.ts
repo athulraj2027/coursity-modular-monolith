@@ -23,116 +23,117 @@ export const TEACHER_HERO = {
   titleMain: "Teach What You Build.",
   titleHighlight: "Earn Up to 85% Revenue.",
   subtitle:
-    "Join world-class engineers, tech leads, and educators building interactive courses, live cohorts, and AI-evaluated labs on Coursity.",
-  primaryCta: "Create Teacher Account",
-  primaryCtaHref: "#signup",
-  secondaryCta: "Explore Features",
-  secondaryCtaHref: "#features",
+    "Join elite engineers, technical architects, and educators building structured video courses, hosting live interactive classrooms, and scaling creator academies on Coursity.",
+  primaryCta: "Apply as Teacher",
+  primaryCtaHref: "/teachers/signup",
+  secondaryCta: "View Plans & Pricing",
+  secondaryCtaHref: "#pricing",
 }
 
 export const TEACHER_STATS: TeacherOpportunity[] = [
   {
     id: "stat-1",
     title: "Industry Leading Payouts",
-    description: "Keep up to 85% of student enrollments with zero hidden hosting or platform fees.",
+    description: "Keep up to 85% of student enrollments with zero hidden hosting, transcoding, or bandwidth fees.",
     metric: "85%",
     metricLabel: "Creator Revenue Share",
   },
   {
     id: "stat-2",
-    title: "Average Teacher Earnings",
-    description: "Top teachers earn substantial recurring monthly income through live cohorts and tracks.",
-    metric: "$8,500+",
-    metricLabel: "Avg. Monthly Earnings",
+    title: "Recurring Instructor Income",
+    description: "Top engineering educators earn substantial recurring monthly income through course sales and live cohort workshops.",
+    metric: "₹1,50,000+",
+    metricLabel: "Top Monthly Earnings",
   },
   {
     id: "stat-3",
-    title: "High Completion Rate",
-    description: "Interactive browser labs and AI assessments keep students 3x more engaged than video-only courses.",
-    metric: "94%",
-    metricLabel: "Student Completion",
+    title: "AI Quality Vetting",
+    description: "Our conversational AI voice interviewer evaluates instructors on technical clarity, pedagogy, and communication in minutes.",
+    metric: "4-Stage",
+    metricLabel: "Fast-Track Onboarding",
   },
   {
     id: "stat-4",
-    title: "Global Builder Community",
-    description: "Instantly distribute your courses to ambitious developers across 40+ countries.",
-    metric: "50,000+",
-    metricLabel: "Active Learners",
+    title: "Automated Cloud Storage",
+    description: "Every live broadcast is automatically archived to high-speed cloud storage for asynchronous student playback.",
+    metric: "100%",
+    metricLabel: "Automated Cloud Archive",
   },
 ]
 
 export const TEACHER_FEATURES_HEADER = {
-  badge: "Creator Tooling",
+  badge: "Creator Studio Tooling",
   titleMain: "Everything You Need to",
-  titleHighlight: "Ship & Scale",
+  titleHighlight: "Teach, Stream & Scale",
   subtitle:
-    "We handle hosting, cloud sandboxes, automated grading, and payment processing so you can focus 100% on teaching.",
+    "We handle HD video streaming, cloud recording archives, automated AI assessments, and Razorpay payouts so you can focus 100% on teaching.",
 }
 
 export const TEACHER_FEATURES: TeacherFeature[] = [
   {
     id: "feat-1",
-    badge: "Automation",
-    title: "Automated AI Code Grading",
+    badge: "Live Studio",
+    title: "HD Live Classroom Streaming",
     description:
-      "Save 20+ hours weekly. Our automated sandboxes run test suites, check complexity, and give personalized instant feedback to students.",
+      "Broadcast low-latency interactive workshops and pair programming sessions to hundreds of concurrent students with live chat and automatic cloud recording.",
   },
   {
     id: "feat-2",
-    badge: "Live Cohorts",
-    title: "Built-In Live Studio & Sprints",
+    badge: "AI Vetting",
+    title: "Real-Time AI Voice Vetting",
     description:
-      "Host live interactive coding workshops, pair programming sessions, and screen-shares directly in the browser with zero external Zoom links.",
+      "Get qualified in minutes through our conversational AI interview engine evaluating pedagogy, technical depth, and communication skills.",
   },
   {
     id: "feat-3",
-    badge: "Interactive Labs",
-    title: "Instant Cloud Development Sandboxes",
+    badge: "Curriculum",
+    title: "Modular Course & Video Studio",
     description:
-      "Provision full Linux containers with Node, Python, Go, and Docker in seconds so students never struggle with local environment setup.",
+      "Easily organize lessons into modules, upload high-bitrate video lessons, manage draft-to-published states, and track student completion.",
   },
   {
     id: "feat-4",
-    badge: "Marketing & Growth",
-    title: "Built-in Audience & Distribution",
+    badge: "Tier Quotas",
+    title: "Flexible Quotas & Storage Limits",
     description:
-      "We feature your curriculum across our newsletter, discord community, and engineering partner network to drive immediate student enrollments.",
+      "Start free on the Starter Tier, or scale with Pro and Enterprise plans offering massive live streaming minutes, high viewer capacities, and cloud storage.",
   },
   {
     id: "feat-5",
     badge: "Analytics",
-    title: "Granular Learner Analytics",
+    title: "Granular Learner Telemetry",
     description:
-      "Identify exactly where students get stuck, track quiz performance drop-offs, and continuously optimize your curriculum with actionable telemetry.",
+      "Track student retention, module completion rates, and real-time live attendance metrics across all your active courses.",
   },
   {
     id: "feat-6",
     badge: "Payments",
-    title: "Instant Global Stripe Payouts",
+    title: "Razorpay & GST Compliant Payouts",
     description:
-      "Receive direct, transparent weekly or monthly payouts via Stripe Connect in your local currency across 120+ countries.",
+      "Receive transparent payouts via Razorpay with automated 18% GST tax invoices and comprehensive billing history.",
   },
 ]
 
 export const TEACHER_STEPS_HEADER = {
-  title: "How It Works",
-  subtitle: "From registration to launch in three frictionless steps.",
+  title: "How Instructor Onboarding Works",
+  subtitle: "From registration to your first live class in three streamlined steps.",
 }
 
 export const TEACHER_STEPS: StepItem[] = [
   {
     step: "01",
-    title: "Create Your Account",
-    description: "Sign up in 30 seconds and access your teacher dashboard and course studio.",
+    title: "Create Profile & Apply",
+    description: "Sign up as an instructor, submit your professional background, bio, experience, and domain specializations.",
   },
   {
     step: "02",
-    title: "Build with AI Studio",
-    description: "Use our AI curriculum builder and interactive code sandboxes to craft engaging lessons.",
+    title: "AI Voice Vetting Interview",
+    description: "Complete a 5-minute interactive voice interview with our AI evaluator testing your technical clarity and teaching methodology.",
   },
   {
     step: "03",
-    title: "Launch & Get Paid",
-    description: "Publish your course to thousands of learners and start earning 85% revenue share from day one.",
+    title: "Unlock Studio, Stream & Earn",
+    description: "Access your Creator Studio, build modular courses, host live stream classrooms, and keep up to 85% revenue from enrollments.",
   },
 ]
+

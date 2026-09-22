@@ -20,11 +20,13 @@ export function usePlans() {
   });
 }
 
-export function useMySubscription() {
+export function useMySubscription(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: MY_SUBSCRIPTION_QUERY_KEY,
     queryFn: () => planApi.getMySubscription(),
-    staleTime: 0,
+    staleTime: 1000 * 60 * 2, // 2 minutes cache
+    retry: false, // Never retry automatically on auth failure
+    enabled: options?.enabled ?? true,
   });
 }
 

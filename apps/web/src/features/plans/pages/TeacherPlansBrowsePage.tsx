@@ -4,6 +4,7 @@ import { usePlans, useMySubscription } from "../hooks/usePlans";
 import type { Plan } from "../types/plan.types";
 import { PricingCard } from "../components/PricingCard";
 import { FeatureComparisonMatrix } from "../components/FeatureComparisonMatrix";
+import { PlanUpgradeNoticeModal } from "../components/PlanUpgradeNoticeModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -23,6 +24,7 @@ export const TeacherPlansBrowsePage: React.FC = () => {
   const { data: subData, refetch: refetchSub } = useMySubscription();
 
   const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "YEARLY">("MONTHLY");
+  const [selectedPlanForUpgrade, setSelectedPlanForUpgrade] = useState<Plan | null>(null);
 
   if (isPlansLoading) {
     return (
@@ -61,7 +63,20 @@ export const TeacherPlansBrowsePage: React.FC = () => {
   const currentPlan = activeSubscription?.plan;
 
   const handleSelectPlan = (plan: Plan) => {
-    navigate(`/teachers/plans/checkout?planId=${plan.id}&cycle=${billingCycle}`);
+    // If the instructor has an existing active plan and is switching to a different tier
+    if (activeSubscription && currentPlan && currentPlan.id !== plan.id && plan.price > 0) {
+      setSelectedPlanForUpgrade(plan);
+    } else {
+      navigate(`/teachers/plans/checkout?planId=${plan.id}&cycle=${billingCycle}`);
+    }
+  };
+
+  const handleProceedToCheckout = () => {
+    if (selectedPlanForUpgrade) {
+      const targetId = selectedPlanForUpgrade.id;
+      setSelectedPlanForUpgrade(null);
+      navigate(`/teachers/plans/checkout?planId=${targetId}&cycle=${billingCycle}`);
+    }
   };
 
   return (
@@ -241,6 +256,16 @@ export const TeacherPlansBrowsePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* 6. Upgrade Notice & Quota Reset Policy Modal */}
+      <PlanUpgradeNoticeModal
+        isOpen={Boolean(selectedPlanForUpgrade)}
+        onClose={() => setSelectedPlanForUpgrade(null)}
+        onProceed={handleProceedToCheckout}
+        currentPlan={currentPlan}
+        targetPlan={selectedPlanForUpgrade}
+        billingCycle={billingCycle}
+      />
     </div>
   );
 };

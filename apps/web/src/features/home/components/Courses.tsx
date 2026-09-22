@@ -64,13 +64,23 @@ export const Courses: React.FC = () => {
               {/* Top Meta info */}
               <div>
                 <div className="flex items-center justify-between gap-4 mb-4">
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-800">
-                    {course.category}
-                  </span>
-                  <span className="text-xs font-medium text-neutral-500 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5" />
-                    {course.duration}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-800">
+                      {course.category}
+                    </span>
+                    <span className="text-[11px] font-medium text-neutral-500 bg-neutral-100/50 dark:bg-neutral-900/50 px-2 py-0.5 rounded-md border border-neutral-200/50 dark:border-neutral-800/50">
+                      {course.level}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-[#F42A18]">
+                      {course.pricingType === "FREE" ? "Free" : `₹${course.price.toLocaleString()}`}
+                    </span>
+                    <span className="text-xs font-medium text-neutral-500 flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      {course.duration}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Title & Description */}
@@ -112,7 +122,7 @@ export const Courses: React.FC = () => {
                 </div>
 
                 <Link
-                  to={`/courses`}
+                  to={`/courses/${course.slug}`}
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-900 dark:text-white group-hover:text-[#F42A18] transition-colors"
                 >
                   Explore Track

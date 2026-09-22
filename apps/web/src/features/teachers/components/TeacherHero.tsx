@@ -30,10 +30,10 @@ export const TeacherHero: React.FC = () => {
             {/* Quick Key Highlights */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1 w-full">
               {[
-                "85% creator revenue share",
-                "Automated AI lab grading",
-                "Built-in browser live studio",
-                "Direct Stripe weekly payouts",
+                "Up to 85% creator revenue share",
+                "AI voice interview fast-track vetting",
+                "HD live streaming & cloud recordings",
+                "Direct Razorpay & UPI payouts with GST invoices",
               ].map((highlight, idx) => (
                 <div
                   key={idx}
@@ -56,11 +56,17 @@ export const TeacherHero: React.FC = () => {
                 <span>Get Started</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
+              <a
+                href="#pricing"
+                className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 text-sm font-semibold hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors cursor-pointer"
+              >
+                <span>View Plans & Pricing</span>
+              </a>
               <Link
                 to="/teachers/signin"
-                className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 text-sm font-semibold hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
+                className="inline-flex items-center justify-center gap-2 h-11 px-4 text-xs font-semibold text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors"
               >
-                <span>Sign In to Studio</span>
+                <span>Sign In</span>
               </Link>
             </div>
           </div>

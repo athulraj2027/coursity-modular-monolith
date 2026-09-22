@@ -7,6 +7,7 @@ export * from "./components/FeatureComparisonMatrix";
 export * from "./components/SubscribeModal";
 export * from "./components/PlanFormModal";
 export * from "./components/BillingHistoryTable";
+export * from "./components/PlanUpgradeNoticeModal";
 export * from "./pages/TeacherPlansPage";
 export * from "./pages/TeacherPlansBrowsePage";
 export * from "./pages/TeacherPlanCheckoutPage";
