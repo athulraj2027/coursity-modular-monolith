@@ -35,6 +35,11 @@ const envSchema = z.object({
     AWS_S3_BUCKET_NAME: z.string().optional().default(""),
     AWS_CLOUDFRONT_URL: z.string().optional().default(""),
     AWS_S3_ENDPOINT: z.string().optional().default(""),
+
+    // Payment Gateway / Razorpay Configuration
+    RAZORPAY_KEY_ID: z.string().optional().default(""),
+    RAZORPAY_KEY_SECRET: z.string().optional().default(""),
+    RAZORPAY_WEBHOOK_SECRET: z.string().optional().default(""),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

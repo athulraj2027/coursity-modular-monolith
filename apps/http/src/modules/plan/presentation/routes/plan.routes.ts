@@ -31,6 +31,27 @@ export class PlanRoutes {
     );
 
     this.router.post(
+      "/razorpay/create-order",
+      authMiddleware,
+      isBlockedMiddleware,
+      this.planController.createRazorpayOrder
+    );
+
+    this.router.post(
+      "/razorpay/verify",
+      authMiddleware,
+      isBlockedMiddleware,
+      this.planController.verifyRazorpayPayment
+    );
+
+    this.router.get(
+      "/invoices",
+      authMiddleware,
+      isBlockedMiddleware,
+      this.planController.getInvoices
+    );
+
+    this.router.post(
       "/cancel",
       authMiddleware,
       isBlockedMiddleware,

@@ -91,3 +91,61 @@ export interface SubscribePlanInput {
   externalCustomerId?: string;
   externalSubscriptionId?: string;
 }
+
+export interface CreateRazorpayOrderInput {
+  planId: string;
+  billingCycle?: BillingCycle;
+  phone?: string;
+  state?: string;
+  country?: string;
+  gstin?: string;
+}
+
+export interface RazorpayOrderResponse {
+  orderId: string;
+  amount: number;
+  currency: string;
+  keyId: string;
+  planName: string;
+  userEmail?: string;
+  userName?: string;
+}
+
+export interface VerifyRazorpayPaymentInput {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+  planId: string;
+  billingCycle?: BillingCycle;
+  phone?: string;
+  state?: string;
+  country?: string;
+  gstin?: string;
+}
+
+export interface SubscriptionInvoice {
+  id: string;
+  invoiceNumber: string;
+  subscriptionId?: string | null;
+  teacherProfileId: string;
+  planId?: string | null;
+  plan?: Plan | null;
+  amount: number;
+  currency: string;
+  taxAmount: number;
+  totalAmount: number;
+  billingCycle: BillingCycle;
+  paymentMethod?: string | null;
+  paymentGateway: string;
+  gatewayOrderId?: string | null;
+  gatewayPaymentId?: string | null;
+  status: "PAID" | "PENDING" | "FAILED" | "REFUNDED";
+  customerName?: string | null;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
+  customerState?: string | null;
+  customerCountry?: string | null;
+  gstin?: string | null;
+  paidAt?: string | null;
+  createdAt: string;
+}

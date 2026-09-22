@@ -1,13 +1,14 @@
 import React from "react";
 import type { Plan } from "../types/plan.types";
 import { Button } from "@/components/ui/button";
-import { Check, Sparkles, Zap, ArrowRight } from "lucide-react";
+import { Check, Sparkles, ArrowRight } from "lucide-react";
 
 interface PricingCardProps {
   plan: Plan;
   isCurrentPlan: boolean;
   onSelectPlan: (plan: Plan) => void;
   isLoading?: boolean;
+  billingCycle?: "MONTHLY" | "YEARLY";
 }
 
 export const PricingCard: React.FC<PricingCardProps> = ({
@@ -15,8 +16,14 @@ export const PricingCard: React.FC<PricingCardProps> = ({
   isCurrentPlan,
   onSelectPlan,
   isLoading,
+  billingCycle = "MONTHLY",
 }) => {
   const isFree = plan.price === 0;
+  // Convert from paise to rupees: 349900 paise -> ₹3,499.00
+  const rawPriceInRupees = plan.price >= 100 ? plan.price / 100 : plan.price;
+  // If yearly, calculate 10 months pricing (20% discount) or multiply appropriately
+  const displayedMonthlyPrice = billingCycle === "YEARLY" ? Math.round(rawPriceInRupees * 0.8) : rawPriceInRupees;
+  const currencySymbol = "₹";
 
   return (
     <div
@@ -55,24 +62,23 @@ export const PricingCard: React.FC<PricingCardProps> = ({
         </div>
 
         {/* Pricing */}
-        <div className="flex items-baseline gap-1.5 pb-4 border-b border-neutral-100 dark:border-neutral-800">
-          <span className="text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-white">
-            {isFree ? "Free" : `$${plan.price}`}
-          </span>
-          {!isFree && (
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">
-              / month
+        <div className="space-y-1 pb-4 border-b border-neutral-100 dark:border-neutral-800">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-white">
+              {isFree ? "Free" : `${currencySymbol}${displayedMonthlyPrice.toLocaleString()}`}
             </span>
+            {!isFree && (
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                / month
+              </span>
+            )}
+          </div>
+          {!isFree && billingCycle === "YEARLY" && (
+            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+              Billed annually (₹{(displayedMonthlyPrice * 12).toLocaleString()} / yr) • Save 20%
+            </p>
           )}
         </div>
-
-        {/* Trial Callout */}
-        {plan.trialDays > 0 && !isFree && (
-          <div className="p-2.5 rounded-xl bg-[#F42A18]/5 dark:bg-[#F42A18]/10 border border-[#F42A18]/15 text-[11px] font-semibold text-[#F42A18] flex items-center gap-2">
-            <Zap className="w-3.5 h-3.5 shrink-0" />
-            <span>{plan.trialDays}-Day Free Trial Included</span>
-          </div>
-        )}
 
         {/* Dynamic Feature Checklist */}
         <div className="space-y-3 pt-1">
@@ -137,11 +143,7 @@ export const PricingCard: React.FC<PricingCardProps> = ({
           ) : (
             <>
               <span>
-                {isFree
-                  ? "Get Started Free"
-                  : plan.trialDays > 0
-                  ? `Start ${plan.trialDays}-Day Free Trial`
-                  : "Upgrade to " + plan.name}
+                {isFree ? "Get Started Free" : "Upgrade to " + plan.name}
               </span>
               <ArrowRight className="w-3.5 h-3.5" />
             </>

@@ -6,12 +6,17 @@ import { CancelSubscriptionUseCase } from "../../application/use-cases/cancel-su
 import { RecordUsageUseCase } from "../../application/use-cases/record-usage.usecase";
 import { CheckQuotaUseCase } from "../../application/use-cases/check-quota.usecase";
 import { AdminManagePlansUseCase } from "../../application/use-cases/admin-manage-plans.usecase";
+import { CreateRazorpayOrderUseCase } from "../../application/use-cases/create-razorpay-order.usecase";
+import { VerifyRazorpayPaymentUseCase } from "../../application/use-cases/verify-razorpay-payment.usecase";
+import { GetInvoicesUseCase } from "../../application/use-cases/get-invoices.usecase";
 import {
   createPlanSchema,
   updatePlanSchema,
   subscribePlanSchema,
   recordUsageSchema,
   checkQuotaQuerySchema,
+  createRazorpayOrderSchema,
+  verifyRazorpayPaymentSchema,
 } from "../validators/plan.validator";
 import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError } from "@/app/errors";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
@@ -24,7 +29,10 @@ export class PlanController {
     private readonly cancelSubscriptionUseCase: CancelSubscriptionUseCase,
     private readonly recordUsageUseCase: RecordUsageUseCase,
     private readonly checkQuotaUseCase: CheckQuotaUseCase,
-    private readonly adminManagePlansUseCase: AdminManagePlansUseCase
+    private readonly adminManagePlansUseCase: AdminManagePlansUseCase,
+    private readonly createRazorpayOrderUseCase: CreateRazorpayOrderUseCase,
+    private readonly verifyRazorpayPaymentUseCase: VerifyRazorpayPaymentUseCase,
+    private readonly getInvoicesUseCase: GetInvoicesUseCase
   ) {}
 
   private async getTeacherProfileId(userId: string): Promise<string> {
@@ -113,6 +121,91 @@ export class PlanController {
         success: true,
         message: "Successfully subscribed to plan",
         data: subscription,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // POST /api/plans/razorpay/create-order (Protected - Teacher)
+  createRazorpayOrder = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError("Authentication required");
+      }
+
+      const validated = createRazorpayOrderSchema.parse(req.body);
+      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
+
+      const result = await this.createRazorpayOrderUseCase.execute({
+        planId: validated.planId,
+        teacherProfileId,
+        userEmail: req.user.email,
+        userName: (req.user as any).name || "Instructor",
+        billingCycle: validated.billingCycle,
+        phone: validated.phone,
+        state: validated.state,
+        country: validated.country,
+        gstin: validated.gstin,
+      });
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // POST /api/plans/razorpay/verify (Protected - Teacher)
+  verifyRazorpayPayment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError("Authentication required");
+      }
+
+      const validated = verifyRazorpayPaymentSchema.parse(req.body);
+      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
+
+      const result = await this.verifyRazorpayPaymentUseCase.execute({
+        orderId: validated.orderId,
+        paymentId: validated.paymentId,
+        signature: validated.signature,
+        planId: validated.planId,
+        teacherProfileId,
+        userEmail: req.user.email,
+        userName: (req.user as any).name || "Instructor",
+        billingCycle: validated.billingCycle,
+        phone: validated.phone,
+        state: validated.state,
+        country: validated.country,
+        gstin: validated.gstin,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Payment verified and subscription activated successfully!",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // GET /api/plans/invoices (Protected - Teacher)
+  getInvoices = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError("Authentication required");
+      }
+
+      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
+      const invoices = await this.getInvoicesUseCase.execute(teacherProfileId);
+
+      res.status(200).json({
+        success: true,
+        data: invoices,
       });
     } catch (error) {
       next(error);

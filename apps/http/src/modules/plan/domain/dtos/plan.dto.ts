@@ -56,3 +56,42 @@ export interface CheckQuotaDto {
   featureCode: string;
   requiredAmount?: number;
 }
+
+export interface CreateRazorpayOrderDto {
+  planId: string;
+  teacherProfileId: string;
+  userEmail: string;
+  userName: string;
+  billingCycle?: BillingCycle;
+  phone?: string;
+  state?: string;
+  country?: string;
+  gstin?: string;
+}
+
+export interface VerifyRazorpayPaymentDto {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+  planId: string;
+  teacherProfileId: string;
+  userEmail: string;
+  userName: string;
+  billingCycle?: BillingCycle;
+  phone?: string;
+  state?: string;
+  country?: string;
+  gstin?: string;
+}
+
+export interface RazorpayOrderResponseDto {
+  orderId: string;
+  amount: number;
+  currency: string;
+  keyId: string;
+  planName: string;
+  planSlug: string;
+  billingCycle: BillingCycle;
+  isMock: boolean;
+}
+

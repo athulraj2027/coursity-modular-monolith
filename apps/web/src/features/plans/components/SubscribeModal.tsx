@@ -1,7 +1,7 @@
 import React from "react";
 import type { Plan } from "../types/plan.types";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Loader2, Sparkles, X, Zap } from "lucide-react";
+import { CheckCircle2, Loader2, Sparkles, X } from "lucide-react";
 
 interface SubscribeModalProps {
   plan: Plan | null;
@@ -64,18 +64,9 @@ export const SubscribeModal: React.FC<SubscribeModalProps> = ({
               Amount Due Now:
             </span>
             <span className="text-base font-extrabold text-[#F42A18]">
-              {isFree || plan.trialDays > 0 ? "$0.00 (Trial)" : `$${plan.price} ${plan.currency}`}
+              {isFree ? "Free" : `₹${(plan.price >= 100 ? plan.price / 100 : plan.price).toLocaleString()} / ${plan.billingCycle.toLowerCase()}`}
             </span>
           </div>
-
-          {plan.trialDays > 0 && !isFree && (
-            <div className="pt-2 border-t border-neutral-200/60 dark:border-neutral-700 text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 shrink-0" />
-              <span>
-                {plan.trialDays} days free trial, then ${plan.price}/month thereafter. Cancel anytime.
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Feature Highlights */}
@@ -114,13 +105,7 @@ export const SubscribeModal: React.FC<SubscribeModalProps> = ({
             className="gap-2 rounded-xl text-xs bg-[#F42A18] hover:bg-[#d92212] text-white cursor-pointer font-semibold"
           >
             {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            <span>
-              {isFree
-                ? "Activate Free Tier"
-                : plan.trialDays > 0
-                ? `Start ${plan.trialDays}-Day Free Trial`
-                : "Confirm & Upgrade"}
-            </span>
+            <span>{isFree ? "Activate Free Tier" : "Confirm & Upgrade"}</span>
           </Button>
         </div>
       </div>

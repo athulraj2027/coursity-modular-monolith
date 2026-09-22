@@ -66,3 +66,25 @@ export const checkQuotaQuerySchema = z.object({
   featureCode: z.string().min(1, "Feature code is required"),
   amount: z.coerce.number().optional().default(1),
 });
+
+export const createRazorpayOrderSchema = z.object({
+  planId: z.string().min(1, "Plan ID is required"),
+  billingCycle: billingCycleEnum.optional().default("MONTHLY"),
+  phone: z.string().optional(),
+  state: z.string().optional(),
+  country: z.string().optional().default("India"),
+  gstin: z.string().optional(),
+});
+
+export const verifyRazorpayPaymentSchema = z.object({
+  orderId: z.string().min(1, "Order ID is required"),
+  paymentId: z.string().min(1, "Payment ID is required"),
+  signature: z.string().min(1, "Signature is required"),
+  planId: z.string().min(1, "Plan ID is required"),
+  billingCycle: billingCycleEnum.optional().default("MONTHLY"),
+  phone: z.string().optional(),
+  state: z.string().optional(),
+  country: z.string().optional().default("India"),
+  gstin: z.string().optional(),
+});
+

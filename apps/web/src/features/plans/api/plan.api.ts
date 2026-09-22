@@ -5,6 +5,10 @@ import type {
   TeacherSubscription,
   TeacherSubscriptionDetails,
   SubscribePlanInput,
+  CreateRazorpayOrderInput,
+  RazorpayOrderResponse,
+  VerifyRazorpayPaymentInput,
+  SubscriptionInvoice,
 } from "../types/plan.types";
 
 export interface PlansResponse {
@@ -24,6 +28,25 @@ export interface SubscribeResponse {
   success: boolean;
   message: string;
   data: TeacherSubscription;
+}
+
+export interface RazorpayOrderApiResponse {
+  success: boolean;
+  data: RazorpayOrderResponse;
+}
+
+export interface VerifyPaymentApiResponse {
+  success: boolean;
+  message: string;
+  data: {
+    subscription: TeacherSubscription;
+    invoice: SubscriptionInvoice;
+  };
+}
+
+export interface InvoicesApiResponse {
+  success: boolean;
+  data: SubscriptionInvoice[];
 }
 
 export interface CreateOrUpdatePlanPayload extends Omit<Partial<Plan>, "features"> {
@@ -53,7 +76,7 @@ export const planApi = {
     return res.data;
   },
 
-  // 3. Subscribe or upgrade to a plan
+  // 3. Subscribe or upgrade to a plan (legacy / free tier)
   subscribe: async (payload: SubscribePlanInput): Promise<TeacherSubscription> => {
     const res = await apiClient<SubscribeResponse>("/plans/subscribe", {
       method: "POST",
@@ -62,7 +85,35 @@ export const planApi = {
     return res.data;
   },
 
-  // 4. Cancel subscription
+  // 4. Create Razorpay Order
+  createRazorpayOrder: async (payload: CreateRazorpayOrderInput): Promise<RazorpayOrderResponse> => {
+    const res = await apiClient<RazorpayOrderApiResponse>("/plans/razorpay/create-order", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return res.data;
+  },
+
+  // 5. Verify Razorpay Payment Signature and activate subscription
+  verifyRazorpayPayment: async (
+    payload: VerifyRazorpayPaymentInput
+  ): Promise<{ subscription: TeacherSubscription; invoice: SubscriptionInvoice }> => {
+    const res = await apiClient<VerifyPaymentApiResponse>("/plans/razorpay/verify", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return res.data;
+  },
+
+  // 6. Get teacher billing invoices
+  getInvoices: async (): Promise<SubscriptionInvoice[]> => {
+    const res = await apiClient<InvoicesApiResponse>("/plans/invoices", {
+      method: "GET",
+    });
+    return res.data;
+  },
+
+  // 7. Cancel subscription
   cancelSubscription: async (immediate = false): Promise<TeacherSubscription> => {
     const res = await apiClient<SubscribeResponse>("/plans/cancel", {
       method: "POST",

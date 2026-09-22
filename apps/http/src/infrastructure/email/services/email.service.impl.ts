@@ -10,6 +10,7 @@ import {
     renderCourseDelistedEmail,
     renderCourseFrozenEmail,
 } from "../templates/course-moderation.template";
+import { renderSubscriptionPurchasedEmail } from "../templates/subscription-purchased.template";
 
 export class EmailService extends IEmailService {
     constructor(private readonly queueEmailUseCase: QueueEmailUseCase) {
@@ -166,6 +167,46 @@ export class EmailService extends IEmailService {
             payload,
             metadata: { email, name, action: "welcome_onboarding" },
             priority: 3,
+        });
+    }
+
+    async sendSubscriptionPurchasedNotification(params: {
+        email: string;
+        teacherName: string;
+        planName: string;
+        amount: number;
+        currency: string;
+        billingCycle: string;
+        currentPeriodEnd: Date;
+        invoiceNumber: string;
+    }): Promise<void> {
+        const { html, text, subject } = renderSubscriptionPurchasedEmail({
+            teacherName: params.teacherName,
+            planName: params.planName,
+            amount: params.amount,
+            currency: params.currency,
+            billingCycle: params.billingCycle,
+            currentPeriodEnd: params.currentPeriodEnd,
+            invoiceNumber: params.invoiceNumber,
+        });
+
+        const payload: EmailPayload = {
+            to: params.email,
+            subject,
+            html,
+            text,
+        };
+
+        await this.queueEmailUseCase.execute({
+            templateType: "CUSTOM",
+            payload,
+            metadata: {
+                email: params.email,
+                planName: params.planName,
+                invoiceNumber: params.invoiceNumber,
+                action: "subscription_purchased_confirmation",
+            },
+            priority: 1, // High priority for purchase receipt
         });
     }
 

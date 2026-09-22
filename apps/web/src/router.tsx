@@ -23,6 +23,10 @@ import {
 } from "@/features/profile"
 import {
   TeacherPlansPage,
+  TeacherPlansBrowsePage,
+  TeacherPlanCheckoutPage,
+  TeacherPlanSuccessPage,
+  TeacherPlanFailedPage,
   AdminPlansPage,
   AdminPlanDetailsPage,
   AdminPlanFormPage,
@@ -154,6 +158,10 @@ export function AppRoutes() {
             </Route>
             <Route path="/teachers/plans" element={<DashboardLayout role="teacher" />}>
               <Route index element={<TeacherPlansPage />} />
+              <Route path="browse" element={<TeacherPlansBrowsePage />} />
+              <Route path="checkout" element={<TeacherPlanCheckoutPage />} />
+              <Route path="success" element={<TeacherPlanSuccessPage />} />
+              <Route path="failed" element={<TeacherPlanFailedPage />} />
             </Route>
 
             {/* Aliases for teacher routes */}
@@ -167,6 +175,10 @@ export function AppRoutes() {
             <Route path="/teachers/profile/password" element={<Navigate to="/teachers/password" replace />} />
             <Route path="/teacher/password" element={<Navigate to="/teachers/password" replace />} />
             <Route path="/teacher/plans" element={<Navigate to="/teachers/plans" replace />} />
+            <Route path="/teacher/plans/browse" element={<Navigate to="/teachers/plans/browse" replace />} />
+            <Route path="/teacher/plans/checkout" element={<Navigate to="/teachers/plans/checkout" replace />} />
+            <Route path="/teacher/plans/success" element={<Navigate to="/teachers/plans/success" replace />} />
+            <Route path="/teacher/plans/failed" element={<Navigate to="/teachers/plans/failed" replace />} />
             <Route path="/teachers/billing" element={<Navigate to="/teachers/plans" replace />} />
             <Route path="/teachers/my-interviews" element={<Navigate to="/teachers/dashboard" replace />} />
             <Route path="/teacher/interviews" element={<Navigate to="/teachers/dashboard" replace />} />

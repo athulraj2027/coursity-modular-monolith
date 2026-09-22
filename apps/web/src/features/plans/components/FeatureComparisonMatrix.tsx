@@ -44,7 +44,7 @@ export const FeatureComparisonMatrix: React.FC<FeatureComparisonMatrixProps> = (
                 <div className="space-y-1">
                   <span className="block">{plan.name}</span>
                   <span className="text-xs font-semibold text-[#F42A18]">
-                    {plan.price === 0 ? "Free" : `$${plan.price}/mo`}
+                    {plan.price === 0 ? "Free" : `₹${(plan.price >= 100 ? plan.price / 100 : plan.price).toLocaleString()}/mo`}
                   </span>
                 </div>
               </th>
