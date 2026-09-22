@@ -1,8 +1,10 @@
-import { SubscriptionRepository, PlanRepository } from "../../domain/repositories/plan.repository";
+import { SubscriptionRepository } from "../../domain/repositories/subscription.repository";
+import { PlanRepository } from "@/modules/plan/domain/repositories/plan.repository";
 import { IPaymentGateway } from "@/infrastructure/payment";
 import { IEmailService } from "@/infrastructure/email";
-import { VerifyRazorpayPaymentDto } from "../../domain/dtos/plan.dto";
-import { TeacherSubscription, SubscriptionInvoice } from "../../domain/entities/plan.entity";
+import { VerifyRazorpayPaymentDto } from "../../domain/dtos/subscription.dto";
+import { calculatePlanCheckoutPrice, DEFAULT_GST_PERCENT } from "../../domain/constants/billing.constants";
+import { TeacherSubscription, SubscriptionInvoice } from "../../domain/entities/subscription.entity";
 import { BadRequestError, NotFoundError } from "@/app/errors";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
 
@@ -35,7 +37,7 @@ export class VerifyRazorpayPaymentUseCase {
       throw new NotFoundError(`Target plan with ID '${dto.planId}' not found.`);
     }
 
-    // 3. Compute Dates
+    // 3. Compute Dates & Pricing (with GST)
     const now = new Date();
     const periodEnd = new Date(now);
     const selectedCycle = dto.billingCycle || plan.billingCycle || "MONTHLY";
@@ -48,15 +50,45 @@ export class VerifyRazorpayPaymentUseCase {
       periodEnd.setMonth(periodEnd.getMonth() + 1);
     }
 
-    const basePriceInRupees = plan.price >= 100 ? Number(plan.price) / 100 : Number(plan.price);
-    let finalAmount = basePriceInRupees;
-    if (selectedCycle === "YEARLY") {
-      finalAmount = basePriceInRupees * 10;
-    } else if (selectedCycle === "QUARTERLY") {
-      finalAmount = basePriceInRupees * 2.7;
+    const pricing = calculatePlanCheckoutPrice(Number(plan.price), selectedCycle, DEFAULT_GST_PERCENT);
+    const finalAmount = pricing.totalAmount;
+
+    // 4. Resolve Teacher/User Details for Invoice
+    let teacherName = dto.userName || "Instructor";
+    let teacherEmail = dto.userEmail || "";
+    let teacherPhone = dto.phone || null;
+    let teacherCountry = dto.country || "India";
+    let teacherState = dto.state || null;
+
+    try {
+      const teacherProfile = await defaultPrisma.teacherProfile.findUnique({
+        where: { id: dto.teacherProfileId },
+        include: {
+          profile: {
+            include: { user: true },
+          },
+        },
+      });
+
+      if (teacherProfile?.profile?.user) {
+        if (!teacherName || teacherName === "Instructor") {
+          teacherName = teacherProfile.profile.user.name || teacherName;
+        }
+        if (!teacherEmail) {
+          teacherEmail = teacherProfile.profile.user.email || teacherEmail;
+        }
+        if (!teacherPhone) {
+          teacherPhone = teacherProfile.profile.phone || teacherPhone;
+        }
+        if (!teacherCountry) {
+          teacherCountry = teacherProfile.profile.country || teacherCountry;
+        }
+      }
+    } catch (profileErr) {
+      console.warn("⚠️ [Invoice User Resolution] Non-fatal error reading teacher profile:", profileErr);
     }
 
-    // 4. Update or Create Active Subscription
+    // 5. Update or Create Active Subscription
     const activeSub = await this.subscriptionRepo.findActiveByTeacherId(dto.teacherProfileId);
     let subscription: TeacherSubscription;
 
@@ -74,12 +106,12 @@ export class VerifyRazorpayPaymentUseCase {
         status: "ACTIVE",
         currentPeriodStart: now,
         currentPeriodEnd: periodEnd,
-        externalCustomerId: dto.userEmail,
+        externalCustomerId: teacherEmail,
         externalSubscriptionId: dto.paymentId,
       });
     }
 
-    // 5. Generate Subscription Invoice
+    // 6. Generate Subscription Invoice with Full Plan & User Metadata
     const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
     const invoiceRecord = await defaultPrisma.subscriptionInvoice.create({
       data: {
@@ -91,6 +123,19 @@ export class VerifyRazorpayPaymentUseCase {
         paymentMethod: "RAZORPAY",
         paidAt: now,
         receiptUrl: `https://dashboard.razorpay.com/app/payments/${dto.paymentId}`,
+        planName: plan.name,
+        billingCycle: selectedCycle,
+        baseAmount: pricing.basePrice,
+        taxAmount: pricing.taxAmount,
+        taxPercent: DEFAULT_GST_PERCENT,
+        userName: teacherName,
+        userEmail: teacherEmail,
+        userPhone: teacherPhone,
+        userState: teacherState,
+        userCountry: teacherCountry,
+        gstin: dto.gstin || null,
+        gatewayOrderId: dto.orderId,
+        gatewayPaymentId: dto.paymentId,
       },
     });
 
@@ -104,15 +149,28 @@ export class VerifyRazorpayPaymentUseCase {
       paymentMethod: invoiceRecord.paymentMethod,
       receiptUrl: invoiceRecord.receiptUrl,
       paidAt: invoiceRecord.paidAt,
+      planName: invoiceRecord.planName,
+      billingCycle: invoiceRecord.billingCycle,
+      baseAmount: invoiceRecord.baseAmount ? Number(invoiceRecord.baseAmount) : pricing.basePrice,
+      taxAmount: invoiceRecord.taxAmount ? Number(invoiceRecord.taxAmount) : pricing.taxAmount,
+      taxPercent: invoiceRecord.taxPercent ? Number(invoiceRecord.taxPercent) : DEFAULT_GST_PERCENT,
+      userName: invoiceRecord.userName,
+      userEmail: invoiceRecord.userEmail,
+      userPhone: invoiceRecord.userPhone,
+      userState: invoiceRecord.userState,
+      userCountry: invoiceRecord.userCountry,
+      gstin: invoiceRecord.gstin,
+      gatewayOrderId: invoiceRecord.gatewayOrderId,
+      gatewayPaymentId: invoiceRecord.gatewayPaymentId,
       createdAt: invoiceRecord.createdAt,
       updatedAt: invoiceRecord.updatedAt,
     };
 
-    // 6. Dispatch Transactional Confirmation Email (Asynchronous queue)
+    // 7. Dispatch Transactional Confirmation Email (Asynchronous queue)
     this.emailService
       .sendSubscriptionPurchasedNotification({
-        email: dto.userEmail,
-        teacherName: dto.userName || "Instructor",
+        email: teacherEmail,
+        teacherName: teacherName || "Instructor",
         planName: plan.name,
         amount: finalAmount,
         currency: "INR",

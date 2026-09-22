@@ -128,9 +128,9 @@ export const TeacherPlansPage: React.FC = () => {
                   className={
                     activeSubscription?.status === "ACTIVE"
                       ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-semibold text-[11px]"
-                      : activeSubscription?.status === "TRIALING"
-                      ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-semibold text-[11px]"
-                      : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-semibold text-[11px]"
+                      : activeSubscription?.status === "PAST_DUE"
+                      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-semibold text-[11px]"
+                      : "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 font-semibold text-[11px]"
                   }
                 >
                   {activeSubscription?.status || "ACTIVE"}
@@ -210,7 +210,10 @@ export const TeacherPlansPage: React.FC = () => {
           )}
         </div>
 
-        <TeacherUsageGauge items={quotaSummary} />
+        <TeacherUsageGauge
+          items={quotaSummary}
+          planName={currentPlan?.name || "Free Starter"}
+        />
       </div>
 
       {/* 4. Billing History & Invoices */}

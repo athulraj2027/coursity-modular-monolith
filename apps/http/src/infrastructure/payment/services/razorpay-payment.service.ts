@@ -152,4 +152,61 @@ export class RazorpayPaymentService extends IPaymentGateway {
             return null;
         }
     }
+
+    async refundPayment(input: {
+        paymentId: string;
+        amount?: number;
+        currency?: string;
+        notes?: Record<string, string>;
+    }): Promise<{
+        refundId: string;
+        paymentId: string;
+        amount: number;
+        currency: string;
+        status: string;
+        receipt?: string;
+        notes?: Record<string, string>;
+        createdAt: number;
+    }> {
+        if (this.instance && !input.paymentId.startsWith("pay_mock_")) {
+            try {
+                const refundPayload: any = {
+                    notes: input.notes,
+                };
+                if (input.amount && input.amount > 0) {
+                    refundPayload.amount = Math.round(input.amount * 100);
+                }
+
+                const refund: any = await this.instance.payments.refund(input.paymentId, refundPayload);
+
+                return {
+                    refundId: refund.id,
+                    paymentId: refund.payment_id,
+                    amount: Number(refund.amount) / 100,
+                    currency: refund.currency || input.currency || "INR",
+                    status: refund.status || "processed",
+                    receipt: refund.receipt,
+                    notes: refund.notes,
+                    createdAt: refund.created_at || Math.floor(Date.now() / 1000),
+                };
+            } catch (error: any) {
+                console.error(`❌ [Razorpay] Refund failed for payment ${input.paymentId}:`, error);
+                throw new Error(`Razorpay Refund Processing Failed: ${error?.error?.description || error?.message || "Unknown gateway error"}`);
+            }
+        }
+
+        // Mock / Sandbox simulation
+        const mockRefundId = `rfnd_mock_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        console.log(`ℹ️ [Payment Gateway - Sandbox Mode] Processed Mock Refund: ${mockRefundId} for payment: ${input.paymentId}`);
+
+        return {
+            refundId: mockRefundId,
+            paymentId: input.paymentId,
+            amount: input.amount || 0,
+            currency: input.currency || "INR",
+            status: "processed",
+            notes: input.notes,
+            createdAt: Math.floor(Date.now() / 1000),
+        };
+    }
 }

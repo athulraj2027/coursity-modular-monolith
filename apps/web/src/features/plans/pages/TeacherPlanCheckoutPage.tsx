@@ -6,6 +6,10 @@ import {
   useVerifyRazorpayPayment,
   useSubscribePlan,
 } from "../hooks/usePlans";
+import {
+  calculatePlanCheckoutPrice,
+  DEFAULT_GST_PERCENT,
+} from "../constants/billing.constants";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,12 +94,10 @@ export const TeacherPlanCheckoutPage: React.FC = () => {
   }
 
   const isFree = plan.price === 0;
-  // DB stores price in paise (e.g. 349900 = ₹3,499.00)
-  const rawPriceInRupees = plan.price >= 100 ? plan.price / 100 : plan.price;
-  const monthlyCalculated = billingCycle === "YEARLY" ? Math.round(rawPriceInRupees * 0.8) : rawPriceInRupees;
-  const basePrice = billingCycle === "YEARLY" ? monthlyCalculated * 12 : rawPriceInRupees;
-  const taxAmount = isFree ? 0 : Math.round(basePrice * 0.18 * 100) / 100;
-  const totalAmount = isFree ? 0 : Math.round((basePrice + taxAmount) * 100) / 100;
+  const pricing = calculatePlanCheckoutPrice(plan.price, billingCycle, DEFAULT_GST_PERCENT);
+  const basePrice = pricing.basePrice;
+  const taxAmount = pricing.taxAmount;
+  const totalAmount = pricing.totalAmount;
 
   // Custom Form Validation
   const validateForm = (): boolean => {
@@ -180,6 +182,8 @@ export const TeacherPlanCheckoutPage: React.FC = () => {
       const orderRes = await createOrderMutation.mutateAsync({
         planId: plan.id,
         billingCycle,
+        userName: fullName.trim() || undefined,
+        userEmail: email.trim() || undefined,
         phone: phone.trim(),
         state: stateName.trim(),
         country: country.trim(),
@@ -198,18 +202,20 @@ export const TeacherPlanCheckoutPage: React.FC = () => {
         return;
       }
 
+      const chargeAmount = orderRes.amount || totalAmount;
+
       const options = {
         key: orderRes.keyId,
-        amount: Math.round(totalAmount * 100),
+        amount: Math.round(chargeAmount * 100),
         currency: orderRes.currency || "INR",
         name: "Coursity",
         description: `${plan.name} (${billingCycle}) Subscription`,
         image: "/favicon.ico",
         order_id: orderRes.orderId,
         prefill: {
-          name: fullName || orderRes.userName || "Instructor",
-          email: email || orderRes.userEmail || "",
-          contact: phone,
+          name: fullName.trim() || orderRes.userName || "Instructor",
+          email: email.trim() || orderRes.userEmail || "",
+          contact: phone.trim(),
         },
         theme: {
           color: "#F42A18",
@@ -226,6 +232,8 @@ export const TeacherPlanCheckoutPage: React.FC = () => {
               signature: response.razorpay_signature,
               planId: plan.id,
               billingCycle,
+              userName: fullName.trim() || undefined,
+              userEmail: email.trim() || undefined,
               phone: phone.trim(),
               state: stateName.trim(),
               country: country.trim(),
@@ -233,7 +241,7 @@ export const TeacherPlanCheckoutPage: React.FC = () => {
             });
 
             navigate(
-              `/teachers/plans/success?orderId=${response.razorpay_order_id}&paymentId=${response.razorpay_payment_id}&planId=${plan.id}&amount=${totalAmount}`
+              `/teachers/plans/success?orderId=${response.razorpay_order_id}&paymentId=${response.razorpay_payment_id}&planId=${plan.id}&amount=${chargeAmount}`
             );
           } catch (err: any) {
             navigate(
@@ -564,7 +572,7 @@ export const TeacherPlanCheckoutPage: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between text-neutral-600 dark:text-neutral-400">
-                <span>GST (18%)</span>
+                <span>GST ({DEFAULT_GST_PERCENT}%)</span>
                 <span className="font-semibold text-neutral-900 dark:text-white">
                   ₹{taxAmount.toFixed(2)}
                 </span>

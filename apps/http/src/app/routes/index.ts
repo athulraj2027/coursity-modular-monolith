@@ -3,6 +3,7 @@ import authRouter from '@/modules/auth';
 import userRouter from '@/modules/user';
 import profileRouter from '@/modules/profile';
 import planRouter from '@/modules/plan';
+import subscriptionRouter from '@/modules/subscription';
 import categoryRouter from '@/modules/category';
 import courseRouter from '@/modules/course';
 import uploadRouter from '@/infrastructure/storage';
@@ -21,7 +22,9 @@ router.use(idempotencyMiddleware);
 // 2. Auth routes (Public signup/signin/OTP + protected /me)
 router.use("/auth", authRouter);
 
-// 3. Subscription & Pricing Plan routes (Public listing + protected teacher/admin operations)
+// 3. Plan Catalog & Subscription routes
+router.use("/subscriptions", subscriptionRouter);
+router.use("/plans", subscriptionRouter);
 router.use("/plans", planRouter);
 
 // 4. Categories & Hierarchy routes (Public listing + protected admin management)

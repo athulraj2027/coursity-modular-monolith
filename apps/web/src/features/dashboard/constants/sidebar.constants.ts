@@ -11,6 +11,7 @@ import {
   Bot,
   KeyRound,
   FolderTree,
+  CreditCard,
   type LucideIcon,
 } from "lucide-react"
 
@@ -148,6 +149,11 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Plans",
         url: "/admin/plans",
         icon: Layers,
+      },
+      {
+        title: "Subscriptions",
+        url: "/admin/subscriptions",
+        icon: CreditCard,
       },
       {
         title: "AI Interviews",

@@ -1,5 +1,5 @@
 export type BillingCycle = "MONTHLY" | "QUARTERLY" | "YEARLY" | "LIFETIME";
-export type SubscriptionStatus = "ACTIVE" | "TRIALING" | "PAST_DUE" | "CANCELED" | "EXPIRED" | "PENDING";
+export type SubscriptionStatus = "ACTIVE" | "PAST_DUE" | "CANCELED" | "EXPIRED" | "PENDING";
 export type FeatureType = "BOOLEAN" | "NUMERIC" | "TEXT";
 export type FeatureCategory = "LIVE_STREAMING" | "COURSES" | "STORAGE" | "RECORDING" | "ANALYTICS" | "COMMUNITY" | "SUPPORT";
 export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "REFUNDED";
