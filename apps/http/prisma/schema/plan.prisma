@@ -7,7 +7,6 @@ enum BillingCycle {
 
 enum SubscriptionStatus {
   ACTIVE
-  TRIALING
   PAST_DUE
   CANCELED
   EXPIRED
@@ -149,20 +148,37 @@ model TeacherPlanUsage {
 }
 
 model SubscriptionInvoice {
-  id             String              @id @default(uuid())
-  subscriptionId String
-  subscription   TeacherSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  id               String              @id @default(uuid())
+  subscriptionId   String
+  subscription     TeacherSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
   
-  invoiceNumber  String              @unique
-  amount         Decimal             @db.Decimal(10, 2)
-  currency       String              @default("INR")
-  status         PaymentStatus       @default(PENDING)
-  paymentMethod  String?
-  receiptUrl     String?
-  paidAt         DateTime?
+  invoiceNumber    String              @unique
+  amount           Decimal             @db.Decimal(10, 2)
+  currency         String              @default("INR")
+  status           PaymentStatus       @default(PENDING)
+  paymentMethod    String?
+  receiptUrl       String?
+  paidAt           DateTime?
   
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  // Enhanced Plan & Customer Details for Invoicing
+  planName         String?
+  billingCycle     BillingCycle?
+  baseAmount       Decimal?            @db.Decimal(10, 2)
+  taxAmount        Decimal?            @db.Decimal(10, 2)
+  taxPercent       Decimal?            @db.Decimal(5, 2)
+  userName         String?
+  userEmail        String?
+  userPhone        String?
+  userAddress      String?
+  userState        String?
+  userCountry      String?             @default("India")
+  gstin            String?
+  gatewayOrderId   String?
+  gatewayPaymentId String?
+
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 
   @@map("subscription_invoices")
 }
+

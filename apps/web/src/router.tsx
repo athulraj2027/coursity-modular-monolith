@@ -30,6 +30,8 @@ import {
   AdminPlansPage,
   AdminPlanDetailsPage,
   AdminPlanFormPage,
+  AdminSubscriptionsPage,
+  AdminSubscriptionDetailPage,
 } from "@/features/plans"
 import { AdminCategoriesPage } from "@/features/categories"
 import {
@@ -216,6 +218,10 @@ export function AppRoutes() {
             <Route path="new" element={<AdminPlanFormPage />} />
             <Route path=":id" element={<AdminPlanDetailsPage />} />
             <Route path=":id/edit" element={<AdminPlanFormPage />} />
+          </Route>
+          <Route path="/admin/subscriptions" element={<DashboardLayout role="admin" />}>
+            <Route index element={<AdminSubscriptionsPage />} />
+            <Route path=":id" element={<AdminSubscriptionDetailPage />} />
           </Route>
           <Route path="/admin/categories" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminCategoriesPage />} />

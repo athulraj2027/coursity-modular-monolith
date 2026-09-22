@@ -36,11 +36,25 @@ export const BillingHistoryTable: React.FC<BillingHistoryTableProps> = ({
           day: "numeric",
         });
 
-    const amount = Number(invoice.amount || 0);
-    const taxAmount = Number(invoice.taxAmount ?? Math.round(amount * 0.18 * 100) / 100);
-    const totalAmount = Number(invoice.totalAmount ?? (amount + taxAmount));
+    const totalAmount = Number(invoice.totalAmount ?? invoice.amount ?? 0);
+    const baseAmount = Number(
+      invoice.baseAmount ?? (totalAmount > 0 ? Math.round((totalAmount / 1.18) * 100) / 100 : 0)
+    );
+    const taxAmount = Number(
+      invoice.taxAmount ?? (totalAmount > 0 ? Math.round((totalAmount - baseAmount) * 100) / 100 : 0)
+    );
+    const taxPercent = invoice.taxPercent ?? 18;
     const paymentGateway = (invoice.paymentGateway || invoice.paymentMethod || "Razorpay").toUpperCase();
     const billingCycle = invoice.billingCycle || "MONTHLY";
+    const planTitle = invoice.planName || invoice.plan?.name || "Instructor Plan";
+    const customerName = invoice.userName || invoice.customerName || "Valued Educator";
+    const customerEmail = invoice.userEmail || invoice.customerEmail || "";
+    const customerPhone = invoice.userPhone || invoice.customerPhone || "";
+    const customerState = invoice.userState || invoice.customerState || "";
+    const customerCountry = invoice.userCountry || invoice.customerCountry || "India";
+    const gstin = invoice.gstin || "";
+    const paymentId = invoice.gatewayPaymentId || "";
+    const orderId = invoice.gatewayOrderId || "";
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -79,17 +93,17 @@ export const BillingHistoryTable: React.FC<BillingHistoryTableProps> = ({
           <div class="meta-grid">
             <div class="box">
               <strong style="font-size: 13px; text-transform: uppercase; color: #888;">Billed To:</strong>
-              <p style="margin: 6px 0 2px 0; font-weight: bold;">${invoice.customerName || "Valued Educator"}</p>
-              <p style="margin: 0; font-size: 13px; color: #555;">${invoice.customerEmail || ""}</p>
-              ${invoice.customerPhone ? `<p style="margin: 0; font-size: 13px; color: #555;">Phone: ${invoice.customerPhone}</p>` : ""}
-              ${invoice.customerState ? `<p style="margin: 0; font-size: 13px; color: #555;">State: ${invoice.customerState}, ${invoice.customerCountry || "India"}</p>` : ""}
-              ${invoice.gstin ? `<p style="margin: 4px 0 0 0; font-size: 13px; color: #555;"><strong>GSTIN:</strong> ${invoice.gstin}</p>` : ""}
+              <p style="margin: 6px 0 2px 0; font-weight: bold;">${customerName}</p>
+              ${customerEmail ? `<p style="margin: 0; font-size: 13px; color: #555;">Email: ${customerEmail}</p>` : ""}
+              ${customerPhone ? `<p style="margin: 0; font-size: 13px; color: #555;">Phone: ${customerPhone}</p>` : ""}
+              ${customerState ? `<p style="margin: 0; font-size: 13px; color: #555;">State: ${customerState}, ${customerCountry}</p>` : ""}
+              ${gstin ? `<p style="margin: 4px 0 0 0; font-size: 13px; color: #555;"><strong>GSTIN:</strong> ${gstin}</p>` : ""}
             </div>
             <div class="box">
               <strong style="font-size: 13px; text-transform: uppercase; color: #888;">Payment Information:</strong>
               <p style="margin: 6px 0 2px 0; font-weight: bold;">Gateway: ${paymentGateway}</p>
-              ${invoice.gatewayPaymentId ? `<p style="margin: 0; font-size: 13px; color: #555;">Payment ID: ${invoice.gatewayPaymentId}</p>` : ""}
-              ${invoice.gatewayOrderId ? `<p style="margin: 0; font-size: 13px; color: #555;">Order ID: ${invoice.gatewayOrderId}</p>` : ""}
+              ${paymentId ? `<p style="margin: 0; font-size: 13px; color: #555;">Payment ID: ${paymentId}</p>` : ""}
+              ${orderId ? `<p style="margin: 0; font-size: 13px; color: #555;">Order ID: ${orderId}</p>` : ""}
               <p style="margin: 4px 0 0 0; font-size: 13px; color: #16a34a; font-weight: bold;">Status: ${invoice.status}</p>
             </div>
           </div>
@@ -104,20 +118,20 @@ export const BillingHistoryTable: React.FC<BillingHistoryTableProps> = ({
             </thead>
             <tbody>
               <tr>
-                <td><strong>${invoice.plan?.name || "Instructor Subscription Tier"}</strong> Plan Access</td>
+                <td><strong>${planTitle}</strong> Subscription Access</td>
                 <td>${billingCycle}</td>
-                <td style="text-align: right;">₹${amount.toFixed(2)}</td>
+                <td style="text-align: right;">₹${baseAmount.toFixed(2)}</td>
               </tr>
             </tbody>
           </table>
 
           <div class="totals">
             <div class="totals-row">
-              <span>Subtotal:</span>
-              <span>₹${amount.toFixed(2)}</span>
+              <span>Base Subtotal:</span>
+              <span>₹${baseAmount.toFixed(2)}</span>
             </div>
             <div class="totals-row">
-              <span>GST (18%):</span>
+              <span>GST (${taxPercent}%):</span>
               <span>₹${taxAmount.toFixed(2)}</span>
             </div>
             <div class="totals-row grand-total">
@@ -181,9 +195,9 @@ export const BillingHistoryTable: React.FC<BillingHistoryTableProps> = ({
         </thead>
         <tbody className="divide-y divide-neutral-200/60 dark:divide-neutral-800/60 text-neutral-700 dark:text-neutral-300">
           {invoices.map((inv) => {
-            const rawAmount = Number(inv.amount || 0);
-            const total = Number(inv.totalAmount ?? (rawAmount * 1.18));
+            const total = Number(inv.totalAmount ?? inv.amount ?? 0);
             const cycle = inv.billingCycle || "MONTHLY";
+            const planTitle = inv.planName || inv.plan?.name || "Instructor Plan";
 
             return (
               <tr
@@ -197,7 +211,7 @@ export const BillingHistoryTable: React.FC<BillingHistoryTableProps> = ({
                   </div>
                 </td>
                 <td className="px-5 py-4 font-medium text-neutral-900 dark:text-white">
-                  {inv.plan?.name || "Instructor Plan"}
+                  {planTitle}
                 </td>
                 <td className="px-5 py-4 text-neutral-500">
                   {new Date(inv.paidAt || inv.createdAt).toLocaleDateString("en-US", {

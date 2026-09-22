@@ -1,6 +1,7 @@
-import { PlanRepository } from "../../domain/repositories/plan.repository";
+import { PlanRepository } from "@/modules/plan/domain/repositories/plan.repository";
 import { IPaymentGateway } from "@/infrastructure/payment";
-import { CreateRazorpayOrderDto, RazorpayOrderResponseDto } from "../../domain/dtos/plan.dto";
+import { CreateRazorpayOrderDto, RazorpayOrderResponseDto } from "../../domain/dtos/subscription.dto";
+import { calculatePlanCheckoutPrice, DEFAULT_GST_PERCENT } from "../../domain/constants/billing.constants";
 import { BadRequestError, NotFoundError } from "@/app/errors";
 
 export class CreateRazorpayOrderUseCase {
@@ -19,21 +20,14 @@ export class CreateRazorpayOrderUseCase {
       throw new BadRequestError(`Plan '${plan.name}' is not currently available for subscriptions.`);
     }
 
-    // Determine billing cycle & final amount (DB price is stored in paise: 349900 = ₹3,499.00)
-    const basePriceInRupees = plan.price >= 100 ? Number(plan.price) / 100 : Number(plan.price);
+    // Determine billing cycle & final amount with dynamic GST
     const selectedCycle = dto.billingCycle || plan.billingCycle || "MONTHLY";
-    let finalAmountInRupees = basePriceInRupees;
-
-    if (selectedCycle === "YEARLY") {
-      finalAmountInRupees = basePriceInRupees * 10; // 10x monthly price for annual tier (2 months free)
-    } else if (selectedCycle === "QUARTERLY") {
-      finalAmountInRupees = basePriceInRupees * 2.7; // ~10% discount for quarterly
-    }
+    const pricing = calculatePlanCheckoutPrice(Number(plan.price), selectedCycle, DEFAULT_GST_PERCENT);
 
     const receipt = `rcpt_${dto.teacherProfileId.substring(0, 8)}_${Date.now().toString().slice(-6)}`;
 
     const orderResult = await this.paymentGateway.createOrder({
-      amount: finalAmountInRupees,
+      amount: pricing.totalAmount, // Razorpay order amount INCLUDES dynamic GST tax
       currency: "INR",
       receipt,
       notes: {
@@ -41,17 +35,22 @@ export class CreateRazorpayOrderUseCase {
         planId: plan.id,
         planName: plan.name,
         billingCycle: selectedCycle,
+        basePrice: pricing.basePrice.toString(),
+        taxAmount: pricing.taxAmount.toString(),
+        totalAmount: pricing.totalAmount.toString(),
+        gstPercent: DEFAULT_GST_PERCENT.toString(),
         userEmail: dto.userEmail,
         userName: dto.userName,
         phone: dto.phone || "",
         state: dto.state || "",
+        country: dto.country || "India",
         gstin: dto.gstin || "",
       },
     });
 
     return {
       orderId: orderResult.orderId,
-      amount: finalAmountInRupees,
+      amount: pricing.totalAmount,
       currency: orderResult.currency,
       keyId: orderResult.keyId,
       planName: plan.name,

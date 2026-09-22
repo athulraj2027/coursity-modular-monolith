@@ -1,24 +1,19 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { QuotaEnforcementService } from "../src/modules/plan/domain/services/quota-enforcement.service";
+import { PlanRepository } from "../src/modules/plan/domain/repositories/plan.repository";
+import { SubscriptionRepository } from "../src/modules/subscription/domain/repositories/subscription.repository";
+import { Plan, Feature } from "../src/modules/plan/domain/entities/plan.entity";
 import {
-  SubscriptionRepository,
-  UsageRepository,
-  PlanRepository,
-} from "../src/modules/plan/domain/repositories/plan.repository";
-import {
-  Plan,
   TeacherSubscription,
   TeacherPlanUsage,
-  Feature,
   SubscriptionStatus,
-} from "../src/modules/plan/domain/entities/plan.entity";
+} from "../src/modules/subscription/domain/entities/subscription.entity";
 import { CreatePlanDto, UpdatePlanDto } from "../src/modules/plan/domain/dtos/plan.dto";
 import { GetPlansUseCase } from "../src/modules/plan/application/use-cases/get-plans.usecase";
-import { SubscribePlanUseCase } from "../src/modules/plan/application/use-cases/subscribe-plan.usecase";
-import { CancelSubscriptionUseCase } from "../src/modules/plan/application/use-cases/cancel-subscription.usecase";
-import { RecordUsageUseCase } from "../src/modules/plan/application/use-cases/record-usage.usecase";
-import { CheckQuotaUseCase } from "../src/modules/plan/application/use-cases/check-quota.usecase";
+import { SubscribePlanUseCase } from "../src/modules/subscription/application/use-cases/subscribe-plan.usecase";
+import { CancelSubscriptionUseCase } from "../src/modules/subscription/application/use-cases/cancel-subscription.usecase";
+import { RecordUsageUseCase } from "../src/modules/subscription/application/use-cases/record-usage.usecase";
+import { CheckQuotaUseCase } from "../src/modules/subscription/application/use-cases/check-quota.usecase";
 
 class MockPlanRepository implements PlanRepository {
   public plans: Plan[] = [];
@@ -88,7 +83,7 @@ class MockSubscriptionRepository implements SubscriptionRepository {
       this.subscriptions.find(
         (s) =>
           s.teacherProfileId === teacherProfileId &&
-          (s.status === "ACTIVE" || s.status === "TRIALING")
+          (s.status === "ACTIVE" || s.status === "PENDING")
       ) || null
     );
   }

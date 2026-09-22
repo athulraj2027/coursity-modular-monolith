@@ -74,7 +74,7 @@ export function useSubscribePlan() {
       queryClient.invalidateQueries({ queryKey: INVOICES_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       toast.success(
-        data.status === "TRIALING"
+        data.trialEndsAt && new Date(data.trialEndsAt) > new Date()
           ? "Free trial activated successfully! Enjoy premium instructor features."
           : "Subscribed to plan successfully!"
       );

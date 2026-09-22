@@ -32,6 +32,24 @@ export interface PaymentDetails {
     createdAt: number;
 }
 
+export interface RefundPaymentInput {
+    paymentId: string;
+    amount?: number; // In currency units (e.g. ₹499); if omitted, full payment amount is refunded
+    currency?: string;
+    notes?: Record<string, string>;
+}
+
+export interface RefundPaymentResult {
+    refundId: string;
+    paymentId: string;
+    amount: number; // in standard currency units (e.g. ₹)
+    currency: string;
+    status: string;
+    receipt?: string;
+    notes?: Record<string, string>;
+    createdAt: number;
+}
+
 export abstract class IPaymentGateway {
     /**
      * Creates an order with the payment gateway.
@@ -52,6 +70,11 @@ export abstract class IPaymentGateway {
      * Fetches details of a completed payment transaction.
      */
     abstract fetchPaymentDetails(paymentId: string): Promise<PaymentDetails | null>;
+
+    /**
+     * Issues a full or partial refund for a captured payment.
+     */
+    abstract refundPayment(input: RefundPaymentInput): Promise<RefundPaymentResult>;
 
     /**
      * Returns whether the gateway is running in production or mock/dev test mode.
