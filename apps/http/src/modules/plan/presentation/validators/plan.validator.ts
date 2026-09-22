@@ -19,7 +19,7 @@ export const createPlanSchema = z.object({
   tagline: z.string().max(255).optional().nullable(),
   description: z.string().max(1000).optional().nullable(),
   price: z.coerce.number().min(0, "Price cannot be negative"),
-  currency: z.string().min(3).max(3).default("USD"),
+  currency: z.string().min(3).max(3).default("INR"),
   billingCycle: billingCycleEnum.default("MONTHLY"),
   trialDays: z.coerce.number().int().min(0).default(0),
   isActive: z.boolean().default(true),
@@ -66,3 +66,25 @@ export const checkQuotaQuerySchema = z.object({
   featureCode: z.string().min(1, "Feature code is required"),
   amount: z.coerce.number().optional().default(1),
 });
+
+export const createRazorpayOrderSchema = z.object({
+  planId: z.string().min(1, "Plan ID is required"),
+  billingCycle: billingCycleEnum.optional().default("MONTHLY"),
+  phone: z.string().optional(),
+  state: z.string().optional(),
+  country: z.string().optional().default("India"),
+  gstin: z.string().optional(),
+});
+
+export const verifyRazorpayPaymentSchema = z.object({
+  orderId: z.string().min(1, "Order ID is required"),
+  paymentId: z.string().min(1, "Payment ID is required"),
+  signature: z.string().min(1, "Signature is required"),
+  planId: z.string().min(1, "Plan ID is required"),
+  billingCycle: billingCycleEnum.optional().default("MONTHLY"),
+  phone: z.string().optional(),
+  state: z.string().optional(),
+  country: z.string().optional().default("India"),
+  gstin: z.string().optional(),
+});
+

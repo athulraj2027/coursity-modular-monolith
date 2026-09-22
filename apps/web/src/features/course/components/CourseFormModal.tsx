@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   GraduationCap,
-  DollarSign,
+  IndianRupee,
   Loader2,
   Image as ImageIcon,
   BookOpen,
@@ -41,7 +41,7 @@ const STEPS = [
   { id: 2, title: "Media & Details", icon: ImageIcon, subtitle: "Description & visual assets" },
   { id: 3, title: "Goals & Prerequisites", icon: BookOpen, subtitle: "Outcomes & requirements" },
   { id: 4, title: "Curriculum Topics", icon: Layers, subtitle: "Live syllabus topics & outline" },
-  { id: 5, title: "Pricing & Publish", icon: DollarSign, subtitle: "Access model & publish live" },
+  { id: 5, title: "Pricing & Publish", icon: IndianRupee, subtitle: "Access model & publish live" },
 ];
 
 const isValidUrl = (url: string): boolean => {
@@ -300,7 +300,7 @@ export const CourseFormModal: React.FC<CourseFormModalProps> = ({
       if (pricingType === "PAID") {
         const numPrice = Number(price);
         if (isNaN(numPrice) || numPrice <= 0) {
-          errors.price = "Price must be greater than $0.00 for paid courses.";
+          errors.price = "Price must be greater than ₹0 for paid courses.";
         }
       }
 
@@ -406,7 +406,7 @@ export const CourseFormModal: React.FC<CourseFormModalProps> = ({
       language,
       pricingType,
       price: pricingType === "PAID" ? Number(price) : 0,
-      currency: "USD",
+      currency: "INR",
       learningOutcomes: parseList(outcomesText),
       requirements: parseList(requirementsText),
       targetAudience: parseList(audienceText),
@@ -941,20 +941,20 @@ export const CourseFormModal: React.FC<CourseFormModalProps> = ({
           {pricingType === "PAID" && (
             <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800 mt-2 space-y-1.5">
               <label className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">
-                Course Price ($ USD) <span className="text-red-500">*</span>
+                Course Price (₹ INR) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-2.5 text-xs text-neutral-400">$</span>
+                <span className="absolute left-3 top-2.5 text-xs text-neutral-400">₹</span>
                 <Input
                   type="number"
-                  step="0.01"
-                  min="0.99"
+                  step="1"
+                  min="1"
                   value={price}
                   onChange={(e) => {
                     setPrice(e.target.value);
                     setFieldErrors((prev) => ({ ...prev, price: "" }));
                   }}
-                  placeholder="49.99"
+                  placeholder="1999"
                   className={`pl-7 text-xs rounded-xl ${
                     fieldErrors.price ? "border-red-500 focus-visible:ring-red-500" : ""
                   }`}
@@ -1013,7 +1013,7 @@ export const CourseFormModal: React.FC<CourseFormModalProps> = ({
             <div>
               <span className="block text-[10px] text-neutral-400">Pricing</span>
               <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                {pricingType === "FREE" ? "Free" : `$${price}`}
+                {pricingType === "FREE" ? "Free" : `₹${price}`}
               </span>
             </div>
           </div>

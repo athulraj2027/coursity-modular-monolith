@@ -4,7 +4,7 @@ import {
   ArrowLeft,
   Sparkles,
   Layers,
-  DollarSign,
+  IndianRupee,
   Tag,
   Check,
   Infinity as InfinityIcon,
@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmationModal } from "@/components/common/ConfirmationModal";
 import {
   useAdminPlan,
   useAdminFeatures,
@@ -64,7 +65,7 @@ export const AdminPlanFormPage: React.FC = () => {
   const [tagline, setTagline] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState<number | string>(0);
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState("INR");
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("MONTHLY");
   const [trialDays, setTrialDays] = useState<number | string>(0);
   const [sortOrder, setSortOrder] = useState<number | string>(0);
@@ -72,6 +73,8 @@ export const AdminPlanFormPage: React.FC = () => {
   const [isFeatured, setIsFeatured] = useState(false);
   const [featureStates, setFeatureStates] = useState<FormFeatureState[]>([]);
   const [autoSlug, setAutoSlug] = useState(!isEditing);
+  const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState<CreateOrUpdatePlanPayload | null>(null);
 
   useEffect(() => {
     if (initialPlan) {
@@ -79,14 +82,19 @@ export const AdminPlanFormPage: React.FC = () => {
       setSlug(initialPlan.slug || "");
       setTagline(initialPlan.tagline || "");
       setDescription(initialPlan.description || "");
-      setPrice(initialPlan.price ?? 0);
-      setCurrency(initialPlan.currency || "USD");
+      const initialPriceInRupees =
+        Number(initialPlan.price) >= 100 ? Number(initialPlan.price) / 100 : Number(initialPlan.price);
+      setPrice(initialPriceInRupees);
+      setCurrency(initialPlan.currency || "INR");
       setBillingCycle(initialPlan.billingCycle || "MONTHLY");
       setTrialDays(initialPlan.trialDays ?? 0);
       setSortOrder(initialPlan.sortOrder ?? 0);
       setIsActive(initialPlan.isActive ?? true);
       setIsFeatured(initialPlan.isFeatured ?? false);
       setAutoSlug(false);
+    } else {
+      setPrice(0);
+      setCurrency("INR");
     }
   }, [initialPlan]);
 
@@ -170,15 +178,37 @@ export const AdminPlanFormPage: React.FC = () => {
     );
   };
 
+  const executeSave = async (payload: CreateOrUpdatePlanPayload) => {
+    try {
+      if (isEditing && id) {
+        await updatePlanMutation.mutateAsync({
+          id,
+          payload,
+        });
+        setIsConfirmSaveOpen(false);
+        navigate(`/admin/plans/${id}`);
+      } else {
+        const created = await createPlanMutation.mutateAsync(payload);
+        navigate(`/admin/plans/${created.id}`);
+      }
+    } catch {
+      // Handled in mutation hook
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const numericPrice = Number(price) || 0;
+    // Stored in paise for Razorpay INR (e.g. 7499 rupees -> 749900 paise)
+    const priceInPaise = numericPrice > 0 ? Math.round(numericPrice * 100) : 0;
 
     const payload: CreateOrUpdatePlanPayload = {
       name: name.trim(),
       slug: slug.trim().toLowerCase(),
       tagline: tagline.trim() || null,
       description: description.trim() || null,
-      price: Number(price) || 0,
+      price: priceInPaise,
       currency,
       billingCycle,
       trialDays: Number(trialDays) || 0,
@@ -192,19 +222,11 @@ export const AdminPlanFormPage: React.FC = () => {
       })),
     };
 
-    try {
-      if (isEditing && id) {
-        await updatePlanMutation.mutateAsync({
-          id,
-          payload,
-        });
-        navigate(`/admin/plans/${id}`);
-      } else {
-        const created = await createPlanMutation.mutateAsync(payload);
-        navigate(`/admin/plans/${created.id}`);
-      }
-    } catch {
-      // Handled in mutation hook
+    if (isEditing) {
+      setPendingPayload(payload);
+      setIsConfirmSaveOpen(true);
+    } else {
+      await executeSave(payload);
     }
   };
 
@@ -220,8 +242,8 @@ export const AdminPlanFormPage: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-1 flex-col w-full text-left space-y-6 max-w-4xl mx-auto">
-      {/* Top Breadcrumb & Header */}
+    <div className="flex flex-1 flex-col w-full text-left space-y-6 max-w-5xl mx-auto pb-12">
+      {/* Top Header & Breadcrumb */}
       <div className="flex items-center justify-between gap-4">
         <Button
           variant="ghost"
@@ -230,7 +252,7 @@ export const AdminPlanFormPage: React.FC = () => {
           className="text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-white rounded-xl gap-1.5 cursor-pointer -ml-2"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>{isEditing ? "Back to Plan Overview" : "Back to Plans Catalog"}</span>
+          <span>{isEditing ? "Back to Plan Details" : "Back to Plans Catalog"}</span>
         </Button>
 
         <Badge className="bg-[#F42A18]/10 text-[#F42A18] border-[#F42A18]/20 font-semibold text-[11px] px-2.5 py-0.5 flex items-center gap-1">
@@ -250,7 +272,7 @@ export const AdminPlanFormPage: React.FC = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Section 1: General Details */}
+          {/* Section 1: General Identity */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-neutral-100 dark:border-neutral-800">
               <Tag className="w-4 h-4 text-[#F42A18]" />
@@ -347,7 +369,7 @@ export const AdminPlanFormPage: React.FC = () => {
           {/* Section 2: Pricing & Terms */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-neutral-100 dark:border-neutral-800">
-              <DollarSign className="w-4 h-4 text-[#F42A18]" />
+              <IndianRupee className="w-4 h-4 text-[#F42A18]" />
               <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-white">
                 2. Pricing, Billing Frequency & Free Trial
               </h3>
@@ -356,13 +378,13 @@ export const AdminPlanFormPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                  Price ($) <span className="text-red-500">*</span>
+                  Price (₹) <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="number"
                   min="0"
-                  step="0.01"
-                  placeholder="29.00"
+                  step="1"
+                  placeholder="3499"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   required
@@ -590,6 +612,43 @@ export const AdminPlanFormPage: React.FC = () => {
           </div>
         </form>
       </div>
+
+      {/* Confirmation Modal Before Saving Plan Changes */}
+      {isConfirmSaveOpen && pendingPayload && (
+        <ConfirmationModal
+          isOpen={isConfirmSaveOpen}
+          onClose={() => setIsConfirmSaveOpen(false)}
+          onConfirm={() => executeSave(pendingPayload)}
+          isLoading={isSaving}
+          variant="warning"
+          title={`Confirm Changes to ${name || initialPlan?.name}?`}
+          description={
+            <div className="space-y-2 text-xs">
+              <p>
+                Are you sure you want to save modifications to{" "}
+                <span className="font-bold text-neutral-900 dark:text-white">"{name || initialPlan?.name}"</span>?
+              </p>
+              <div className="p-3 rounded-xl bg-neutral-100 dark:bg-neutral-800/70 border border-neutral-200/60 dark:border-neutral-700/60 text-[11px] space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">Price:</span>
+                  <span className="font-bold text-neutral-900 dark:text-white">
+                    {Number(price) === 0 ? "Free" : `₹${Number(price).toLocaleString()} / ${billingCycle.toLowerCase()}`}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">Configured Quotas:</span>
+                  <span className="font-bold text-neutral-900 dark:text-white">{featureStates.length} features</span>
+                </div>
+              </div>
+              <p className="text-neutral-500 leading-relaxed">
+                Updated feature quotas and capabilities will immediately apply to all active subscribers.
+              </p>
+            </div>
+          }
+          confirmText="Save & Apply Changes"
+          cancelText="Cancel"
+        />
+      )}
     </div>
   );
 };

@@ -2,9 +2,9 @@ import React from "react"
 import { useNavigate } from "react-router-dom"
 import {
   CheckCircle2,
-  DollarSign,
   FileCode,
   GraduationCap,
+  IndianRupee,
   Plus,
   Radio,
   ScreenShare,
@@ -63,9 +63,9 @@ export const TeacherDashboardPage: React.FC = () => {
         {[
           {
             title: "Monthly Revenue",
-            value: "$8,540.00",
+            value: "₹85,400",
             change: "+18.4% vs last month",
-            icon: DollarSign,
+            icon: IndianRupee,
           },
           {
             title: "Active Students",
@@ -138,19 +138,19 @@ export const TeacherDashboardPage: React.FC = () => {
               {
                 name: "Advanced Distributed Systems in Go",
                 enrolled: 840,
-                revenue: "$4,200",
+                revenue: "₹42,000",
                 status: "Published",
               },
               {
                 name: "Autonomous AI Agents Architecture",
                 enrolled: 460,
-                revenue: "$2,850",
+                revenue: "₹28,500",
                 status: "Published",
               },
               {
                 name: "Rust WebAssembly Cloud Microservices",
                 enrolled: 120,
-                revenue: "$1,490",
+                revenue: "₹14,900",
                 status: "Drafting",
               },
             ].map((course, idx) => (

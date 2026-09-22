@@ -78,7 +78,7 @@ export class PrismaPlanRepository implements PlanRepository {
         tagline: data.tagline,
         description: data.description,
         price: data.price,
-        currency: data.currency || "USD",
+        currency: data.currency || "INR",
         billingCycle: (data.billingCycle as any) || "MONTHLY",
         trialDays: data.trialDays || 0,
         isActive: data.isActive !== undefined ? data.isActive : true,

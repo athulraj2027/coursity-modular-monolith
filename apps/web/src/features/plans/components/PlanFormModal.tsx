@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Sparkles,
   Layers,
-  DollarSign,
+  IndianRupee,
   Check,
   Infinity as InfinityIcon,
   Loader2,
@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ModalTemplate } from "@/components/common/ModalTemplate";
+import { ConfirmationModal } from "@/components/common/ConfirmationModal";
 import { useAdminFeatures, useAdminCreatePlan, useAdminUpdatePlan } from "../hooks/usePlans";
 import { type CreateOrUpdatePlanPayload } from "../api/plan.api";
 import type { Plan, BillingCycle, Feature } from "../types/plan.types";
@@ -66,7 +67,7 @@ export const PlanFormModal: React.FC<PlanFormModalProps> = ({
   const [tagline, setTagline] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState<number | string>(0);
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState("INR");
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("MONTHLY");
   const [trialDays, setTrialDays] = useState<number | string>(0);
   const [sortOrder, setSortOrder] = useState<number | string>(0);
@@ -74,21 +75,25 @@ export const PlanFormModal: React.FC<PlanFormModalProps> = ({
   const [isFeatured, setIsFeatured] = useState(false);
   const [featureStates, setFeatureStates] = useState<FormFeatureState[]>([]);
   const [autoSlug, setAutoSlug] = useState(!isEditing);
+  const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState<CreateOrUpdatePlanPayload | null>(null);
 
-  // Initialize form
+  // Sync initial plan data when editing
   useEffect(() => {
     if (initialPlan) {
-      setName(initialPlan.name || "");
-      setSlug(initialPlan.slug || "");
+      setName(initialPlan.name);
+      setSlug(initialPlan.slug);
       setTagline(initialPlan.tagline || "");
       setDescription(initialPlan.description || "");
-      setPrice(initialPlan.price ?? 0);
-      setCurrency(initialPlan.currency || "USD");
-      setBillingCycle(initialPlan.billingCycle || "MONTHLY");
-      setTrialDays(initialPlan.trialDays ?? 0);
-      setSortOrder(initialPlan.sortOrder ?? 0);
-      setIsActive(initialPlan.isActive ?? true);
-      setIsFeatured(initialPlan.isFeatured ?? false);
+      const initialPriceInRupees =
+        Number(initialPlan.price) >= 100 ? Number(initialPlan.price) / 100 : Number(initialPlan.price);
+      setPrice(initialPriceInRupees);
+      setCurrency(initialPlan.currency || "INR");
+      setBillingCycle(initialPlan.billingCycle);
+      setTrialDays(initialPlan.trialDays);
+      setSortOrder(initialPlan.sortOrder);
+      setIsActive(initialPlan.isActive);
+      setIsFeatured(initialPlan.isFeatured);
       setAutoSlug(false);
     } else {
       setName("");
@@ -96,7 +101,7 @@ export const PlanFormModal: React.FC<PlanFormModalProps> = ({
       setTagline("");
       setDescription("");
       setPrice(0);
-      setCurrency("USD");
+      setCurrency("INR");
       setBillingCycle("MONTHLY");
       setTrialDays(0);
       setSortOrder(0);
@@ -104,56 +109,78 @@ export const PlanFormModal: React.FC<PlanFormModalProps> = ({
       setIsFeatured(false);
       setAutoSlug(true);
     }
-  }, [initialPlan, isOpen]);
+  }, [initialPlan]);
 
-  // Initialize dynamic features
+  // Merge DB features or default feature list
   useEffect(() => {
-    const rawList: (Feature | typeof DEFAULT_FEATURES[0])[] =
-      dbFeatures && dbFeatures.length > 0 ? dbFeatures : DEFAULT_FEATURES;
+    const featurePool: Feature[] =
+      dbFeatures && dbFeatures.length > 0
+        ? dbFeatures
+        : (DEFAULT_FEATURES as unknown as Feature[]);
 
-    const states: FormFeatureState[] = rawList.map((f) => {
-      const existingPlanFeature = initialPlan?.features?.find(
-        (pf) => pf.featureId === f.id || pf.feature?.code === f.code
-      );
+    if (featurePool.length > 0) {
+      const merged: FormFeatureState[] = featurePool.map((f) => {
+        const existingPf = initialPlan?.features?.find((pf) => pf.featureId === f.id);
+        const isUnlimited = existingPf ? existingPf.isUnlimited : f.featureType === "BOOLEAN" ? false : false;
+        let value = "0";
 
-      const defaultValue = f.featureType === "BOOLEAN" ? "false" : "5";
-      const value = existingPlanFeature?.value ?? defaultValue;
-      const isUnlimited =
-        existingPlanFeature?.isUnlimited ||
-        value === "-1" ||
-        (f.featureType === "NUMERIC" && value === "-1");
+        if (f.featureType === "BOOLEAN") {
+          value = existingPf ? existingPf.value : "true";
+        } else if (existingPf) {
+          value = existingPf.value;
+        } else {
+          switch (f.code) {
+            case "MAX_COURSES":
+              value = "10";
+              break;
+            case "MAX_RECORDED_CLASSES":
+              value = "25";
+              break;
+            case "LIVE_VIEWER_MINUTES_MONTHLY":
+              value = "5000";
+              break;
+            case "MAX_LIVE_CLASSES_PER_WEEK":
+              value = "5";
+              break;
+            case "MAX_LIVE_CLASSES_PER_MONTH":
+              value = "20";
+              break;
+            case "MAX_STUDENTS_PER_SESSION":
+              value = "100";
+              break;
+            case "MAX_STORAGE_GB":
+              value = "50";
+              break;
+            default:
+              value = "1";
+          }
+        }
 
-      return {
-        featureId: f.id || f.code,
-        code: f.code,
-        name: f.name,
-        featureType: f.featureType as any,
-        category: f.category,
-        unit: f.unit,
-        value: isUnlimited ? "-1" : value,
-        isUnlimited,
-      };
-    });
+        return {
+          featureId: f.id,
+          code: f.code,
+          name: f.name,
+          featureType: f.featureType,
+          category: f.category,
+          unit: f.unit,
+          value,
+          isUnlimited,
+        };
+      });
 
-    setFeatureStates(states);
-  }, [dbFeatures, initialPlan, isOpen]);
+      setFeatureStates(merged);
+    }
+  }, [dbFeatures, initialPlan]);
 
   const handleNameChange = (val: string) => {
     setName(val);
-    if (autoSlug && !isEditing) {
-      const generatedSlug = val
+    if (autoSlug) {
+      const generated = val
         .toLowerCase()
-        .trim()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "");
-      setSlug(generatedSlug);
+      setSlug(generated);
     }
-  };
-
-  const handleFeatureValueChange = (code: string, val: string) => {
-    setFeatureStates((prev) =>
-      prev.map((f) => (f.code === code ? { ...f, value: val, isUnlimited: false } : f))
-    );
   };
 
   const handleToggleUnlimited = (code: string) => {
@@ -165,6 +192,21 @@ export const PlanFormModal: React.FC<PlanFormModalProps> = ({
             ...f,
             isUnlimited: nextUnlimited,
             value: nextUnlimited ? "-1" : f.value === "-1" ? "10" : f.value,
+          };
+        }
+        return f;
+      })
+    );
+  };
+
+  const handleFeatureValueChange = (code: string, val: string) => {
+    setFeatureStates((prev) =>
+      prev.map((f) => {
+        if (f.code === code) {
+          return {
+            ...f,
+            value: val,
+            isUnlimited: false,
           };
         }
         return f;
@@ -187,15 +229,38 @@ export const PlanFormModal: React.FC<PlanFormModalProps> = ({
     );
   };
 
+  const executeSave = async (payload: CreateOrUpdatePlanPayload) => {
+    try {
+      if (isEditing && initialPlan?.id) {
+        const updated = await updatePlanMutation.mutateAsync({
+          id: initialPlan.id,
+          payload,
+        });
+        onSuccess?.(updated);
+      } else {
+        const created = await createPlanMutation.mutateAsync(payload);
+        onSuccess?.(created);
+      }
+      setIsConfirmSaveOpen(false);
+      onClose();
+    } catch {
+      // Handled in mutation hook
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const numericPrice = Number(price) || 0;
+    // Price stored in paise for Razorpay INR (e.g. 7499 rupees -> 749900 paise)
+    const priceInPaise = numericPrice > 0 ? Math.round(numericPrice * 100) : 0;
 
     const payload: CreateOrUpdatePlanPayload = {
       name: name.trim(),
       slug: slug.trim().toLowerCase(),
       tagline: tagline.trim() || null,
       description: description.trim() || null,
-      price: Number(price) || 0,
+      price: priceInPaise,
       currency,
       billingCycle,
       trialDays: Number(trialDays) || 0,
@@ -209,20 +274,11 @@ export const PlanFormModal: React.FC<PlanFormModalProps> = ({
       })),
     };
 
-    try {
-      if (isEditing && initialPlan?.id) {
-        const updated = await updatePlanMutation.mutateAsync({
-          id: initialPlan.id,
-          payload,
-        });
-        onSuccess?.(updated);
-      } else {
-        const created = await createPlanMutation.mutateAsync(payload);
-        onSuccess?.(created);
-      }
-      onClose();
-    } catch {
-      // Handled in mutation hook
+    if (isEditing) {
+      setPendingPayload(payload);
+      setIsConfirmSaveOpen(true);
+    } else {
+      await executeSave(payload);
     }
   };
 
@@ -252,24 +308,30 @@ export const PlanFormModal: React.FC<PlanFormModalProps> = ({
             Cancel
           </Button>
           <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isSaving || !name.trim() || !slug.trim()}
-            className="text-xs rounded-xl bg-[#F42A18] hover:bg-[#d92212] text-white font-medium cursor-pointer shadow-md shadow-red-500/20 flex items-center gap-1.5"
+            type="submit"
+            form="plan-form"
+            disabled={isSaving}
+            className="text-xs rounded-xl bg-[#F42A18] hover:bg-[#d92212] text-white font-medium cursor-pointer shadow-md shadow-red-500/20"
           >
-            {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            <span>{isEditing ? "Save Plan Changes" : "Create Subscription Plan"}</span>
+            {isSaving ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                <span>Saving Plan...</span>
+              </>
+            ) : (
+              <span>{isEditing ? "Save Plan Changes" : "Create Plan"}</span>
+            )}
           </Button>
         </div>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-6 text-left py-2">
-        {/* Section 1: Basic Plan Information */}
+      <form id="plan-form" onSubmit={handleSubmit} className="space-y-6 text-left">
+        {/* Section 1: Basic Identity */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-neutral-100 dark:border-neutral-800">
             <Tag className="w-4 h-4 text-[#F42A18]" />
             <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-white">
-              1. General Details & Identity
+              1. Basic Identity & Display
             </h4>
           </div>
 
@@ -361,7 +423,7 @@ export const PlanFormModal: React.FC<PlanFormModalProps> = ({
         {/* Section 2: Pricing & Terms */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-neutral-100 dark:border-neutral-800">
-            <DollarSign className="w-4 h-4 text-[#F42A18]" />
+            <IndianRupee className="w-4 h-4 text-[#F42A18]" />
             <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-white">
               2. Pricing, Billing & Trial
             </h4>
@@ -370,13 +432,13 @@ export const PlanFormModal: React.FC<PlanFormModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Price ($) <span className="text-red-500">*</span>
+                Price (₹) <span className="text-red-500">*</span>
               </label>
               <Input
                 type="number"
                 min="0"
-                step="0.01"
-                placeholder="29.00"
+                step="1"
+                placeholder="3499"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 required
@@ -582,6 +644,43 @@ export const PlanFormModal: React.FC<PlanFormModalProps> = ({
           </div>
         </div>
       </form>
+
+      {/* Confirmation Modal Before Saving Changes */}
+      {isConfirmSaveOpen && pendingPayload && (
+        <ConfirmationModal
+          isOpen={isConfirmSaveOpen}
+          onClose={() => setIsConfirmSaveOpen(false)}
+          onConfirm={() => executeSave(pendingPayload)}
+          isLoading={isSaving}
+          variant="warning"
+          title={`Confirm Changes to ${name || initialPlan?.name}?`}
+          description={
+            <div className="space-y-2 text-xs">
+              <p>
+                Are you sure you want to update the plan settings and feature quota matrix for{" "}
+                <span className="font-bold text-neutral-900 dark:text-white">"{name || initialPlan?.name}"</span>?
+              </p>
+              <div className="p-3 rounded-xl bg-neutral-100 dark:bg-neutral-800/70 border border-neutral-200/60 dark:border-neutral-700/60 text-[11px] space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">Price:</span>
+                  <span className="font-bold text-neutral-900 dark:text-white">
+                    {Number(price) === 0 ? "Free" : `₹${Number(price).toLocaleString()} / ${billingCycle.toLowerCase()}`}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">Active Quotas Configured:</span>
+                  <span className="font-bold text-neutral-900 dark:text-white">{featureStates.length} features</span>
+                </div>
+              </div>
+              <p className="text-neutral-500 leading-relaxed">
+                These updated capabilities and limits will be applied immediately across active teacher accounts.
+              </p>
+            </div>
+          }
+          confirmText="Save & Apply Changes"
+          cancelText="Cancel"
+        />
+      )}
     </ModalTemplate>
   );
 };

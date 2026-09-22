@@ -1,10 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { planApi, type CreateOrUpdatePlanPayload } from "../api/plan.api";
 import { toast } from "@/lib/toast";
-import type { SubscribePlanInput } from "../types/plan.types";
+import type {
+  SubscribePlanInput,
+  CreateRazorpayOrderInput,
+  VerifyRazorpayPaymentInput,
+} from "../types/plan.types";
 
 export const PLANS_QUERY_KEY = ["plans"] as const;
 export const MY_SUBSCRIPTION_QUERY_KEY = ["my-subscription"] as const;
+export const INVOICES_QUERY_KEY = ["invoices"] as const;
 export const ADMIN_PLANS_QUERY_KEY = ["admin-plans"] as const;
 
 export function usePlans() {
@@ -15,11 +20,47 @@ export function usePlans() {
   });
 }
 
-export function useMySubscription() {
+export function useMySubscription(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: MY_SUBSCRIPTION_QUERY_KEY,
     queryFn: () => planApi.getMySubscription(),
+    staleTime: 1000 * 60 * 2, // 2 minutes cache
+    retry: false, // Never retry automatically on auth failure
+    enabled: options?.enabled ?? true,
+  });
+}
+
+export function useInvoices() {
+  return useQuery({
+    queryKey: INVOICES_QUERY_KEY,
+    queryFn: () => planApi.getInvoices(),
     staleTime: 0,
+  });
+}
+
+export function useCreateRazorpayOrder() {
+  return useMutation({
+    mutationFn: (payload: CreateRazorpayOrderInput) => planApi.createRazorpayOrder(payload),
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to initialize payment gateway order");
+    },
+  });
+}
+
+export function useVerifyRazorpayPayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: VerifyRazorpayPaymentInput) => planApi.verifyRazorpayPayment(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MY_SUBSCRIPTION_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: INVOICES_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      toast.success("Subscription activated & payment verified successfully!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Payment verification failed");
+    },
   });
 }
 
@@ -30,6 +71,7 @@ export function useSubscribePlan() {
     mutationFn: (payload: SubscribePlanInput) => planApi.subscribe(payload),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: MY_SUBSCRIPTION_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: INVOICES_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       toast.success(
         data.status === "TRIALING"
@@ -50,6 +92,7 @@ export function useCancelSubscription() {
     mutationFn: (immediate?: boolean) => planApi.cancelSubscription(immediate),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: MY_SUBSCRIPTION_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: INVOICES_QUERY_KEY });
       toast.info(
         data.cancelAtPeriodEnd
           ? "Subscription set to cancel at end of billing cycle."

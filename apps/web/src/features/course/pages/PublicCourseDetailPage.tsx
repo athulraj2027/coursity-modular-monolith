@@ -213,7 +213,7 @@ export const PublicCourseDetailPage: React.FC = () => {
                     : "bg-blue-600 text-white border-0 text-xs font-bold px-2.5 py-0.5"
                 }
               >
-                {course.pricingType === "FREE" ? "FREE COURSE" : `$${course.price}`}
+                {course.pricingType === "FREE" ? "FREE COURSE" : `₹${Number(course.price).toLocaleString()}`}
               </Badge>
             </div>
           </div>

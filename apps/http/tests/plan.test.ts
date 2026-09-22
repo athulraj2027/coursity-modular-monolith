@@ -43,7 +43,7 @@ class MockPlanRepository implements PlanRepository {
       slug: data.slug,
       description: data.description || null,
       price: data.price,
-      currency: data.currency || "USD",
+      currency: data.currency || "INR",
       billingCycle: data.billingCycle || "MONTHLY",
       trialDays: data.trialDays || 0,
       isActive: data.isActive ?? true,

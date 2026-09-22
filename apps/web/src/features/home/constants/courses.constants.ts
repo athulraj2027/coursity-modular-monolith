@@ -10,6 +10,8 @@ export interface Course {
   projectsCount: number
   rating: number
   studentsCount: string
+  price: number
+  pricingType: "FREE" | "PAID"
   tags: string[]
   highlight?: boolean
 }
@@ -36,6 +38,8 @@ export const FEATURED_COURSES: Course[] = [
     projectsCount: 4,
     rating: 4.95,
     studentsCount: "1.4k+",
+    price: 4999,
+    pricingType: "PAID",
     tags: ["React", "TypeScript", "Node.js", "PostgreSQL", "Redis", "Docker"],
     highlight: true,
   },
@@ -45,14 +49,16 @@ export const FEATURED_COURSES: Course[] = [
     slug: "applied-generative-ai-agents",
     category: "AI & ML",
     description:
-      "Design production-grade AI systems, multi-agent frameworks, semantic vector search pipelines, and custom tool-calling LLM workflows.",
+      "Design production-grade AI systems, multi-agent frameworks, semantic vector search pipelines, and custom tool-calling LLM workflows with Gemini & OpenAI.",
     level: "Advanced",
     duration: "10 Weeks",
     lessonsCount: 48,
     projectsCount: 3,
     rating: 4.98,
     studentsCount: "980+",
-    tags: ["Python", "PyTorch", "LangChain", "Vector DBs", "FastAPI", "OpenAI"],
+    price: 6499,
+    pricingType: "PAID",
+    tags: ["Python", "PyTorch", "Gemini", "Vector DBs", "FastAPI", "ElevenLabs"],
     highlight: true,
   },
   {
@@ -68,6 +74,8 @@ export const FEATURED_COURSES: Course[] = [
     projectsCount: 3,
     rating: 4.92,
     studentsCount: "750+",
+    price: 5499,
+    pricingType: "PAID",
     tags: ["Go", "gRPC", "Concurrency", "Raft", "Distributed Systems", "Linux"],
   },
   {
@@ -83,6 +91,9 @@ export const FEATURED_COURSES: Course[] = [
     projectsCount: 3,
     rating: 4.89,
     studentsCount: "620+",
+    price: 3999,
+    pricingType: "PAID",
     tags: ["Kubernetes", "Docker", "Terraform", "AWS", "CI/CD", "Prometheus"],
   },
 ]
+

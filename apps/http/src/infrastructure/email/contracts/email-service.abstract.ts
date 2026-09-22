@@ -54,6 +54,20 @@ export abstract class IEmailService {
     ): Promise<void>;
 
     /**
+     * Send notification email to an instructor when their plan subscription is purchased / activated
+     */
+    abstract sendSubscriptionPurchasedNotification(params: {
+        email: string;
+        teacherName: string;
+        planName: string;
+        amount: number;
+        currency: string;
+        billingCycle: string;
+        currentPeriodEnd: Date;
+        invoiceNumber: string;
+    }): Promise<void>;
+
+    /**
      * Send generic / custom formatted email
      */
     abstract sendCustomEmail(payload: EmailPayload): Promise<void>;

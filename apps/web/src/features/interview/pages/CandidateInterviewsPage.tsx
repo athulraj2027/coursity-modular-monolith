@@ -175,7 +175,7 @@ export const CandidateInterviewsPage: React.FC = () => {
               ) : (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#F42A18]/10 text-[#F42A18] border border-[#F42A18]/20 self-start sm:self-auto">
                   <AlertCircle className="w-4 h-4" />
-                  Score $\ge 70\%$ Required to Publish
+                  Score ≥ 70% Required to Publish
                 </span>
               )}
             </div>

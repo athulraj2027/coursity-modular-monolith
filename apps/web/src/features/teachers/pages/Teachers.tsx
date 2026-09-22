@@ -2,6 +2,7 @@ import React from "react"
 import { TeacherHero } from "../components/TeacherHero"
 import { TeacherStats } from "../components/TeacherStats"
 import { TeacherFeatures } from "../components/TeacherFeatures"
+import { TeacherPricingSection } from "../components/TeacherPricingSection"
 import { TeacherSteps } from "../components/TeacherSteps"
 
 export const TeachersPage: React.FC = () => {
@@ -10,6 +11,7 @@ export const TeachersPage: React.FC = () => {
       <TeacherHero />
       <TeacherStats />
       <TeacherFeatures />
+      <TeacherPricingSection />
       <TeacherSteps />
     </div>
   )

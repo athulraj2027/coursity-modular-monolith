@@ -18,8 +18,8 @@ export const TEACHER_CALLOUT: NavCalloutConfig = {
   title: "Teach on Coursity",
   badge: "85% Share",
   description:
-    "Join our teachers' community. Host live cohorts, launch AI assessments, and earn up to 85% revenue share.",
-  ctaText: "Join as Teacher",
+    "Join our instructor network. Host live classroom streams, publish modular curriculums, and earn up to 85% revenue share with automated GST payouts.",
+  ctaText: "Teach on Coursity",
   ctaHref: "/teachers",
   dismissText: "Got it",
   storageKey: "coursity_teacher_callout_dismissed",
@@ -29,9 +29,9 @@ export const STUDENT_CALLOUT: NavCalloutConfig = {
   title: "Learn on Coursity",
   badge: "Engineering",
   description:
-    "Master full-stack, AI, and systems engineering with project-based tracks and live mentorship.",
+    "Master full-stack, AI agents, and systems engineering with production video tracks, live streaming classrooms, and AI voice interview practice.",
   ctaText: "Explore Courses",
-  ctaHref: "/",
+  ctaHref: "/courses",
   dismissText: "Got it",
   storageKey: "coursity_student_callout_dismissed",
 }

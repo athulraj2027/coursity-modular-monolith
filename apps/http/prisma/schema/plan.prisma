@@ -48,7 +48,7 @@ model Plan {
   tagline       String?        // e.g. "Ideal for emerging teachers hosting live cohorts"
   description   String?
   price         Decimal        @db.Decimal(10, 2)
-  currency      String         @default("USD")
+  currency      String         @default("INR")
   billingCycle  BillingCycle   @default(MONTHLY)
   trialDays     Int            @default(0)
   isActive      Boolean        @default(true)
@@ -155,7 +155,7 @@ model SubscriptionInvoice {
   
   invoiceNumber  String              @unique
   amount         Decimal             @db.Decimal(10, 2)
-  currency       String              @default("USD")
+  currency       String              @default("INR")
   status         PaymentStatus       @default(PENDING)
   paymentMethod  String?
   receiptUrl     String?

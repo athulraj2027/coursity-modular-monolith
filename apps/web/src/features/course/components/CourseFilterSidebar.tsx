@@ -290,7 +290,7 @@ export const CourseFilterSidebar: React.FC<CourseFilterSidebarProps> = ({
         {filters.pricingType !== "FREE" && (
           <div className="pt-2 flex items-center gap-2">
             <div className="flex-1">
-              <label className="text-[10px] text-neutral-500 font-mono mb-1 block">Min ($)</label>
+              <label className="text-[10px] text-neutral-500 font-mono mb-1 block">Min (₹)</label>
               <Input
                 type="number"
                 min="0"
@@ -307,11 +307,11 @@ export const CourseFilterSidebar: React.FC<CourseFilterSidebarProps> = ({
             </div>
             <span className="text-neutral-400 text-xs mt-4">-</span>
             <div className="flex-1">
-              <label className="text-[10px] text-neutral-500 font-mono mb-1 block">Max ($)</label>
+              <label className="text-[10px] text-neutral-500 font-mono mb-1 block">Max (₹)</label>
               <Input
                 type="number"
                 min="0"
-                placeholder="500"
+                placeholder="5000"
                 value={filters.maxPrice ?? ""}
                 onChange={(e) =>
                   onFilterChange({

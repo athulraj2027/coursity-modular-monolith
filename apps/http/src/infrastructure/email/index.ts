@@ -53,6 +53,7 @@ export * from "./templates/password-changed.template";
 export * from "./templates/teacher-status.template";
 export * from "./templates/welcome.template";
 export * from "./templates/course-moderation.template";
+export * from "./templates/subscription-purchased.template";
 
 export { emailTransport, emailQueue, emailWorker };
 export default emailService;

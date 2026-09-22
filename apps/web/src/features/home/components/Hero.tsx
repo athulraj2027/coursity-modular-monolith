@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
 import { HERO_CONTENT, type HeroConfig } from "../constants/home.constants"
 import { NeuralFlowField } from "./NeuralFlowField"
+import { ArrowRight, Mic, Video, Sparkles } from "lucide-react"
 
 export interface HeroProps {
   content?: Partial<HeroConfig>
@@ -70,6 +72,46 @@ export const Hero: React.FC<HeroProps> = ({ content }) => {
         >
           {data.subheading}
         </p>
+
+        {/* Hero Actions & Quick CTAs */}
+        <div
+          className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5 px-4 transition-opacity"
+          style={{ opacity: subOpacity }}
+        >
+          <Link
+            to="/courses"
+            className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl bg-[#F42A18] text-white text-sm font-semibold hover:bg-[#d92211] transition-all shadow-lg shadow-[#F42A18]/25 cursor-pointer"
+          >
+            <span>Explore Engineering Tracks</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+
+          <Link
+            to="/teachers"
+            className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xs text-neutral-800 dark:text-neutral-200 text-sm font-semibold hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+          >
+            <span>Teach & Earn 85%</span>
+          </Link>
+        </div>
+
+        {/* Capability Badges */}
+        <div
+          className="mt-6 flex flex-wrap items-center justify-center gap-2 max-w-2xl px-4 transition-opacity"
+          style={{ opacity: subOpacity }}
+        >
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-neutral-100/90 dark:bg-neutral-800/80 text-neutral-700 dark:text-neutral-300 border border-neutral-200/60 dark:border-neutral-700/60">
+            <Mic className="w-3.5 h-3.5 text-[#F42A18]" />
+            Real-time AI Voice Interviews
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-neutral-100/90 dark:bg-neutral-800/80 text-neutral-700 dark:text-neutral-300 border border-neutral-200/60 dark:border-neutral-700/60">
+            <Video className="w-3.5 h-3.5 text-blue-500" />
+            Live HD Classrooms & Chat
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-neutral-100/90 dark:bg-neutral-800/80 text-neutral-700 dark:text-neutral-300 border border-neutral-200/60 dark:border-neutral-700/60">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            Production-Grade Curriculum
+          </span>
+        </div>
       </div>
     </section>
   )

@@ -6,5 +6,6 @@ export interface HeroConfig {
 
 export const HERO_CONTENT: HeroConfig = {
   brandName: "coursity",
-  subheading: "Learn, build, and master modern tech skills with interactive, project-based engineering courses.",
+  subheading:
+    "Master modern software engineering, AI systems, and cloud architectures. Learn through structured video curriculums, interactive live classroom streams, and real-time AI voice interview vetting.",
 }

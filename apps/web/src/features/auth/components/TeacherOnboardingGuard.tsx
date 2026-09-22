@@ -48,6 +48,16 @@ export const TeacherOnboardingGuard: React.FC<TeacherOnboardingGuardProps> = ({ 
   const isInterviewPassed = Boolean(teacherProfile?.isInterviewPassed)
   const pathname = location.pathname
 
+  // Allow plans and billing routes regardless of onboarding status
+  if (
+    pathname.startsWith("/teachers/plans") ||
+    pathname.startsWith("/teachers/billing") ||
+    pathname.startsWith("/teacher/plans") ||
+    pathname.startsWith("/teacher/billing")
+  ) {
+    return children ? <>{children}</> : <Outlet />
+  }
+
   // Stage 4: Completed Onboarding (VERIFIED & Interview Passed)
   if (approvalStatus === "VERIFIED" && isInterviewPassed) {
     // If completed teacher lands on an onboarding path, redirect to full dashboard

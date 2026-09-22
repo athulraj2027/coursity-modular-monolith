@@ -6,6 +6,10 @@ import { PrismaUsageRepository } from "./infrastructure/repositories/prisma-usag
 // Domain Services
 import { QuotaEnforcementService } from "./domain/services/quota-enforcement.service";
 
+// Infrastructure
+import { paymentGateway } from "@/infrastructure/payment";
+import { emailService } from "@/infrastructure/email";
+
 // Use Cases
 import { GetPlansUseCase } from "./application/use-cases/get-plans.usecase";
 import { GetTeacherSubscriptionUseCase } from "./application/use-cases/get-teacher-subscription.usecase";
@@ -14,6 +18,9 @@ import { CancelSubscriptionUseCase } from "./application/use-cases/cancel-subscr
 import { RecordUsageUseCase } from "./application/use-cases/record-usage.usecase";
 import { CheckQuotaUseCase } from "./application/use-cases/check-quota.usecase";
 import { AdminManagePlansUseCase } from "./application/use-cases/admin-manage-plans.usecase";
+import { CreateRazorpayOrderUseCase } from "./application/use-cases/create-razorpay-order.usecase";
+import { VerifyRazorpayPaymentUseCase } from "./application/use-cases/verify-razorpay-payment.usecase";
+import { GetInvoicesUseCase } from "./application/use-cases/get-invoices.usecase";
 
 // Controllers & Routes
 import { PlanController } from "./presentation/controllers/plan.controller";
@@ -49,6 +56,17 @@ const recordUsageUseCase = new RecordUsageUseCase(
 );
 const checkQuotaUseCase = new CheckQuotaUseCase(quotaEnforcementService);
 const adminManagePlansUseCase = new AdminManagePlansUseCase(planRepository);
+const createRazorpayOrderUseCase = new CreateRazorpayOrderUseCase(
+  planRepository,
+  paymentGateway
+);
+const verifyRazorpayPaymentUseCase = new VerifyRazorpayPaymentUseCase(
+  subscriptionRepository,
+  planRepository,
+  paymentGateway,
+  emailService
+);
+const getInvoicesUseCase = new GetInvoicesUseCase();
 
 // 4. Instantiate Controller & Router
 const planController = new PlanController(
@@ -58,7 +76,10 @@ const planController = new PlanController(
   cancelSubscriptionUseCase,
   recordUsageUseCase,
   checkQuotaUseCase,
-  adminManagePlansUseCase
+  adminManagePlansUseCase,
+  createRazorpayOrderUseCase,
+  verifyRazorpayPaymentUseCase,
+  getInvoicesUseCase
 );
 
 const planRoutes = new PlanRoutes(planController);
@@ -78,6 +99,9 @@ export * from "./application/use-cases/cancel-subscription.usecase";
 export * from "./application/use-cases/record-usage.usecase";
 export * from "./application/use-cases/check-quota.usecase";
 export * from "./application/use-cases/admin-manage-plans.usecase";
+export * from "./application/use-cases/create-razorpay-order.usecase";
+export * from "./application/use-cases/verify-razorpay-payment.usecase";
+export * from "./application/use-cases/get-invoices.usecase";
 export * from "./presentation/controllers/plan.controller";
 export * from "./presentation/validators/plan.validator";
 export * from "./presentation/routes/plan.routes";
