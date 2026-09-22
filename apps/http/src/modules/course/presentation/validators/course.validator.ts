@@ -66,7 +66,7 @@ export const createCourseSchema = z.object({
   language: z.string().default("English"),
   pricingType: coursePricingTypeSchema.default("FREE"),
   price: z.number().min(0).default(0),
-  currency: z.string().default("USD"),
+  currency: z.string().default("INR"),
   learningOutcomes: z.array(z.string()).default([]),
   requirements: z.array(z.string()).default([]),
   targetAudience: z.array(z.string()).default([]),

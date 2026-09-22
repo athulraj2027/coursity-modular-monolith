@@ -2,7 +2,7 @@ import React, { useState } from "react"
 import {
   Activity,
   Check,
-  DollarSign,
+  IndianRupee,
   Server,
   ShieldAlert,
   ShieldCheck,
@@ -85,9 +85,9 @@ export const AdminDashboardPage: React.FC = () => {
         {[
           {
             title: "Platform Monthly GMV",
-            value: "$428,500",
+            value: "₹4,28,500",
             change: "+24.5% MoM Growth",
-            icon: DollarSign,
+            icon: IndianRupee,
           },
           {
             title: "Total Active Users",

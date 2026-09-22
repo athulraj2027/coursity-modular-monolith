@@ -171,7 +171,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, viewMode = "grid
                   </span>
                 ) : (
                   <span className="text-base font-extrabold text-neutral-900 dark:text-white font-mono">
-                    ${course.price}
+                    ₹{Number(course.price).toLocaleString()}
                   </span>
                 )}
               </div>
@@ -233,7 +233,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, viewMode = "grid
             </span>
           ) : (
             <span className="px-2.5 py-0.5 rounded-lg bg-neutral-900/90 backdrop-blur-md text-white text-xs font-bold font-mono shadow-sm border border-white/10">
-              ${course.price}
+              ₹{Number(course.price).toLocaleString()}
             </span>
           )}
         </div>

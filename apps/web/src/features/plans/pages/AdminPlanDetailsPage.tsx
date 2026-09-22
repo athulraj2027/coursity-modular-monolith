@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ConfirmationModal } from "@/components/common/ConfirmationModal";
+import { ConfirmationModal, type ConfirmationModalVariant } from "@/components/common/ConfirmationModal";
 import { PlanFormModal } from "../components/PlanFormModal";
 import {
   useAdminPlan,
@@ -47,6 +47,15 @@ const getCategoryIcon = (category?: FeatureCategory | string) => {
   }
 };
 
+interface FeatureActionModalState {
+  isOpen: boolean;
+  title: string;
+  description: React.ReactNode;
+  confirmText: string;
+  variant: ConfirmationModalVariant;
+  action: () => Promise<void>;
+}
+
 export const AdminPlanDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -59,6 +68,7 @@ export const AdminPlanDetailsPage: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editingFeatureCode, setEditingFeatureCode] = useState<string | null>(null);
   const [tempFeatureValue, setTempFeatureValue] = useState<string>("");
+  const [featureActionModal, setFeatureActionModal] = useState<FeatureActionModalState | null>(null);
 
   if (isLoading) {
     return (
@@ -87,26 +97,44 @@ export const AdminPlanDetailsPage: React.FC = () => {
     );
   }
 
-  const handleToggleActive = async () => {
-    try {
-      await updatePlanMutation.mutateAsync({
-        id: plan.id,
-        payload: { isActive: !plan.isActive },
-      });
-    } catch {
-      // Handled in hook
-    }
+  const handleToggleActive = () => {
+    const nextState = !plan.isActive;
+    setFeatureActionModal({
+      isOpen: true,
+      title: nextState ? `Activate ${plan.name}?` : `Deactivate ${plan.name}?`,
+      description: nextState
+        ? `Activating this plan will make it live and discoverable in the teacher pricing catalog for subscription checkouts.`
+        : `Deactivating this plan will hide it from the public teacher pricing catalog and prevent new subscriptions. Existing subscribers will retain access until the end of their current period.`,
+      confirmText: nextState ? "Activate Plan" : "Deactivate Plan",
+      variant: nextState ? "info" : "warning",
+      action: async () => {
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          payload: { isActive: nextState },
+        });
+        setFeatureActionModal(null);
+      },
+    });
   };
 
-  const handleToggleFeatured = async () => {
-    try {
-      await updatePlanMutation.mutateAsync({
-        id: plan.id,
-        payload: { isFeatured: !plan.isFeatured },
-      });
-    } catch {
-      // Handled in hook
-    }
+  const handleToggleFeatured = () => {
+    const nextFeatured = !plan.isFeatured;
+    setFeatureActionModal({
+      isOpen: true,
+      title: nextFeatured ? `Highlight ${plan.name} as Featured?` : `Remove Featured Badge from ${plan.name}?`,
+      description: nextFeatured
+        ? `Setting this plan as featured will display a prominent 'Featured / Most Popular' badge on public and teacher pricing matrices.`
+        : `Removing the featured badge will revert this plan to standard card styling.`,
+      confirmText: nextFeatured ? "Make Featured" : "Remove Badge",
+      variant: "info",
+      action: async () => {
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          payload: { isFeatured: nextFeatured },
+        });
+        setFeatureActionModal(null);
+      },
+    });
   };
 
   const handleConfirmDelete = async () => {
@@ -118,84 +146,158 @@ export const AdminPlanDetailsPage: React.FC = () => {
     }
   };
 
-  // Inline feature updates
-  const handleToggleFeatureBoolean = async (pf: PlanFeature) => {
+  // Inline feature updates with confirmation modals
+  const handleToggleFeatureBoolean = (pf: PlanFeature) => {
     if (!plan.features) return;
     const isCurrentlyTrue = pf.value === "true" || pf.value === "1";
     const nextValue = isCurrentlyTrue ? "false" : "true";
 
-    const updatedFeatures = plan.features.map((item) =>
-      item.id === pf.id ? { ...item, value: nextValue } : item
-    );
-
-    try {
-      await updatePlanMutation.mutateAsync({
-        id: plan.id,
-        payload: {
-          features: updatedFeatures.map((f) => ({
-            featureId: f.featureId,
-            value: f.value,
-            isUnlimited: f.isUnlimited,
-          })) as any,
-        },
-      });
-    } catch {
-      // Handled in hook
-    }
+    setFeatureActionModal({
+      isOpen: true,
+      title: isCurrentlyTrue
+        ? `Disable "${pf.feature?.name}"?`
+        : `Enable "${pf.feature?.name}"?`,
+      description: (
+        <div className="space-y-2 text-xs">
+          <p>
+            Are you sure you want to{" "}
+            <span className="font-bold text-neutral-900 dark:text-white">
+              {isCurrentlyTrue ? "disable" : "enable"}
+            </span>{" "}
+            the capability <span className="font-semibold text-[#F42A18]">"{pf.feature?.name}"</span> for the{" "}
+            <span className="font-bold">{plan.name}</span> plan tier?
+          </p>
+          <p className="text-neutral-500 leading-relaxed">
+            {isCurrentlyTrue
+              ? "Instructors subscribed to this tier will immediately lose access to this feature across their studio and live classrooms."
+              : "Instructors subscribed to this tier will immediately gain access to this feature across their studio and live classrooms."}
+          </p>
+        </div>
+      ),
+      confirmText: isCurrentlyTrue ? "Disable Feature" : "Enable Feature",
+      variant: isCurrentlyTrue ? "warning" : "info",
+      action: async () => {
+        const updatedFeatures = plan.features!.map((item) =>
+          item.id === pf.id ? { ...item, value: nextValue } : item
+        );
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          payload: {
+            features: updatedFeatures.map((f) => ({
+              featureId: f.featureId,
+              value: f.value,
+              isUnlimited: f.isUnlimited,
+            })) as any,
+          },
+        });
+        setFeatureActionModal(null);
+      },
+    });
   };
 
-  const handleToggleFeatureUnlimited = async (pf: PlanFeature) => {
+  const handleToggleFeatureUnlimited = (pf: PlanFeature) => {
     if (!plan.features) return;
     const nextUnlimited = !pf.isUnlimited;
 
-    const updatedFeatures = plan.features.map((item) =>
-      item.id === pf.id
-        ? {
-            ...item,
-            isUnlimited: nextUnlimited,
-            value: nextUnlimited ? "-1" : item.value === "-1" ? "10" : item.value,
-          }
-        : item
-    );
-
-    try {
-      await updatePlanMutation.mutateAsync({
-        id: plan.id,
-        payload: {
-          features: updatedFeatures.map((f) => ({
-            featureId: f.featureId,
-            value: f.value,
-            isUnlimited: f.isUnlimited,
-          })) as any,
-        },
-      });
-    } catch {
-      // Handled in hook
-    }
+    setFeatureActionModal({
+      isOpen: true,
+      title: nextUnlimited
+        ? `Make "${pf.feature?.name}" Unlimited?`
+        : `Set Quota Limit for "${pf.feature?.name}"?`,
+      description: (
+        <div className="space-y-2 text-xs">
+          <p>
+            Are you sure you want to change{" "}
+            <span className="font-semibold text-[#F42A18]">"{pf.feature?.name}"</span> to{" "}
+            <span className="font-bold text-neutral-900 dark:text-white">
+              {nextUnlimited ? "Unlimited" : "a limited quota"}
+            </span>{" "}
+            for the <span className="font-bold">{plan.name}</span> tier?
+          </p>
+          <p className="text-neutral-500 leading-relaxed">
+            {nextUnlimited
+              ? "Instructors under this plan will be granted unrestricted usage without monthly meter limits."
+              : "Instructors under this plan will be constrained by the allocated numerical quota."}
+          </p>
+        </div>
+      ),
+      confirmText: nextUnlimited ? "Make Unlimited" : "Set Limit",
+      variant: nextUnlimited ? "info" : "warning",
+      action: async () => {
+        const updatedFeatures = plan.features!.map((item) =>
+          item.id === pf.id
+            ? {
+                ...item,
+                isUnlimited: nextUnlimited,
+                value: nextUnlimited ? "-1" : item.value === "-1" ? "10" : item.value,
+              }
+            : item
+        );
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          payload: {
+            features: updatedFeatures.map((f) => ({
+              featureId: f.featureId,
+              value: f.value,
+              isUnlimited: f.isUnlimited,
+            })) as any,
+          },
+        });
+        setFeatureActionModal(null);
+      },
+    });
   };
 
-  const handleSaveFeatureValue = async (pf: PlanFeature) => {
+  const handleSaveFeatureValue = (pf: PlanFeature) => {
     if (!plan.features) return;
-
-    const updatedFeatures = plan.features.map((item) =>
-      item.id === pf.id ? { ...item, value: tempFeatureValue, isUnlimited: false } : item
-    );
-
-    try {
-      await updatePlanMutation.mutateAsync({
-        id: plan.id,
-        payload: {
-          features: updatedFeatures.map((f) => ({
-            featureId: f.featureId,
-            value: f.value,
-            isUnlimited: f.isUnlimited,
-          })) as any,
-        },
-      });
-      setEditingFeatureCode(null);
-    } catch {
-      // Handled in hook
+    if (!tempFeatureValue.trim() || isNaN(Number(tempFeatureValue)) || Number(tempFeatureValue) < 0) {
+      return;
     }
+
+    setFeatureActionModal({
+      isOpen: true,
+      title: `Update "${pf.feature?.name}" Quota Limit?`,
+      description: (
+        <div className="space-y-2.5 text-xs">
+          <p>
+            Are you sure you want to update the allocated limit for{" "}
+            <span className="font-semibold text-[#F42A18]">"{pf.feature?.name}"</span> in the{" "}
+            <span className="font-bold">{plan.name}</span> plan tier?
+          </p>
+          <div className="p-3 rounded-xl bg-neutral-100 dark:bg-neutral-800/70 border border-neutral-200/60 dark:border-neutral-700/60 font-mono text-center flex items-center justify-center gap-3">
+            <span className="text-neutral-500 line-through text-xs">
+              {pf.value} {pf.feature?.unit || ""}
+            </span>
+            <span className="text-neutral-400">→</span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+              {tempFeatureValue} {pf.feature?.unit || ""}
+            </span>
+          </div>
+          <p className="text-neutral-500 leading-relaxed">
+            This revised limit will take effect immediately for all active instructor accounts on this tier.
+          </p>
+        </div>
+      ),
+      confirmText: "Save Limit",
+      variant: "warning",
+      action: async () => {
+        const updatedFeatures = plan.features!.map((item) =>
+          item.id === pf.id ? { ...item, value: tempFeatureValue, isUnlimited: false } : item
+        );
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          payload: {
+            features: updatedFeatures.map((f) => ({
+              featureId: f.featureId,
+              value: f.value,
+              isUnlimited: f.isUnlimited,
+            })) as any,
+          },
+        });
+        setEditingFeatureCode(null);
+        setFeatureActionModal(null);
+      },
+    });
   };
 
   const isUpdating = updatePlanMutation.isPending;
@@ -313,10 +415,12 @@ export const AdminPlanDetailsPage: React.FC = () => {
             </span>
             <div className="flex items-baseline gap-1">
               <span className="text-2xl font-black text-neutral-900 dark:text-white">
-                ${Number(plan.price).toFixed(2)}
+                {Number(plan.price) === 0
+                  ? "Free"
+                  : `₹${(Number(plan.price) >= 100 ? Number(plan.price) / 100 : Number(plan.price)).toLocaleString()}`}
               </span>
               <span className="text-[10px] text-neutral-400 font-bold uppercase">
-                {plan.currency} / {plan.billingCycle.toLowerCase()}
+                {plan.currency || "INR"} / {plan.billingCycle.toLowerCase()}
               </span>
             </div>
           </div>
@@ -543,6 +647,21 @@ export const AdminPlanDetailsPage: React.FC = () => {
           onClose={() => setIsEditModalOpen(false)}
           initialPlan={plan}
           onSuccess={() => refetch()}
+        />
+      )}
+
+      {/* Feature Action Confirmation Modal */}
+      {featureActionModal && (
+        <ConfirmationModal
+          isOpen={featureActionModal.isOpen}
+          onClose={() => setFeatureActionModal(null)}
+          onConfirm={featureActionModal.action}
+          isLoading={updatePlanMutation.isPending}
+          variant={featureActionModal.variant}
+          title={featureActionModal.title}
+          description={featureActionModal.description}
+          confirmText={featureActionModal.confirmText}
+          cancelText="Cancel"
         />
       )}
 

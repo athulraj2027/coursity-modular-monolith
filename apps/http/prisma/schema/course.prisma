@@ -57,7 +57,7 @@ model Course {
   language           String             @default("English")
   pricingType        CoursePricingType  @default(FREE)
   price              Decimal            @default(0.00) @db.Decimal(10, 2)
-  currency           String             @default("USD")
+  currency           String             @default("INR")
   
   // Structured Outcomes & Prerequisites
   learningOutcomes   String[]           @default([]) // "What you'll learn" bullet points

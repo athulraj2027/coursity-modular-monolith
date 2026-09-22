@@ -620,7 +620,7 @@ export const AdminUserDetailPage: React.FC = () => {
                             : "bg-blue-600/90 text-white border-0 text-[10px] font-bold"
                         }
                       >
-                        {course.pricingType === "FREE" ? "FREE" : `$${course.price}`}
+                        {course.pricingType === "FREE" ? "FREE" : `₹${Number(course.price).toLocaleString()}`}
                       </Badge>
                     </div>
                   </div>

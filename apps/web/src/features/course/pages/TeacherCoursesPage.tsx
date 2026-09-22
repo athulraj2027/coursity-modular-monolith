@@ -9,7 +9,7 @@ import {
   Trash2,
   CheckCircle2,
   BookOpen,
-  DollarSign,
+  IndianRupee,
   Eye,
   Snowflake,
 } from "lucide-react";
@@ -80,7 +80,7 @@ export const TeacherCoursesPage: React.FC = () => {
       {
         label: "Paid Cohorts",
         val: metrics?.paidCourses ?? allCourses.filter((c) => c.pricingType === "PAID").length,
-        icon: DollarSign,
+        icon: IndianRupee,
         color: "text-amber-600 bg-amber-500/10 border-amber-500/20",
       },
     ];
@@ -243,7 +243,7 @@ export const TeacherCoursesPage: React.FC = () => {
                 : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs font-semibold"
             }
           >
-            {course.pricingType === "FREE" ? "Free" : `$${Number(course.price).toFixed(2)}`}
+            {course.pricingType === "FREE" ? "Free" : `₹${Number(course.price).toLocaleString()}`}
           </Badge>
           <p className="text-[10px] text-neutral-400">{course.level}</p>
         </div>

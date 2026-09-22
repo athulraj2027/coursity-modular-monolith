@@ -79,7 +79,7 @@ export const AdminCourseReasonModal: React.FC<AdminCourseReasonModalProps> = ({
               {course.title}
             </span>
             <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-neutral-200/80 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">
-              {course.pricingType === "FREE" ? "Free" : `$${course.price}`}
+              {course.pricingType === "FREE" ? "Free" : `₹${Number(course.price).toLocaleString()}`}
             </span>
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-neutral-500">

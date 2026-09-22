@@ -10,7 +10,7 @@ import {
   Edit,
   Layers,
   PlayCircle,
-  DollarSign,
+  IndianRupee,
   ChevronRight,
   ChevronDown,
   FileText,
@@ -250,7 +250,7 @@ export const TeacherCourseDetailPage: React.FC = () => {
                     : "bg-blue-600 text-white border-0 text-xs font-bold px-2.5 py-0.5"
                 }
               >
-                {course.pricingType === "FREE" ? "FREE COURSE" : `$${course.price}`}
+                {course.pricingType === "FREE" ? "FREE COURSE" : `₹${Number(course.price).toLocaleString()}`}
               </Badge>
             </div>
           </div>
@@ -348,11 +348,11 @@ export const TeacherCourseDetailPage: React.FC = () => {
 
         <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-1">
           <span className="text-xs text-neutral-500 font-medium flex items-center gap-1.5">
-            <DollarSign className="w-3.5 h-3.5 text-purple-500" />
+            <IndianRupee className="w-3.5 h-3.5 text-purple-500" />
             Pricing
           </span>
           <p className="text-2xl font-bold text-neutral-900 dark:text-white">
-            {course.pricingType === "FREE" ? "Free" : `$${course.price}`}
+            {course.pricingType === "FREE" ? "Free" : `₹${Number(course.price).toLocaleString()}`}
           </p>
         </div>
       </div>
@@ -643,7 +643,7 @@ export const TeacherCourseDetailPage: React.FC = () => {
             <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-100 dark:border-neutral-800 space-y-1">
               <span className="text-neutral-400 block">Pricing Format</span>
               <span className="font-bold text-neutral-900 dark:text-white text-sm">
-                {course.pricingType === "FREE" ? "Free of charge" : `$${course.price}`}
+                {course.pricingType === "FREE" ? "Free of charge" : `₹${Number(course.price).toLocaleString()}`}
               </span>
             </div>
 

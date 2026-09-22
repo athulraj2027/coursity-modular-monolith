@@ -184,7 +184,7 @@ export class PrismaCourseRepository implements ICourseRepository {
         language: data.language || "English",
         pricingType: data.pricingType || "FREE",
         price: data.pricingType === "FREE" ? 0 : data.price || 0,
-        currency: data.currency || "USD",
+        currency: data.currency || "INR",
         learningOutcomes: data.learningOutcomes || [],
         requirements: data.requirements || [],
         targetAudience: data.targetAudience || [],

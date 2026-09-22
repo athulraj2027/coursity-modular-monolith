@@ -19,7 +19,7 @@ export const createPlanSchema = z.object({
   tagline: z.string().max(255).optional().nullable(),
   description: z.string().max(1000).optional().nullable(),
   price: z.coerce.number().min(0, "Price cannot be negative"),
-  currency: z.string().min(3).max(3).default("USD"),
+  currency: z.string().min(3).max(3).default("INR"),
   billingCycle: billingCycleEnum.default("MONTHLY"),
   trialDays: z.coerce.number().int().min(0).default(0),
   isActive: z.boolean().default(true),

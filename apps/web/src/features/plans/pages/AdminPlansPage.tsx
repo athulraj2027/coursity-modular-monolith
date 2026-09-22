@@ -273,25 +273,30 @@ export const AdminPlansPage: React.FC = () => {
     },
     {
       header: "Price & Terms",
-      cell: (plan) => (
-        <div className="space-y-1 text-left">
-          <div className="flex items-baseline gap-1">
-            <span className="text-base font-extrabold text-neutral-900 dark:text-white">
-              ${Number(plan.price).toFixed(2)}
-            </span>
-            <span className="text-[10px] uppercase font-bold text-neutral-400">
-              / {plan.billingCycle.toLowerCase()}
-            </span>
+      cell: (plan) => {
+        const isFree = Number(plan.price) === 0;
+        const rawPriceInRupees = Number(plan.price) >= 100 ? Number(plan.price) / 100 : Number(plan.price);
+
+        return (
+          <div className="space-y-1 text-left">
+            <div className="flex items-baseline gap-1">
+              <span className="text-base font-extrabold text-neutral-900 dark:text-white">
+                {isFree ? "Free" : `₹${rawPriceInRupees.toLocaleString()}`}
+              </span>
+              <span className="text-[10px] uppercase font-bold text-neutral-400">
+                / {plan.billingCycle.toLowerCase()}
+              </span>
+            </div>
+            {plan.trialDays > 0 ? (
+              <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[10px] px-1.5 py-0">
+                {plan.trialDays} Days Trial
+              </Badge>
+            ) : (
+              <span className="text-[11px] text-neutral-400">No Free Trial</span>
+            )}
           </div>
-          {plan.trialDays > 0 ? (
-            <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[10px] px-1.5 py-0">
-              {plan.trialDays} Days Trial
-            </Badge>
-          ) : (
-            <span className="text-[11px] text-neutral-400">No Free Trial</span>
-          )}
-        </div>
-      ),
+        );
+      },
     },
     {
       header: "Configured Limits & Quotas",

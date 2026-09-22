@@ -178,7 +178,7 @@ export const LessonPreviewModal: React.FC<LessonPreviewModalProps> = ({
           <div className="flex items-center gap-3">
             <div className="text-right font-mono">
               <span className="text-sm sm:text-base font-extrabold text-neutral-900 dark:text-white">
-                {course.pricingType === "FREE" ? "FREE" : `$${course.price}`}
+                {course.pricingType === "FREE" ? "FREE" : `₹${Number(course.price).toLocaleString()}`}
               </span>
             </div>
 
