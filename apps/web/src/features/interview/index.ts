@@ -25,7 +25,6 @@ export * from "./pages/InterviewLandingPage";
 export * from "./pages/InterviewSetupPage";
 export * from "./pages/InterviewRoomPage";
 export * from "./pages/InterviewCompletedPage";
-export * from "./pages/CandidateInterviewsPage";
 export * from "./pages/AdminInterviewsPage";
 export * from "./pages/AdminInterviewDetailPage";
 

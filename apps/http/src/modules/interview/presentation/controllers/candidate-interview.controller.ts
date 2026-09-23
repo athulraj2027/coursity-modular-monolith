@@ -80,9 +80,11 @@ export class CandidateInterviewController {
     try {
       const validated = CreateInterviewSessionSchema.parse(req.body);
       const userId = this.getUserId(req);
+      const userRole = this.getUserRole(req);
 
       const session = await this.useCases.createSession({
         userId,
+        userRole,
         templateId: validated.templateId,
         type: validated.type,
         domain: validated.domain,

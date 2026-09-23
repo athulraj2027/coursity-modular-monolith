@@ -50,7 +50,6 @@ import {
   InterviewSetupPage,
   InterviewRoomPage,
   InterviewCompletedPage,
-  CandidateInterviewsPage,
   AdminInterviewsPage,
   AdminInterviewDetailPage,
 } from "@/features/interview"
@@ -117,9 +116,6 @@ export function AppRoutes() {
           <Route path="/students/password" element={<DashboardLayout role="student" />}>
             <Route index element={<ChangePasswordPage role="student" />} />
           </Route>
-          <Route path="/students/interviews" element={<DashboardLayout role="student" />}>
-            <Route index element={<CandidateInterviewsPage />} />
-          </Route>
           {/* Aliases for student dashboard & profile */}
           <Route path="/student/dashboard" element={<Navigate to="/students/dashboard" replace />} />
           <Route path="/dashboard" element={<Navigate to="/students/dashboard" replace />} />
@@ -128,7 +124,8 @@ export function AppRoutes() {
           <Route path="/students/profile/password" element={<Navigate to="/students/password" replace />} />
           <Route path="/student/password" element={<Navigate to="/students/password" replace />} />
           <Route path="/password" element={<Navigate to="/students/password" replace />} />
-          <Route path="/students/my-interviews" element={<Navigate to="/students/interviews" replace />} />
+          <Route path="/students/interviews" element={<Navigate to="/students/dashboard" replace />} />
+          <Route path="/students/my-interviews" element={<Navigate to="/students/dashboard" replace />} />
         </Route>
       </Route>
 
@@ -286,7 +283,7 @@ function RoleBasedInterviewRedirect() {
   if (user?.role === "ADMIN" || user?.role === "admin") {
     return <Navigate to="/admin/interviews" replace />;
   }
-  return <Navigate to="/students/interviews" replace />;
+  return <Navigate to="/students/dashboard" replace />;
 }
 
 export default AppRoutes

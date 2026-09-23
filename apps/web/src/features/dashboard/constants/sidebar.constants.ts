@@ -38,12 +38,6 @@ export const STUDENT_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         url: "/students/dashboard",
         icon: LayoutDashboard,
       },
-      {
-        title: "AI Interviews",
-        url: "/students/interviews",
-        icon: Bot,
-        badge: "AI",
-      },
     ],
   },
   {

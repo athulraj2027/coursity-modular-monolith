@@ -66,7 +66,7 @@ export const InterviewCompletedPage: React.FC = () => {
     } else if (isAdmin) {
       navigate("/admin/interviews");
     } else {
-      navigate("/students/interviews");
+      navigate("/students/dashboard");
     }
   };
 
@@ -95,9 +95,9 @@ export const InterviewCompletedPage: React.FC = () => {
         </p>
         <Button
           onClick={handleBack}
-          className="bg-[#F42A18] hover:bg-[#d92212] text-white text-xs font-semibold rounded-xl px-5 py-2.5"
+          className="bg-[#F42A18] hover:bg-[#d92212] text-white text-xs font-semibold rounded-xl px-5 py-2.5 cursor-pointer"
         >
-          Return to Interviews
+          Return to Dashboard
         </Button>
       </div>
     );

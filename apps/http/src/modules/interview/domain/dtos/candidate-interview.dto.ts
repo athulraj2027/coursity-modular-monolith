@@ -2,6 +2,7 @@ import { InterviewDifficulty, InterviewType } from "../entities/interview.entity
 
 export interface CreateInterviewSessionDto {
   userId: string;
+  userRole?: string;
   templateId?: string;
   type?: InterviewType;
   domain?: string;

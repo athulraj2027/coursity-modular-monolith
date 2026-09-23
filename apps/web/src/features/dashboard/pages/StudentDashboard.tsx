@@ -2,7 +2,6 @@ import React from "react"
 import {
   BookOpen,
   Bot,
-  Brain,
   CheckCircle2,
   Clock,
   Flame,
@@ -188,13 +187,12 @@ export const StudentDashboardPage: React.FC = () => {
               </div>
             </div>
 
-            <button
-              type="button"
-              className="w-full py-2.5 rounded-xl bg-[#F42A18] text-white text-xs font-semibold hover:bg-[#d92211] transition-colors shadow-md shadow-[#F42A18]/20 cursor-pointer flex items-center justify-center gap-2"
-            >
-              <Brain className="w-3.5 h-3.5" />
-              Launch AI Assessment
-            </button>
+            <div className="pt-1">
+              <div className="flex items-center justify-between text-[11px] text-neutral-400 dark:text-neutral-500 py-1">
+                <span>Course Assessments</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">Instructor Managed</span>
+              </div>
+            </div>
           </div>
 
           {/* Upcoming Live Session Card */}
