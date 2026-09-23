@@ -48,6 +48,12 @@ export class CandidateInterviewUseCases {
   async createSession(
     dto: CreateInterviewSessionDto
   ): Promise<InterviewSessionEntity> {
+    if (dto.userRole === "STUDENT" || dto.userRole === "student") {
+      throw new InterviewAccessDeniedError(
+        "Students cannot initiate arbitrary AI interviews. Course-specific AI assessments are only accessible when released by your course instructor."
+      );
+    }
+
     const existing = await this.sessionRepo.findByUserId({
       userId: dto.userId,
       page: 1,

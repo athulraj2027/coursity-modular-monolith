@@ -1,5 +1,5 @@
 {
-  "ai-interview/gemini/secret-1": "c57d4193aef7b6c96aaf5ae7:15da6a39eab84586f072983781c9fb5e:9b36c5fd3bdee0b79679547291b60375b8a211cabc83e6e4ddee48771e6f71",
+  "ai-interview/gemini/secret-1": "e949c524c4a81a67080cceb2:b56644655fedde647997d24ed4080f32:b20b2aa26b4a72af71b57368e1f3b8b7a78d77313b78d2ccdc8b7163ba7f0b",
   "ai-interview/deepgram/ce6e4caf-6241-4f44-89f4-eba8c1cd2baa": "5aaa0bd5f02ac8ca5f086afb:150130f12985465c737d66c66ce54256:ed895be0fda301f1a2dbcf803ac4a95a0b0eb22c98cdd01e",
   "ai-interview/gemini/cd299c79-eafd-44ce-87d8-5a80b9a3b4dc": "2d41b9b6451db7a655ef483f:e72b0a1e689ca42a2dd2c0faf4c08426:89506740480f72ae4a1d3cda3f7bb9",
   "ai-interview/gemini/e5fcc283-90c7-44a7-b976-9b9120c1e766": "e84ad1586294ccc8cd7d2cb2:a33c3e97cff28b5ebe3c53f6c481fdfe:8cac144d2f3a2744e4ea4937f69095",
@@ -100,5 +100,9 @@
   "ai-interview/deepgram/b83cdd82-8464-4cd2-bfb0-7f7538ed4cbd": "bd29ffa3b21e3fe86275e940:3d845d6108a4d0e6f7a2d1efb35e8d1f:e5bf96f509741c4144686b79d1967db72dbaced1cf2f526d",
   "ai-interview/gemini/751f2c4a-9238-4498-8992-1bd6dd9163a6": "36b65bb20b339d3092082b26:d660ccaf23d9b8fddd38ff47b0b93d26:166cd338ea1b6cd2c3e206a9042f0c",
   "ai-interview/gemini/38f45ee8-24d2-4bcb-9da4-15d70700acbc": "c8c33d02cd15e8d3bb6aadd9:08afe9dbcb0a8e4448fa59118814f82c:4df92f28333a8512259ed738465c13",
-  "ai-interview/gemini/15ccc442-8e25-4684-a2fa-c76d04f4ec97": "015a7d4249dc1ee98a4ca40a:1cde6bae75d08bbc20f1f13630975ab4:30ef09799fc036fe6adb4338ff496e86eb5670de"
+  "ai-interview/gemini/15ccc442-8e25-4684-a2fa-c76d04f4ec97": "015a7d4249dc1ee98a4ca40a:1cde6bae75d08bbc20f1f13630975ab4:30ef09799fc036fe6adb4338ff496e86eb5670de",
+  "ai-interview/deepgram/4976db3c-b036-40e1-884c-7926ba0bcfd5": "fa4c8da76ebbae33d2eac6da:eec6af2f4273e7ca3921d45b2b7c4df4:7a0b1ded04ad4fe07f9ef3598b44042943894dc78a35f02a",
+  "ai-interview/gemini/1144604b-cdef-476e-ba67-ba042fda76e6": "ecc1fcc48668a714f2a96edc:7375f97ebe9bca2a1efcea0d83d6b658:365d0add2ebe1baab34c3d052914ac",
+  "ai-interview/gemini/2bf1635e-00cc-483d-8c7b-814511b043f8": "2b483466df34367d060a95f6:8b4b0c8a8ca17f0427731cbe42fa495d:c5083f8963c82230361a49eff775cb",
+  "ai-interview/gemini/249aa4bb-2d71-431b-857a-b0e8066d8897": "e2a4ee49b7863bdd2c092970:a16dd3ec44feac4f66bba61cee02fd7b:9cc934b4ca66e08979bb936b4301e604ba64bb01"
 }

@@ -1,10 +1,10 @@
-# 🎓 Coursity - Next-Gen Collaborative Learning Platform
+# Coursity - Next-Gen Collaborative Learning Platform
 
 Welcome to **Coursity** — a modular, cloud-ready educational platform designed for modern online learning, live interactive cohorts, teacher verification vetting, and scalable subscription tiers.
 
 ---
 
-## 🏛️ System Architecture
+## System Architecture
 
 Coursity is structured as a **Modular Monolith** in a containerized monorepo. It cleanly separates the Single Page Application (SPA) frontend, the domain-driven REST API backend, persistent caching, database engines, and cloud storage:
 
