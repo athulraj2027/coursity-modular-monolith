@@ -4,6 +4,7 @@ import userRouter from '@/modules/user';
 import profileRouter from '@/modules/profile';
 import planRouter from '@/modules/plan';
 import subscriptionRouter from '@/modules/subscription';
+import offerRouter from '@/modules/offer';
 import categoryRouter from '@/modules/category';
 import courseRouter from '@/modules/course';
 import uploadRouter from '@/infrastructure/storage';
@@ -26,6 +27,8 @@ router.use("/auth", authRouter);
 router.use("/subscriptions", subscriptionRouter);
 router.use("/plans", subscriptionRouter);
 router.use("/plans", planRouter);
+router.use("/offers", offerRouter);
+router.use("/", offerRouter);
 
 // 4. Categories & Hierarchy routes (Public listing + protected admin management)
 router.use("/categories", categoryRouter);

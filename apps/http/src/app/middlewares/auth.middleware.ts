@@ -40,7 +40,28 @@ export const createAuthMiddleware = (tokenService: TokenService) => {
     };
 };
 
+export const createOptionalAuthMiddleware = (tokenService: TokenService) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+        try {
+            let token = req.cookies?.accessToken;
+            if (!token && req.headers.authorization?.startsWith("Bearer ")) {
+                token = req.headers.authorization.split(" ")[1];
+            }
+
+            if (token) {
+                const payload = tokenService.verifyAccessToken(token);
+                req.user = payload;
+            }
+            next();
+        } catch {
+            // Non-fatal for optional auth
+            next();
+        }
+    };
+};
+
 const defaultTokenService = new JwtTokenService();
 export const authMiddleware = createAuthMiddleware(defaultTokenService);
+export const optionalAuthMiddleware = createOptionalAuthMiddleware(defaultTokenService);
 export default authMiddleware;
 

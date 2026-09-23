@@ -1,7 +1,9 @@
 import React from "react";
 import type { Plan } from "../types/plan.types";
+import type { Offer } from "@/features/offers/types/offer.types";
 import { Button } from "@/components/ui/button";
-import { Check, Sparkles, ArrowRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Check, Sparkles, ArrowRight, Tag } from "lucide-react";
 
 interface PricingCardProps {
   plan: Plan;
@@ -10,6 +12,7 @@ interface PricingCardProps {
   isLoading?: boolean;
   billingCycle?: "MONTHLY" | "YEARLY";
   showActionButton?: boolean;
+  autoOffer?: Offer | null;
 }
 
 export const PricingCard: React.FC<PricingCardProps> = ({
@@ -19,6 +22,7 @@ export const PricingCard: React.FC<PricingCardProps> = ({
   isLoading = false,
   billingCycle = "MONTHLY",
   showActionButton = true,
+  autoOffer = null,
 }) => {
   const isFree = plan.price === 0;
   // Convert from paise to rupees: 349900 paise -> ₹3,499.00
@@ -26,6 +30,15 @@ export const PricingCard: React.FC<PricingCardProps> = ({
   // If yearly, calculate 10 months pricing (20% discount) or multiply appropriately
   const displayedMonthlyPrice = billingCycle === "YEARLY" ? Math.round(rawPriceInRupees * 0.8) : rawPriceInRupees;
   const currencySymbol = "₹";
+
+  let finalMonthlyPrice = displayedMonthlyPrice;
+  if (!isFree && autoOffer) {
+    if (autoOffer.discountType === "PERCENTAGE") {
+      finalMonthlyPrice = Math.round(displayedMonthlyPrice * (1 - autoOffer.discountValue / 100));
+    } else {
+      finalMonthlyPrice = Math.max(0, displayedMonthlyPrice - autoOffer.discountValue);
+    }
+  }
 
   return (
     <div
@@ -65,9 +78,23 @@ export const PricingCard: React.FC<PricingCardProps> = ({
 
         {/* Pricing */}
         <div className="space-y-1 pb-4 border-b border-neutral-100 dark:border-neutral-800">
+          {autoOffer && !isFree && (
+            <div className="pb-1">
+              <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-none font-bold text-[10px] px-2 py-0.5 inline-flex items-center gap-1">
+                <Tag className="w-2.5 h-2.5" />
+                {autoOffer.badgeText || (autoOffer.discountType === "PERCENTAGE" ? `${autoOffer.discountValue}% OFF` : `₹${autoOffer.discountValue} OFF`)}
+              </Badge>
+            </div>
+          )}
+
           <div className="flex items-baseline gap-1.5">
+            {autoOffer && !isFree && finalMonthlyPrice < displayedMonthlyPrice && (
+              <span className="text-xl font-medium text-neutral-400 line-through">
+                {currencySymbol}{displayedMonthlyPrice.toLocaleString()}
+              </span>
+            )}
             <span className="text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-white">
-              {isFree ? "Free" : `${currencySymbol}${displayedMonthlyPrice.toLocaleString()}`}
+              {isFree ? "Free" : `${currencySymbol}${finalMonthlyPrice.toLocaleString()}`}
             </span>
             {!isFree && (
               <span className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -77,7 +104,7 @@ export const PricingCard: React.FC<PricingCardProps> = ({
           </div>
           {!isFree && billingCycle === "YEARLY" && (
             <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-              Billed annually (₹{(displayedMonthlyPrice * 12).toLocaleString()} / yr) • Save 20%
+              Billed annually (₹{(finalMonthlyPrice * 12).toLocaleString()} / yr) • Save 20%
             </p>
           )}
         </div>

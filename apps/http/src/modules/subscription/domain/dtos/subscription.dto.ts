@@ -27,6 +27,7 @@ export interface CreateRazorpayOrderDto {
   userEmail: string;
   userName: string;
   billingCycle?: BillingCycle;
+  offerId?: string;
   phone?: string;
   state?: string;
   country?: string;
@@ -42,6 +43,12 @@ export interface RazorpayOrderResponseDto {
   planSlug: string;
   billingCycle: BillingCycle;
   isMock: boolean;
+  offerApplied?: {
+    offerId: string;
+    title?: string;
+    discountAmount: number;
+    savings: number;
+  };
 }
 
 export interface VerifyRazorpayPaymentDto {
@@ -53,6 +60,7 @@ export interface VerifyRazorpayPaymentDto {
   userEmail: string;
   userName: string;
   billingCycle?: BillingCycle;
+  offerId?: string;
   phone?: string;
   state?: string;
   country?: string;

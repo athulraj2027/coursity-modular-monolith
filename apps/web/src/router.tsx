@@ -33,6 +33,7 @@ import {
   AdminSubscriptionsPage,
   AdminSubscriptionDetailPage,
 } from "@/features/plans"
+import { AdminOffersPage } from "@/features/offers"
 import { AdminCategoriesPage } from "@/features/categories"
 import {
   TeacherCoursesPage,
@@ -223,6 +224,9 @@ export function AppRoutes() {
             <Route index element={<AdminSubscriptionsPage />} />
             <Route path=":id" element={<AdminSubscriptionDetailPage />} />
           </Route>
+          <Route path="/admin/offers" element={<DashboardLayout role="admin" />}>
+            <Route index element={<AdminOffersPage />} />
+          </Route>
           <Route path="/admin/categories" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminCategoriesPage />} />
           </Route>
@@ -234,6 +238,8 @@ export function AppRoutes() {
             <Route path=":id" element={<AdminInterviewDetailPage />} />
           </Route>
           <Route path="/admin/profile/password" element={<Navigate to="/admin/password" replace />} />
+          <Route path="/admin/promos" element={<Navigate to="/admin/offers" replace />} />
+          <Route path="/admin/offer" element={<Navigate to="/admin/offers" replace />} />
           <Route path="/admin/students" element={<Navigate to="/admin/users" replace />} />
           <Route path="/admin/course" element={<Navigate to="/admin/courses" replace />} />
           <Route path="/courses/admin" element={<Navigate to="/admin/courses" replace />} />

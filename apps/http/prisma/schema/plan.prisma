@@ -58,6 +58,7 @@ model Plan {
 
   features      PlanFeature[]
   subscriptions TeacherSubscription[]
+  offerPlans    OfferPlan[]
 
   @@index([isActive, sortOrder])
   @@map("plans")
@@ -123,6 +124,7 @@ model TeacherSubscription {
 
   usages                 TeacherPlanUsage[]
   invoices               SubscriptionInvoice[]
+  offerRedemptions       OfferRedemption[]
 
   @@index([teacherProfileId, status])
   @@map("teacher_subscriptions")
@@ -176,8 +178,14 @@ model SubscriptionInvoice {
   gatewayOrderId   String?
   gatewayPaymentId String?
 
+  // Promotional Discount Audit Details
+  offerId          String?
+  discountAmount   Decimal?            @default(0) @db.Decimal(10, 2)
+
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
+
+  offerRedemptions OfferRedemption[]
 
   @@map("subscription_invoices")
 }

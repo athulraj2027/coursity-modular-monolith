@@ -152,6 +152,100 @@ class MockSubscriptionRepository implements SubscriptionRepository {
     sub.updatedAt = new Date();
     return sub;
   }
+
+  async cancelAtPeriodEnd(id: string, cancel: boolean): Promise<TeacherSubscription> {
+    const sub = await this.findById(id);
+    if (!sub) throw new Error("Subscription not found");
+    sub.cancelAtPeriodEnd = cancel;
+    sub.updatedAt = new Date();
+    return sub;
+  }
+
+  public usageRepo?: MockUsageRepository;
+  public quotaService?: QuotaEnforcementService;
+
+  async evaluateQuota(teacherProfileId: string, featureCode: string, requestedAmount = 1): Promise<any> {
+    if (this.quotaService) {
+      return this.quotaService.evaluateQuota(teacherProfileId, featureCode, requestedAmount);
+    }
+    return { allowed: true, limit: 5000, currentUsage: 0, remaining: 5000, isUnlimited: false };
+  }
+
+  async getUsage(subscriptionId: string, featureCode: string, periodStart: Date): Promise<any> {
+    if (this.usageRepo) {
+      return this.usageRepo.getCurrentUsage(subscriptionId, featureCode, periodStart);
+    }
+    return null;
+  }
+
+  async recordUsage(
+    subscriptionId: string,
+    teacherProfileId: string,
+    featureCode: string,
+    periodStart: Date,
+    periodEnd: Date,
+    amount: number,
+    isAbsolute = false
+  ): Promise<any> {
+    if (this.usageRepo) {
+      return this.usageRepo.recordUsage({
+        subscriptionId,
+        teacherProfileId,
+        featureCode,
+        amount,
+        periodStart,
+        periodEnd,
+        isIncrement: !isAbsolute,
+      });
+    }
+    return {
+      id: "usage_test",
+      subscriptionId,
+      featureCode,
+      currentUsage: amount,
+      periodStart,
+      periodEnd,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
+
+  async getAllCurrentUsages(subscriptionId: string): Promise<any[]> {
+    return this.usageRepo ? this.usageRepo.usages.filter((u) => u.subscriptionId === subscriptionId) : [];
+  }
+
+  async adminFindAll(): Promise<any> {
+    return { items: [], total: 0, metrics: {} as any };
+  }
+
+  async adminFindById(): Promise<any> {
+    return null;
+  }
+
+  async adminExtendPeriod(id: string, newPeriodEnd: Date): Promise<TeacherSubscription> {
+    const sub = await this.findById(id);
+    if (!sub) throw new Error("Subscription not found");
+    sub.currentPeriodEnd = newPeriodEnd;
+    return sub;
+  }
+
+  async adminUpdateInvoiceStatus(): Promise<any> {
+    return null;
+  }
+}
+
+interface UsageRepository {
+  getCurrentUsage(subscriptionId: string, featureCode: string, periodStart: Date): Promise<TeacherPlanUsage | null>;
+  getAllUsagesForPeriod(subscriptionId: string, periodStart: Date): Promise<TeacherPlanUsage[]>;
+  recordUsage(data: {
+    subscriptionId: string;
+    teacherProfileId: string;
+    featureCode: string;
+    amount: number;
+    periodStart: Date;
+    periodEnd: Date;
+    isIncrement?: boolean;
+  }): Promise<TeacherPlanUsage>;
 }
 
 class MockUsageRepository implements UsageRepository {
@@ -222,6 +316,91 @@ class MockUsageRepository implements UsageRepository {
   }
 }
 
+class QuotaEnforcementService {
+  constructor(
+    private subRepo: MockSubscriptionRepository,
+    private usageRepo: MockUsageRepository,
+    private planRepo: MockPlanRepository
+  ) {}
+
+  async evaluateQuota(teacherProfileId: string, featureCode: string, requestedAmount = 1) {
+    const sub = await this.subRepo.findActiveByTeacherId(teacherProfileId);
+    if (!sub) {
+      return {
+        allowed: false,
+        reason: "No active subscription found for instructor.",
+        currentUsage: 0,
+        limit: 0,
+        remaining: 0,
+        isUnlimited: false,
+      };
+    }
+
+    const plan = sub.plan || (await this.planRepo.findById(sub.planId));
+    if (!plan) {
+      return {
+        allowed: false,
+        reason: "Subscription plan not found.",
+        currentUsage: 0,
+        limit: 0,
+        remaining: 0,
+        isUnlimited: false,
+      };
+    }
+
+    const planFeature = plan.features?.find((pf) => pf.feature?.code === featureCode || pf.featureId === featureCode);
+    if (!planFeature) {
+      return {
+        allowed: false,
+        reason: `Feature '${featureCode}' is not included in current plan tier.`,
+        currentUsage: 0,
+        limit: 0,
+        remaining: 0,
+        isUnlimited: false,
+      };
+    }
+
+    if (planFeature.isUnlimited || planFeature.value === "-1") {
+      return {
+        allowed: true,
+        limit: -1,
+        isUnlimited: true,
+        currentUsage: 0,
+        remaining: Infinity,
+        unit: planFeature.feature?.unit || null,
+      };
+    }
+
+    if (planFeature.feature?.featureType === "BOOLEAN") {
+      const isEnabled = planFeature.value === "true" || planFeature.value === "1";
+      return {
+        allowed: isEnabled,
+        reason: isEnabled ? undefined : `Feature '${planFeature.feature?.name}' is not enabled in your plan.`,
+        limit: isEnabled ? 1 : 0,
+        currentUsage: 0,
+        remaining: isEnabled ? 1 : 0,
+        isUnlimited: false,
+      };
+    }
+
+    const limit = Number(planFeature.value) || 0;
+    const usage = await this.usageRepo.getCurrentUsage(sub.id, featureCode, sub.currentPeriodStart);
+    const currentUsage = usage ? usage.currentUsage : 0;
+    const remaining = Math.max(0, limit - currentUsage);
+    const allowed = currentUsage + requestedAmount <= limit;
+
+    return {
+      allowed,
+      limit,
+      currentUsage,
+      remaining,
+      unit: planFeature.feature?.unit || null,
+      isUnlimited: false,
+      reason: allowed ? undefined : `Quota exceeded for '${planFeature.feature?.name}'. Limit: ${limit}, Current Usage: ${currentUsage}.`,
+    };
+  }
+}
+
 describe("Plan Module & Dynamic Quota Enforcement", () => {
   let planRepo: MockPlanRepository;
   let subRepo: MockSubscriptionRepository;
@@ -236,6 +415,8 @@ describe("Plan Module & Dynamic Quota Enforcement", () => {
     subRepo = new MockSubscriptionRepository();
     usageRepo = new MockUsageRepository();
     quotaService = new QuotaEnforcementService(subRepo, usageRepo, planRepo);
+    subRepo.usageRepo = usageRepo;
+    subRepo.quotaService = quotaService;
 
     teacherProfileId = "tp_teacher123";
 
@@ -446,12 +627,12 @@ describe("Plan Module & Dynamic Quota Enforcement", () => {
     });
 
     it("should check quota via CheckQuotaUseCase", async () => {
-      const checkQuotaUseCase = new CheckQuotaUseCase(quotaService);
-      const res = await checkQuotaUseCase.execute({
+      const checkQuotaUseCase = new CheckQuotaUseCase(subRepo);
+      const res = await checkQuotaUseCase.execute(
         teacherProfileId,
-        featureCode: "LIVE_VIEWER_MINUTES_MONTHLY",
-        requiredAmount: 100,
-      });
+        "LIVE_VIEWER_MINUTES_MONTHLY",
+        100
+      );
 
       assert.equal(res.allowed, true);
       assert.equal(res.limit, 5000);
@@ -459,12 +640,12 @@ describe("Plan Module & Dynamic Quota Enforcement", () => {
     });
 
     it("should record usage and update current usage", async () => {
-      const recordUsageUseCase = new RecordUsageUseCase(subRepo, usageRepo);
-      const usage = await recordUsageUseCase.execute({
+      const recordUsageUseCase = new RecordUsageUseCase(subRepo);
+      const usage = await recordUsageUseCase.execute(
         teacherProfileId,
-        featureCode: "LIVE_VIEWER_MINUTES_MONTHLY",
-        incrementBy: 250,
-      });
+        "LIVE_VIEWER_MINUTES_MONTHLY",
+        250
+      );
 
       assert.equal(usage.currentUsage, 250);
 

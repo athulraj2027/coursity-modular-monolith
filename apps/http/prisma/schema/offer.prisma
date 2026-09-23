@@ -1,0 +1,96 @@
+// ==========================================
+// OFFERS & PROMOTIONAL DISCOUNTS SCHEMA
+// ==========================================
+
+enum DiscountType {
+  PERCENTAGE
+  FLAT
+}
+
+enum OfferEligibility {
+  ALL_TEACHERS
+  NEW_TEACHERS_ONLY
+}
+
+model Offer {
+  id                    String              @id @default(uuid())
+  title                 String              // e.g. "Early Bird Launch Special"
+  description           String?
+  
+  discountType          DiscountType        @default(PERCENTAGE)
+  discountValue         Decimal             @db.Decimal(10, 2) // e.g. 20.00 for 20% or 1000.00 for ₹1000
+  maxDiscountAmount     Decimal?            @db.Decimal(10, 2) // Optional cap for percentage (e.g. max ₹2,000)
+  minOrderAmount        Decimal?            @db.Decimal(10, 2) // Minimum base price to qualify
+  
+  eligibility           OfferEligibility    @default(ALL_TEACHERS)
+  badgeText             String?             // e.g. "Save 30% Today", "Limited Time", "Popular"
+  
+  // Quota & Limits
+  maxRedemptions        Int?                // Global maximum uses (e.g. first 100 instructors)
+  usedRedemptions       Int                 @default(0)
+  maxRedemptionsPerUser Int                 @default(1)        // Max redemptions per individual teacher
+  
+  // Time Window & Status
+  validFrom             DateTime            @default(now())
+  validUntil            DateTime?           // Nullable for ongoing evergreen offers
+  isActive              Boolean             @default(true)
+  
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  // Relations
+  applicablePlans       OfferPlan[]
+  applicableCycles      OfferBillingCycle[]
+  redemptions           OfferRedemption[]
+
+  @@index([isActive, validFrom, validUntil])
+  @@map("offers")
+}
+
+// Join table for specific plan applicability (empty = applies to all plans)
+model OfferPlan {
+  id        String   @id @default(uuid())
+  offerId   String
+  offer     Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  planId    String
+  plan      Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([offerId, planId])
+  @@map("offer_plans")
+}
+
+// Join table for specific billing cycle applicability (e.g. only YEARLY)
+model OfferBillingCycle {
+  id           String       @id @default(uuid())
+  offerId      String
+  offer        Offer        @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  billingCycle BillingCycle
+
+  createdAt    DateTime     @default(now())
+
+  @@unique([offerId, billingCycle])
+  @@map("offer_billing_cycles")
+}
+
+// Audit trail of redemptions
+model OfferRedemption {
+  id               String               @id @default(uuid())
+  offerId          String
+  offer            Offer                @relation(fields: [offerId], references: [id], onDelete: Restrict)
+  teacherProfileId String
+  teacherProfile   TeacherProfile       @relation(fields: [teacherProfileId], references: [id], onDelete: Cascade)
+  
+  subscriptionId   String?
+  subscription     TeacherSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  invoiceId        String?
+  invoice          SubscriptionInvoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  
+  discountAmount   Decimal              @db.Decimal(10, 2)
+  finalPaidAmount  Decimal              @db.Decimal(10, 2)
+  redeemedAt       DateTime             @default(now())
+
+  @@index([teacherProfileId, offerId])
+  @@map("offer_redemptions")
+}

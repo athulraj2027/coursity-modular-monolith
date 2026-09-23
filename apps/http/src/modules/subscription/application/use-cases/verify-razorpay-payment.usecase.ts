@@ -2,6 +2,8 @@ import { SubscriptionRepository } from "../../domain/repositories/subscription.r
 import { PlanRepository } from "@/modules/plan/domain/repositories/plan.repository";
 import { IPaymentGateway } from "@/infrastructure/payment";
 import { IEmailService } from "@/infrastructure/email";
+import { IOfferRepository } from "@/modules/offer/domain/repositories/offer.repository";
+import { GetPlanOfferUseCase } from "@/modules/offer/application/use-cases/get-plan-offer.usecase";
 import { VerifyRazorpayPaymentDto } from "../../domain/dtos/subscription.dto";
 import { calculatePlanCheckoutPrice, DEFAULT_GST_PERCENT } from "../../domain/constants/billing.constants";
 import { TeacherSubscription, SubscriptionInvoice } from "../../domain/entities/subscription.entity";
@@ -13,7 +15,9 @@ export class VerifyRazorpayPaymentUseCase {
     private readonly subscriptionRepo: SubscriptionRepository,
     private readonly planRepo: PlanRepository,
     private readonly paymentGateway: IPaymentGateway,
-    private readonly emailService: IEmailService
+    private readonly emailService: IEmailService,
+    private readonly offerRepo?: IOfferRepository,
+    private readonly getPlanOfferUseCase?: GetPlanOfferUseCase
   ) {}
 
   async execute(dto: VerifyRazorpayPaymentDto): Promise<{
@@ -37,7 +41,7 @@ export class VerifyRazorpayPaymentUseCase {
       throw new NotFoundError(`Target plan with ID '${dto.planId}' not found.`);
     }
 
-    // 3. Compute Dates & Pricing (with GST)
+    // 3. Compute Dates & Pricing (with dynamic GST and Default Offer Discount)
     const now = new Date();
     const periodEnd = new Date(now);
     const selectedCycle = dto.billingCycle || plan.billingCycle || "MONTHLY";
@@ -50,8 +54,45 @@ export class VerifyRazorpayPaymentUseCase {
       periodEnd.setMonth(periodEnd.getMonth() + 1);
     }
 
-    const pricing = calculatePlanCheckoutPrice(Number(plan.price), selectedCycle, DEFAULT_GST_PERCENT);
-    const finalAmount = pricing.totalAmount;
+    let finalBasePrice: number;
+    let finalTaxAmount: number;
+    let finalAmount: number;
+    let appliedOfferId: string | null = null;
+    let appliedDiscountAmount = 0;
+
+    if (this.getPlanOfferUseCase) {
+      try {
+        const planOffer = await this.getPlanOfferUseCase.execute({
+          planId: plan.id,
+          billingCycle: selectedCycle,
+          teacherProfileId: dto.teacherProfileId,
+          offerId: dto.offerId,
+        });
+
+        if (planOffer.hasOffer && planOffer.offerId) {
+          finalBasePrice = planOffer.discountedBasePrice;
+          finalTaxAmount = planOffer.taxAmount;
+          finalAmount = planOffer.totalAmount;
+          appliedOfferId = planOffer.offerId;
+          appliedDiscountAmount = planOffer.discountAmount;
+        } else {
+          const standardPricing = calculatePlanCheckoutPrice(Number(plan.price), selectedCycle, DEFAULT_GST_PERCENT);
+          finalBasePrice = standardPricing.basePrice;
+          finalTaxAmount = standardPricing.taxAmount;
+          finalAmount = standardPricing.totalAmount;
+        }
+      } catch {
+        const standardPricing = calculatePlanCheckoutPrice(Number(plan.price), selectedCycle, DEFAULT_GST_PERCENT);
+        finalBasePrice = standardPricing.basePrice;
+        finalTaxAmount = standardPricing.taxAmount;
+        finalAmount = standardPricing.totalAmount;
+      }
+    } else {
+      const standardPricing = calculatePlanCheckoutPrice(Number(plan.price), selectedCycle, DEFAULT_GST_PERCENT);
+      finalBasePrice = standardPricing.basePrice;
+      finalTaxAmount = standardPricing.taxAmount;
+      finalAmount = standardPricing.totalAmount;
+    }
 
     // 4. Resolve Teacher/User Details for Invoice
     let teacherName = dto.userName || "Instructor";
@@ -125,9 +166,11 @@ export class VerifyRazorpayPaymentUseCase {
         receiptUrl: `https://dashboard.razorpay.com/app/payments/${dto.paymentId}`,
         planName: plan.name,
         billingCycle: selectedCycle,
-        baseAmount: pricing.basePrice,
-        taxAmount: pricing.taxAmount,
+        baseAmount: finalBasePrice,
+        taxAmount: finalTaxAmount,
         taxPercent: DEFAULT_GST_PERCENT,
+        offerId: appliedOfferId,
+        discountAmount: appliedDiscountAmount,
         userName: teacherName,
         userEmail: teacherEmail,
         userPhone: teacherPhone,
@@ -138,6 +181,22 @@ export class VerifyRazorpayPaymentUseCase {
         gatewayPaymentId: dto.paymentId,
       },
     });
+
+    // 7. Record Offer Redemption in audit table if an offer was applied
+    if (appliedOfferId && this.offerRepo) {
+      try {
+        await this.offerRepo.recordRedemption({
+          offerId: appliedOfferId,
+          teacherProfileId: dto.teacherProfileId,
+          subscriptionId: subscription.id,
+          invoiceId: invoiceRecord.id,
+          discountAmount: appliedDiscountAmount,
+          finalPaidAmount: finalAmount,
+        });
+      } catch (redemptionErr) {
+        console.warn("⚠️ [Offer Redemption] Non-fatal error recording redemption audit:", redemptionErr);
+      }
+    }
 
     const invoice: SubscriptionInvoice = {
       id: invoiceRecord.id,
@@ -151,8 +210,8 @@ export class VerifyRazorpayPaymentUseCase {
       paidAt: invoiceRecord.paidAt,
       planName: invoiceRecord.planName,
       billingCycle: invoiceRecord.billingCycle,
-      baseAmount: invoiceRecord.baseAmount ? Number(invoiceRecord.baseAmount) : pricing.basePrice,
-      taxAmount: invoiceRecord.taxAmount ? Number(invoiceRecord.taxAmount) : pricing.taxAmount,
+      baseAmount: invoiceRecord.baseAmount ? Number(invoiceRecord.baseAmount) : finalBasePrice,
+      taxAmount: invoiceRecord.taxAmount ? Number(invoiceRecord.taxAmount) : finalTaxAmount,
       taxPercent: invoiceRecord.taxPercent ? Number(invoiceRecord.taxPercent) : DEFAULT_GST_PERCENT,
       userName: invoiceRecord.userName,
       userEmail: invoiceRecord.userEmail,
@@ -166,7 +225,7 @@ export class VerifyRazorpayPaymentUseCase {
       updatedAt: invoiceRecord.updatedAt,
     };
 
-    // 7. Dispatch Transactional Confirmation Email (Asynchronous queue)
+    // 8. Dispatch Transactional Confirmation Email (Asynchronous queue)
     this.emailService
       .sendSubscriptionPurchasedNotification({
         email: teacherEmail,
