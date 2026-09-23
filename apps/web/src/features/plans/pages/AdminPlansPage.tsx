@@ -51,6 +51,14 @@ export const AdminPlansPage: React.FC = () => {
   const [planToEdit, setPlanToEdit] = useState<Plan | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
+  const [planActionModal, setPlanActionModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: React.ReactNode;
+    confirmText: string;
+    variant: "danger" | "warning" | "info" | "success" | "neutral";
+    action: () => Promise<void>;
+  } | null>(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -125,28 +133,58 @@ export const AdminPlansPage: React.FC = () => {
   }, [filteredPlans, currentPage, pageSize]);
 
   // Actions
-  const handleToggleActive = async (plan: Plan, e: React.MouseEvent) => {
+  const handleToggleActive = (plan: Plan, e: React.MouseEvent) => {
     e.stopPropagation();
-    try {
-      await updatePlanMutation.mutateAsync({
-        id: plan.id,
-        payload: { isActive: !plan.isActive },
-      });
-    } catch {
-      // Handled in hook
-    }
+    const nextState = !plan.isActive;
+    setPlanActionModal({
+      isOpen: true,
+      title: nextState ? `Activate "${plan.name}" Plan?` : `Deactivate "${plan.name}" Plan?`,
+      description: nextState ? (
+        <span>
+          Activating <strong>{plan.name}</strong> will make it immediately visible and available for subscriptions in the teacher pricing catalog.
+        </span>
+      ) : (
+        <span>
+          Deactivating <strong>{plan.name}</strong> will hide it from the teacher pricing catalog and prevent new purchases. Existing active subscribers will maintain access until their current billing cycle ends.
+        </span>
+      ),
+      confirmText: nextState ? "Activate Plan" : "Deactivate Plan",
+      variant: nextState ? "success" : "warning",
+      action: async () => {
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          payload: { isActive: nextState },
+        });
+        setPlanActionModal(null);
+      },
+    });
   };
 
-  const handleToggleFeatured = async (plan: Plan, e: React.MouseEvent) => {
+  const handleToggleFeatured = (plan: Plan, e: React.MouseEvent) => {
     e.stopPropagation();
-    try {
-      await updatePlanMutation.mutateAsync({
-        id: plan.id,
-        payload: { isFeatured: !plan.isFeatured },
-      });
-    } catch {
-      // Handled in hook
-    }
+    const nextFeatured = !plan.isFeatured;
+    setPlanActionModal({
+      isOpen: true,
+      title: nextFeatured ? `Highlight "${plan.name}" as Featured?` : `Remove Featured Badge from "${plan.name}"?`,
+      description: nextFeatured ? (
+        <span>
+          Setting <strong>{plan.name}</strong> as featured will highlight it with a prominent <em>"Featured / Most Popular"</em> badge and elevated styling across all pricing tables.
+        </span>
+      ) : (
+        <span>
+          Removing the featured badge will return <strong>{plan.name}</strong> to standard card presentation on pricing tables.
+        </span>
+      ),
+      confirmText: nextFeatured ? "Make Featured" : "Remove Badge",
+      variant: nextFeatured ? "info" : "neutral",
+      action: async () => {
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          payload: { isFeatured: nextFeatured },
+        });
+        setPlanActionModal(null);
+      },
+    });
   };
 
   const handleConfirmDelete = async () => {
@@ -509,6 +547,21 @@ export const AdminPlansPage: React.FC = () => {
           }}
           initialPlan={planToEdit}
           onSuccess={() => refetch()}
+        />
+      )}
+
+      {/* Plan Action Confirmation Modal (Status & Featured) */}
+      {Boolean(planActionModal) && (
+        <ConfirmationModal
+          isOpen={Boolean(planActionModal)}
+          onClose={() => setPlanActionModal(null)}
+          onConfirm={planActionModal!.action}
+          isLoading={updatePlanMutation.isPending}
+          variant={planActionModal!.variant}
+          title={planActionModal!.title}
+          description={planActionModal!.description}
+          confirmText={planActionModal!.confirmText}
+          cancelText="Cancel"
         />
       )}
 

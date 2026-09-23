@@ -351,7 +351,7 @@ export class PrismaSubscriptionRepository implements SubscriptionRepository {
               },
             },
             courses: {
-              select: { id: true, title: true, isPublished: true },
+              select: { id: true, title: true, status: true },
             },
           },
         },
@@ -628,7 +628,7 @@ export class PrismaSubscriptionRepository implements SubscriptionRepository {
       if (currentUsage === 0 && featureCode === "MAX_COURSES") {
         try {
           const courseCount = await this.prisma.course.count({
-            where: { teacherProfileId, isPublished: true },
+            where: { teacherProfileId, status: "PUBLISHED" },
           });
           currentUsage = courseCount;
         } catch {
@@ -672,7 +672,7 @@ export class PrismaSubscriptionRepository implements SubscriptionRepository {
     if (currentUsage === 0 && featureCode === "MAX_COURSES") {
       try {
         const courseCount = await this.prisma.course.count({
-          where: { teacherProfileId, isPublished: true },
+          where: { teacherProfileId, status: "PUBLISHED" },
         });
         currentUsage = courseCount;
       } catch {

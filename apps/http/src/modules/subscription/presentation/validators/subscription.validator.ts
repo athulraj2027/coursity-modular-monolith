@@ -23,6 +23,7 @@ export const checkQuotaQuerySchema = z.object({
 export const createRazorpayOrderSchema = z.object({
   planId: z.string().min(1, "Plan ID is required"),
   billingCycle: billingCycleEnum.optional().default("MONTHLY"),
+  offerId: z.string().optional(),
   phone: z.string().optional(),
   state: z.string().optional(),
   country: z.string().optional().default("India"),
@@ -35,6 +36,7 @@ export const verifyRazorpayPaymentSchema = z.object({
   signature: z.string().min(1, "Signature is required"),
   planId: z.string().min(1, "Plan ID is required"),
   billingCycle: billingCycleEnum.optional().default("MONTHLY"),
+  offerId: z.string().optional(),
   phone: z.string().optional(),
   state: z.string().optional(),
   country: z.string().optional().default("India"),

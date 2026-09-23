@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { usePlans, useMySubscription } from "../hooks/usePlans";
+import { useAutoAppliedOffers } from "@/features/offers/hooks/useOffers";
 import type { Plan } from "../types/plan.types";
 import { PricingCard } from "../components/PricingCard";
 import { FeatureComparisonMatrix } from "../components/FeatureComparisonMatrix";
@@ -16,14 +17,17 @@ import {
   ShieldCheck,
   CheckCircle2,
   HelpCircle,
+  Tag,
+  Flame,
 } from "lucide-react";
 
 export const TeacherPlansBrowsePage: React.FC = () => {
   const navigate = useNavigate();
   const { data: plansData, isLoading: isPlansLoading, isError: isPlansError, refetch: refetchPlans } = usePlans();
   const { data: subData, refetch: refetchSub } = useMySubscription();
-
   const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "YEARLY">("MONTHLY");
+  const { data: autoOffers } = useAutoAppliedOffers(undefined, billingCycle);
+
   const [selectedPlanForUpgrade, setSelectedPlanForUpgrade] = useState<Plan | null>(null);
 
   if (isPlansLoading) {
@@ -62,6 +66,18 @@ export const TeacherPlansBrowsePage: React.FC = () => {
   const activeSubscription = subData?.subscription;
   const currentPlan = activeSubscription?.plan;
 
+  const getMatchingOfferForPlan = (planId: string) => {
+    if (!autoOffers || !autoOffers.length) return null;
+    return (
+      autoOffers.find((offer) => {
+        if (!offer.applicablePlans || offer.applicablePlans.length === 0) return true;
+        return offer.applicablePlans.some((ap) => ap.planId === planId);
+      }) || null
+    );
+  };
+
+  const primaryAutoOffer = autoOffers && autoOffers.length > 0 ? autoOffers[0] : null;
+
   const handleSelectPlan = (plan: Plan) => {
     // If the instructor has an existing active plan and is switching to a different tier
     if (activeSubscription && currentPlan && currentPlan.id !== plan.id && plan.price > 0) {
@@ -80,7 +96,35 @@ export const TeacherPlansBrowsePage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-1 flex-col w-full text-left space-y-12">
+    <div className="flex flex-1 flex-col w-full text-left space-y-10">
+      {/* Promotional Campaign Banner (If any auto-applied offer active) */}
+      {primaryAutoOffer && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-[#F42A18]/10 to-red-500/10 border border-[#F42A18]/20 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs animate-in fade-in duration-300">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-[#F42A18]/15 text-[#F42A18] shrink-0">
+              <Flame className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xs font-bold text-neutral-900 dark:text-white">
+                  {primaryAutoOffer.title}
+                </h3>
+                <Badge className="bg-[#F42A18] text-white border-none text-[10px] font-bold px-2 py-0.2">
+                  {primaryAutoOffer.badgeText || (primaryAutoOffer.discountType === "PERCENTAGE" ? `${primaryAutoOffer.discountValue}% OFF` : `Save ₹${primaryAutoOffer.discountValue}`)}
+                </Badge>
+              </div>
+              <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                {primaryAutoOffer.description || "Limited-time promotion automatically applied at checkout for eligible educators!"}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-300 font-semibold shrink-0">
+            <Tag className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Auto-discount active</span>
+          </div>
+        </div>
+      )}
+
       {/* 1. Header with Breadcrumb & Billing Cycle Toggle */}
       <div className="space-y-6 pb-6 border-b border-neutral-200/80 dark:border-neutral-800">
         <div className="flex items-center gap-3">
@@ -150,6 +194,7 @@ export const TeacherPlansBrowsePage: React.FC = () => {
             isCurrentPlan={currentPlan?.id === plan.id}
             onSelectPlan={handleSelectPlan}
             billingCycle={billingCycle}
+            autoOffer={getMatchingOfferForPlan(plan.id)}
           />
         ))}
       </div>

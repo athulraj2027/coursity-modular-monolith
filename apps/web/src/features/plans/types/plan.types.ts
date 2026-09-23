@@ -101,6 +101,7 @@ export interface CreateRazorpayOrderInput {
   state?: string;
   country?: string;
   gstin?: string;
+  offerId?: string;
 }
 
 export interface RazorpayOrderResponse {
@@ -125,6 +126,7 @@ export interface VerifyRazorpayPaymentInput {
   state?: string;
   country?: string;
   gstin?: string;
+  offerId?: string;
 }
 
 export interface SubscriptionInvoice {

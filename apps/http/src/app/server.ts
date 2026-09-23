@@ -5,6 +5,7 @@ import { redis } from "@/infrastructure/redis/redis.client";
 import { startEmailWorker, closeEmailWorker } from "@/infrastructure/email";
 import { seedPlansIfEmpty } from "@/modules/plan";
 import { seedCategoriesIfEmpty } from "@/modules/category";
+import { seedOffersIfEmpty } from "@/modules/offer";
 
 // Trigger reload: updated queryCoursesSchema limit
 const server = http.createServer(app);
@@ -26,6 +27,13 @@ const startServer = async () => {
             await seedPlansIfEmpty();
         } catch (seedError) {
             console.error("⚠️ Failed to verify or seed standard plans on startup:", seedError);
+        }
+
+        // Seed default promotional offers if none exist in the database
+        try {
+            await seedOffersIfEmpty();
+        } catch (seedError) {
+            console.error("⚠️ Failed to verify or seed promotional offers on startup:", seedError);
         }
 
         // Seed standard category hierarchy if no categories exist in the database

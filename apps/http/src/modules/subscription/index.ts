@@ -4,6 +4,8 @@ import paymentGateway from "@/infrastructure/payment";
 import { emailService } from "@/infrastructure/email";
 import { PrismaSubscriptionRepository } from "./infrastructure/repositories/prisma-subscription.repository";
 import { PrismaPlanRepository } from "@/modules/plan/infrastructure/repositories/prisma-plan.repository";
+import { PrismaOfferRepository } from "@/modules/offer/infrastructure/repositories/prisma-offer.repository";
+import { GetPlanOfferUseCase } from "@/modules/offer/application/use-cases/get-plan-offer.usecase";
 
 // Application Use Cases
 import { GetTeacherSubscriptionUseCase } from "./application/use-cases/get-teacher-subscription.usecase";
@@ -32,18 +34,26 @@ export function createSubscriptionModule(): {
 } {
   const subscriptionRepo = new PrismaSubscriptionRepository(defaultPrisma);
   const planRepo = new PrismaPlanRepository(defaultPrisma);
+  const offerRepo = new PrismaOfferRepository(defaultPrisma);
+  const getPlanOfferUseCase = new GetPlanOfferUseCase(offerRepo, planRepo);
 
   const getTeacherSubscriptionUseCase = new GetTeacherSubscriptionUseCase(subscriptionRepo, planRepo);
   const subscribePlanUseCase = new SubscribePlanUseCase(subscriptionRepo, planRepo);
   const cancelSubscriptionUseCase = new CancelSubscriptionUseCase(subscriptionRepo);
   const recordUsageUseCase = new RecordUsageUseCase(subscriptionRepo);
   const checkQuotaUseCase = new CheckQuotaUseCase(subscriptionRepo);
-  const createRazorpayOrderUseCase = new CreateRazorpayOrderUseCase(planRepo, paymentGateway);
+  const createRazorpayOrderUseCase = new CreateRazorpayOrderUseCase(
+    planRepo,
+    paymentGateway,
+    getPlanOfferUseCase
+  );
   const verifyRazorpayPaymentUseCase = new VerifyRazorpayPaymentUseCase(
     subscriptionRepo,
     planRepo,
     paymentGateway,
-    emailService
+    emailService,
+    offerRepo,
+    getPlanOfferUseCase
   );
   const getInvoicesUseCase = new GetInvoicesUseCase();
 
