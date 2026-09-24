@@ -19,17 +19,22 @@ The database schema is organized into modular files located in [`apps/http/prism
 apps/http/prisma/
 ├── schema/
 │   ├── base.prisma              # Datasource (PostgreSQL) & client generator configs
-│   ├── user.prisma              # User accounts, TeacherProfile, StudentProfile, RefreshTokens
-│   ├── plan.prisma              # Plan, Feature, PlanFeature, Subscription, UsageRecord, Invoice
-│   ├── category.prisma          # Course categories, subcategories, metadata
+│   ├── user.prisma              # User accounts, TeacherProfile, Profile, RefreshTokens
+│   ├── wallet.prisma            # Wallets, WalletTransactions & PayoutRequests
+│   ├── bank-detail.prisma       # Instructor & Student BankDetails & UPI IDs
 │   ├── course.prisma            # Courses, Modules, Lessons, Attachments, Enrollments
-│   ├── interview.prisma         # Teacher & student AI interview sessions, Turns, EvaluationReports
+│   ├── category.prisma          # Course categories, subcategories, metadata
+│   ├── plan.prisma              # Plan, Feature, PlanFeature, Subscription, UsageRecord
+│   ├── offer.prisma             # Platform promotional offers, coupons & redemptions
+│   ├── wishlist.prisma          # Student saved course wishlists
+│   ├── interview.prisma         # Teacher & student AI interview sessions, Turns, Reports
 │   ├── ai-config.prisma         # AI providers, model configurations, API keys
 │   └── idempotency.prisma       # API idempotency keys & cached payloads
 │
 ├── seed-plans.ts                # Plan & feature catalog seeding script
 ├── seed-categories.ts           # Educational taxonomy seeding script
 └── seed-ai-providers.ts         # LLM/STT/TTS provider configuration seeds
+
 ```
 
 ---
