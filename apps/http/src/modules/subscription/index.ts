@@ -45,7 +45,8 @@ export function createSubscriptionModule(): {
   const createRazorpayOrderUseCase = new CreateRazorpayOrderUseCase(
     planRepo,
     paymentGateway,
-    getPlanOfferUseCase
+    getPlanOfferUseCase,
+    subscriptionRepo
   );
   const verifyRazorpayPaymentUseCase = new VerifyRazorpayPaymentUseCase(
     subscriptionRepo,

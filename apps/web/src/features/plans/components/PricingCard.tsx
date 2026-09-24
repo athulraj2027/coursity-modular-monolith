@@ -8,6 +8,8 @@ import { Check, Sparkles, ArrowRight, Tag } from "lucide-react";
 interface PricingCardProps {
   plan: Plan;
   isCurrentPlan?: boolean;
+  isLowerTier?: boolean;
+  currentPlanName?: string;
   onSelectPlan?: (plan: Plan) => void;
   isLoading?: boolean;
   billingCycle?: "MONTHLY" | "YEARLY";
@@ -18,6 +20,8 @@ interface PricingCardProps {
 export const PricingCard: React.FC<PricingCardProps> = ({
   plan,
   isCurrentPlan = false,
+  isLowerTier = false,
+  currentPlanName,
   onSelectPlan,
   isLoading = false,
   billingCycle = "MONTHLY",
@@ -156,29 +160,42 @@ export const PricingCard: React.FC<PricingCardProps> = ({
 
       {/* Action Button (Optional) */}
       {showActionButton && onSelectPlan && (
-        <div className="pt-8">
+        <div className="pt-8 space-y-2">
           <Button
-            onClick={() => onSelectPlan(plan)}
-            disabled={isCurrentPlan || isLoading}
-            className={`w-full gap-2 rounded-xl text-xs font-semibold py-2.5 cursor-pointer ${
+            onClick={() => !isCurrentPlan && !isLowerTier && onSelectPlan(plan)}
+            disabled={isCurrentPlan || isLowerTier || isLoading}
+            className={`w-full gap-2 rounded-xl text-xs font-semibold py-2.5 transition-all ${
               isCurrentPlan
-                ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed"
+                ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 border border-neutral-200/60 dark:border-neutral-700/60 cursor-not-allowed opacity-80"
+                : isLowerTier
+                ? "bg-neutral-100/70 dark:bg-neutral-800/40 text-neutral-400 dark:text-neutral-500 border border-dashed border-neutral-200/80 dark:border-neutral-800 cursor-not-allowed opacity-70"
                 : plan.isFeatured
-                ? "bg-[#F42A18] hover:bg-[#d92212] text-white shadow-md shadow-[#F42A18]/20"
-                : "bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
+                ? "bg-[#F42A18] hover:bg-[#d92212] text-white shadow-md shadow-[#F42A18]/20 cursor-pointer"
+                : "bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100 cursor-pointer"
             }`}
           >
             {isCurrentPlan ? (
               <span>Current Plan</span>
+            ) : isLowerTier ? (
+              <span>Downgrade Unavailable</span>
             ) : (
               <>
                 <span>
-                  {isFree ? "Get Started Free" : "Select " + plan.name}
+                  {isFree
+                    ? "Get Started Free"
+                    : currentPlanName
+                    ? `Upgrade to ${plan.name}`
+                    : `Select ${plan.name}`}
                 </span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </>
             )}
           </Button>
+          {isLowerTier && (
+            <p className="text-[11px] text-center text-neutral-400 dark:text-neutral-500 font-medium leading-tight">
+              Your active {currentPlanName || "current"} plan includes higher quota limits.
+            </p>
+          )}
         </div>
       )}
     </div>

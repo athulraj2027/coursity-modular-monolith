@@ -12,6 +12,7 @@ interface FeatureComparisonMatrixProps {
 export const FeatureComparisonMatrix: React.FC<FeatureComparisonMatrixProps> = ({
   plans,
   features,
+  currentPlanId,
 }) => {
   if (!plans || plans.length === 0 || !features || features.length === 0) {
     return null;
@@ -46,6 +47,11 @@ export const FeatureComparisonMatrix: React.FC<FeatureComparisonMatrixProps> = (
                   <span className="text-xs font-semibold text-[#F42A18]">
                     {plan.price === 0 ? "Free" : `₹${(plan.price >= 100 ? plan.price / 100 : plan.price).toLocaleString()}/mo`}
                   </span>
+                  {currentPlanId === plan.id && (
+                    <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      Current Plan
+                    </span>
+                  )}
                 </div>
               </th>
             ))}

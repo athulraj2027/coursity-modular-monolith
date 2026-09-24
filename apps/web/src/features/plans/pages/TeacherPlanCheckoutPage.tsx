@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   usePlans,
+  useMySubscription,
   useCreateRazorpayOrder,
   useVerifyRazorpayPayment,
   useSubscribePlan,
@@ -38,6 +39,7 @@ export const TeacherPlanCheckoutPage: React.FC = () => {
   const billingCycle = cycleParam === "YEARLY" ? "YEARLY" : "MONTHLY";
 
   const { data: plansData, isLoading: isPlansLoading } = usePlans();
+  const { data: subData } = useMySubscription();
   const { data: currentUser } = useCurrentUser();
 
   const createOrderMutation = useCreateRazorpayOrder();
@@ -70,8 +72,23 @@ export const TeacherPlanCheckoutPage: React.FC = () => {
     }
   }, [currentUser]);
 
+  const activeSubscription = subData?.subscription;
+  const currentPlan = activeSubscription?.plan;
+
   const plans = plansData?.plans || [];
   const plan = plans.find((p) => p.id === planId) || plans[0];
+
+  const isCurrentPlan = Boolean(
+    currentPlan && plan && (currentPlan.id === plan.id || currentPlan.slug === plan.slug)
+  );
+  const isLowerTier = Boolean(
+    activeSubscription &&
+      currentPlan &&
+      plan &&
+      !isCurrentPlan &&
+      ((currentPlan.price > 0 && plan.price < currentPlan.price) ||
+        (currentPlan.sortOrder && plan.sortOrder && plan.sortOrder < currentPlan.sortOrder))
+  );
 
   // Fetch automatic best default promotional offer for this plan & billing cycle
   const { data: planOffer, isLoading: isPlanOfferLoading } = usePlanOffer(
@@ -169,6 +186,7 @@ export const TeacherPlanCheckoutPage: React.FC = () => {
   };
 
   const handleFreeActivation = async () => {
+    if (isLowerTier || isCurrentPlan) return;
     if (!validateForm()) return;
     try {
       setIsProcessing(true);
@@ -183,6 +201,10 @@ export const TeacherPlanCheckoutPage: React.FC = () => {
 
   const handleProceedToPayment = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isLowerTier || isCurrentPlan) {
+      return;
+    }
 
     if (!validateForm()) {
       return;
@@ -318,6 +340,41 @@ export const TeacherPlanCheckoutPage: React.FC = () => {
         <ArrowLeft className="w-3.5 h-3.5" />
         Back to Plan Selection
       </Link>
+
+      {/* Downgrade / Current Plan Alert Notice */}
+      {isLowerTier && (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-start gap-3 animate-in fade-in duration-200 text-left">
+          <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h4 className="text-xs font-bold">Downgrade Not Supported</h4>
+            <p className="text-xs text-amber-800/90 dark:text-amber-300/80 leading-relaxed">
+              You are currently subscribed to the <strong>{currentPlan?.name}</strong> tier. Purchasing or switching to a plan with lower quota limits is not supported.
+            </p>
+            <div className="pt-1.5">
+              <Button asChild size="sm" variant="outline" className="h-7 text-xs rounded-xl cursor-pointer">
+                <Link to="/teachers/plans/browse">Browse Upgrade Tiers</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isCurrentPlan && (
+        <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-900 dark:text-blue-200 flex items-start gap-3 animate-in fade-in duration-200 text-left">
+          <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h4 className="text-xs font-bold">Currently Active Tier</h4>
+            <p className="text-xs text-blue-800/90 dark:text-blue-300/80 leading-relaxed">
+              You already have an active subscription to the <strong>{plan.name}</strong> tier.
+            </p>
+            <div className="pt-1.5">
+              <Button asChild size="sm" variant="outline" className="h-7 text-xs rounded-xl cursor-pointer">
+                <Link to="/teachers/plans">View Quota Usage</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Checkout Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
@@ -460,14 +517,24 @@ export const TeacherPlanCheckoutPage: React.FC = () => {
             <div className="pt-2">
               <Button
                 type="submit"
-                disabled={isProcessing || createOrderMutation.isPending || isPlanOfferLoading}
-                className="w-full h-11 rounded-2xl bg-[#F42A18] hover:bg-[#d02010] text-white font-bold text-xs shadow-md shadow-[#F42A18]/20 flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+                disabled={
+                  isProcessing ||
+                  isLowerTier ||
+                  isCurrentPlan ||
+                  createOrderMutation.isPending ||
+                  isPlanOfferLoading
+                }
+                className="w-full h-11 rounded-2xl bg-[#F42A18] hover:bg-[#d02010] text-white font-bold text-xs shadow-md shadow-[#F42A18]/20 flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isProcessing || createOrderMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span>Preparing Secure Payment Gateway...</span>
                   </>
+                ) : isLowerTier ? (
+                  <span>Downgrade Unavailable</span>
+                ) : isCurrentPlan ? (
+                  <span>Already Active on Current Plan</span>
                 ) : isFree ? (
                   <>
                     <Sparkles className="w-4 h-4" />

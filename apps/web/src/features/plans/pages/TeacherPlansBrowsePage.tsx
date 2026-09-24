@@ -66,6 +66,26 @@ export const TeacherPlansBrowsePage: React.FC = () => {
   const activeSubscription = subData?.subscription;
   const currentPlan = activeSubscription?.plan;
 
+  const isPlanCurrent = (plan: Plan): boolean => {
+    if (!currentPlan) return false;
+    return currentPlan.id === plan.id || currentPlan.slug === plan.slug;
+  };
+
+  const isPlanLowerTier = (plan: Plan): boolean => {
+    if (!activeSubscription || !currentPlan) return false;
+    if (isPlanCurrent(plan)) return false;
+
+    // Compare prices (in paise or rupees)
+    if (currentPlan.price > 0 && plan.price < currentPlan.price) {
+      return true;
+    }
+    // Compare sort order if applicable
+    if (currentPlan.sortOrder && plan.sortOrder && plan.sortOrder < currentPlan.sortOrder) {
+      return true;
+    }
+    return false;
+  };
+
   const getMatchingOfferForPlan = (planId: string) => {
     if (!autoOffers || !autoOffers.length) return null;
     return (
@@ -79,7 +99,11 @@ export const TeacherPlansBrowsePage: React.FC = () => {
   const primaryAutoOffer = autoOffers && autoOffers.length > 0 ? autoOffers[0] : null;
 
   const handleSelectPlan = (plan: Plan) => {
-    // If the instructor has an existing active plan and is switching to a different tier
+    if (isPlanCurrent(plan) || isPlanLowerTier(plan)) {
+      return;
+    }
+
+    // If the instructor has an existing active plan and is switching to a different higher tier
     if (activeSubscription && currentPlan && currentPlan.id !== plan.id && plan.price > 0) {
       setSelectedPlanForUpgrade(plan);
     } else {
@@ -191,7 +215,9 @@ export const TeacherPlansBrowsePage: React.FC = () => {
           <PricingCard
             key={plan.id}
             plan={plan}
-            isCurrentPlan={currentPlan?.id === plan.id}
+            isCurrentPlan={isPlanCurrent(plan)}
+            isLowerTier={isPlanLowerTier(plan)}
+            currentPlanName={currentPlan?.name}
             onSelectPlan={handleSelectPlan}
             billingCycle={billingCycle}
             autoOffer={getMatchingOfferForPlan(plan.id)}

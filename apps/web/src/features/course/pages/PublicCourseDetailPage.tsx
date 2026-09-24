@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCourseBySlug, usePublicCourses } from "../hooks/useCourses";
 import { LessonPreviewModal } from "../components/LessonPreviewModal";
 import { CourseCard } from "../components/CourseCard";
+import { WishlistButton } from "@/features/wishlist";
 import { useCurrentUser } from "@/features/auth";
 import { toast } from "@/lib/toast";
 import type { CourseLesson } from "../types/course.types";
@@ -166,15 +167,19 @@ export const PublicCourseDetailPage: React.FC = () => {
           </span>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleShare}
-          className="gap-1.5 text-xs rounded-xl border-neutral-200 dark:border-neutral-800 cursor-pointer"
-        >
-          {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5" />}
-          <span>{copiedLink ? "Copied Link!" : "Share Course"}</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <WishlistButton courseId={course.id} variant="pill" />
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleShare}
+            className="gap-1.5 text-xs rounded-xl border-neutral-200 dark:border-neutral-800 cursor-pointer"
+          >
+            {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5" />}
+            <span>{copiedLink ? "Copied Link!" : "Share Course"}</span>
+          </Button>
+        </div>
       </div>
 
       {/* 2. Unified Hero Header Card */}
@@ -612,6 +617,9 @@ export const PublicCourseDetailPage: React.FC = () => {
               <Sparkles className="w-4 h-4" />
               <span>{course.pricingType === "FREE" ? "Enroll for Free" : "Buy & Enroll Now"}</span>
             </Button>
+
+            {/* Wishlist Toggle Button */}
+            <WishlistButton courseId={course.id} variant="button" />
 
             {/* Checklist */}
             <div className="space-y-2.5 pt-3 border-t border-neutral-100 dark:border-neutral-800">

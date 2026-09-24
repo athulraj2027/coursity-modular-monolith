@@ -19,17 +19,6 @@ export class AdminCreateOfferUseCase {
       throw new BadRequestError("Percentage discount cannot exceed 100%.");
     }
 
-    let normalizedCode: string | null = null;
-    if (dto.code && dto.code.trim()) {
-      normalizedCode = dto.code.trim().toUpperCase();
-      const existing = await this.offerRepo.findByCode(normalizedCode);
-      if (existing) {
-        throw new ConflictError(`Promo code '${normalizedCode}' already exists.`);
-      }
-    } else if (!dto.isAutoApplied) {
-      throw new BadRequestError("A promo code is required unless the offer is set as Auto-Applied.");
-    }
-
     if (dto.validFrom && dto.validUntil) {
       if (new Date(dto.validUntil) <= new Date(dto.validFrom)) {
         throw new BadRequestError("Expiry date must be after the start date.");
@@ -38,7 +27,6 @@ export class AdminCreateOfferUseCase {
 
     return this.offerRepo.create({
       ...dto,
-      code: normalizedCode,
       title: dto.title.trim(),
     });
   }

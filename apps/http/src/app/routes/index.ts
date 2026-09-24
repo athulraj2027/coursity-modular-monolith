@@ -7,6 +7,7 @@ import subscriptionRouter from '@/modules/subscription';
 import offerRouter from '@/modules/offer';
 import categoryRouter from '@/modules/category';
 import courseRouter from '@/modules/course';
+import wishlistRouter from '@/modules/wishlist';
 import uploadRouter from '@/infrastructure/storage';
 import { candidateInterviewRouter, adminInterviewRouter } from '@/modules/interview';
 import { adminAIConfigRouter } from '@/modules/ai-config';
@@ -35,6 +36,9 @@ router.use("/categories", categoryRouter);
 
 // 5. Courses & Curriculum routes (Public discovery + Teacher studio + Admin moderation)
 router.use("/courses", courseRouter);
+
+// 6. Wishlist routes (Protected student wishlist management)
+router.use("/wishlist", wishlistRouter);
 
 // 4. AI Interview routes (Candidate endpoints & Admin management)
 router.use("/interviews", candidateInterviewRouter);

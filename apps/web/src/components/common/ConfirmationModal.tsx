@@ -4,19 +4,20 @@ import {
   AlertCircle,
   Info,
   CheckCircle2,
-  HelpCircle,
+  Sparkles,
   Loader2,
   LogOut,
   RotateCcw,
   Save,
   Trash2,
+  Heart,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ModalTemplate, type ModalTemplateProps } from "./ModalTemplate"
 import { cn } from "@/lib/utils"
 
 export type ConfirmationModalVariant = "danger" | "warning" | "info" | "success" | "neutral"
-export type ConfirmationActionType = "logout" | "discard" | "save" | "delete" | "generic"
+export type ConfirmationActionType = "logout" | "discard" | "save" | "delete" | "wishlist" | "generic"
 
 export interface ConfirmationModalProps {
   isOpen: boolean
@@ -61,7 +62,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             "Are you sure you want to sign out? You will need to sign back in to access your dashboard and account.",
           confirmText: "Sign Out",
           variant: "danger" as ConfirmationModalVariant,
-          icon: <LogOut className="w-5 h-5 text-red-500" />,
+          icon: <LogOut className="w-5 h-5 text-[#F42A18]" />,
         }
       case "discard":
         return {
@@ -86,7 +87,15 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           description: "Are you sure you want to permanently delete this? This action cannot be undone.",
           confirmText: "Delete",
           variant: "danger" as ConfirmationModalVariant,
-          icon: <Trash2 className="w-5 h-5 text-red-500" />,
+          icon: <Trash2 className="w-5 h-5 text-[#F42A18]" />,
+        }
+      case "wishlist":
+        return {
+          title: "Add to Wishlist?",
+          description: "Save this course to your wishlist so you can easily access and enroll in it later.",
+          confirmText: "Add to Wishlist",
+          variant: "neutral" as ConfirmationModalVariant,
+          icon: <Heart className="w-5 h-5 text-[#F42A18] fill-[#F42A18]" />,
         }
       case "generic":
       default:
@@ -95,7 +104,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           description: "Are you sure you want to proceed with this action?",
           confirmText: "Confirm",
           variant: "neutral" as ConfirmationModalVariant,
-          icon: null,
+          icon: <Sparkles className="w-5 h-5 text-[#F42A18]" />,
         }
     }
   }
@@ -110,10 +119,10 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     switch (effectiveVariant) {
       case "danger":
         return {
-          icon: <AlertTriangle className="w-5 h-5 text-red-500" />,
-          iconBg: "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400 shadow-sm shadow-red-500/10",
+          icon: <AlertTriangle className="w-5 h-5 text-[#F42A18]" />,
+          iconBg: "bg-red-500/10 border-red-500/20 text-[#F42A18] shadow-sm shadow-red-500/10",
           confirmButtonClass:
-            "bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-500/20 border-transparent",
+            "bg-[#F42A18] hover:bg-[#d92211] text-white shadow-md shadow-[#F42A18]/25 border-transparent",
         }
       case "warning":
         return {
@@ -139,10 +148,10 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       case "neutral":
       default:
         return {
-          icon: <HelpCircle className="w-5 h-5 text-neutral-500" />,
-          iconBg: "bg-neutral-500/10 border-neutral-500/20 text-neutral-700 dark:text-neutral-300",
+          icon: <Sparkles className="w-5 h-5 text-[#F42A18]" />,
+          iconBg: "bg-red-500/10 border-red-500/20 text-[#F42A18] shadow-sm shadow-red-500/10",
           confirmButtonClass:
-            "bg-neutral-900 hover:bg-neutral-800 dark:bg-neutral-100 dark:hover:bg-neutral-200 text-white dark:text-neutral-900",
+            "bg-[#F42A18] hover:bg-[#d92211] text-white shadow-md shadow-[#F42A18]/25 border-transparent",
         }
     }
   }
@@ -151,7 +160,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   const iconContent = icon || actionDefaults.icon || variantStyle.icon
 
   const renderedIcon = (
-    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border shrink-0", variantStyle.iconBg)}>
+    <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center border shrink-0", variantStyle.iconBg)}>
       {iconContent}
     </div>
   )
@@ -168,7 +177,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         variant="outline"
         onClick={onClose}
         disabled={isLoading}
-        className="text-xs rounded-xl border-neutral-200 dark:border-neutral-800 cursor-pointer"
+        className="text-xs rounded-xl border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer h-9 px-4 font-medium"
       >
         {cancelText}
       </Button>
@@ -178,7 +187,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         onClick={handleConfirm}
         disabled={isLoading}
         className={cn(
-          "text-xs rounded-xl font-medium cursor-pointer transition-all flex items-center gap-1.5",
+          "text-xs rounded-xl font-semibold cursor-pointer transition-all flex items-center gap-1.5 h-9 px-4.5",
           variantStyle.confirmButtonClass
         )}
       >
@@ -207,4 +216,3 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 }
 
 export default ConfirmationModal
-
