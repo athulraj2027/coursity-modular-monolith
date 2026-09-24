@@ -7,6 +7,7 @@ export * from "./components/TopUpWalletModal";
 export * from "./components/RequestPayoutModal";
 export * from "./components/AdminPayoutActionModal";
 export * from "./components/AdminWalletAdjustModal";
+export * from "./components/TeacherPayoutsTable";
 export * from "./pages/UserWalletPage";
 export * from "./pages/AdminWalletsPage";
 export * from "./pages/AdminPayoutsPage";

@@ -1,4 +1,3 @@
-import React from "react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -13,6 +12,7 @@ import {
   ChevronRight,
   Receipt,
   Building2,
+  RefreshCw,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -123,6 +123,8 @@ export const WalletTransactionTable: React.FC<WalletTransactionTableProps> = ({
           Showing {transactions.length} of {total} transactions
         </span>
       </div>
+
+
 
       {/* 2. Transactions Table Container */}
       <div className="overflow-hidden rounded-2xl border border-neutral-200/90 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xs">
