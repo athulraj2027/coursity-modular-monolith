@@ -1,5 +1,6 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useCurrentUser } from "@/features/auth";
 import { useInterviewSession } from "../hooks/useInterviewSession";
 import {
   Sparkles,
@@ -17,7 +18,18 @@ import {
 export const InterviewLandingPage: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const { data: user } = useCurrentUser();
   const { session, loading, error } = useInterviewSession(sessionId);
+
+  const isTeacher = user?.role?.toUpperCase() === "TEACHER" || session?.type === "TEACHER_VETTING";
+
+  const handleReturn = () => {
+    if (isTeacher) {
+      navigate("/teachers/onboarding/interview");
+    } else {
+      navigate("/dashboard");
+    }
+  };
 
   if (loading) {
     return (
@@ -37,10 +49,10 @@ export const InterviewLandingPage: React.FC = () => {
         <h2 className="text-xl font-bold">Interview Not Found</h2>
         <p className="text-xs text-neutral-400">{error || "This interview session does not exist or has expired."}</p>
         <button
-          onClick={() => navigate("/dashboard")}
-          className="px-5 py-2.5 bg-[#F42A18] text-white text-xs font-semibold rounded-xl"
+          onClick={handleReturn}
+          className="px-5 py-2.5 bg-[#F42A18] text-white text-xs font-semibold rounded-xl cursor-pointer"
         >
-          Return to Dashboard
+          Return to {isTeacher ? "Onboarding" : "Dashboard"}
         </button>
       </div>
     );
@@ -144,24 +156,24 @@ export const InterviewLandingPage: React.FC = () => {
       {/* 4. Action Button */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-neutral-800">
         <button
-          onClick={() => navigate("/dashboard")}
-          className="text-xs font-semibold text-neutral-400 hover:text-white transition order-2 sm:order-1"
+          onClick={handleReturn}
+          className="text-xs font-semibold text-neutral-400 hover:text-white transition order-2 sm:order-1 cursor-pointer"
         >
-          Cancel & Return to Dashboard
+          Cancel & Return to {isTeacher ? "Onboarding" : "Dashboard"}
         </button>
 
         {isAlreadyCompleted ? (
           <button
-            onClick={() => navigate(`/interview/${sessionId}/completed`)}
-            className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-xl flex items-center justify-center gap-2 transition order-1 sm:order-2"
+            onClick={handleReturn}
+            className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-xl flex items-center justify-center gap-2 transition order-1 sm:order-2 cursor-pointer"
           >
-            <span>View Assessment Results</span>
+            <span>{isTeacher ? "Return to Onboarding Overview" : "View Assessment Results"}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         ) : (
           <button
             onClick={() => navigate(`/interview/${sessionId}/setup`)}
-            className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#F42A18] hover:bg-[#d82212] text-white font-bold text-sm shadow-xl hover:shadow-red-500/20 flex items-center justify-center gap-2 transition order-1 sm:order-2"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#F42A18] hover:bg-[#d82212] text-white font-bold text-sm shadow-xl hover:shadow-red-500/20 flex items-center justify-center gap-2 transition order-1 sm:order-2 cursor-pointer"
           >
             <span>Check Hardware & Setup</span>
             <ArrowRight className="w-4 h-4" />

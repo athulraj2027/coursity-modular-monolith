@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCurrentUser } from "@/features/auth";
 import { useInterviewSession } from "../hooks/useInterviewSession";
 import { useAudioDevices } from "../hooks/useAudioDevices";
 import { useInterviewSocket } from "../hooks/useInterviewSocket";
@@ -16,9 +18,28 @@ import { Loader2, AlertCircle, Send, MessageSquareText } from "lucide-react";
 export const InterviewRoomPage: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { data: user } = useCurrentUser();
 
   const { session, realtimeToken, loading: sessionLoading, error: sessionError, completeSession } =
     useInterviewSession(sessionId);
+
+  const isTeacher = user?.role?.toUpperCase() === "TEACHER" || session?.type === "TEACHER_VETTING";
+
+  const handleFinishRedirect = () => {
+    queryClient.invalidateQueries({ queryKey: ["profile"] });
+    queryClient.invalidateQueries({ queryKey: ["current-user"] });
+    queryClient.invalidateQueries({ queryKey: ["my-vetting-interviews"] });
+    if (sessionId) {
+      queryClient.invalidateQueries({ queryKey: ["interview-session", sessionId] });
+    }
+
+    if (isTeacher) {
+      navigate("/teachers/onboarding/interview");
+    } else {
+      navigate("/students/dashboard");
+    }
+  };
 
   const {
     stream,
@@ -68,7 +89,7 @@ export const InterviewRoomPage: React.FC = () => {
     onSessionComplete: () => {
       stopAllDevices();
       stopAudio();
-      navigate(`/interview/${sessionId}/completed`);
+      handleFinishRedirect();
     },
   });
 
@@ -97,15 +118,14 @@ export const InterviewRoomPage: React.FC = () => {
       stopAllDevices();
       stopAudio();
       await completeSession();
-      navigate(`/interview/${sessionId}/completed`);
     } catch (err) {
       console.error("Error ending interview:", err);
       stopAllDevices();
       stopAudio();
-      navigate(`/interview/${sessionId}/completed`);
     } finally {
       setIsEnding(false);
       setShowEndDialog(false);
+      handleFinishRedirect();
     }
   };
 

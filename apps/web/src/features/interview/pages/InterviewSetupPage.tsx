@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useCurrentUser } from "@/features/auth";
 import { useInterviewSession } from "../hooks/useInterviewSession";
 import { useAudioDevices } from "../hooks/useAudioDevices";
 import { CameraPreview } from "../components/CameraPreview";
@@ -9,7 +10,18 @@ import { ArrowRight, ArrowLeft, Sparkles, Mic, Video, MicOff, VideoOff, AlertCir
 export const InterviewSetupPage: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const { data: user } = useCurrentUser();
   const { session, loading, error, startSession } = useInterviewSession(sessionId);
+
+  const isTeacher = user?.role?.toUpperCase() === "TEACHER" || session?.type === "TEACHER_VETTING";
+
+  const handleReturn = () => {
+    if (isTeacher) {
+      navigate("/teachers/onboarding/interview");
+    } else {
+      navigate("/dashboard");
+    }
+  };
 
   const {
     stream,
@@ -67,10 +79,10 @@ export const InterviewSetupPage: React.FC = () => {
         <h2 className="text-xl font-bold">Session Unavailable</h2>
         <p className="text-xs text-neutral-400">{error || "Could not retrieve session details."}</p>
         <button
-          onClick={() => navigate("/dashboard")}
-          className="px-5 py-2.5 bg-[#F42A18] text-white text-xs font-semibold rounded-xl"
+          onClick={handleReturn}
+          className="px-5 py-2.5 bg-[#F42A18] text-white text-xs font-semibold rounded-xl cursor-pointer"
         >
-          Return to Dashboard
+          Return to {isTeacher ? "Onboarding" : "Dashboard"}
         </button>
       </div>
     );

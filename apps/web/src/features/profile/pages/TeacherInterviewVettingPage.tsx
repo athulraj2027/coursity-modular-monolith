@@ -12,7 +12,6 @@ import {
   History,
   TrendingUp,
   CheckCircle2,
-  FileText,
   AlertTriangle,
   RotateCcw,
 } from "lucide-react"
@@ -261,18 +260,6 @@ export const TeacherInterviewVettingPage: React.FC = () => {
                       <strong className="text-neutral-800 dark:text-neutral-200">Feedback:</strong> {session.summaryFeedback}
                     </p>
                   )}
-
-                  <div className="flex items-center justify-end pt-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigate(`/interview/${session.id}/report`)}
-                      className="text-[11px] font-medium text-neutral-600 dark:text-neutral-300 hover:text-[#F42A18] h-7 px-2.5 cursor-pointer gap-1"
-                    >
-                      <FileText className="w-3 h-3" />
-                      <span>View Session Dossier</span>
-                    </Button>
-                  </div>
                 </div>
               )
             })}

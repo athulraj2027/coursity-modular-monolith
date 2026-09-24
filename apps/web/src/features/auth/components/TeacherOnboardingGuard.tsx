@@ -60,8 +60,12 @@ export const TeacherOnboardingGuard: React.FC<TeacherOnboardingGuardProps> = ({ 
 
   // Stage 4: Completed Onboarding (VERIFIED & Interview Passed)
   if (approvalStatus === "VERIFIED" && isInterviewPassed) {
-    // If completed teacher lands on an onboarding path, redirect to full dashboard
-    if (pathname.startsWith("/teachers/onboarding")) {
+    // If completed teacher lands on an earlier onboarding step, redirect to full dashboard
+    if (
+      pathname === "/teachers/onboarding" ||
+      pathname === "/teachers/onboarding/profile" ||
+      pathname === "/teachers/onboarding/review"
+    ) {
       return <Navigate to="/teachers/dashboard" replace />
     }
     return children ? <>{children}</> : <Outlet />
