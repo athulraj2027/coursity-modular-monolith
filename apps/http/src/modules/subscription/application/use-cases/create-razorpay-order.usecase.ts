@@ -1,4 +1,5 @@
 import { PlanRepository } from "@/modules/plan/domain/repositories/plan.repository";
+import { SubscriptionRepository } from "../../domain/repositories/subscription.repository";
 import { IPaymentGateway } from "@/infrastructure/payment";
 import { GetPlanOfferUseCase } from "@/modules/offer/application/use-cases/get-plan-offer.usecase";
 import { CreateRazorpayOrderDto, RazorpayOrderResponseDto } from "../../domain/dtos/subscription.dto";
@@ -9,7 +10,8 @@ export class CreateRazorpayOrderUseCase {
   constructor(
     private readonly planRepo: PlanRepository,
     private readonly paymentGateway: IPaymentGateway,
-    private readonly getPlanOfferUseCase?: GetPlanOfferUseCase
+    private readonly getPlanOfferUseCase?: GetPlanOfferUseCase,
+    private readonly subscriptionRepo?: SubscriptionRepository
   ) {}
 
   async execute(dto: CreateRazorpayOrderDto): Promise<RazorpayOrderResponseDto> {
@@ -20,6 +22,26 @@ export class CreateRazorpayOrderUseCase {
 
     if (!plan.isActive) {
       throw new BadRequestError(`Plan '${plan.name}' is not currently available for subscriptions.`);
+    }
+
+    // Guard against downgrading or ordering already active plan
+    if (this.subscriptionRepo && dto.teacherProfileId) {
+      const activeSub = await this.subscriptionRepo.findActiveByTeacherId(dto.teacherProfileId);
+      let currentPlan = activeSub?.plan;
+      if (activeSub && !currentPlan && activeSub.planId) {
+        currentPlan = (await this.planRepo.findById(activeSub.planId)) || undefined;
+      }
+
+      if (activeSub && activeSub.status === "ACTIVE" && currentPlan) {
+        if (currentPlan.id === plan.id) {
+          throw new BadRequestError(`You are already subscribed to the '${plan.name}' plan.`);
+        }
+        if (currentPlan.price > 0 && plan.price < currentPlan.price) {
+          throw new BadRequestError(
+            `Cannot downgrade active '${currentPlan.name}' plan to a lower tier with reduced quotas.`
+          );
+        }
+      }
     }
 
     // Determine billing cycle

@@ -2,6 +2,7 @@ import { SubscriptionRepository } from "../../domain/repositories/subscription.r
 import { PlanRepository } from "@/modules/plan/domain/repositories/plan.repository";
 import { TeacherSubscription } from "../../domain/entities/subscription.entity";
 import { SubscribePlanDto } from "../../domain/dtos/subscription.dto";
+import { BadRequestError, NotFoundError } from "@/app/errors";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
 
 export class SubscribePlanUseCase {
@@ -13,14 +14,29 @@ export class SubscribePlanUseCase {
   async execute(dto: SubscribePlanDto): Promise<TeacherSubscription> {
     const targetPlan = await this.planRepo.findById(dto.planId);
     if (!targetPlan) {
-      throw new Error(`Plan with id '${dto.planId}' not found.`);
+      throw new NotFoundError(`Plan with id '${dto.planId}' not found.`);
     }
 
     if (!targetPlan.isActive) {
-      throw new Error(`Plan '${targetPlan.name}' is currently not active for new subscriptions.`);
+      throw new BadRequestError(`Plan '${targetPlan.name}' is currently not active for new subscriptions.`);
     }
 
     const activeSub = await this.subscriptionRepo.findActiveByTeacherId(dto.teacherProfileId);
+    let currentPlan = activeSub?.plan;
+    if (activeSub && !currentPlan && activeSub.planId) {
+      currentPlan = (await this.planRepo.findById(activeSub.planId)) || undefined;
+    }
+
+    if (activeSub && activeSub.status === "ACTIVE" && currentPlan) {
+      if (currentPlan.id === targetPlan.id) {
+        throw new BadRequestError(`You are already subscribed to the '${targetPlan.name}' plan.`);
+      }
+      if (currentPlan.price > 0 && targetPlan.price < currentPlan.price) {
+        throw new BadRequestError(
+          `Cannot downgrade active '${currentPlan.name}' plan to a lower tier with reduced quotas.`
+        );
+      }
+    }
 
     const now = new Date();
     const periodEnd = new Date(now);
