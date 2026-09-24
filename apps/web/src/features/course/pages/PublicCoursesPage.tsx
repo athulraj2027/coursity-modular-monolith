@@ -233,7 +233,7 @@ export const PublicCoursesPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           {/* Desktop Filter Sidebar */}
-          <div className="hidden lg:block w-72 shrink-0 bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-5 shadow-sm sticky top-24">
+          <div className="hidden lg:block w-72 shrink-0 bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-5 shadow-sm sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto no-scrollbar">
             <CourseFilterSidebar
               categories={categoriesList}
               filters={filters}
@@ -522,7 +522,7 @@ export const PublicCoursesPage: React.FC = () => {
       {/* Mobile Filters Drawer / Modal */}
       {isMobileFilterOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="relative w-full max-w-xs h-full bg-white dark:bg-neutral-900 p-6 overflow-y-auto shadow-2xl ml-auto">
+          <div className="relative w-full max-w-xs h-full bg-white dark:bg-neutral-900 p-6 overflow-y-auto shadow-2xl ml-auto no-scrollbar">
             <CourseFilterSidebar
               categories={categoriesList}
               filters={filters}
