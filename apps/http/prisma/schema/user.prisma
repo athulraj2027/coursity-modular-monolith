@@ -32,6 +32,7 @@ model User {
   profile      Profile?
   interviews   InterviewSession[]
   wishlist     Wishlist?
+  bankDetails  BankDetail[]
 
   @@map("users")
 }

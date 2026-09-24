@@ -1,0 +1,60 @@
+// ==========================================
+// BANK ACCOUNTS & PAYOUT METHODS SCHEMA
+// ==========================================
+
+enum BankAccountType {
+  SAVINGS
+  CURRENT
+}
+
+enum BankVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  FAILED
+}
+
+enum PayoutMethodType {
+  BANK_ACCOUNT
+  UPI
+}
+
+model BankDetail {
+  id                    String                 @id @default(uuid())
+  userId                String
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Payout Method Type
+  methodType            PayoutMethodType       @default(BANK_ACCOUNT)
+  
+  // Bank Account Information
+  accountHolderName     String                 // Full name matching bank records
+  accountNumber         String                 // Bank account number
+  ifscCode              String                 // 11-character Indian Financial System Code
+  bankName              String                 // e.g. "HDFC Bank", "State Bank of India"
+  branchName            String?                // e.g. "Koramangala, Bengaluru"
+  accountType           BankAccountType        @default(SAVINGS)
+  
+  // UPI Option
+  upiId                 String?                // e.g. "instructor@okhdfcbank"
+  
+  // Primary Account Flag
+  isPrimary             Boolean                @default(true)
+  
+  // Verification & Compliance
+  verificationStatus    BankVerificationStatus @default(VERIFIED)
+  verificationNotes     String?                // Notes or failure reason if rejected
+  verifiedAt            DateTime?              @default(now())
+  
+  // Payment Gateway References (RazorpayX Payouts)
+  razorpayFundAccountId String?                // rzp_fa_xxxx
+  razorpayContactId     String?                // rzp_cont_xxxx
+
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  @@index([userId, isPrimary])
+  @@index([userId, verificationStatus])
+  @@index([verificationStatus, createdAt])
+  @@map("bank_details")
+}

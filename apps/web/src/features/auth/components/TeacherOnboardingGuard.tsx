@@ -58,20 +58,6 @@ export const TeacherOnboardingGuard: React.FC<TeacherOnboardingGuardProps> = ({ 
     return children ? <>{children}</> : <Outlet />
   }
 
-  // Stage 4: Completed Onboarding (VERIFIED & Interview Passed)
-  if (approvalStatus === "VERIFIED" && isInterviewPassed) {
-    // If completed teacher lands on an earlier onboarding step or back-navigates into interview studio, redirect to full dashboard
-    if (
-      pathname === "/teachers/onboarding" ||
-      pathname === "/teachers/onboarding/profile" ||
-      pathname === "/teachers/onboarding/review" ||
-      pathname.startsWith("/interview/")
-    ) {
-      return <Navigate to="/teachers/dashboard" replace />
-    }
-    return children ? <>{children}</> : <Outlet />
-  }
-
   // Stage 1: Profile Completion & Verification Submission (PENDING or REDO)
   if (approvalStatus === "PENDING" || approvalStatus === "REDO") {
     if (pathname !== "/teachers/onboarding/profile" && !pathname.includes("/password")) {
@@ -88,16 +74,21 @@ export const TeacherOnboardingGuard: React.FC<TeacherOnboardingGuardProps> = ({ 
     return children ? <>{children}</> : <Outlet />
   }
 
-  // Stage 3: Credentials Verified, Awaiting AI Interview Pass
-  if (approvalStatus === "VERIFIED" && !isInterviewPassed) {
-    // Only allow the onboarding interview assessment page and active interview studio session
-    const isAllowed =
-      pathname === "/teachers/onboarding/interview" ||
-      pathname.startsWith("/interview/")
-
-    if (!isAllowed) {
+  // Stage 3 & 4: Credentials Verified by Admissions (VERIFIED)
+  if (approvalStatus === "VERIFIED") {
+    // If navigating to root /teachers/onboarding or old profile/review steps, direct to current active step
+    if (
+      pathname === "/teachers/onboarding" ||
+      pathname === "/teachers/onboarding/profile" ||
+      pathname === "/teachers/onboarding/review"
+    ) {
+      if (isInterviewPassed) {
+        return <Navigate to="/teachers/onboarding/bank-details" replace />
+      }
       return <Navigate to="/teachers/onboarding/interview" replace />
     }
+
+    // Allow bank setup, interview assessment studio, and Creator Studio dashboard
     return children ? <>{children}</> : <Outlet />
   }
 

@@ -1,5 +1,5 @@
 import React from "react"
-import { Outlet, Link, useNavigate } from "react-router-dom"
+import { Outlet, Link, useNavigate, useLocation } from "react-router-dom"
 import {
   FileText,
   Clock,
@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Sparkles,
+  Building2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -19,6 +20,7 @@ import { useProfile } from "@/features/profile"
 
 export const TeacherOnboardingLayout: React.FC = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const logout = useLogout()
   const { data: user } = useCurrentUser()
   const { data: profileData } = useProfile()
@@ -32,14 +34,19 @@ export const TeacherOnboardingLayout: React.FC = () => {
   // 0: Profile & Credentials (PENDING / REDO)
   // 1: Under Review (IN_PROGRESS)
   // 2: AI Vetting Assessment (VERIFIED & !isInterviewPassed)
-  // 3: Creator Hub Unlocked (VERIFIED & isInterviewPassed)
+  // 3: Bank & Payout Setup (VERIFIED & isInterviewPassed & on /bank-details)
+  // 4: Creator Hub Unlocked (VERIFIED & isInterviewPassed)
   let currentStepIndex = 0
   if (approvalStatus === "IN_PROGRESS") {
     currentStepIndex = 1
   } else if (approvalStatus === "VERIFIED" && !isInterviewPassed) {
     currentStepIndex = 2
   } else if (approvalStatus === "VERIFIED" && isInterviewPassed) {
-    currentStepIndex = 3
+    if (location.pathname.includes("/bank-details") || location.pathname.includes("/payout")) {
+      currentStepIndex = 3
+    } else {
+      currentStepIndex = 4
+    }
   }
 
   const steps = [
@@ -63,6 +70,13 @@ export const TeacherOnboardingLayout: React.FC = () => {
       shortTitle: "AI Interview",
       icon: Bot,
       path: "/teachers/onboarding/interview",
+    },
+    {
+      id: "bank-details",
+      title: "Bank & Payout Setup",
+      shortTitle: "Payout Setup",
+      icon: Building2,
+      path: "/teachers/onboarding/bank-details",
     },
     {
       id: "dashboard",
@@ -216,10 +230,10 @@ export const TeacherOnboardingLayout: React.FC = () => {
           <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#F42A18] text-white text-[11px] font-bold">
             {currentStepIndex + 1}
           </div>
-          <span>Step {currentStepIndex + 1} of 4: {steps[currentStepIndex]?.title}</span>
+          <span>Step {currentStepIndex + 1} of {steps.length}: {steps[currentStepIndex]?.title}</span>
         </div>
         <span className="text-[11px] font-medium text-neutral-400">
-          {Math.round(((currentStepIndex + 1) / 4) * 100)}% Complete
+          {Math.round(((currentStepIndex + 1) / steps.length) * 100)}% Complete
         </span>
       </div>
 

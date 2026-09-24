@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { interviewApi } from "../api/interview.api";
 import type { InterviewReportData, InterviewTranscript } from "../types/interview.types";
 import { useCurrentUser } from "@/features/auth";
@@ -24,6 +25,7 @@ import { Button } from "@/components/ui/button";
 export const InterviewCompletedPage: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: user } = useCurrentUser();
   const isTeacher = user?.role === "TEACHER" || user?.role === "teacher";
   const isAdmin = user?.role === "ADMIN" || user?.role === "admin";
@@ -46,6 +48,9 @@ export const InterviewCompletedPage: React.FC = () => {
         ]);
         setReport(repRes.data);
         setTranscripts(trRes.data || []);
+        queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+        queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+        queryClient.invalidateQueries({ queryKey: ["my-vetting-interviews"] });
       } catch (err: any) {
         setError(err.message || "Failed to load evaluation dossier");
       } finally {
@@ -54,12 +59,12 @@ export const InterviewCompletedPage: React.FC = () => {
     };
 
     fetchData();
-  }, [sessionId]);
+  }, [sessionId, queryClient]);
 
   const handleBack = () => {
     if (isTeacher) {
       if (report?.overallScore && report.overallScore >= 70) {
-        navigate("/teachers/dashboard");
+        navigate("/teachers/onboarding/bank-details");
       } else {
         navigate("/teachers/onboarding/interview");
       }
@@ -123,7 +128,13 @@ export const InterviewCompletedPage: React.FC = () => {
             className="border-neutral-200 dark:border-neutral-800 bg-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 text-xs h-9 px-3 gap-1.5"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>{isTeacher ? "Back to AI Studio" : "Back to Dashboard"}</span>
+            <span>
+              {isTeacher
+                ? isPassed
+                  ? "Proceed to Payout Setup"
+                  : "Back to AI Studio"
+                : "Back to Dashboard"}
+            </span>
           </Button>
           <span className="text-xs font-mono text-neutral-400 dark:text-neutral-500 hidden sm:inline">
             ID: {sessionId?.slice(0, 8)}...

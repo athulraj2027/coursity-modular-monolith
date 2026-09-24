@@ -5,4 +5,5 @@ export * from "./ChangePasswordPage"
 export * from "./TeacherOnboardingProfilePage"
 export * from "./TeacherApplicationReviewPage"
 export * from "./TeacherInterviewVettingPage"
+export * from "./TeacherOnboardingBankDetailsPage"
 

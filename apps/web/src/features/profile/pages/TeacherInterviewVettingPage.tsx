@@ -72,7 +72,7 @@ export const TeacherInterviewVettingPage: React.FC = () => {
   const handleStartAiInterview = async () => {
     if (!canRetry) {
       if (isInterviewPassed) {
-        navigate("/teachers/dashboard")
+        navigate("/teachers/onboarding/bank-details")
         return
       }
       toast.error("Maximum assessment attempts (3 of 3) reached. Please contact admissions support.")
@@ -302,10 +302,10 @@ export const TeacherInterviewVettingPage: React.FC = () => {
       <div className="flex flex-col items-center gap-2 pt-2">
         {isInterviewPassed ? (
           <Button
-            onClick={() => navigate("/teachers/dashboard")}
+            onClick={() => navigate("/teachers/onboarding/bank-details")}
             className="gap-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25 cursor-pointer px-7 py-3 transition-all active:scale-95"
           >
-            <span>Enter Creator Studio Dashboard</span>
+            <span>Proceed to Payout & Bank Setup</span>
             <ArrowRight className="w-4 h-4" />
           </Button>
         ) : canRetry ? (
