@@ -9,6 +9,7 @@ import categoryRouter from '@/modules/category';
 import courseRouter from '@/modules/course';
 import wishlistRouter from '@/modules/wishlist';
 import bankDetailRouter from '@/modules/bank-detail';
+import walletRouter from '@/modules/wallet';
 import uploadRouter from '@/infrastructure/storage';
 import { candidateInterviewRouter, adminInterviewRouter } from '@/modules/interview';
 import { adminAIConfigRouter } from '@/modules/ai-config';
@@ -45,6 +46,10 @@ router.use("/wishlist", wishlistRouter);
 router.use("/bank-details", bankDetailRouter);
 router.use("/admin/bank-details", bankDetailRouter);
 router.use("/banks", bankDetailRouter);
+
+// 8. Wallet & Ledger System (Students, Teachers, Admin)
+router.use("/wallet", walletRouter);
+router.use("/wallets", walletRouter);
 
 // 4. AI Interview routes (Candidate endpoints & Admin management)
 router.use("/interviews", candidateInterviewRouter);

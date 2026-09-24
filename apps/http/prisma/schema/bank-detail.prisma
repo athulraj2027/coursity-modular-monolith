@@ -50,6 +50,8 @@ model BankDetail {
   razorpayFundAccountId String?                // rzp_fa_xxxx
   razorpayContactId     String?                // rzp_cont_xxxx
 
+  payoutRequests        PayoutRequest[]
+
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
 

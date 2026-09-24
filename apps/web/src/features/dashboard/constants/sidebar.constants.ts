@@ -14,6 +14,8 @@ import {
   CreditCard,
   Tag,
   Building2,
+  Wallet,
+  ArrowUpRight,
   type LucideIcon,
 } from "lucide-react"
 
@@ -50,6 +52,11 @@ export const STUDENT_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         icon: User,
       },
       {
+        title: "My Wallet",
+        url: "/students/wallet",
+        icon: Wallet,
+      },
+      {
         title: "Bank Accounts",
         url: "/students/bank-details",
         icon: Building2,
@@ -81,6 +88,11 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Courses & Studio",
         url: "/teachers/courses",
         icon: GraduationCap,
+      },
+      {
+        title: "Wallet & Payouts",
+        url: "/teachers/wallet",
+        icon: Wallet,
       },
       {
         title: "Plans & Billing",
@@ -140,6 +152,16 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Students",
         url: "/admin/users",
         icon: Users,
+      },
+      {
+        title: "Wallets",
+        url: "/admin/wallets",
+        icon: Wallet,
+      },
+      {
+        title: "Payout Requests",
+        url: "/admin/payouts",
+        icon: ArrowUpRight,
       },
       {
         title: "Bank Accounts",
