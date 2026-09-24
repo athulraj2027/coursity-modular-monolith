@@ -1,12 +1,12 @@
 # Coursity - Next-Gen Collaborative Learning Platform
 
-Welcome to **Coursity** — a modular, cloud-ready educational platform designed for modern online learning, live interactive cohorts, teacher verification vetting, and scalable subscription tiers.
+Welcome to **Coursity** — a modular, cloud-ready educational platform designed for modern online learning, live interactive cohorts, teacher verification vetting, real-time AI voice evaluations, financial wallet ledgers, and scalable subscription tiers.
 
 ---
 
-## System Architecture
+## 🏛️ System Architecture
 
-Coursity is structured as a **Modular Monolith** in a containerized monorepo. It cleanly separates the Single Page Application (SPA) frontend, the domain-driven REST API backend, persistent caching, database engines, and cloud storage:
+Coursity is structured as a **Modular Monolith** in a containerized monorepo. It cleanly separates the Single Page Application (SPA) frontend, the domain-driven REST API backend, the real-time AI interview microservice, persistent caching, database engines, and cloud storage:
 
 ```mermaid
 graph TD
@@ -19,21 +19,25 @@ graph TD
     subgraph Application Tier
         Frontend[React 19 + Vite SPA\napps/web]
         Backend[Node.js + Express 5 Core API\napps/http : Port 3000]
+        AIInterview[AI Real-Time Voice Microservice\napps/ai-interview : Port 4000]
         Worker[BullMQ Background Queue Worker\nEmail & Async Tasks]
     end
 
     subgraph Data & Cloud Tier
-        Postgres[(PostgreSQL 16\nPrimary Database)]
+        Postgres[(PostgreSQL 16\nPrimary Database & Multi-File Prisma)]
         Redis[(Redis 7\nCache & Job Queue)]
-        S3[(AWS S3 Storage\nResumes & Media)]
+        S3[(AWS S3 Storage\nResumes, Avatars & Audio)]
     end
 
     Client -->|HTTPS / Port 5173| Nginx
     Nginx --> Frontend
     Frontend -->|REST API / Port 3000| Backend
+    Frontend <-->|WebSockets Audio / Port 4000| AIInterview
+    AIInterview -->|Internal Sync| Backend
     Backend --> Postgres
     Backend --> Redis
     Backend --> S3
+    AIInterview --> S3
     Worker --> Redis
 ```
 
@@ -45,9 +49,9 @@ The repository is divided into self-contained applications located in [`/apps`](
 
 | Service | Path | Tech Stack | Documentation |
 | :--- | :--- | :--- | :--- |
-| **Frontend Web App** | [`apps/web`](file:///d:/second-project/coursity-rebuild/apps/web) | React 19, Vite, Tailwind CSS, TanStack Query | [**Frontend README**](file:///d:/second-project/coursity-rebuild/apps/web/README.md) |
-| **Core REST API** | [`apps/http`](file:///d:/second-project/coursity-rebuild/apps/http) | Express 5, TypeScript, Prisma ORM, BullMQ | [**Backend README**](file:///d:/second-project/coursity-rebuild/apps/http/README.md) |
-| **AI Interview Engine** | `apps/ai-interview` | WebSockets, WebRTC, LLM Voice Orchestration | *(Roadmap)* |
+| **Frontend Web App** | [`apps/web`](file:///d:/second-project/coursity-rebuild/apps/web) | React 19, Vite, Tailwind CSS v4, TanStack Query v5 | [**Frontend README**](file:///d:/second-project/coursity-rebuild/apps/web/README.md) |
+| **Core REST API** | [`apps/http`](file:///d:/second-project/coursity-rebuild/apps/http) | Express 5, TypeScript, Clean Architecture / DDD, Prisma 6 | [**Backend README**](file:///d:/second-project/coursity-rebuild/apps/http/README.md) |
+| **AI Interview Engine** | [`apps/ai-interview`](file:///d:/second-project/coursity-rebuild/apps/ai-interview) | WebSockets, VAD, Google GenAI, Deepgram STT, ElevenLabs TTS | [**AI Interview README**](file:///d:/second-project/coursity-rebuild/apps/ai-interview/README.md) |
 | **Live Classroom SFU** | `apps/media-sfu` | Mediasoup, C++ Workers, WebRTC Video SFU | *(Roadmap)* |
 
 ---
@@ -56,16 +60,17 @@ The repository is divided into self-contained applications located in [`/apps`](
 
 * **Frontend:** React 19, Vite 6, TypeScript, Tailwind CSS v4, TanStack Query v5, React Router v7, Lucide Icons.
 * **Backend:** Node.js 22, Express 5, TypeScript, Clean Architecture / DDD, Zod 4 runtime validation.
-* **Database & ORM:** PostgreSQL 16, Prisma ORM 6 (Auto-migrations & Type-safe Client).
-* **Caching & Queues:** Redis 7, BullMQ (Transactional email delivery, async tasks, idempotency).
-* **Storage & Media:** AWS S3 (Presigned direct-to-S3 uploads for resumes and avatars).
-* **DevOps & Containers:** Docker, Docker Compose (Development with live reload & Production multi-stage builds).
+* **AI & Realtime:** Node.js, WebSockets, Google Gemini 1.5 Flash / 2.0 Flash, Deepgram Nova-2 STT, ElevenLabs TTS.
+* **Database & ORM:** PostgreSQL 16, Prisma ORM 6 with modular multi-file schema (`prisma/schema/*.prisma`).
+* **Caching & Queues:** Redis 7, BullMQ (Transactional email delivery, async tasks, idempotency keys).
+* **Storage & Media:** AWS S3 (Presigned direct-to-S3 uploads for resumes, avatars, and audio records).
+* **DevOps & Containers:** Docker, Docker Compose (Development with hot-reload & Production multi-stage builds).
 
 ---
 
 ## 🚀 Quick Start (Dockerized)
 
-The fastest way to spin up the complete Coursity stack (PostgreSQL, Redis, Backend, and Frontend):
+The fastest way to spin up the complete Coursity stack (PostgreSQL, Redis, Backend, AI Interview, and Frontend):
 
 ### 1. Setup Environment Variables
 Copy `.env.example` to `.env` in the root:
@@ -91,6 +96,7 @@ docker compose up --build -d
 ### 3. Access the Services
 * **Frontend Web App:** [http://localhost:5173](http://localhost:5173)
 * **Backend REST API:** [http://localhost:3000/api](http://localhost:3000/api)
+* **AI Interview Engine:** [ws://localhost:4000](ws://localhost:4000)
 * **Health Check:** [http://localhost:3000/health](http://localhost:3000/health)
 
 ---
@@ -113,7 +119,14 @@ npm run prisma:migrate
 npm run dev
 ```
 
-### 2. Frontend Setup (`apps/web`)
+### 2. AI Interview Engine Setup (`apps/ai-interview`)
+```bash
+cd apps/ai-interview
+npm install
+npm run dev
+```
+
+### 3. Frontend Setup (`apps/web`)
 ```bash
 cd apps/web
 npm install
@@ -125,22 +138,26 @@ npm run dev
 ## 📊 Core Business Capabilities
 
 1. **Dual Role Architecture (Students & Teachers)**:
-   - Students can discover courses, subscribe to plans, and track learning progress.
-   - Teachers submit comprehensive verification applications (Resume upload to S3, LinkedIn/Website portfolios, Expertise tags, and Experience level).
+   - Students can discover courses, manage wallets, enroll in courses, and track learning progress.
+   - Teachers submit comprehensive verification applications (Resumes, LinkedIn/Portfolios, AI voice evaluations, and Bank accounts).
 
-2. **Teacher Verification & Approval State Machine**:
+2. **Teacher Verification & AI Vetting State Machine**:
    - Statuses: `PENDING` ➔ `IN_PROGRESS` ➔ `VERIFIED` / `REDO` / `REVOKED`.
-   - Max submission limits (5 attempts) and automated admin review feedback.
+   - Real-time AI voice technical interview with multi-rubric evaluation, audio archiving, and automated scoring.
 
-3. **Dynamic Plan & Metered Feature Catalog**:
+3. **Financial Wallet Ledger & Instructor Payouts**:
+   - Double-entry ledger recording deposits, course royalties, debit payments, and refunds.
+   - Teacher bank/UPI settlement requests with status tracking (`PENDING`, `PROCESSING`, `COMPLETED`, `REJECTED`) and admin balance adjustments.
+
+4. **Dynamic Plan & Metered Feature Catalog**:
    - Configurable feature limits (Live viewer minutes, max courses, cloud storage GB).
    - Real-time quota validation before executing restricted actions.
 
-4. **Universal Debounced Search & Data Table Engine**:
+5. **Universal Debounced Search & Data Table Engine**:
    - Reusable `<SearchInput />` component ensuring 60fps input responsiveness while debouncing API queries.
-   - Unified `<DataTableTemplate />` with pagination, faceted dropdown filters, and status tabs.
+   - Unified `<DataTableTemplate />` with pagination, faceted dropdown filters, status tabs, and metrics cards.
 
-5. **Direct-to-S3 Cloud Storage**:
+6. **Direct-to-S3 Cloud Storage**:
    - Direct browser-to-S3 uploads via presigned PUT URLs, eliminating backend memory overhead for large files.
 
 ---
@@ -171,3 +188,4 @@ docker compose down -v
 For in-depth guides, API endpoint lists, and component architectures, visit:
 * [Backend Core API Guide (`apps/http/README.md`)](file:///d:/second-project/coursity-rebuild/apps/http/README.md)
 * [Frontend Web SPA Guide (`apps/web/README.md`)](file:///d:/second-project/coursity-rebuild/apps/web/README.md)
+* [AI Interview Real-Time Engine (`apps/ai-interview/README.md`)](file:///d:/second-project/coursity-rebuild/apps/ai-interview/README.md)

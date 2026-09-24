@@ -26,11 +26,18 @@ src/
 │
 ├── modules/                  # Modular Business Domains
 │   ├── auth/                 # Authentication, JWT, Refresh Tokens & Google OAuth
-│   ├── user/                 # User management, Admin moderation & User queries
-│   ├── profile/              # Student & Teacher profiles, Verification & Resume review
-│   ├── plan/                 # Dynamic pricing plans, Feature catalog & Quota enforcement
-│   ├── storage/              # AWS S3 Cloud Storage & Local Fallback with Presigned URLs
-│   └── email/                # Nodemailer transport & BullMQ background email worker
+│   ├── user/                 # User moderation, Admin management & User queries
+│   ├── profile/              # Student & Teacher profiles, Verification vetting & Resume review
+│   ├── wallet/               # Double-entry ledger, Top-ups, Payments & Teacher Payouts
+│   ├── bank-detail/          # Instructor & Student Bank accounts and UPI IDs
+│   ├── course/               # Courses, Modules, Lessons, Curriculum & Publishing
+│   ├── category/             # Educational taxonomies, Categories & Subcategories
+│   ├── plan/                 # Dynamic pricing plans, Feature catalog & Tiers
+│   ├── subscription/         # Teacher subscriptions, Usage meters & Quota validation
+│   ├── offer/                # Platform promotions, Discounts & Coupon codes
+│   ├── wishlist/             # Student course bookmarking & saved wishlists
+│   ├── interview/            # AI Interview sessions, Turns, Rubric reports & Audio links
+│   └── ai-config/            # LLM/STT/TTS AI providers, Model configs & API keys
 │
 ├── shared/                   # Shared utilities, interfaces & types
 └── worker.ts                 # Standalone BullMQ background worker process
@@ -40,10 +47,10 @@ src/
 
 ## 🧩 Clean Architecture Layers per Module
 
-Each domain module (e.g. `modules/profile`, `modules/plan`) follows this 4-layer structure:
+Each domain module (e.g. `modules/wallet`, `modules/profile`, `modules/course`) follows this 4-layer structure:
 
 1. **`domain/`**: Pure enterprise business rules. Contains Entities, Interfaces, Enums, DTOs, and Domain Errors (zero external framework dependencies).
-2. **`application/`**: Use Cases implementing specific business workflows (e.g., `SubmitTeacherVerification`, `SubscribePlan`, `RecordUsage`).
+2. **`application/`**: Use Cases implementing specific business workflows (e.g., `CreateTopUpOrder`, `AdminProcessPayout`, `SubmitTeacherVerification`).
 3. **`infrastructure/`**: Concrete implementations of domain interfaces (Prisma Repositories, Redis Caches, S3 Services, Mailers).
 4. **`presentation/`**: HTTP Controllers, Express Routes, and Zod Request Validation Schemas.
 
@@ -55,10 +62,11 @@ Each domain module (e.g. `modules/profile`, `modules/plan`) follows this 4-layer
 | :--- | :--- | :--- |
 | **Runtime & Framework** | `Node.js 22` + `Express 5` | High-performance REST API |
 | **Language** | `TypeScript 5+` | Strict type safety and contracts |
-| **Database & ORM** | `PostgreSQL 16` + `Prisma 6` | Schema-driven migrations and type-safe queries |
+| **Database & ORM** | `PostgreSQL 16` + `Prisma 6` | Multi-file schema migrations (`prisma/schema/*.prisma`) |
 | **Cache & Queues** | `Redis 7` + `BullMQ` | Asynchronous job queues & Idempotency store |
-| **Cloud Storage** | `@aws-sdk/client-s3` | Presigned PUT/GET URLs for avatars & teacher resumes |
+| **Cloud Storage** | `@aws-sdk/client-s3` | Presigned PUT/GET URLs for avatars, resumes & course media |
 | **Authentication** | `JWT` + `bcryptjs` + `Google OAuth2` | Dual-token authentication (Access + Refresh) |
+| **Payments** | `Razorpay` | Top-up orders, Plan checkouts, and Webhook signatures |
 | **Validation** | `Zod 4` | Runtime schema validation for requests & configs |
 | **Email Service** | `Nodemailer` + `BullMQ Worker` | Background queued transactional email delivery |
 
@@ -83,11 +91,12 @@ JWT_SECRET=your_super_secret_access_jwt_key
 JWT_REFRESH_SECRET=your_super_secret_refresh_jwt_key
 JWT_ACCESS_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=7d
+INTERNAL_SERVICE_SECRET=coursity_internal_microservice_shared_secret_2026
 
-# Google OAuth (Optional)
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
+# Razorpay Payments
+RAZORPAY_KEY_ID=rzp_test_your_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_secret
+RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
 
 # AWS S3 Cloud Storage
 AWS_REGION=ap-south-2
@@ -117,7 +126,7 @@ npm install
 
 ### 2. Database Migration & Prisma Client
 ```bash
-# Generate Prisma Client
+# Generate Type-Safe Prisma Client across multi-file schema
 npm run prisma:generate
 
 # Apply Database Migrations
@@ -149,9 +158,42 @@ npm run worker
 * `GET /api/auth/google` & `/api/auth/google/callback` — Google OAuth2 authentication.
 * `POST /api/auth/forgot-password` & `/api/auth/reset-password` — Password recovery flow.
 
+### 💰 Wallet & Financial Ledger (`/api/wallet`)
+* `GET /api/wallet/my` — Retrieve authenticated user's wallet balance and lifetime stats.
+* `GET /api/wallet/transactions` — Paginated transaction ledger with filters (type, direction, status).
+* `POST /api/wallet/topup/create-order` — Create Razorpay order to top up wallet balance.
+* `POST /api/wallet/topup/verify` — Verify Razorpay payment and credit wallet balance.
+* `POST /api/wallet/payouts/request` — Request teacher earnings withdrawal to bank/UPI.
+* `GET /api/wallet/payouts/my` — Get current instructor's past withdrawal requests.
+* `GET /api/wallet/admin/wallets` — Admin list all platform user wallets and stats.
+* `GET /api/wallet/admin/payouts` — Admin list all withdrawal requests across teachers.
+* `PATCH /api/wallet/admin/payouts/:id` — Admin approve, reject, or mark payout completed.
+* `POST /api/wallet/admin/adjustment` — Admin manual debit/credit adjustment.
+
+### 🏦 Bank Details (`/api/bank-details`)
+* `GET /api/bank-details/my` — List user's bank accounts and UPI IDs.
+* `POST /api/bank-details` — Add a new bank account or UPI ID.
+* `PATCH /api/bank-details/:id/primary` — Set an account as the primary payout destination.
+* `DELETE /api/bank-details/:id` — Delete a bank account / UPI ID.
+* `GET /api/bank-details/admin/all` — Admin list all submitted bank details.
+* `PATCH /api/bank-details/admin/:id/verify` — Admin verify/reject bank account.
+
+### 📚 Courses & Curriculum (`/api/courses`)
+* `GET /api/courses` — Public course catalog with faceted search, category & pricing filters.
+* `GET /api/courses/:slug` — Course landing page with modules and lessons outline.
+* `POST /api/courses` — Teacher create a new course draft.
+* `PUT /api/courses/:id` — Teacher update course details and pricing.
+* `POST /api/courses/:id/modules` — Manage course modules, lessons, and video attachments.
+
+### 🎙️ AI Interview Session Sync (`/api/interviews`)
+* `POST /api/interviews/sessions` — Initialize AI technical interview session for teacher/student.
+* `GET /api/interviews/sessions/:id` — Fetch session details, turn history, and evaluation scores.
+* `POST /internal/interviews/:id/turn` — Internal microservice sync for conversation turns.
+* `POST /internal/interviews/:id/complete` — Internal microservice sync for final evaluation report.
+
 ### 👤 Profile & Verification (`/api/profile`)
-* `GET /api/profile/me` — Retrieve the current user's profile and instructor details.
-* `PUT /api/profile` — Update student or teacher profile (bio, phone, avatar, expertise, links).
+* `GET /api/profile/me` — Retrieve current user's profile and instructor details.
+* `PUT /api/profile` — Update profile (bio, phone, avatar, expertise, portfolio links).
 * `POST /api/profile/teacher/submit-verification` — Submit teacher application for verification review.
 
 ### 📦 Storage & File Uploads (`/api/storage`)
@@ -160,15 +202,8 @@ npm run worker
 
 ### 💎 Plans & Feature Catalog (`/api/plans`)
 * `GET /api/plans` — List active subscription plans with tiered feature allocations.
-* `GET /api/plans/:slug` — Get plan details by slug.
-* `POST /api/plans/subscribe` — Subscribe an instructor to a plan.
+* `POST /api/plans/subscribe` — Subscribe an instructor to a plan via Razorpay.
 * `GET /api/plans/subscription/me` — Get instructor's current subscription & quota consumption.
-* `POST /api/plans/usage/record` — Record metered usage against subscription quotas.
-
-### 🛡️ Admin Management (`/api/admin`)
-* `GET /api/admin/users` — Paginated list of users with search, role, and provider filters.
-* `PATCH /api/admin/users/:id/block` — Toggle block/unblock status for accounts.
-* `PATCH /api/admin/teachers/:id/verify` — Admin verification review (Approve, Request Redo, Revoke).
 
 ---
 
@@ -178,3 +213,4 @@ Run test suites using the native Node.js test runner via `tsx`:
 ```bash
 npm test
 ```
+
