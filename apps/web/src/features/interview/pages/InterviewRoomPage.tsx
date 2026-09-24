@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "@/features/auth";
@@ -26,7 +26,7 @@ export const InterviewRoomPage: React.FC = () => {
 
   const isTeacher = user?.role?.toUpperCase() === "TEACHER" || session?.type === "TEACHER_VETTING";
 
-  const handleFinishRedirect = () => {
+  const handleFinishRedirect = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["profile"] });
     queryClient.invalidateQueries({ queryKey: ["current-user"] });
     queryClient.invalidateQueries({ queryKey: ["my-vetting-interviews"] });
@@ -35,11 +35,25 @@ export const InterviewRoomPage: React.FC = () => {
     }
 
     if (isTeacher) {
-      navigate("/teachers/onboarding/interview");
+      navigate("/teachers/onboarding/interview", { replace: true });
     } else {
-      navigate("/students/dashboard");
+      navigate("/students/dashboard", { replace: true });
     }
-  };
+  }, [isTeacher, navigate, queryClient, sessionId]);
+
+  // If user navigates back to an already completed/evaluated session, redirect immediately
+  useEffect(() => {
+    if (
+      session &&
+      (session.status === "COMPLETED" ||
+        session.status === "EVALUATED" ||
+        session.status === "EVALUATING" ||
+        session.status === "CANCELLED" ||
+        session.status === "ABANDONED")
+    ) {
+      handleFinishRedirect();
+    }
+  }, [session, handleFinishRedirect]);
 
   const {
     stream,
@@ -47,6 +61,7 @@ export const InterviewRoomPage: React.FC = () => {
     toggleCamera,
     requestDevices,
     stopAllDevices,
+    selectedMicId,
   } = useAudioDevices();
 
   const [isTranscriptOpen, setIsTranscriptOpen] = useState(false);
@@ -60,7 +75,8 @@ export const InterviewRoomPage: React.FC = () => {
   // Initialize Audio & Devices on Room enter
   useEffect(() => {
     requestDevices(true);
-  }, [requestDevices]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Hook into Realtime AI Interview WebSocket
   const {
@@ -85,6 +101,8 @@ export const InterviewRoomPage: React.FC = () => {
   } = useInterviewSocket({
     token: realtimeToken?.token || null,
     sessionId: sessionId || "",
+    stream,
+    micDeviceId: selectedMicId,
     autoConnect: true,
     onSessionComplete: () => {
       stopAllDevices();
@@ -99,7 +117,8 @@ export const InterviewRoomPage: React.FC = () => {
       stopAllDevices();
       stopAudio();
     };
-  }, [stopAllDevices, stopAudio]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSendText = (e?: React.FormEvent) => {
     if (e) e.preventDefault();

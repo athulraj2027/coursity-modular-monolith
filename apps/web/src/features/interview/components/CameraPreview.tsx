@@ -24,24 +24,28 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
   useEffect(() => {
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream;
+      videoRef.current.play().catch(() => {});
     }
   }, [stream]);
+
+  const hasVideoTrack = Boolean(stream && stream.getVideoTracks().length > 0 && stream.getVideoTracks()[0].enabled);
+  const showVideo = isCameraOn && hasVideoTrack;
 
   return (
     <div
       className={`relative rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-800 shadow-xl flex items-center justify-center ${className}`}
     >
-      {/* Video Element */}
-      {isCameraOn && stream && stream.getVideoTracks().length > 0 ? (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="w-full h-full object-cover -scale-x-100"
-        />
-      ) : (
-        /* Fallback Candidate Avatar */
+      {/* Video Element (Persistently mounted) */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        className={`w-full h-full object-cover -scale-x-100 ${showVideo ? "block" : "hidden"}`}
+      />
+
+      {/* Fallback Candidate Avatar when camera is disabled */}
+      {!showVideo && (
         <div className="w-full h-full flex flex-col items-center justify-center text-neutral-400 bg-gradient-to-br from-neutral-900 to-neutral-950 p-4 space-y-2">
           <div className="w-16 h-16 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-neutral-300 font-bold text-xl shadow-inner">
             <User className="w-8 h-8 text-neutral-400" />

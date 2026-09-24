@@ -48,18 +48,37 @@ export const InterviewSetupPage: React.FC = () => {
 
   useEffect(() => {
     requestDevices(true);
-  }, [requestDevices]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleJoin = async () => {
     try {
       if (session?.status === "INITIALIZING") {
         await startSession();
       }
-      navigate(`/interview/${sessionId}/room`);
+      navigate(`/interview/${sessionId}/room`, { replace: true });
     } catch (err) {
       console.error("Failed to start session:", err);
     }
   };
+
+  // If user navigates back to an already completed/evaluated session, redirect immediately
+  useEffect(() => {
+    if (
+      session &&
+      (session.status === "COMPLETED" ||
+        session.status === "EVALUATED" ||
+        session.status === "EVALUATING" ||
+        session.status === "CANCELLED" ||
+        session.status === "ABANDONED")
+    ) {
+      if (isTeacher) {
+        navigate("/teachers/onboarding/interview", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
+    }
+  }, [session, isTeacher, navigate]);
 
   if (loading) {
     return (
