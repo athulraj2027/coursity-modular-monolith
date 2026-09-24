@@ -13,6 +13,7 @@ import {
   FolderTree,
   CreditCard,
   Tag,
+  Building2,
   type LucideIcon,
 } from "lucide-react"
 
@@ -47,6 +48,11 @@ export const STUDENT_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Profile",
         url: "/students/profile",
         icon: User,
+      },
+      {
+        title: "Bank Accounts",
+        url: "/students/bank-details",
+        icon: Building2,
       },
       {
         title: "Password & Security",
@@ -97,6 +103,11 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         icon: User,
       },
       {
+        title: "Payout & Bank Details",
+        url: "/teachers/bank-details",
+        icon: Building2,
+      },
+      {
         title: "Password & Security",
         url: "/teachers/password",
         icon: KeyRound,
@@ -129,6 +140,11 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Students",
         url: "/admin/users",
         icon: Users,
+      },
+      {
+        title: "Bank Accounts",
+        url: "/admin/bank-details",
+        icon: Building2,
       },
       {
         title: "Courses",
@@ -185,4 +201,5 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
     ],
   },
 ]
+
 

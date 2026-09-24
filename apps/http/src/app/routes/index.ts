@@ -8,6 +8,7 @@ import offerRouter from '@/modules/offer';
 import categoryRouter from '@/modules/category';
 import courseRouter from '@/modules/course';
 import wishlistRouter from '@/modules/wishlist';
+import bankDetailRouter from '@/modules/bank-detail';
 import uploadRouter from '@/infrastructure/storage';
 import { candidateInterviewRouter, adminInterviewRouter } from '@/modules/interview';
 import { adminAIConfigRouter } from '@/modules/ai-config';
@@ -40,6 +41,11 @@ router.use("/courses", courseRouter);
 // 6. Wishlist routes (Protected student wishlist management)
 router.use("/wishlist", wishlistRouter);
 
+// 7. Bank Details & Payout Accounts (Students, Teachers, Admin)
+router.use("/bank-details", bankDetailRouter);
+router.use("/admin/bank-details", bankDetailRouter);
+router.use("/banks", bankDetailRouter);
+
 // 4. AI Interview routes (Candidate endpoints & Admin management)
 router.use("/interviews", candidateInterviewRouter);
 router.use("/admin/interviews", adminInterviewRouter);
@@ -49,9 +55,7 @@ router.use("/admin/ai", adminAIConfigRouter);
 router.use("/upload", uploadRouter);
 
 // 6. Protected User & Profile routes
-router.use(authMiddleware);
-router.use(isBlockedMiddleware);
-router.use("/users", userRouter);
-router.use("/profile", profileRouter);
+router.use("/users", authMiddleware, isBlockedMiddleware, userRouter);
+router.use("/profile", authMiddleware, isBlockedMiddleware, profileRouter);
 
 export default router;

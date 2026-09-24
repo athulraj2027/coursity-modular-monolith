@@ -515,6 +515,26 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
             </div>
           )}
 
+          {/* Registered Bank / Payout Method Quick Link */}
+          <div className="p-4 rounded-xl border border-neutral-200/80 dark:border-neutral-800 space-y-2.5 bg-neutral-50/30 dark:bg-neutral-950/20">
+            <div className="flex items-center justify-between">
+              <div className="text-[11px] uppercase tracking-wider font-bold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-[#F42A18]" />
+                <span>Bank & Payout Accounts</span>
+              </div>
+              <a
+                href={`/admin/bank-details?search=${encodeURIComponent(user.email)}`}
+                className="text-[11px] font-semibold text-[#F42A18] hover:underline flex items-center gap-1"
+              >
+                <span>View in Registry</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            <p className="text-[11px] text-neutral-500">
+              Inspect verified bank accounts, UPI IDs, and manage payout compliance in the Bank Registry.
+            </p>
+          </div>
+
           {/* Account Timestamps & Status */}
           <div className="p-4 rounded-xl border border-neutral-200/80 dark:border-neutral-800 space-y-3 bg-neutral-50/30 dark:bg-neutral-950/20">
             <div className="flex items-center justify-between text-xs py-1">

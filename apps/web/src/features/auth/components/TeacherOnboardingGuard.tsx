@@ -58,16 +58,16 @@ export const TeacherOnboardingGuard: React.FC<TeacherOnboardingGuardProps> = ({ 
     return children ? <>{children}</> : <Outlet />
   }
 
-  // Stage 4: Completed Onboarding (VERIFIED & Interview Passed)
+  // Stage 4: AI Interview Passed (Proceed to Payout Setup / Creator Dashboard)
   if (approvalStatus === "VERIFIED" && isInterviewPassed) {
-    // If completed teacher lands on an earlier onboarding step or back-navigates into interview studio, redirect to full dashboard
+    // If teacher lands on an earlier onboarding step or back-navigates into interview studio, redirect to bank-details setup
     if (
       pathname === "/teachers/onboarding" ||
       pathname === "/teachers/onboarding/profile" ||
       pathname === "/teachers/onboarding/review" ||
       pathname.startsWith("/interview/")
     ) {
-      return <Navigate to="/teachers/dashboard" replace />
+      return <Navigate to="/teachers/onboarding/bank-details" replace />
     }
     return children ? <>{children}</> : <Outlet />
   }

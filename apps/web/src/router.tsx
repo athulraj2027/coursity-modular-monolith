@@ -20,6 +20,7 @@ import {
   TeacherOnboardingProfilePage,
   TeacherApplicationReviewPage,
   TeacherInterviewVettingPage,
+  TeacherOnboardingBankDetailsPage,
 } from "@/features/profile"
 import {
   TeacherPlansPage,
@@ -45,6 +46,11 @@ import {
   PublicCourseDetailPage,
 } from "@/features/course"
 import { WishlistPage } from "@/features/wishlist"
+import {
+  UserBankDetailsPage,
+  AdminBanksPage,
+  AdminBankDetailPage,
+} from "@/features/bank-details"
 import { AdminAIConfigPage } from "@/features/ai-config"
 import {
   InterviewLandingPage,
@@ -115,6 +121,9 @@ export function AppRoutes() {
           <Route path="/students/profile" element={<DashboardLayout role="student" />}>
             <Route index element={<StudentProfilePage />} />
           </Route>
+          <Route path="/students/bank-details" element={<DashboardLayout role="student" />}>
+            <Route index element={<UserBankDetailsPage />} />
+          </Route>
           <Route path="/students/password" element={<DashboardLayout role="student" />}>
             <Route index element={<ChangePasswordPage role="student" />} />
           </Route>
@@ -123,6 +132,9 @@ export function AppRoutes() {
           <Route path="/dashboard" element={<Navigate to="/students/dashboard" replace />} />
           <Route path="/profile" element={<Navigate to="/students/profile" replace />} />
           <Route path="/student/profile" element={<Navigate to="/students/profile" replace />} />
+          <Route path="/student/bank-details" element={<Navigate to="/students/bank-details" replace />} />
+          <Route path="/students/banks" element={<Navigate to="/students/bank-details" replace />} />
+          <Route path="/student/banks" element={<Navigate to="/students/bank-details" replace />} />
           <Route path="/students/profile/password" element={<Navigate to="/students/password" replace />} />
           <Route path="/student/password" element={<Navigate to="/students/password" replace />} />
           <Route path="/password" element={<Navigate to="/students/password" replace />} />
@@ -141,6 +153,8 @@ export function AppRoutes() {
               <Route path="profile" element={<TeacherOnboardingProfilePage />} />
               <Route path="review" element={<TeacherApplicationReviewPage />} />
               <Route path="interview" element={<TeacherInterviewVettingPage />} />
+              <Route path="bank-details" element={<TeacherOnboardingBankDetailsPage />} />
+              <Route path="payout" element={<TeacherOnboardingBankDetailsPage />} />
             </Route>
 
             {/* 4.2 Standard Creator Studio Portal (Full Sidebar, Unlocked after Onboarding) */}
@@ -154,6 +168,9 @@ export function AppRoutes() {
             </Route>
             <Route path="/teachers/profile" element={<DashboardLayout role="teacher" />}>
               <Route index element={<TeacherProfilePage />} />
+            </Route>
+            <Route path="/teachers/bank-details" element={<DashboardLayout role="teacher" />}>
+              <Route index element={<UserBankDetailsPage />} />
             </Route>
             <Route path="/teachers/password" element={<DashboardLayout role="teacher" />}>
               <Route index element={<ChangePasswordPage role="teacher" />} />
@@ -173,6 +190,11 @@ export function AppRoutes() {
             <Route path="/courses/teacher" element={<Navigate to="/teachers/courses" replace />} />
             <Route path="/courses/teachers" element={<Navigate to="/teachers/courses" replace />} />
             <Route path="/teacher/profile" element={<Navigate to="/teachers/profile" replace />} />
+            <Route path="/teacher/bank-details" element={<Navigate to="/teachers/bank-details" replace />} />
+            <Route path="/teachers/banks" element={<Navigate to="/teachers/bank-details" replace />} />
+            <Route path="/teacher/banks" element={<Navigate to="/teachers/bank-details" replace />} />
+            <Route path="/teachers/payouts" element={<Navigate to="/teachers/bank-details" replace />} />
+            <Route path="/teacher/payouts" element={<Navigate to="/teachers/bank-details" replace />} />
             <Route path="/teacher/onboarding" element={<Navigate to="/teachers/onboarding/profile" replace />} />
             <Route path="/teachers/profile/password" element={<Navigate to="/teachers/password" replace />} />
             <Route path="/teacher/password" element={<Navigate to="/teachers/password" replace />} />
@@ -209,6 +231,10 @@ export function AppRoutes() {
             <Route index element={<AdminStudentsPage />} />
             <Route path=":id" element={<AdminUserDetailPage />} />
           </Route>
+          <Route path="/admin/bank-details" element={<DashboardLayout role="admin" />}>
+            <Route index element={<AdminBanksPage />} />
+            <Route path=":id" element={<AdminBankDetailPage />} />
+          </Route>
           <Route path="/admin/courses" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminCoursesPage />} />
             <Route path=":id" element={<AdminCourseDetailPage />} />
@@ -236,6 +262,7 @@ export function AppRoutes() {
             <Route index element={<AdminInterviewsPage />} />
             <Route path=":id" element={<AdminInterviewDetailPage />} />
           </Route>
+          <Route path="/admin/banks" element={<Navigate to="/admin/bank-details" replace />} />
           <Route path="/admin/profile/password" element={<Navigate to="/admin/password" replace />} />
           <Route path="/admin/promos" element={<Navigate to="/admin/offers" replace />} />
           <Route path="/admin/offer" element={<Navigate to="/admin/offers" replace />} />

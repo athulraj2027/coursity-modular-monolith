@@ -29,11 +29,16 @@ import {
   Eye,
   FileCheck,
   Copy,
+  Building2,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useUser, useBlockUser, useApproveTeacher } from "../hooks/useUsers";
 import { useAdminCourses } from "@/features/course/hooks/useCourses";
+import { useAdminBankDetails } from "@/features/bank-details/hooks/useBankDetails";
+import { AdminVerifyBankModal } from "@/features/bank-details/components/AdminVerifyBankModal";
+import type { BankDetail } from "@/features/bank-details/types/bank-detail.types";
 import { VerifyTeacherModal } from "@/components/common/VerifyTeacherModal";
 import { BlockUserModal } from "@/components/common/BlockUserModal";
 import { FileDocumentCard, FilePreviewModal } from "@/components/common/FileDocumentCard";
@@ -52,10 +57,11 @@ export const AdminUserDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<"overview" | "courses" | "qualifications" | "system">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "courses" | "qualifications" | "bank-details" | "system">("overview");
   const [copiedId, setCopiedId] = useState(false);
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
   const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+  const [verifyingBankDetail, setVerifyingBankDetail] = useState<BankDetail | null>(null);
   const [targetApprovalStatus, setTargetApprovalStatus] = useState<ApprovalStatus | undefined>(undefined);
 
   // In-app file viewer modal state
@@ -68,6 +74,13 @@ export const AdminUserDetailPage: React.FC = () => {
 
   // Fetch User Details
   const { data: user, isLoading, isError, error, refetch } = useUser(id || "");
+
+  // Fetch Bank Details
+  const {
+    data: bankDetailsData,
+    isLoading: isLoadingBanks,
+    refetch: refetchBanks,
+  } = useAdminBankDetails({ userId: id });
 
   // Fetch Courses (if user is teacher or to see catalog)
   const { data: allCoursesData } = useAdminCourses({
@@ -418,6 +431,18 @@ export const AdminUserDetailPage: React.FC = () => {
         )}
 
         <button
+          onClick={() => setActiveTab("bank-details")}
+          className={`px-4 py-2.5 text-sm font-semibold rounded-t-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+            activeTab === "bank-details"
+              ? "text-[#F42A18] border-b-2 border-[#F42A18] bg-[#F42A18]/5"
+              : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+          }`}
+        >
+          <Building2 className="w-4 h-4" />
+          <span>Bank & Payout Accounts ({bankDetailsData?.items?.length || 0})</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab("system")}
           className={`px-4 py-2.5 text-sm font-semibold rounded-t-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
             activeTab === "system"
@@ -572,6 +597,90 @@ export const AdminUserDetailPage: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* Payout & Bank Account Summary Card */}
+            <div className="p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-neutral-900 dark:text-white text-base flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-[#F42A18]" />
+                  Bank & Payout Accounts
+                </h3>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setActiveTab("bank-details")}
+                  className="h-7 text-xs text-[#F42A18] hover:bg-[#F42A18]/10 cursor-pointer"
+                >
+                  View All ({bankDetailsData?.items?.length || 0})
+                </Button>
+              </div>
+
+              {isLoadingBanks ? (
+                <div className="py-4 text-center text-xs text-neutral-400">Loading payout details...</div>
+              ) : bankDetailsData?.items && bankDetailsData.items.length > 0 ? (
+                (() => {
+                  const primary = bankDetailsData.items.find((b) => b.isPrimary) || bankDetailsData.items[0];
+                  return (
+                    <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-100 dark:border-neutral-800 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-neutral-900 dark:text-white flex items-center gap-1.5">
+                          {primary.methodType === "UPI" ? (
+                            <CreditCard className="w-3.5 h-3.5 text-blue-500" />
+                          ) : (
+                            <Building2 className="w-3.5 h-3.5 text-[#F42A18]" />
+                          )}
+                          {primary.methodType === "UPI" ? "UPI Direct VPA" : primary.bankName}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {primary.isPrimary && (
+                            <Badge className="bg-[#F42A18]/10 text-[#F42A18] border-0 text-[10px] font-bold">
+                              Primary
+                            </Badge>
+                          )}
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] font-semibold ${
+                              primary.verificationStatus === "VERIFIED"
+                                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
+                                : primary.verificationStatus === "REJECTED"
+                                ? "bg-red-500/10 text-red-600 border-red-500/30"
+                                : "bg-amber-500/10 text-amber-600 border-amber-500/30"
+                            }`}
+                          >
+                            {primary.verificationStatus}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-neutral-600 dark:text-neutral-300">
+                        <p className="font-medium text-neutral-900 dark:text-white">{primary.accountHolderName}</p>
+                        <p className="font-mono text-neutral-500 text-[11px] mt-0.5">
+                          {primary.methodType === "UPI"
+                            ? primary.upiId
+                            : `•••• •••• ${primary.accountNumber.slice(-4)} (${primary.ifscCode})`}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-neutral-200/60 dark:border-neutral-700/60 flex items-center justify-between text-[11px]">
+                        <span className="text-neutral-400">
+                          {bankDetailsData.items.length} registered payout {bankDetailsData.items.length === 1 ? "method" : "methods"}
+                        </span>
+                        <button
+                          onClick={() => setActiveTab("bank-details")}
+                          className="text-[#F42A18] font-semibold hover:underline cursor-pointer"
+                        >
+                          Manage & Verify &rarr;
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-100 dark:border-neutral-800 text-xs text-neutral-400 italic text-center">
+                  No bank or UPI accounts registered by this user.
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -832,6 +941,187 @@ export const AdminUserDetailPage: React.FC = () => {
         </div>
       )}
 
+      {/* Tab: Bank Details & Payout Methods */}
+      {activeTab === "bank-details" && (
+        <div className="space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-neutral-900 dark:text-white flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-[#F42A18]" />
+                Registered Bank & Payout Accounts ({bankDetailsData?.items?.length || 0})
+              </h3>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Official payout methods linked to {user.name} for course royalties, instructor earnings, or student refunds.
+              </p>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/admin/bank-details?search=${encodeURIComponent(user.email)}`)}
+              className="gap-1.5 text-xs rounded-xl cursor-pointer"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              Open in Bank Registry
+            </Button>
+          </div>
+
+          {isLoadingBanks ? (
+            <div className="p-12 text-center rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-3">
+              <div className="w-8 h-8 border-3 border-[#F42A18] border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-xs text-neutral-500">Loading payout accounts...</p>
+            </div>
+          ) : !bankDetailsData?.items || bankDetailsData.items.length === 0 ? (
+            <div className="p-12 text-center rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-3">
+              <Building2 className="w-10 h-10 text-neutral-400 mx-auto" />
+              <p className="font-semibold text-neutral-900 dark:text-white">No Bank Accounts Registered</p>
+              <p className="text-xs text-neutral-500 max-w-md mx-auto">
+                This user has not added any bank account or UPI ID to their profile yet.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {bankDetailsData.items.map((bank) => (
+                <div
+                  key={bank.id}
+                  className={`p-5 rounded-2xl border transition-all space-y-4 ${
+                    bank.isPrimary
+                      ? "bg-white dark:bg-neutral-900 border-[#F42A18]/40 shadow-sm ring-1 ring-[#F42A18]/20"
+                      : "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800"
+                  }`}
+                >
+                  {/* Top Bar */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-[#F42A18]/10 text-[#F42A18] flex items-center justify-center font-bold">
+                        {bank.methodType === "UPI" ? (
+                          <CreditCard className="w-4 h-4" />
+                        ) : (
+                          <Building2 className="w-4 h-4" />
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-neutral-900 dark:text-white text-sm">
+                          {bank.methodType === "UPI" ? "UPI VPA Transfer" : bank.bankName || "Bank Account"}
+                        </h4>
+                        <span className="text-[11px] text-neutral-400">
+                          {bank.methodType === "UPI" ? "Instant VPA" : `${bank.accountType} Account`}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {bank.isPrimary && (
+                        <Badge className="bg-[#F42A18] text-white border-0 text-[10px] font-bold px-2">
+                          PRIMARY
+                        </Badge>
+                      )}
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                          bank.verificationStatus === "VERIFIED"
+                            ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
+                            : bank.verificationStatus === "REJECTED"
+                            ? "bg-red-500/10 text-red-600 border-red-500/30"
+                            : "bg-amber-500/10 text-amber-600 border-amber-500/30"
+                        }`}
+                      >
+                        {bank.verificationStatus === "VERIFIED" && <CheckCircle2 className="w-3 h-3 mr-1 inline" />}
+                        {bank.verificationStatus === "PENDING" && <Clock className="w-3 h-3 mr-1 inline" />}
+                        {bank.verificationStatus === "REJECTED" && <Ban className="w-3 h-3 mr-1 inline" />}
+                        {bank.verificationStatus}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Account Numbers & Details */}
+                  <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-100 dark:border-neutral-800 space-y-2 text-xs">
+                    <div>
+                      <span className="text-[10px] text-neutral-400 block uppercase font-semibold">
+                        Account Holder
+                      </span>
+                      <span className="font-bold text-neutral-900 dark:text-white">
+                        {bank.accountHolderName}
+                      </span>
+                    </div>
+
+                    {bank.methodType === "BANK_ACCOUNT" ? (
+                      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-neutral-200/40 dark:border-neutral-700/40">
+                        <div>
+                          <span className="text-[10px] text-neutral-400 block uppercase font-semibold">
+                            Account Number
+                          </span>
+                          <span className="font-mono font-bold text-neutral-900 dark:text-white tracking-wider">
+                            •••• •••• {bank.accountNumber.slice(-4)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-neutral-400 block uppercase font-semibold">
+                            IFSC Code
+                          </span>
+                          <span className="font-mono font-bold text-neutral-900 dark:text-white">
+                            {bank.ifscCode}
+                          </span>
+                        </div>
+                        {bank.branchName && (
+                          <div className="col-span-2">
+                            <span className="text-[10px] text-neutral-400 block uppercase font-semibold">
+                              Branch
+                            </span>
+                            <span className="text-neutral-700 dark:text-neutral-300">
+                              {bank.branchName}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="pt-1 border-t border-neutral-200/40 dark:border-neutral-700/40">
+                        <span className="text-[10px] text-neutral-400 block uppercase font-semibold">
+                          UPI VPA ID
+                        </span>
+                        <span className="font-mono font-bold text-[#F42A18]">
+                          {bank.upiId}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Verification Notes if any */}
+                  {bank.verificationNotes && (
+                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-900 dark:text-amber-200">
+                      <span className="font-bold block text-[10px] uppercase">Admin Feedback Note:</span>
+                      <p className="mt-0.5">{bank.verificationNotes}</p>
+                    </div>
+                  )}
+
+                  {/* Card Actions */}
+                  <div className="flex items-center justify-between pt-1 gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate(`/admin/bank-details/${bank.id}`)}
+                      className="text-xs h-8 rounded-xl border-neutral-200 dark:border-neutral-800 hover:border-[#F42A18] hover:text-[#F42A18] cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5 mr-1" />
+                      View Details
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      onClick={() => setVerifyingBankDetail(bank)}
+                      className="text-xs h-8 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100 text-white font-semibold cursor-pointer"
+                    >
+                      <SlidersHorizontal className="w-3.5 h-3.5 mr-1" />
+                      Verify / Reject
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* In-App Interactive File Preview Modal */}
       <FilePreviewModal
         isOpen={filePreview.isOpen}
@@ -839,6 +1129,16 @@ export const AdminUserDetailPage: React.FC = () => {
         url={filePreview.url}
         fileType={filePreview.type}
         onClose={() => setFilePreview((p) => ({ ...p, isOpen: false }))}
+      />
+
+      {/* Verification Modals */}
+      <AdminVerifyBankModal
+        isOpen={Boolean(verifyingBankDetail)}
+        onClose={() => {
+          setVerifyingBankDetail(null);
+          refetchBanks();
+        }}
+        bankDetail={verifyingBankDetail}
       />
 
       {/* Confirmation Modals */}
