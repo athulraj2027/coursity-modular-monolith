@@ -97,15 +97,18 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       ? TEACHER_SIDEBAR_GROUPS
       : STUDENT_SIDEBAR_GROUPS
 
-  const navGroups: SidebarNavGroup[] = rawNavGroups.map((group) => ({
-    ...group,
-    items: group.items.filter((item) => {
-      if (isGoogleAuth && (item.url.includes("/password") || item.title.toLowerCase().includes("password"))) {
-        return false
-      }
-      return true
-    }),
-  }))
+  const navGroups: SidebarNavGroup[] = rawNavGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        if (isGoogleAuth && (item.url.includes("/password") || item.title.toLowerCase().includes("password"))) {
+          return false
+        }
+        return true
+      }),
+    }))
+    .filter((group) => group.items.length > 0)
+
 
   return (
     <Sidebar collapsible="icon" className="border-r border-neutral-200/80 dark:border-neutral-900">

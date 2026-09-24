@@ -14,6 +14,10 @@ import {
   CreditCard,
   Tag,
   Building2,
+  Wallet,
+  ArrowUpRight,
+  Compass,
+  Heart,
   type LucideIcon,
 } from "lucide-react"
 
@@ -32,27 +36,47 @@ export interface SidebarNavGroup {
 
 export const STUDENT_SIDEBAR_GROUPS: SidebarNavGroup[] = [
   {
-    label: "Core Learning",
+    label: "Learning Hub",
     items: [
       {
         title: "Dashboard",
         url: "/students/dashboard",
         icon: LayoutDashboard,
       },
+      {
+        title: "Explore Courses",
+        url: "/courses",
+        icon: Compass,
+      },
+      {
+        title: "My Wishlist",
+        url: "/wishlist",
+        icon: Heart,
+      },
     ],
   },
   {
-    label: "Account & Preferences",
+    label: "Finance & Billing",
     items: [
       {
-        title: "Profile",
-        url: "/students/profile",
-        icon: User,
+        title: "My Wallet",
+        url: "/students/wallet",
+        icon: Wallet,
       },
       {
         title: "Bank Accounts",
         url: "/students/bank-details",
         icon: Building2,
+      },
+    ],
+  },
+  {
+    label: "Account & Security",
+    items: [
+      {
+        title: "Profile",
+        url: "/students/profile",
+        icon: User,
       },
       {
         title: "Password & Security",
@@ -70,7 +94,7 @@ export const STUDENT_SIDEBAR_GROUPS: SidebarNavGroup[] = [
 
 export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
   {
-    label: "Coursity Studio",
+    label: "Studio & Content",
     items: [
       {
         title: "Dashboard",
@@ -83,29 +107,39 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         icon: GraduationCap,
       },
       {
-        title: "Plans & Billing",
+        title: "Community & Cohorts",
+        url: "/community",
+        icon: Users,
+      },
+    ],
+  },
+  {
+    label: "Finance & Monetization",
+    items: [
+      {
+        title: "Wallet & Payouts",
+        url: "/teachers/wallet",
+        icon: Wallet,
+      },
+      {
+        title: "Bank & Settlement",
+        url: "/teachers/bank-details",
+        icon: Building2,
+      },
+      {
+        title: "Plans & Subscription",
         url: "/teachers/plans",
         icon: Zap,
       },
     ],
   },
   {
-    label: "Platform & Account",
+    label: "Account & Security",
     items: [
       {
-        title: "Community & Cohorts",
-        url: "/community",
-        icon: Users,
-      },
-      {
-        title: "Profile",
+        title: "Teacher Profile",
         url: "/teachers/profile",
         icon: User,
-      },
-      {
-        title: "Payout & Bank Details",
-        url: "/teachers/bank-details",
-        icon: Building2,
       },
       {
         title: "Password & Security",
@@ -123,13 +157,18 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
 
 export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
   {
-    label: "Administration",
+    label: "Overview",
     items: [
       {
         title: "Dashboard",
         url: "/admin/dashboard",
         icon: LayoutDashboard,
       },
+    ],
+  },
+  {
+    label: "User Management",
+    items: [
       {
         title: "Teachers",
         url: "/admin/teachers",
@@ -141,11 +180,11 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         url: "/admin/users",
         icon: Users,
       },
-      {
-        title: "Bank Accounts",
-        url: "/admin/bank-details",
-        icon: Building2,
-      },
+    ],
+  },
+  {
+    label: "Courses & Academics",
+    items: [
       {
         title: "Courses",
         url: "/admin/courses",
@@ -156,8 +195,28 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         url: "/admin/categories",
         icon: FolderTree,
       },
+    ],
+  },
+  {
+    label: "Finance & Treasury",
+    items: [
       {
-        title: "Plans",
+        title: "Platform Wallets",
+        url: "/admin/wallets",
+        icon: Wallet,
+      },
+      {
+        title: "Payout Requests",
+        url: "/admin/payouts",
+        icon: ArrowUpRight,
+      },
+      {
+        title: "Bank Accounts",
+        url: "/admin/bank-details",
+        icon: Building2,
+      },
+      {
+        title: "Plans & Tiers",
         url: "/admin/plans",
         icon: Layers,
       },
@@ -171,6 +230,11 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         url: "/admin/offers",
         icon: Tag,
       },
+    ],
+  },
+  {
+    label: "AI & Intelligence",
+    items: [
       {
         title: "AI Interviews",
         url: "/admin/interviews",
@@ -189,7 +253,7 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
     label: "Account & System",
     items: [
       {
-        title: "Administrator Profile",
+        title: "Admin Profile",
         url: "/admin/profile",
         icon: User,
       },
@@ -201,5 +265,6 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
     ],
   },
 ]
+
 
 
