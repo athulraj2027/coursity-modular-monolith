@@ -40,8 +40,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     <SidebarProvider defaultOpen={true}>
       <AppSidebar role={role} user={user || undefined} />
       <SidebarInset className="bg-neutral-50/50 dark:bg-neutral-950 min-h-svh flex flex-col">
-        {/* Top bar header */}
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-neutral-200/80 dark:border-neutral-900 px-4 transition-[width,height] ease-linear bg-white/60 dark:bg-neutral-950/60 backdrop-blur-md sticky top-0 z-20">
+        {/* Top bar header (sticky) */}
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-neutral-200/80 dark:border-neutral-900 px-4 transition-[width,height] ease-linear bg-white/85 dark:bg-neutral-950/85 backdrop-blur-md sticky top-0 z-30 shadow-xs">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <div className="flex items-center gap-2 text-sm font-semibold text-neutral-800 dark:text-neutral-200">

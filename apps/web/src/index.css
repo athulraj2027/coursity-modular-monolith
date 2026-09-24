@@ -210,4 +210,50 @@
 }
 .interview-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.32);
-}
+}
+
+/* Hide scrollbar utility while maintaining full scrollability */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+  width: 0;
+  height: 0;
+}
+
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
+/* Sidebar scrollbar suppression (smooth scrolling without visible scrollbars) */
+[data-sidebar="content"],
+[data-sidebar="sidebar"],
+[data-sidebar],
+aside[data-sidebar],
+aside,
+.sidebar-content,
+[data-mobile-sidebar] {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+[data-sidebar="content"]::-webkit-scrollbar,
+[data-sidebar="sidebar"]::-webkit-scrollbar,
+[data-sidebar]::-webkit-scrollbar,
+aside[data-sidebar]::-webkit-scrollbar,
+aside::-webkit-scrollbar,
+.sidebar-content::-webkit-scrollbar,
+[data-mobile-sidebar]::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+

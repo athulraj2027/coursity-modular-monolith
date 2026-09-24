@@ -120,7 +120,7 @@ export const CourseFilterSidebar: React.FC<CourseFilterSidebarProps> = ({
           Categories & Topics
         </label>
 
-        <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
+        <div className="space-y-1 max-h-60 overflow-y-auto pr-1 no-scrollbar">
           <button
             onClick={() => onFilterChange({ ...filters, categoryId: undefined, subcategoryId: undefined })}
             className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between cursor-pointer ${

@@ -157,7 +157,7 @@ export const Sidebar = React.forwardRef<
       return (
         <aside
           className={cn(
-            "flex h-svh w-64 shrink-0 flex-col bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 border-r border-neutral-200 dark:border-neutral-900 sticky top-0 z-30",
+            "flex h-svh w-64 shrink-0 flex-col bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 border-r border-neutral-200 dark:border-neutral-900 sticky top-0 z-30 overflow-y-auto no-scrollbar",
             className
           )}
           ref={ref}
@@ -180,7 +180,7 @@ export const Sidebar = React.forwardRef<
           <aside
             ref={ref}
             className={cn(
-              "relative z-50 flex h-full w-72 max-w-[85vw] flex-col bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 border-r border-neutral-200 dark:border-neutral-900 p-0 shadow-2xl animate-in slide-in-from-left duration-200",
+              "relative z-50 flex h-full w-72 max-w-[85vw] flex-col bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 border-r border-neutral-200 dark:border-neutral-900 p-0 shadow-2xl animate-in slide-in-from-left duration-200 overflow-y-auto no-scrollbar",
               className
             )}
             {...props}
@@ -207,7 +207,7 @@ export const Sidebar = React.forwardRef<
       >
         <div
           data-sidebar="sidebar"
-          className="flex h-full w-full flex-col bg-white dark:bg-neutral-950 overflow-hidden"
+          className="flex h-full w-full flex-col bg-white dark:bg-neutral-950 overflow-hidden no-scrollbar"
         >
           {children}
         </div>
@@ -282,7 +282,7 @@ export const SidebarContent = React.forwardRef<
       ref={ref}
       data-sidebar="content"
       className={cn(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden p-2",
+        "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden p-2 no-scrollbar",
         className
       )}
       {...props}
@@ -454,7 +454,7 @@ export const SidebarInset = React.forwardRef<
     <main
       ref={ref}
       className={cn(
-        "relative flex min-h-svh flex-1 flex-col bg-neutral-50/50 dark:bg-neutral-950 min-w-0 w-full overflow-y-auto",
+        "relative flex min-h-svh flex-1 flex-col bg-neutral-50/50 dark:bg-neutral-950 min-w-0 w-full",
         className
       )}
       {...props}

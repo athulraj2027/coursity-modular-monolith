@@ -139,7 +139,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       </SidebarHeader>
 
       {/* 2. Content: Categorized Nav Groups */}
-      <SidebarContent className="py-2">
+      <SidebarContent className="py-2 no-scrollbar">
         {navGroups.map((group, groupIdx) => (
           <SidebarGroup key={groupIdx}>
             <SidebarGroupLabel className="text-[11px] font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider px-2.5 mb-1">
