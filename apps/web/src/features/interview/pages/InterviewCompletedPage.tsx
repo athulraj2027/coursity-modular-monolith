@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { interviewApi } from "../api/interview.api";
 import type { InterviewReportData, InterviewTranscript } from "../types/interview.types";
 import { useCurrentUser } from "@/features/auth";
@@ -24,6 +25,7 @@ import { Button } from "@/components/ui/button";
 export const InterviewCompletedPage: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: user } = useCurrentUser();
   const isTeacher = user?.role === "TEACHER" || user?.role === "teacher";
   const isAdmin = user?.role === "ADMIN" || user?.role === "admin";
@@ -46,6 +48,9 @@ export const InterviewCompletedPage: React.FC = () => {
         ]);
         setReport(repRes.data);
         setTranscripts(trRes.data || []);
+        queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+        queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+        queryClient.invalidateQueries({ queryKey: ["my-vetting-interviews"] });
       } catch (err: any) {
         setError(err.message || "Failed to load evaluation dossier");
       } finally {
@@ -54,7 +59,7 @@ export const InterviewCompletedPage: React.FC = () => {
     };
 
     fetchData();
-  }, [sessionId]);
+  }, [sessionId, queryClient]);
 
   const handleBack = () => {
     if (isTeacher) {

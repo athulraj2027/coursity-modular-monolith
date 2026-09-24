@@ -34,7 +34,9 @@ export function useCreateBankDetail() {
   return useMutation({
     mutationFn: (payload: CreateBankDetailPayload) => bankDetailApi.createBankDetail(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: bankDetailKeys.my() });
+      queryClient.invalidateQueries({ queryKey: bankDetailKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       toast.success("Bank details added successfully!");
     },
     onError: (error: any) => {
@@ -52,7 +54,9 @@ export function useSetPrimaryBankDetail() {
   return useMutation({
     mutationFn: (id: string) => bankDetailApi.setPrimary(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: bankDetailKeys.my() });
+      queryClient.invalidateQueries({ queryKey: bankDetailKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       toast.success("Primary bank account updated!");
     },
     onError: (error: any) => {
@@ -70,7 +74,9 @@ export function useDeleteBankDetail() {
   return useMutation({
     mutationFn: (id: string) => bankDetailApi.deleteBankDetail(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: bankDetailKeys.my() });
+      queryClient.invalidateQueries({ queryKey: bankDetailKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       toast.success("Bank account removed successfully");
     },
     onError: (error: any) => {

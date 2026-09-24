@@ -6,14 +6,10 @@ import {
   ArrowRight,
   Plus,
   ShieldCheck,
-  CreditCard,
   Lock,
-  Sparkles,
   Smartphone,
   Banknote,
-  Percent,
-  Check,
-  HelpCircle,
+  Percent
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -62,7 +58,7 @@ export const TeacherOnboardingBankDetailsPage: React.FC = () => {
     }
   }, [user?.name, accountHolderName]);
 
-  // Routing Guard: Redirect if not ready for bank details step
+  // Routing Guard: Redirect if profile is incomplete or still pending initial review
   useEffect(() => {
     if (isProfileLoading) return;
 
@@ -70,10 +66,8 @@ export const TeacherOnboardingBankDetailsPage: React.FC = () => {
       navigate("/teachers/onboarding/review", { replace: true });
     } else if (approvalStatus === "PENDING" || approvalStatus === "REDO") {
       navigate("/teachers/onboarding/profile", { replace: true });
-    } else if (approvalStatus === "VERIFIED" && !isInterviewPassed) {
-      navigate("/teachers/onboarding/interview", { replace: true });
     }
-  }, [approvalStatus, isInterviewPassed, isProfileLoading, navigate]);
+  }, [approvalStatus, isProfileLoading, navigate]);
 
   const validateInlineForm = (): boolean => {
     const errs: Record<string, string> = {};
@@ -311,11 +305,10 @@ export const TeacherOnboardingBankDetailsPage: React.FC = () => {
                     setMethodType("BANK_ACCOUNT");
                     setErrors({});
                   }}
-                  className={`h-11 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                    methodType === "BANK_ACCOUNT"
+                  className={`h-11 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${methodType === "BANK_ACCOUNT"
                       ? "bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-sm border border-neutral-200 dark:border-neutral-700"
                       : "text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
-                  }`}
+                    }`}
                 >
                   <Building2 className="w-4 h-4 text-[#F42A18]" />
                   <span>Bank Account (NEFT/IMPS)</span>
@@ -327,11 +320,10 @@ export const TeacherOnboardingBankDetailsPage: React.FC = () => {
                     setMethodType("UPI");
                     setErrors({});
                   }}
-                  className={`h-11 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                    methodType === "UPI"
+                  className={`h-11 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${methodType === "UPI"
                       ? "bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-sm border border-neutral-200 dark:border-neutral-700"
                       : "text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
-                  }`}
+                    }`}
                 >
                   <Smartphone className="w-4 h-4 text-[#F42A18]" />
                   <span>UPI ID (Instant VPA)</span>
