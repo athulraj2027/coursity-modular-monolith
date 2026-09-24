@@ -101,6 +101,7 @@ model Course {
 
   // Curriculum Relations
   modules            CourseModule[]
+  wishlistItems      WishlistItem[]
 
   @@index([teacherProfileId, status])
   @@index([categoryId, subcategoryId, status])

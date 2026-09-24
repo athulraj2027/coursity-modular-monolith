@@ -1,4 +1,5 @@
 import React, { useEffect, type ReactNode } from "react"
+import { createPortal } from "react-dom"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -59,7 +60,7 @@ export const ModalTemplate: React.FC<ModalTemplateProps> = ({
     }
   }, [isOpen])
 
-  if (!isOpen) return null
+  if (!isOpen || typeof document === "undefined") return null
 
   const maxWidthClasses = {
     sm: "max-w-md",
@@ -68,24 +69,31 @@ export const ModalTemplate: React.FC<ModalTemplateProps> = ({
     xl: "max-w-4xl",
   }[maxWidth]
 
-  return (
+  const modalContent = (
     <div
       role="dialog"
       aria-modal="true"
       onClick={closeOnOverlayClick ? onClose : undefined}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-[99999] min-h-screen min-h-[100dvh] w-screen flex items-center justify-center p-4 sm:p-6 bg-black/65 dark:bg-black/80 backdrop-blur-xs animate-in fade-in duration-200"
     >
       <div
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          "w-full rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 ease-out",
+          "w-full rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/90 dark:border-neutral-800 shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 ease-out",
           maxWidthClasses,
           className
         )}
       >
         {/* Modal Header */}
         {(title || showCloseButton || icon) && (
-          <div className="p-5 sm:p-6 border-b border-neutral-200/80 dark:border-neutral-800 flex items-start justify-between gap-4 bg-neutral-50/50 dark:bg-neutral-950/40 shrink-0">
+          <div
+            className={cn(
+              "p-5 sm:p-6 flex items-start justify-between gap-4 shrink-0",
+              children
+                ? "border-b border-neutral-200/80 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/40"
+                : "bg-white dark:bg-neutral-900"
+            )}
+          >
             <div className="flex items-start gap-3.5 min-w-0">
               {icon && <div className="shrink-0 mt-0.5">{icon}</div>}
               <div className="min-w-0">
@@ -95,7 +103,7 @@ export const ModalTemplate: React.FC<ModalTemplateProps> = ({
                   </h3>
                 )}
                 {description && (
-                  <div className="mt-1 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
+                  <div className="mt-1 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">
                     {description}
                   </div>
                 )}
@@ -131,6 +139,8 @@ export const ModalTemplate: React.FC<ModalTemplateProps> = ({
       </div>
     </div>
   )
+
+  return createPortal(modalContent, document.body)
 }
 
 export default ModalTemplate

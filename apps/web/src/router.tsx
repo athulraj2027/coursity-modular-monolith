@@ -44,6 +44,7 @@ import {
   PublicCoursesPage,
   PublicCourseDetailPage,
 } from "@/features/course"
+import { WishlistPage } from "@/features/wishlist"
 import { AdminAIConfigPage } from "@/features/ai-config"
 import {
   InterviewLandingPage,
@@ -78,6 +79,7 @@ export function AppRoutes() {
           <Route path="/" element={<HomePage />} />
           <Route path="/courses" element={<PublicCoursesPage />} />
           <Route path="/courses/:slug" element={<PublicCourseDetailPage />} />
+          <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/teachers" element={<TeachersPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />

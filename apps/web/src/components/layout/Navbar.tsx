@@ -7,8 +7,9 @@ import {
 } from "@/constants/navbar"
 import { HERO_CONTENT } from "@/features/home"
 import { ThemeToggle } from "@/components/common/ThemeToggle"
-import { Sparkles, X, LayoutDashboard, LogOut, Loader2 } from "lucide-react"
+import { Sparkles, X, LayoutDashboard, LogOut, Loader2, Heart } from "lucide-react"
 import { useCurrentUser, useLogout } from "@/features/auth"
+import { useWishlistIds } from "@/features/wishlist"
 import { useConfirmDialog } from "@/hooks/useConfirmDialog"
 import { cn } from "@/lib/utils"
 
@@ -24,6 +25,7 @@ export const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(!isHome)
 
   const { data: user } = useCurrentUser()
+  const { data: wishlistIds = [] } = useWishlistIds()
   const logout = useLogout()
   const { confirm, ConfirmDialog } = useConfirmDialog()
   const isStudent = user?.role?.toLowerCase() === "student"
@@ -162,10 +164,38 @@ export const Navbar: React.FC = () => {
         </Link>
 
         {/* Theme toggle & Navigation options on the right */}
-        <div className="flex items-center space-x-5 sm:space-x-6">
+        <div className="flex items-center space-x-3.5 sm:space-x-5">
           <ThemeToggle />
+
+          {/* Wishlist Icon Button for Students & Guests */}
+          {!isAdminRoute && !isTeachersRoute && (
+            <Link
+              to="/wishlist"
+              title="My Wishlist"
+              aria-label="View Wishlist"
+              className={cn(
+                "relative p-2 rounded-full border transition-all duration-200 cursor-pointer flex items-center justify-center",
+                location.pathname === "/wishlist"
+                  ? "bg-red-500/15 border-red-500/40 text-red-600 dark:text-red-400"
+                  : "border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 text-neutral-700 dark:text-neutral-300 hover:text-red-600 dark:hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5 shadow-xs"
+              )}
+            >
+              <Heart
+                className={cn(
+                  "w-4 h-4 transition-transform active:scale-125",
+                  wishlistIds.length > 0 ? "fill-red-500 text-red-500" : ""
+                )}
+              />
+              {wishlistIds.length > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-[#F42A18] text-white text-[9px] font-extrabold flex items-center justify-center shadow-xs animate-in zoom-in-50 duration-200 font-mono">
+                  {wishlistIds.length > 99 ? "99+" : wishlistIds.length}
+                </span>
+              )}
+            </Link>
+          )}
+
           {!isAdminRoute && (
-            <nav className="flex items-center space-x-5 sm:space-x-8">
+            <nav className="flex items-center space-x-4 sm:space-x-7">
               {activeNavLinks.map((link) => {
                 // Highlighted / mobile visible option
                 const isHighlight = isTeachersRoute

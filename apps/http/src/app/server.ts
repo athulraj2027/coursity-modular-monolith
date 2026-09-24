@@ -7,7 +7,7 @@ import { seedPlansIfEmpty } from "@/modules/plan";
 import { seedCategoriesIfEmpty } from "@/modules/category";
 import { seedOffersIfEmpty } from "@/modules/offer";
 
-// Trigger reload: updated queryCoursesSchema limit
+// Trigger reload: wishlist routes and schemas updated
 const server = http.createServer(app);
 
 const startServer = async () => {

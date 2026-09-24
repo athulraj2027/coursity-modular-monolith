@@ -22,24 +22,8 @@ export class AdminUpdateOfferUseCase {
       throw new BadRequestError("Percentage discount cannot exceed 100%.");
     }
 
-    let normalizedCode: string | null = existing.code;
-    if (dto.code !== undefined) {
-      if (dto.code && dto.code.trim()) {
-        normalizedCode = dto.code.trim().toUpperCase();
-        if (normalizedCode !== existing.code) {
-          const duplicate = await this.offerRepo.findByCode(normalizedCode);
-          if (duplicate && duplicate.id !== id) {
-            throw new ConflictError(`Promo code '${normalizedCode}' is already in use by another offer.`);
-          }
-        }
-      } else {
-        normalizedCode = null;
-      }
-    }
-
     return this.offerRepo.update(id, {
       ...dto,
-      code: normalizedCode,
     });
   }
 }

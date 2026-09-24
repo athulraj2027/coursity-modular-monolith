@@ -12,6 +12,7 @@ import {
   User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { WishlistButton } from "@/features/wishlist";
 import type { Course } from "../types/course.types";
 
 interface CourseCardProps {
@@ -67,6 +68,11 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, viewMode = "grid
                 <Flame className="w-3 h-3 fill-white" /> Trending
               </span>
             )}
+          </div>
+
+          {/* Wishlist Button Overlay */}
+          <div className="absolute top-2.5 right-2.5 z-20">
+            <WishlistButton courseId={course.id} size="sm" />
           </div>
 
           {/* Level Pill */}
@@ -225,8 +231,8 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, viewMode = "grid
           )}
         </div>
 
-        {/* Pricing Badge Overlay */}
-        <div className="absolute top-2.5 right-2.5 z-10">
+        {/* Pricing Badge & Wishlist Overlay */}
+        <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1.5">
           {course.pricingType === "FREE" ? (
             <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/90 backdrop-blur-md text-white text-xs font-bold font-mono shadow-sm">
               FREE
@@ -236,6 +242,8 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, viewMode = "grid
               ₹{Number(course.price).toLocaleString()}
             </span>
           )}
+
+          <WishlistButton courseId={course.id} size="sm" />
         </div>
 
         {/* Level & Duration Pills */}

@@ -1,0 +1,39 @@
+// ==========================================
+// WISHLIST & WISHLIST ITEMS SCHEMA
+// ==========================================
+
+model Wishlist {
+  id        String         @id @default(uuid())
+  
+  // 1:1 Relation with User
+  userId    String         @unique
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // 1:N Relation with items
+  items     WishlistItem[]
+  
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@map("wishlists")
+}
+
+model WishlistItem {
+  id         String   @id @default(uuid())
+  
+  // Parent Wishlist Relation
+  wishlistId String
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  
+  // Target Course Relation
+  courseId   String
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  createdAt  DateTime @default(now())
+
+  // Constraints & Indexes
+  @@unique([wishlistId, courseId]) // A course can only be in a user's wishlist once
+  @@index([wishlistId, createdAt(sort: Desc)]) // Fast retrieval for student view
+  @@index([courseId]) // Analytics & course popularity queries
+  @@map("wishlist_items")
+}
