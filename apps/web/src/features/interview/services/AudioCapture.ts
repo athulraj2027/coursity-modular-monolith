@@ -11,8 +11,10 @@ export class AudioCapture {
   private sourceNode: MediaStreamAudioSourceNode | null = null;
   private processorNode: ScriptProcessorNode | null = null;
   private analyserNode: AnalyserNode | null = null;
+  private muteGain: GainNode | null = null;
   private isCapturing: boolean = false;
   private isMuted: boolean = false;
+  private ownsMediaStream: boolean = false;
 
   private readonly targetSampleRate: number;
   private readonly bufferSize: number;
@@ -26,46 +28,58 @@ export class AudioCapture {
     this.onLevelChange = options?.onLevelChange;
   }
 
-  async start(stream?: MediaStream, deviceId?: string): Promise<void> {
+  async resume(): Promise<void> {
+    if (this.audioContext && (this.audioContext.state === "suspended" || (this.audioContext.state as string) === "interrupted")) {
+      try {
+        await this.audioContext.resume();
+      } catch (err) {
+        console.warn("[AudioCapture] AudioContext resume failed:", err);
+      }
+    }
+  }
+
+  async start(stream?: MediaStream | null, _deviceId?: string): Promise<void> {
     if (this.isCapturing) return;
 
     try {
-      if (stream) {
+      if (stream && stream.getAudioTracks().length > 0) {
         this.mediaStream = stream;
+        this.ownsMediaStream = false;
       } else {
-        this.mediaStream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-            ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
-          },
-          video: false,
-        });
+        // Wait for active media stream from useAudioDevices instead of opening a competing stream
+        return;
       }
 
+      // Ensure audio track is enabled
+      this.mediaStream.getAudioTracks().forEach((track) => {
+        track.enabled = !this.isMuted;
+      });
+
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) {
+        throw new Error("Web Audio API is not supported in this browser.");
+      }
+
+      // DO NOT pass { sampleRate: 16000 } to AudioContext constructor because Chromium
+      // outputs complete silence when resampler fails on Windows hardware streams (44.1k/48k).
+      // Always initialize AudioContext with default hardware native sample rate.
       this.audioContext = new AudioCtx();
 
-      const resumeAudio = async () => {
-        if (this.audioContext && this.audioContext.state === "suspended") {
-          try {
-            await this.audioContext.resume();
-          } catch {}
-        }
+      await this.resume();
+
+      // Ensure user interactions resume audio context if suspended by browser
+      const handleUserGesture = () => {
+        this.resume();
       };
-
-      await resumeAudio();
-
-      // Ensure click/touch resumes audio context if blocked by browser policy
-      window.addEventListener("click", resumeAudio, { once: true });
-      window.addEventListener("touchstart", resumeAudio, { once: true });
+      window.addEventListener("click", handleUserGesture, { passive: true });
+      window.addEventListener("keydown", handleUserGesture, { passive: true });
+      window.addEventListener("touchstart", handleUserGesture, { passive: true });
 
       this.sourceNode = this.audioContext.createMediaStreamSource(this.mediaStream);
       this.analyserNode = this.audioContext.createAnalyser();
       this.analyserNode.fftSize = 256;
 
-      // Use ScriptProcessorNode to extract raw PCM audio
+      // ScriptProcessorNode for extracting PCM audio chunks
       this.processorNode = this.audioContext.createScriptProcessor(
         this.bufferSize,
         1, // mono input
@@ -73,6 +87,7 @@ export class AudioCapture {
       );
 
       const inputSampleRate = this.audioContext.sampleRate;
+      console.log(`[AudioCapture] Capturing audio from stream at native rate ${inputSampleRate}Hz -> target ${this.targetSampleRate}Hz`);
 
       this.processorNode.onaudioprocess = (e: AudioProcessingEvent) => {
         if (!this.isCapturing || this.isMuted) return;
@@ -85,10 +100,10 @@ export class AudioCapture {
           sumSquares += inputData[i] * inputData[i];
         }
         const rms = Math.sqrt(sumSquares / inputData.length);
-        const normalizedLevel = Math.min(1.0, rms * 5.0); // scale up for visual feedback
+        const normalizedLevel = Math.min(1.0, rms * 5.0);
         this.onLevelChange?.(normalizedLevel);
 
-        // 2. Downsample / convert to 16kHz 16-bit PCM Int16
+        // 2. Downsample and encode to 16kHz 16-bit PCM Int16
         const pcmBuffer = this.downsampleAndEncodePcm(
           inputData,
           inputSampleRate,
@@ -103,16 +118,51 @@ export class AudioCapture {
       this.sourceNode.connect(this.analyserNode);
       this.sourceNode.connect(this.processorNode);
 
-      // Connect through a zero-gain node to prevent microphone audio loopback into speakers
-      const muteGain = this.audioContext.createGain();
-      muteGain.gain.value = 0;
-      this.processorNode.connect(muteGain);
-      muteGain.connect(this.audioContext.destination);
+      // Connect processor through a zero-gain node to destination to keep audio graph running
+      this.muteGain = this.audioContext.createGain();
+      this.muteGain.gain.value = 0;
+      this.processorNode.connect(this.muteGain);
+      this.muteGain.connect(this.audioContext.destination);
 
       this.isCapturing = true;
     } catch (err) {
       console.error("[AudioCapture] Failed to initialize audio capture:", err);
       throw err;
+    }
+  }
+
+  updateStream(newStream: MediaStream | null): void {
+    if (!newStream || newStream.getAudioTracks().length === 0) return;
+
+    if (!this.isCapturing) {
+      this.start(newStream);
+      return;
+    }
+
+    this.mediaStream = newStream;
+    this.ownsMediaStream = false;
+
+    // Ensure audio track is enabled
+    this.mediaStream.getAudioTracks().forEach((track) => {
+      track.enabled = !this.isMuted;
+    });
+
+    if (this.audioContext && this.audioContext.state !== "closed" && this.isCapturing) {
+      try {
+        if (this.sourceNode) {
+          this.sourceNode.disconnect();
+        }
+        this.sourceNode = this.audioContext.createMediaStreamSource(newStream);
+        if (this.analyserNode) {
+          this.sourceNode.connect(this.analyserNode);
+        }
+        if (this.processorNode) {
+          this.sourceNode.connect(this.processorNode);
+        }
+        this.resume();
+      } catch (err) {
+        console.error("[AudioCapture] Failed to update media stream source:", err);
+      }
     }
   }
 
@@ -127,12 +177,15 @@ export class AudioCapture {
       samples = inputSamples;
     } else {
       const ratio = inputRate / targetRate;
-      const targetLength = Math.round(inputSamples.length / ratio);
+      const targetLength = Math.floor(inputSamples.length / ratio);
       samples = new Float32Array(targetLength);
 
       for (let i = 0; i < targetLength; i++) {
-        const index = Math.min(Math.round(i * ratio), inputSamples.length - 1);
-        samples[i] = inputSamples[index];
+        const pos = i * ratio;
+        const index = Math.floor(pos);
+        const frac = pos - index;
+        const nextIndex = Math.min(index + 1, inputSamples.length - 1);
+        samples[i] = inputSamples[index] * (1 - frac) + inputSamples[nextIndex] * frac;
       }
     }
 
@@ -170,7 +223,7 @@ export class AudioCapture {
     this.isCapturing = false;
     this.isMuted = false;
 
-    if (this.mediaStream) {
+    if (this.ownsMediaStream && this.mediaStream) {
       this.mediaStream.getTracks().forEach((track) => {
         try {
           track.stop();
@@ -198,6 +251,13 @@ export class AudioCapture {
         this.analyserNode.disconnect();
       } catch {}
       this.analyserNode = null;
+    }
+
+    if (this.muteGain) {
+      try {
+        this.muteGain.disconnect();
+      } catch {}
+      this.muteGain = null;
     }
 
     if (this.audioContext && this.audioContext.state !== "closed") {

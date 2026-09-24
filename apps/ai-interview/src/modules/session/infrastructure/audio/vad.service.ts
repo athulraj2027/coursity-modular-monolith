@@ -2,6 +2,7 @@ import { EventEmitter } from "events";
 
 export interface VadConfig {
   sampleRate: number;
+  speechThresholdRms: number;
   silenceThresholdRms: number;
   silenceDurationMs: number;
   minSpeechDurationMs: number;
@@ -11,16 +12,18 @@ export class VadService extends EventEmitter {
   private isSpeaking: boolean = false;
   private lastSpeechTimestamp: number = 0;
   private speechStartTimestamp: number = 0;
-  private silenceTimer: NodeJS.Timeout | null = null;
+  private noiseFloorRms: number = 0.008;
+  private consecutiveSpeechFrames: number = 0;
   private readonly config: VadConfig;
 
   constructor(config?: Partial<VadConfig>) {
     super();
     this.config = {
       sampleRate: config?.sampleRate || 16000,
-      silenceThresholdRms: config?.silenceThresholdRms || 0.006,
-      silenceDurationMs: config?.silenceDurationMs || 900,
-      minSpeechDurationMs: config?.minSpeechDurationMs || 250,
+      speechThresholdRms: config?.speechThresholdRms || 0.022,
+      silenceThresholdRms: config?.silenceThresholdRms || 0.015,
+      silenceDurationMs: config?.silenceDurationMs || 850,
+      minSpeechDurationMs: config?.minSpeechDurationMs || 200,
     };
   }
 
@@ -42,42 +45,49 @@ export class VadService extends EventEmitter {
     const rms = this.calculateRms(chunk);
     const now = Date.now();
 
-    if (rms >= this.config.silenceThresholdRms) {
+    // Dynamically track background noise floor during quiet periods
+    if (!this.isSpeaking && rms < this.config.speechThresholdRms) {
+      this.noiseFloorRms = this.noiseFloorRms * 0.95 + rms * 0.05;
+    }
+
+    const dynamicSpeechThreshold = Math.max(this.config.speechThresholdRms, this.noiseFloorRms * 2.2);
+    const dynamicSilenceThreshold = Math.max(this.config.silenceThresholdRms, this.noiseFloorRms * 1.4);
+
+    if (rms >= dynamicSpeechThreshold) {
+      this.consecutiveSpeechFrames++;
       this.lastSpeechTimestamp = now;
 
-      if (!this.isSpeaking) {
+      // Require 2 consecutive frames to prevent single-spike false triggers
+      if (!this.isSpeaking && this.consecutiveSpeechFrames >= 2) {
         this.isSpeaking = true;
         this.speechStartTimestamp = now;
         this.emit("speech_start", { timestamp: now, rms });
       }
+    } else if (rms < dynamicSilenceThreshold) {
+      this.consecutiveSpeechFrames = 0;
 
-      if (this.silenceTimer) {
-        clearTimeout(this.silenceTimer);
-        this.silenceTimer = null;
-      }
-    } else {
-      if (this.isSpeaking && !this.silenceTimer) {
-        this.silenceTimer = setTimeout(() => {
-          const duration = this.lastSpeechTimestamp - this.speechStartTimestamp;
-          if (duration >= this.config.minSpeechDurationMs) {
+      if (this.isSpeaking) {
+        const silenceElapsed = now - this.lastSpeechTimestamp;
+        const speechDuration = this.lastSpeechTimestamp - this.speechStartTimestamp;
+
+        if (silenceElapsed >= this.config.silenceDurationMs) {
+          if (speechDuration >= this.config.minSpeechDurationMs) {
             this.isSpeaking = false;
             this.emit("speech_end", {
-              durationMs: duration,
+              durationMs: speechDuration,
               endTimestamp: this.lastSpeechTimestamp,
             });
+          } else {
+            this.isSpeaking = false;
           }
-          this.silenceTimer = null;
-        }, this.config.silenceDurationMs);
+        }
       }
     }
   }
 
   reset(): void {
-    if (this.silenceTimer) {
-      clearTimeout(this.silenceTimer);
-      this.silenceTimer = null;
-    }
     this.isSpeaking = false;
+    this.consecutiveSpeechFrames = 0;
     this.lastSpeechTimestamp = 0;
     this.speechStartTimestamp = 0;
   }

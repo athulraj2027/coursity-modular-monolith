@@ -5,20 +5,93 @@ export interface DevicePermissions {
   camera: boolean;
 }
 
+export const DEVICE_STORAGE_KEYS = {
+  MIC: "coursity_preferred_mic_id",
+  CAMERA: "coursity_preferred_cam_id",
+  SPEAKER: "coursity_preferred_speaker_id",
+};
+
 export class DeviceManager {
-  static async requestPermissions(withVideo: boolean = true): Promise<{
+  static getPreferredMic(): string {
+    try {
+      return localStorage.getItem(DEVICE_STORAGE_KEYS.MIC) || "";
+    } catch {
+      return "";
+    }
+  }
+
+  static setPreferredMic(deviceId: string): void {
+    try {
+      if (deviceId) {
+        localStorage.setItem(DEVICE_STORAGE_KEYS.MIC, deviceId);
+      }
+    } catch {}
+  }
+
+  static getPreferredCamera(): string {
+    try {
+      return localStorage.getItem(DEVICE_STORAGE_KEYS.CAMERA) || "";
+    } catch {
+      return "";
+    }
+  }
+
+  static setPreferredCamera(deviceId: string): void {
+    try {
+      if (deviceId) {
+        localStorage.setItem(DEVICE_STORAGE_KEYS.CAMERA, deviceId);
+      }
+    } catch {}
+  }
+
+  static getPreferredSpeaker(): string {
+    try {
+      return localStorage.getItem(DEVICE_STORAGE_KEYS.SPEAKER) || "";
+    } catch {
+      return "";
+    }
+  }
+
+  static setPreferredSpeaker(deviceId: string): void {
+    try {
+      if (deviceId) {
+        localStorage.setItem(DEVICE_STORAGE_KEYS.SPEAKER, deviceId);
+      }
+    } catch {}
+  }
+
+  static async requestPermissions(
+    withVideo: boolean = true,
+    micDeviceId?: string,
+    cameraDeviceId?: string
+  ): Promise<{
     stream: MediaStream | null;
     permissions: DevicePermissions;
     error?: string;
   }> {
+    const targetMic = micDeviceId || this.getPreferredMic();
+    const targetCam = cameraDeviceId || this.getPreferredCamera();
+
+    // 1. Try exact device constraints first to respect user's explicit selection
     try {
+      const audioConstraints: MediaTrackConstraints = {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        ...(targetMic ? { deviceId: { exact: targetMic } } : {}),
+      };
+
+      const videoConstraints: MediaTrackConstraints | boolean = withVideo
+        ? {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            ...(targetCam ? { deviceId: { exact: targetCam } } : {}),
+          }
+        : false;
+
       const constraints: MediaStreamConstraints = {
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-        video: withVideo ? { width: { ideal: 1280 }, height: { ideal: 720 } } : false,
+        audio: audioConstraints,
+        video: videoConstraints,
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -29,40 +102,84 @@ export class DeviceManager {
           camera: stream.getVideoTracks().length > 0,
         },
       };
-    } catch (err: any) {
-      // If combined request fails (e.g. no camera attached), fallback to audio-only request
-      if (withVideo) {
-        try {
-          const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-              echoCancellation: true,
-              noiseSuppression: true,
-              autoGainControl: true,
-            },
-            video: false,
-          });
-          return {
-            stream: audioOnlyStream,
-            permissions: {
-              microphone: true,
-              camera: false,
-            },
-          };
-        } catch (audioErr: any) {
-          return {
-            stream: null,
-            permissions: { microphone: false, camera: false },
-            error: audioErr.message || "Microphone access denied",
-          };
-        }
-      }
+    } catch {
+      // 2. If exact device constraint is unavailable, fallback to ideal constraint
+      try {
+        const fallbackAudioConstraints: MediaTrackConstraints = {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          ...(targetMic ? { deviceId: { ideal: targetMic } } : {}),
+        };
 
-      return {
-        stream: null,
-        permissions: { microphone: false, camera: false },
-        error: err.message || "Device permissions denied",
-      };
+        const fallbackVideoConstraints: MediaTrackConstraints | boolean = withVideo
+          ? {
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              ...(targetCam ? { deviceId: { ideal: targetCam } } : {}),
+            }
+          : false;
+
+        const fallbackStream = await navigator.mediaDevices.getUserMedia({
+          audio: fallbackAudioConstraints,
+          video: fallbackVideoConstraints,
+        });
+
+        return {
+          stream: fallbackStream,
+          permissions: {
+            microphone: fallbackStream.getAudioTracks().length > 0,
+            camera: fallbackStream.getVideoTracks().length > 0,
+          },
+        };
+      } catch (err: any) {
+        // 3. If combined request fails, fallback to audio-only
+        if (withVideo) {
+          try {
+            const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
+              audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+                ...(targetMic ? { deviceId: { ideal: targetMic } } : {}),
+              },
+              video: false,
+            });
+            return {
+              stream: audioOnlyStream,
+              permissions: {
+                microphone: true,
+                camera: false,
+              },
+            };
+          } catch (audioErr: any) {
+            return {
+              stream: null,
+              permissions: { microphone: false, camera: false },
+              error: audioErr.message || "Microphone access denied",
+            };
+          }
+        }
+
+        return {
+          stream: null,
+          permissions: { microphone: false, camera: false },
+          error: err.message || "Device permissions denied",
+        };
+      }
     }
+  }
+
+  static async getAudioStream(micDeviceId?: string): Promise<MediaStream> {
+    return navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        ...(micDeviceId ? { deviceId: { exact: micDeviceId } } : {}),
+      },
+      video: false,
+    });
   }
 
   static async getDevices(): Promise<{

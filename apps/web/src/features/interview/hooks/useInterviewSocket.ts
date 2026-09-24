@@ -15,6 +15,8 @@ export interface UseInterviewSocketOptions {
   token: string | null;
   sessionId: string;
   autoConnect?: boolean;
+  stream?: MediaStream | null;
+  micDeviceId?: string;
   onSessionComplete?: (report: InboundEvaluationReportMessage["report"]) => void;
 }
 
@@ -22,6 +24,8 @@ export function useInterviewSocket({
   token,
   sessionId,
   autoConnect = true,
+  stream = null,
+  micDeviceId,
   onSessionComplete,
 }: UseInterviewSocketOptions) {
   const [connectionState, setConnectionState] = useState<ConnectionState>("DISCONNECTED");
@@ -42,14 +46,23 @@ export function useInterviewSocket({
   const socketRef = useRef<InterviewSocket | null>(null);
   const audioCaptureRef = useRef<AudioCapture | null>(null);
   const audioPlaybackRef = useRef<AudioPlayback | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const onSessionCompleteRef = useRef(onSessionComplete);
 
   useEffect(() => {
     onSessionCompleteRef.current = onSessionComplete;
   }, [onSessionComplete]);
 
-  // Initialize Audio Services (Stable, zero volatile state dependencies)
-  const initAudio = useCallback(async (existingStream?: MediaStream | null, micDeviceId?: string) => {
+  // Keep AudioCapture updated if parent stream changes (e.g. microphone switched)
+  useEffect(() => {
+    streamRef.current = stream;
+    if (stream && audioCaptureRef.current) {
+      audioCaptureRef.current.updateStream(stream);
+    }
+  }, [stream]);
+
+  // Initialize Audio Services
+  const initAudio = useCallback(async (activeStream?: MediaStream | null, selectedMicId?: string) => {
     try {
       // 1. Audio Playback
       if (!audioPlaybackRef.current) {
@@ -70,6 +83,7 @@ export function useInterviewSocket({
       }
 
       // 2. Audio Capture
+      const mediaStreamToUse = activeStream || streamRef.current;
       if (!audioCaptureRef.current) {
         audioCaptureRef.current = new AudioCapture({
           sampleRate: 16000,
@@ -80,7 +94,7 @@ export function useInterviewSocket({
           },
           onLevelChange: (lvl) => {
             setMicLevel(lvl);
-            if (lvl > 0.08) {
+            if (lvl > 0.06) {
               setCurrentSpeaker((prev) => {
                 if (prev !== "AI") {
                   setOrbState("LISTENING");
@@ -91,19 +105,27 @@ export function useInterviewSocket({
             }
           },
         });
-        await audioCaptureRef.current.start(existingStream || undefined, micDeviceId);
+        await audioCaptureRef.current.start(mediaStreamToUse, selectedMicId || micDeviceId);
+      } else if (mediaStreamToUse) {
+        audioCaptureRef.current.updateStream(mediaStreamToUse);
       }
     } catch (err: any) {
       console.error("[useInterviewSocket] Failed to init audio capture/playback:", err);
       setErrorMessage("Microphone access is required for real-time AI interview.");
     }
+  }, [micDeviceId]);
+
+  // Resume WebAudio contexts
+  const resumeAudio = useCallback(async () => {
+    await audioCaptureRef.current?.resume();
+    await audioPlaybackRef.current?.resume();
   }, []);
 
   // Connect WebSocket
-  const connect = useCallback(async (existingStream?: MediaStream | null, micDeviceId?: string) => {
+  const connect = useCallback(async (activeStream?: MediaStream | null, selectedMicId?: string) => {
     if (!token || !sessionId) return;
 
-    await initAudio(existingStream, micDeviceId);
+    await initAudio(activeStream, selectedMicId);
 
     if (socketRef.current) {
       socketRef.current.close();
@@ -115,6 +137,7 @@ export function useInterviewSocket({
       onAuthSuccess: () => {
         setConnectionState("CONNECTED");
         setOrbState("IDLE");
+        resumeAudio();
       },
       onTranscript: (msg: InboundTranscriptMessage) => {
         setTranscripts((prev) => [
@@ -142,9 +165,12 @@ export function useInterviewSocket({
         audioPlaybackRef.current?.resume();
       },
       onSpeakingEnd: () => {
-        setOrbState("LISTENING");
-        setCurrentSpeaker("CANDIDATE");
-        setAiSpeechProgress(1.0);
+        // Transition to listening once audio has finished playing
+        if (!audioPlaybackRef.current?.getIsPlaying()) {
+          setOrbState("LISTENING");
+          setCurrentSpeaker("CANDIDATE");
+          setAiSpeechProgress(1.0);
+        }
       },
       onAudioChunk: (base64Pcm) => {
         audioPlaybackRef.current?.enqueuePcmChunk(base64Pcm);
@@ -176,13 +202,18 @@ export function useInterviewSocket({
 
     socketRef.current = socket;
     socket.connect();
-  }, [token, sessionId, initAudio]);
+  }, [token, sessionId, initAudio, resumeAudio]);
 
   // Handle Mute / Unmute
   const toggleMic = useCallback(() => {
     setIsMicMuted((prev) => {
       const nextState = !prev;
       audioCaptureRef.current?.setMuted(nextState);
+      if (streamRef.current) {
+        streamRef.current.getAudioTracks().forEach((track) => {
+          track.enabled = !nextState;
+        });
+      }
       if (nextState) setMicLevel(0);
       return nextState;
     });
@@ -227,7 +258,7 @@ export function useInterviewSocket({
   // Auto-connect on mount if token is ready
   useEffect(() => {
     if (autoConnect && token && sessionId) {
-      connect();
+      connect(streamRef.current, micDeviceId);
     }
 
     return () => {
@@ -235,7 +266,8 @@ export function useInterviewSocket({
       audioCaptureRef.current?.stop();
       audioPlaybackRef.current?.stop();
     };
-  }, [autoConnect, token, sessionId, connect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoConnect, token, sessionId]);
 
   return {
     connectionState,
@@ -259,5 +291,6 @@ export function useInterviewSocket({
     interrupt,
     sendTextInput,
     endInterview,
+    resumeAudio,
   };
 }

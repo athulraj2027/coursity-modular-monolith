@@ -29,11 +29,8 @@ export class AudioPlayback {
   private initAudioContext(): AudioContext {
     if (!this.audioContext || this.audioContext.state === "closed") {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      try {
-        this.audioContext = new AudioCtx({ sampleRate: 16000 });
-      } catch {
-        this.audioContext = new AudioCtx();
-      }
+      // Initialize with hardware native sample rate for clean sound card playback
+      this.audioContext = new AudioCtx();
 
       this.gainNode = this.audioContext.createGain();
       this.analyserNode = this.audioContext.createAnalyser();
@@ -42,15 +39,28 @@ export class AudioPlayback {
       this.gainNode.connect(this.analyserNode);
       this.analyserNode.connect(this.audioContext.destination);
 
+      const handleUserGesture = () => {
+        this.resume();
+      };
+      window.addEventListener("click", handleUserGesture, { passive: true });
+      window.addEventListener("keydown", handleUserGesture, { passive: true });
+      window.addEventListener("touchstart", handleUserGesture, { passive: true });
+
       this.startLevelMonitoring();
     }
     return this.audioContext;
   }
 
   async resume(): Promise<void> {
-    const ctx = this.initAudioContext();
-    if (ctx.state === "suspended") {
-      await ctx.resume();
+    if (!this.audioContext || this.audioContext.state === "closed") {
+      this.initAudioContext();
+    }
+    if (this.audioContext && (this.audioContext.state === "suspended" || (this.audioContext.state as string) === "interrupted")) {
+      try {
+        await this.audioContext.resume();
+      } catch (err) {
+        console.warn("[AudioPlayback] AudioContext resume failed:", err);
+      }
     }
   }
 

@@ -35,6 +35,7 @@ export function setupSessionGateway(
 
     let currentCoordinator: InterviewSessionCoordinator | null = null;
     let isAuthenticated = false;
+    const pendingBinaryChunks: Buffer[] = [];
 
     const url = new URL(req.url || "", `http://${req.headers.host || "localhost"}`);
     const queryToken = url.searchParams.get("token");
@@ -115,13 +116,22 @@ export function setupSessionGateway(
         deps.sessionRegistry.registerSession(sessionId, currentCoordinator);
         isAuthenticated = true;
 
+        // Flush any binary audio chunks received during authentication handshake
+        while (pendingBinaryChunks.length > 0) {
+          const chunk = pendingBinaryChunks.shift();
+          if (chunk && currentCoordinator) {
+            currentCoordinator.handleInboundMessage({
+              type: "AUDIO_CHUNK",
+              audioBase64: chunk.toString("base64"),
+            });
+          }
+        }
+
         sendJson(ws, {
           type: "AUTH_SUCCESS",
           phase: "INITIALIZING",
           meta: { sessionId, userId, candidateName },
         });
-
-        await currentCoordinator.start();
       } catch (err: any) {
         logger.error("[Gateway] Authentication failed:", err.message);
         sendJson(ws, {
@@ -129,6 +139,20 @@ export function setupSessionGateway(
           error: "Invalid or expired realtime session token",
         });
         ws.close(4001, "Authentication failed");
+        return;
+      }
+
+      // Start interview coordinator after successful authentication
+      if (currentCoordinator) {
+        try {
+          await currentCoordinator.start();
+        } catch (startErr: any) {
+          logger.error(`[Gateway] Error starting coordinator for session ${sessionId}:`, startErr.message);
+          sendJson(ws, {
+            type: "ERROR",
+            error: "Failed to start interview conversation: " + startErr.message,
+          });
+        }
       }
     };
 
@@ -139,22 +163,24 @@ export function setupSessionGateway(
     ws.on("message", async (data, isBinary) => {
       try {
         if (isBinary) {
-          if (currentCoordinator && isAuthenticated) {
-            let buffer: Buffer;
-            if (Buffer.isBuffer(data)) {
-              buffer = data;
-            } else if (data instanceof ArrayBuffer) {
-              buffer = Buffer.from(data);
-            } else if (Array.isArray(data)) {
-              buffer = Buffer.concat(data);
-            } else {
-              buffer = Buffer.from(data as any);
-            }
+          let buffer: Buffer;
+          if (Buffer.isBuffer(data)) {
+            buffer = data;
+          } else if (data instanceof ArrayBuffer) {
+            buffer = Buffer.from(data);
+          } else if (Array.isArray(data)) {
+            buffer = Buffer.concat(data);
+          } else {
+            buffer = Buffer.from(data as any);
+          }
 
+          if (currentCoordinator && isAuthenticated) {
             currentCoordinator.handleInboundMessage({
               type: "AUDIO_CHUNK",
               audioBase64: buffer.toString("base64"),
             });
+          } else if (!isAuthenticated && pendingBinaryChunks.length < 50) {
+            pendingBinaryChunks.push(buffer);
           }
           return;
         }

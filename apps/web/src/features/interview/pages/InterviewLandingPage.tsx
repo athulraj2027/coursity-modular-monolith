@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useCurrentUser } from "@/features/auth";
 import { useInterviewSession } from "../hooks/useInterviewSession";
@@ -25,11 +25,29 @@ export const InterviewLandingPage: React.FC = () => {
 
   const handleReturn = () => {
     if (isTeacher) {
-      navigate("/teachers/onboarding/interview");
+      navigate("/teachers/onboarding/interview", { replace: true });
     } else {
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     }
   };
+
+  // If session is already finished, redirect back to onboarding / dashboard
+  useEffect(() => {
+    if (
+      session &&
+      (session.status === "COMPLETED" ||
+        session.status === "EVALUATED" ||
+        session.status === "EVALUATING" ||
+        session.status === "CANCELLED" ||
+        session.status === "ABANDONED")
+    ) {
+      if (isTeacher) {
+        navigate("/teachers/onboarding/interview", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
+    }
+  }, [session, isTeacher, navigate]);
 
   if (loading) {
     return (
