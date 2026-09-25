@@ -7,7 +7,7 @@ import { seedPlansIfEmpty } from "@/modules/plan";
 import { seedCategoriesIfEmpty } from "@/modules/category";
 import { seedOffersIfEmpty } from "@/modules/offer";
 
-// Trigger reload: wishlist routes and schemas updated
+// Trigger reload: teacher enrollment routes updated at 2026-09-25T16:33:00
 const server = http.createServer(app);
 
 const startServer = async () => {

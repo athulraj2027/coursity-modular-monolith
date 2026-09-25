@@ -34,6 +34,8 @@ model User {
   wishlist     Wishlist?
   bankDetails  BankDetail[]
   wallet       Wallet?
+  enrollments  CourseEnrollment[]
+  refunds      CourseRefund[]
 
   @@map("users")
 }
@@ -87,6 +89,7 @@ model TeacherProfile {
   interviews            InterviewSession[]
   courses               Course[]
   offerRedemptions      OfferRedemption[]
+  coupons               TeacherCoupon[]
 
   @@map("teacher_profiles")
 }

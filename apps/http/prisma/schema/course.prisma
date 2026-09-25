@@ -99,9 +99,11 @@ model Course {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
-  // Curriculum Relations
+  // Curriculum & Enrollment Relations
   modules            CourseModule[]
   wishlistItems      WishlistItem[]
+  enrollments        CourseEnrollment[]
+  coupons            TeacherCoupon[]
 
   @@index([teacherProfileId, status])
   @@index([categoryId, subcategoryId, status])
@@ -133,7 +135,7 @@ model CourseModule {
 }
 
 // ==========================================
-// 3. CURRICULUM LESSONS (LECTURES & CONTENT)
+// 3. CURRICULUM LESSONS (LIVE CLASSES & CONTENT)
 // ==========================================
 
 model CourseLesson {
@@ -141,13 +143,20 @@ model CourseLesson {
   moduleId        String
   module          CourseModule     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
-  title           String           // e.g. "Lesson 3: Implementing Token Auth"
+  title           String           // e.g. "Class 1: System Architecture Deep-Dive"
   description     String?          @db.Text
-  lessonType      LessonType       @default(VIDEO)
+  lessonType      LessonType       @default(LIVE_CLASS)
   durationSeconds Int              @default(0)
   sortOrder       Int              @default(0)
   isFreePreview   Boolean          @default(false) // Allows guest preview
   isPublished     Boolean          @default(true)
+
+  // Live Class Scheduling & Session Management
+  scheduledAt     DateTime?        // When this live session starts
+  liveMeetingUrl  String?          // Meeting link (Zoom/Meet/Live Room)
+  isLiveNow       Boolean          @default(false)
+  recordingUrl    String?          // Cloud recording link after live session ends
+  liveStatus      LiveClassStatus  @default(SCHEDULED)
 
   // Multi-format Content Payloads
   videoUrl        String?          // Stored video or stream manifest URL
@@ -159,6 +168,10 @@ model CourseLesson {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
+  lessonProgress  LessonProgress[]
+
   @@index([moduleId, sortOrder])
+  @@index([scheduledAt, liveStatus])
   @@map("course_lessons")
 }
+

@@ -18,6 +18,8 @@ import {
   ArrowUpRight,
   Compass,
   Heart,
+  BookCheck,
+  Ticket,
   type LucideIcon,
 } from "lucide-react"
 
@@ -42,6 +44,11 @@ export const STUDENT_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Dashboard",
         url: "/students/dashboard",
         icon: LayoutDashboard,
+      },
+      {
+        title: "My Enrolled Classes",
+        url: "/students/courses",
+        icon: GraduationCap,
       },
       {
         title: "Explore Courses",
@@ -105,6 +112,16 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Courses & Studio",
         url: "/teachers/courses",
         icon: GraduationCap,
+      },
+      {
+        title: "Student Enrollments",
+        url: "/teachers/enrollments",
+        icon: UserCheck,
+      },
+      {
+        title: "Course Coupons",
+        url: "/teachers/coupons",
+        icon: Ticket,
       },
       {
         title: "Community & Cohorts",
@@ -191,6 +208,11 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         icon: GraduationCap,
       },
       {
+        title: "Enrollments",
+        url: "/admin/enrollments",
+        icon: BookCheck,
+      },
+      {
         title: "Categories",
         url: "/admin/categories",
         icon: FolderTree,
@@ -226,12 +248,18 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         icon: CreditCard,
       },
       {
+        title: "Teacher Coupons",
+        url: "/admin/coupons",
+        icon: Ticket,
+      },
+      {
         title: "Offers & Promos",
         url: "/admin/offers",
         icon: Tag,
       },
     ],
   },
+
   {
     label: "AI & Intelligence",
     items: [

@@ -56,7 +56,24 @@ import {
   AdminWalletsPage,
   AdminPayoutsPage,
 } from "@/features/wallet"
+import {
+  StudentCoursesPage,
+  CourseClassroomPage,
+  CertificateViewPage,
+  CourseCheckoutPage,
+  CourseCheckoutSuccessPage,
+  CourseCheckoutFailedPage,
+  AdminEnrollmentsPage,
+  TeacherEnrollmentsPage,
+  TeacherEnrollmentDetailPage,
+} from "@/features/enrollment"
+import {
+  AdminCouponsPage,
+  TeacherCouponsPage,
+  TeacherCouponDetailPage,
+} from "@/features/coupons"
 import { AdminAIConfigPage } from "@/features/ai-config"
+
 import {
   InterviewLandingPage,
   InterviewSetupPage,
@@ -92,6 +109,7 @@ export function AppRoutes() {
           <Route path="/courses/:slug" element={<PublicCourseDetailPage />} />
           <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/teachers" element={<TeachersPage />} />
+          <Route path="/certificates/:code" element={<CertificateViewPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
@@ -117,11 +135,29 @@ export function AppRoutes() {
         </Route>
       </Route>
 
+      {/* 2.1 Protected Student Course Checkout (Restricted strictly to Student Role) */}
+      <Route element={<ProtectedRoute />}>
+        <Route element={<RoleGuard allowedRoles={["student"]} />}>
+          <Route element={<MainLayout />}>
+            <Route path="/courses/:slug/checkout" element={<CourseCheckoutPage />} />
+            <Route path="/courses/:slug/checkout/success" element={<CourseCheckoutSuccessPage />} />
+            <Route path="/courses/:slug/checkout/failed" element={<CourseCheckoutFailedPage />} />
+            <Route path="/checkout/:slug" element={<CourseCheckoutPage />} />
+            <Route path="/checkout/:slug/success" element={<CourseCheckoutSuccessPage />} />
+            <Route path="/checkout/:slug/failed" element={<CourseCheckoutFailedPage />} />
+          </Route>
+        </Route>
+      </Route>
+
+
       {/* 3. Protected Student Portal Routes */}
       <Route element={<ProtectedRoute />}>
         <Route element={<RoleGuard allowedRoles={["student"]} />}>
           <Route path="/students/dashboard" element={<DashboardLayout role="student" />}>
             <Route index element={<StudentDashboardPage />} />
+          </Route>
+          <Route path="/students/courses" element={<DashboardLayout role="student" />}>
+            <Route index element={<StudentCoursesPage />} />
           </Route>
           <Route path="/students/profile" element={<DashboardLayout role="student" />}>
             <Route index element={<StudentProfilePage />} />
@@ -135,9 +171,17 @@ export function AppRoutes() {
           <Route path="/students/password" element={<DashboardLayout role="student" />}>
             <Route index element={<ChangePasswordPage role="student" />} />
           </Route>
-          {/* Aliases for student dashboard & profile */}
+
+          {/* 3.1 Distraction-free Live Classroom Player */}
+          <Route path="/learn/:slug" element={<CourseClassroomPage />} />
+          <Route path="/classroom/:slug" element={<CourseClassroomPage />} />
+
+          {/* Aliases for student dashboard & courses */}
           <Route path="/student/dashboard" element={<Navigate to="/students/dashboard" replace />} />
           <Route path="/dashboard" element={<Navigate to="/students/dashboard" replace />} />
+          <Route path="/my-courses" element={<Navigate to="/students/courses" replace />} />
+          <Route path="/my-learning" element={<Navigate to="/students/courses" replace />} />
+          <Route path="/student/courses" element={<Navigate to="/students/courses" replace />} />
           <Route path="/profile" element={<Navigate to="/students/profile" replace />} />
           <Route path="/student/profile" element={<Navigate to="/students/profile" replace />} />
           <Route path="/student/wallet" element={<Navigate to="/students/wallet" replace />} />
@@ -178,6 +222,22 @@ export function AppRoutes() {
               <Route path=":id" element={<TeacherCourseDetailPage />} />
               <Route path=":id/curriculum" element={<TeacherCurriculumPage />} />
             </Route>
+            <Route path="/teachers/enrollments" element={<DashboardLayout role="teacher" />}>
+              <Route index element={<TeacherEnrollmentsPage />} />
+              <Route path=":id" element={<TeacherEnrollmentDetailPage />} />
+            </Route>
+            <Route path="/teacher/enrollments" element={<DashboardLayout role="teacher" />}>
+              <Route index element={<TeacherEnrollmentsPage />} />
+              <Route path=":id" element={<TeacherEnrollmentDetailPage />} />
+            </Route>
+            <Route path="/teachers/coupons" element={<DashboardLayout role="teacher" />}>
+              <Route index element={<TeacherCouponsPage />} />
+              <Route path=":id" element={<TeacherCouponDetailPage />} />
+            </Route>
+            <Route path="/teacher/coupons" element={<DashboardLayout role="teacher" />}>
+              <Route index element={<TeacherCouponsPage />} />
+              <Route path=":id" element={<TeacherCouponDetailPage />} />
+            </Route>
             <Route path="/teachers/wallet" element={<DashboardLayout role="teacher" />}>
               <Route index element={<UserWalletPage />} />
             </Route>
@@ -204,6 +264,11 @@ export function AppRoutes() {
             <Route path="/teacher/courses" element={<Navigate to="/teachers/courses" replace />} />
             <Route path="/courses/teacher" element={<Navigate to="/teachers/courses" replace />} />
             <Route path="/courses/teachers" element={<Navigate to="/teachers/courses" replace />} />
+            <Route path="/teacher/enrollments" element={<Navigate to="/teachers/enrollments" replace />} />
+            <Route path="/teacher/enrollment" element={<Navigate to="/teachers/enrollments" replace />} />
+            <Route path="/teachers/enrollment" element={<Navigate to="/teachers/enrollments" replace />} />
+            <Route path="/teacher/students" element={<Navigate to="/teachers/enrollments" replace />} />
+            <Route path="/teachers/students" element={<Navigate to="/teachers/enrollments" replace />} />
             <Route path="/teacher/wallet" element={<Navigate to="/teachers/wallet" replace />} />
             <Route path="/teachers/wallets" element={<Navigate to="/teachers/wallet" replace />} />
             <Route path="/teacher/wallets" element={<Navigate to="/teachers/wallet" replace />} />
@@ -225,6 +290,9 @@ export function AppRoutes() {
             <Route path="/teachers/billing" element={<Navigate to="/teachers/plans" replace />} />
             <Route path="/teachers/my-interviews" element={<Navigate to="/teachers/dashboard" replace />} />
             <Route path="/teacher/interviews" element={<Navigate to="/teachers/dashboard" replace />} />
+            <Route path="/teacher/coupons" element={<Navigate to="/teachers/coupons" replace />} />
+            <Route path="/teacher/coupon" element={<Navigate to="/teachers/coupons" replace />} />
+            <Route path="/teachers/coupon" element={<Navigate to="/teachers/coupons" replace />} />
           </Route>
         </Route>
       </Route>
@@ -264,6 +332,9 @@ export function AppRoutes() {
             <Route index element={<AdminCoursesPage />} />
             <Route path=":id" element={<AdminCourseDetailPage />} />
           </Route>
+          <Route path="/admin/enrollments" element={<DashboardLayout role="admin" />}>
+            <Route index element={<AdminEnrollmentsPage />} />
+          </Route>
           <Route path="/admin/plans" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminPlansPage />} />
             <Route path="new" element={<AdminPlanFormPage />} />
@@ -273,6 +344,9 @@ export function AppRoutes() {
           <Route path="/admin/subscriptions" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminSubscriptionsPage />} />
             <Route path=":id" element={<AdminSubscriptionDetailPage />} />
+          </Route>
+          <Route path="/admin/coupons" element={<DashboardLayout role="admin" />}>
+            <Route index element={<AdminCouponsPage />} />
           </Route>
           <Route path="/admin/offers" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminOffersPage />} />
@@ -287,6 +361,9 @@ export function AppRoutes() {
             <Route index element={<AdminInterviewsPage />} />
             <Route path=":id" element={<AdminInterviewDetailPage />} />
           </Route>
+          <Route path="/admin/enrollment" element={<Navigate to="/admin/enrollments" replace />} />
+          <Route path="/admin/coupon" element={<Navigate to="/admin/coupons" replace />} />
+          <Route path="/admin/teacher-coupons" element={<Navigate to="/admin/coupons" replace />} />
           <Route path="/admin/wallet" element={<Navigate to="/admin/wallets" replace />} />
           <Route path="/admin/payout" element={<Navigate to="/admin/payouts" replace />} />
           <Route path="/admin/banks" element={<Navigate to="/admin/bank-details" replace />} />
@@ -296,6 +373,7 @@ export function AppRoutes() {
           <Route path="/admin/students" element={<Navigate to="/admin/users" replace />} />
           <Route path="/admin/course" element={<Navigate to="/admin/courses" replace />} />
           <Route path="/courses/admin" element={<Navigate to="/admin/courses" replace />} />
+
         </Route>
       </Route>
 
