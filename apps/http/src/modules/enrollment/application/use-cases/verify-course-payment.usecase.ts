@@ -5,7 +5,7 @@ import { TeacherCouponRepository } from "@/modules/coupon/domain/repositories/te
 import { IPaymentGateway } from "@/infrastructure/payment";
 import { IEmailService } from "@/infrastructure/email";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
-import { BadRequestError, NotFoundError } from "@/app/errors";
+import { BadRequestError, ConflictError, NotFoundError } from "@/app/errors";
 
 export class VerifyCoursePaymentUseCase {
   constructor(
@@ -16,7 +16,27 @@ export class VerifyCoursePaymentUseCase {
   ) {}
 
   async execute(studentId: string, dto: VerifyCoursePaymentDto): Promise<CourseEnrollmentEntity> {
-    // 1. Verify Razorpay Payment Signature
+    // 1. Check existing enrollment status (Idempotent retry vs. conflict/refunded)
+    const existingEnrollment = await this.enrollmentRepo.findEnrollmentByStudentAndCourse(studentId, dto.courseId);
+    if (existingEnrollment) {
+      if (existingEnrollment.status === "ACTIVE") {
+        if (
+          (dto.razorpayPaymentId && existingEnrollment.razorpayPaymentId === dto.razorpayPaymentId) ||
+          (dto.razorpayOrderId && existingEnrollment.razorpayOrderId === dto.razorpayOrderId)
+        ) {
+          return existingEnrollment;
+        }
+        throw new ConflictError("You are already actively enrolled in this course.");
+      }
+      if (existingEnrollment.status === "REFUNDED") {
+        throw new BadRequestError("You previously claimed a full refund for this course under our 20-Day Guarantee and are not eligible to re-enroll.");
+      }
+      if (existingEnrollment.status === "CANCELLED") {
+        throw new BadRequestError("Your previous enrollment for this course was cancelled and is not eligible for re-enrollment.");
+      }
+    }
+
+    // 2. Verify Razorpay Payment Signature
     const isSignatureValid = this.paymentGateway.verifyPaymentSignature({
       orderId: dto.razorpayOrderId,
       paymentId: dto.razorpayPaymentId,

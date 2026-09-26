@@ -132,6 +132,7 @@ export class PrismaEnrollmentRepository implements EnrollmentRepository {
       data: {
         studentId: data.studentId,
         courseId: data.courseId,
+        status: "ACTIVE",
         originalPrice: data.originalPrice,
         discountAmount: data.discountAmount,
         finalAmount: data.finalAmount,

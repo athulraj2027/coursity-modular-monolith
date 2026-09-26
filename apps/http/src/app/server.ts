@@ -7,7 +7,7 @@ import { seedPlansIfEmpty } from "@/modules/plan";
 import { seedCategoriesIfEmpty } from "@/modules/category";
 import { seedOffersIfEmpty } from "@/modules/offer";
 
-// Trigger reload: teacher enrollment routes updated at 2026-09-25T16:33:00
+// Trigger reload: enrollment refund prevention active at 2026-09-26T00:28:30
 const server = http.createServer(app);
 
 const startServer = async () => {

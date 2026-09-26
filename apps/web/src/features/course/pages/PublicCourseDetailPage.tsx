@@ -68,9 +68,9 @@ export const PublicCourseDetailPage: React.FC = () => {
   const { data: myEnrollments = [] } = useMyEnrollments(undefined, {
     enabled: Boolean(currentUser),
   });
-  const existingEnrollment = myEnrollments.find(
-    (e) => e.courseId === course?.id && e.status === "ACTIVE"
-  );
+  const userEnrollment = myEnrollments.find((e) => e.courseId === course?.id);
+  const existingEnrollment = userEnrollment?.status === "ACTIVE" ? userEnrollment : null;
+  const isRefundedEnrollment = userEnrollment?.status === "REFUNDED";
 
   // Initialize first module expanded
   React.useEffect(() => {
@@ -107,6 +107,11 @@ export const PublicCourseDetailPage: React.FC = () => {
   const handleEnrollClick = () => {
     if (existingEnrollment) {
       navigate(`/learn/${course?.slug || slug}`);
+      return;
+    }
+
+    if (isRefundedEnrollment) {
+      toast.error("You previously claimed a full refund for this course and are not eligible to re-enroll.");
       return;
     }
 
@@ -611,6 +616,16 @@ export const PublicCourseDetailPage: React.FC = () => {
                     ✓ YOU ARE ENROLLED
                   </Badge>
                 </div>
+              ) : isRefundedEnrollment ? (
+                <div className="space-y-2">
+                  <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-bold py-1 px-3 flex items-center gap-1.5 w-fit">
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                    <span>TUITION REFUNDED</span>
+                  </Badge>
+                  <p className="text-xs text-neutral-500">
+                    You claimed a 100% money-back refund for this course under our 20-Day Guarantee.
+                  </p>
+                </div>
               ) : course.pricingType === "FREE" ? (
                 <div className="flex items-center gap-2">
                   <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
@@ -638,13 +653,21 @@ export const PublicCourseDetailPage: React.FC = () => {
             {/* Primary Action Button */}
             <Button
               onClick={handleEnrollClick}
-              className={`w-full h-12 text-white font-bold text-sm rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                existingEnrollment
-                  ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/25"
-                  : "bg-[#F42A18] hover:bg-[#D92212] shadow-[#F42A18]/25"
+              disabled={isRefundedEnrollment}
+              className={`w-full h-12 text-white font-bold text-sm rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 ${
+                isRefundedEnrollment
+                  ? "bg-neutral-400 dark:bg-neutral-700 text-neutral-200 cursor-not-allowed shadow-none"
+                  : existingEnrollment
+                  ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/25 cursor-pointer"
+                  : "bg-[#F42A18] hover:bg-[#D92212] shadow-[#F42A18]/25 cursor-pointer"
               }`}
             >
-              {existingEnrollment ? (
+              {isRefundedEnrollment ? (
+                <>
+                  <ShieldAlert className="w-4 h-4" />
+                  <span>Ineligible to Re-Enroll (Refunded)</span>
+                </>
+              ) : existingEnrollment ? (
                 <>
                   <PlayCircle className="w-4 h-4" />
                   <span>Go to Live Classroom</span>

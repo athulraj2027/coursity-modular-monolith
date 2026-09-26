@@ -28,7 +28,7 @@ export class CreateCourseCheckoutOrderUseCase {
       throw new BadRequestError("This course is currently not accepting enrollments.");
     }
 
-    // Check existing active enrollment
+    // Check existing enrollment status
     const existing = await defaultPrisma.courseEnrollment.findUnique({
       where: {
         studentId_courseId: {
@@ -37,8 +37,16 @@ export class CreateCourseCheckoutOrderUseCase {
         },
       },
     });
-    if (existing && existing.status === "ACTIVE") {
-      throw new ConflictError("You are already enrolled in this course.");
+    if (existing) {
+      if (existing.status === "ACTIVE") {
+        throw new ConflictError("You are already actively enrolled in this course.");
+      }
+      if (existing.status === "REFUNDED") {
+        throw new BadRequestError("You previously claimed a full refund for this course under our 20-Day Guarantee and are not eligible to re-enroll.");
+      }
+      if (existing.status === "CANCELLED") {
+        throw new BadRequestError("Your previous enrollment for this course was cancelled and is not eligible for re-enrollment.");
+      }
     }
 
     const originalPrice = Number(course.price);

@@ -29,8 +29,16 @@ export class EnrollFreeCourseUseCase {
     }
 
     const existing = await this.enrollmentRepo.findEnrollmentByStudentAndCourse(studentId, courseId);
-    if (existing && existing.status === "ACTIVE") {
-      throw new ConflictError("You are already enrolled in this live course.");
+    if (existing) {
+      if (existing.status === "ACTIVE") {
+        throw new ConflictError("You are already actively enrolled in this live course.");
+      }
+      if (existing.status === "REFUNDED") {
+        throw new BadRequestError("You previously claimed a full refund for this course under our 20-Day Guarantee and are not eligible to re-enroll.");
+      }
+      if (existing.status === "CANCELLED") {
+        throw new BadRequestError("Your previous enrollment for this course was cancelled and is not eligible for re-enrollment.");
+      }
     }
 
     const now = new Date();

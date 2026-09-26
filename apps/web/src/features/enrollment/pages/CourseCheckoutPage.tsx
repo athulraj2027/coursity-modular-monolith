@@ -20,6 +20,7 @@ import type { CouponValidationResult } from "@/features/coupons/types/coupon.typ
 import {
   Sparkles,
   ShieldCheck,
+  ShieldAlert,
   Tag,
   Wallet as WalletIcon,
   CreditCard,
@@ -120,10 +121,10 @@ export const CourseCheckoutPage: React.FC = () => {
   const teacherProfile = course.teacherProfile;
   const isStarted = Boolean(course.startingDate && new Date(course.startingDate).getTime() <= Date.now());
 
-  // Check if user is already enrolled
-  const existingEnrollment = myEnrollments.find(
-    (e) => e.courseId === course.id && e.status === "ACTIVE"
-  );
+  // Check if user has an existing enrollment record
+  const userEnrollment = myEnrollments.find((e) => e.courseId === course.id);
+  const existingEnrollment = userEnrollment?.status === "ACTIVE" ? userEnrollment : null;
+  const isRefundedEnrollment = userEnrollment?.status === "REFUNDED";
 
   // Financial Calculations
   const isFree = course.pricingType === "FREE" || Number(course.price) === 0;
@@ -193,6 +194,11 @@ export const CourseCheckoutPage: React.FC = () => {
     if (!currentUser) {
       toast.info("Please sign in or create an account to complete enrollment.");
       navigate(`/signin?redirect=/courses/${course.slug}/checkout`);
+      return;
+    }
+
+    if (isRefundedEnrollment) {
+      toast.error("You have previously refunded this course and are not eligible to re-enroll.");
       return;
     }
 
@@ -338,7 +344,31 @@ export const CourseCheckoutPage: React.FC = () => {
         </Button>
       </div>
 
-      {/* 2. Top Banner if Already Enrolled */}
+      {/* 2. Top Banner if Refunded or Already Enrolled */}
+      {isRefundedEnrollment && (
+        <div className="p-5 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row items-center justify-between gap-4 text-amber-800 dark:text-amber-300">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-neutral-900 dark:text-white">Ineligible for Re-Enrollment</h4>
+              <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                You previously claimed a 100% full money-back refund for this course under our 20-Day Guarantee. In accordance with platform terms, re-enrollment in previously refunded courses is not permitted.
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={() => navigate("/courses")}
+            variant="outline"
+            className="rounded-xl text-xs font-bold border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 shrink-0 cursor-pointer"
+          >
+            <span>Explore Other Courses</span>
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+        </div>
+      )}
+
       {existingEnrollment && (
         <div className="p-4 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col sm:flex-row items-center justify-between gap-4 text-emerald-800 dark:text-emerald-300">
           <div className="flex items-center gap-3">
@@ -719,13 +749,22 @@ export const CourseCheckoutPage: React.FC = () => {
             {/* Primary Action Button */}
             <Button
               onClick={handleCheckout}
-              disabled={isProcessing}
-              className="w-full h-12 bg-[#F42A18] hover:bg-[#D92212] text-white font-bold text-sm rounded-2xl shadow-lg shadow-[#F42A18]/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+              disabled={isProcessing || isRefundedEnrollment}
+              className={`w-full h-12 text-white font-bold text-sm rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 ${
+                isRefundedEnrollment
+                  ? "bg-neutral-400 dark:bg-neutral-700 text-neutral-200 cursor-not-allowed shadow-none"
+                  : "bg-[#F42A18] hover:bg-[#D92212] shadow-[#F42A18]/25 cursor-pointer"
+              }`}
             >
               {isProcessing ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span>Confirming Enrollment...</span>
+                </>
+              ) : isRefundedEnrollment ? (
+                <>
+                  <ShieldAlert className="w-4 h-4" />
+                  <span>Ineligible to Enroll (Refunded)</span>
                 </>
               ) : isFree ? (
                 <>
