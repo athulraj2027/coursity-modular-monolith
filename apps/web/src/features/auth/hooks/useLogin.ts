@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { authApi } from "../api/auth.api"
 import { signinSchema, type SigninFormData } from "../schemas/auth.schema"
@@ -21,6 +21,7 @@ export function useLogin() {
 
 export function useSigninForm(role: "student" | "teacher" | "admin" = "student") {
   const navigate = useNavigate()
+  const location = useLocation()
   const { mutate: login, isPending: isMutationPending } = useLogin()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -80,10 +81,18 @@ export function useSigninForm(role: "student" | "teacher" | "admin" = "student")
           // Give user time to read the toast with active loading spinner before redirecting
           setTimeout(() => {
             setIsSubmitting(false)
+
+            const searchParams = new URLSearchParams(window.location.search)
+            const redirectParam = searchParams.get("redirect")
+            const fromState = (location.state as any)?.from
+            const returnUrl = redirectParam || (fromState ? `${fromState.pathname}${fromState.search || ""}` : null)
+
             if (userRole === "admin") {
               navigate("/admin/dashboard")
             } else if (userRole === "teacher") {
               navigate("/teachers/dashboard")
+            } else if (returnUrl) {
+              navigate(returnUrl)
             } else {
               navigate("/")
             }

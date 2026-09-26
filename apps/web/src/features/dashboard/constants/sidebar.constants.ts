@@ -16,8 +16,9 @@ import {
   Building2,
   Wallet,
   ArrowUpRight,
-  Compass,
-  Heart,
+  BookCheck,
+  Ticket,
+  Video,
   type LucideIcon,
 } from "lucide-react"
 
@@ -44,14 +45,14 @@ export const STUDENT_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         icon: LayoutDashboard,
       },
       {
-        title: "Explore Courses",
-        url: "/courses",
-        icon: Compass,
+        title: "My Enrolled Courses",
+        url: "/students/courses",
+        icon: GraduationCap,
       },
       {
-        title: "My Wishlist",
-        url: "/wishlist",
-        icon: Heart,
+        title: "My Live Classes",
+        url: "/students/lectures",
+        icon: Video,
       },
     ],
   },
@@ -105,6 +106,21 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Courses & Studio",
         url: "/teachers/courses",
         icon: GraduationCap,
+      },
+      {
+        title: "Live Lectures Studio",
+        url: "/teachers/lectures",
+        icon: Video,
+      },
+      {
+        title: "Student Enrollments",
+        url: "/teachers/enrollments",
+        icon: UserCheck,
+      },
+      {
+        title: "Course Coupons",
+        url: "/teachers/coupons",
+        icon: Ticket,
       },
       {
         title: "Community & Cohorts",
@@ -191,6 +207,16 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         icon: GraduationCap,
       },
       {
+        title: "Live Lectures",
+        url: "/admin/lectures",
+        icon: Video,
+      },
+      {
+        title: "Enrollments",
+        url: "/admin/enrollments",
+        icon: BookCheck,
+      },
+      {
         title: "Categories",
         url: "/admin/categories",
         icon: FolderTree,
@@ -226,12 +252,18 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         icon: CreditCard,
       },
       {
+        title: "Teacher Coupons",
+        url: "/admin/coupons",
+        icon: Ticket,
+      },
+      {
         title: "Offers & Promos",
         url: "/admin/offers",
         icon: Tag,
       },
     ],
   },
+
   {
     label: "AI & Intelligence",
     items: [

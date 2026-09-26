@@ -143,4 +143,5 @@ export const ModalTemplate: React.FC<ModalTemplateProps> = ({
   return createPortal(modalContent, document.body)
 }
 
+export const Modal = ModalTemplate
 export default ModalTemplate

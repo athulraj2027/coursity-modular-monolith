@@ -81,7 +81,7 @@ export interface DataTableTemplateProps<T> {
   // 4. Data & Columns
   columns: TableColumn<T>[]
   data: T[]
-  keyExtractor: (item: T, index: number) => string | number
+  keyExtractor?: (item: T, index: number) => string | number
   isLoading?: boolean
   emptyState?: {
     icon?: LucideIcon
@@ -364,7 +364,7 @@ export function DataTableTemplate<T>({
               ) : (
                 data.map((item, rowIdx) => (
                   <tr
-                    key={keyExtractor(item, rowIdx)}
+                    key={keyExtractor ? keyExtractor(item, rowIdx) : ((item as any)?.id ?? rowIdx)}
                     className="hover:bg-neutral-50/60 dark:hover:bg-neutral-900/40 transition-colors"
                   >
                     {columns.map((col, colIdx) => {

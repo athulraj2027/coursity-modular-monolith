@@ -1,0 +1,159 @@
+// ==========================================
+// COURSE ENROLLMENT, LIVE CLASSES, PROGRESS & REFUNDS
+// ==========================================
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  REFUNDED
+  CANCELLED
+}
+
+enum LiveClassStatus {
+  SCHEDULED
+  LIVE_NOW
+  COMPLETED
+  CANCELLED
+}
+
+enum RefundStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PROCESSED
+}
+
+enum RefundDestination {
+  WALLET
+  ORIGINAL_PAYMENT_METHOD
+}
+
+model CourseEnrollment {
+  id                    String            @id @default(uuid())
+  studentId             String
+  student               User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  courseId              String
+  course                Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  status                EnrollmentStatus  @default(ACTIVE)
+  
+  // Financial Snapshot & Coupon Tracking
+  originalPrice         Decimal           @default(0.00) @db.Decimal(10, 2)
+  discountAmount        Decimal           @default(0.00) @db.Decimal(10, 2)
+  finalAmount           Decimal           @default(0.00) @db.Decimal(10, 2)
+  currency              String            @default("INR")
+  paymentMethod         String            @default("FREE") // "FREE", "RAZORPAY", "WALLET", "SPLIT"
+  razorpayOrderId       String?
+  razorpayPaymentId     String?
+  invoiceNumber         String?           @unique
+  
+  // Teacher Coupon Redemptions (Instructor-specific discounts)
+  teacherCouponId       String?
+  teacherCoupon         TeacherCoupon?    @relation(fields: [teacherCouponId], references: [id], onDelete: SetNull)
+  appliedCouponCode     String?
+  
+  // 20-Day or 4-Class Refund Lifecycle Window
+  refundEligibleUntil   DateTime          // Calculated as max(startingDate, enrolledAt) + 20 days
+  enrolledAt            DateTime          @default(now())
+  firstAccessedAt       DateTime?
+  completedAt           DateTime?
+  
+  // Live Class Attendance & Progress Snapshot
+  progressPercentage    Float             @default(0.0)
+  attendedClassesCount  Int               @default(0)
+  completedLessonsCount Int               @default(0)
+  lastAccessedLessonId  String?
+  
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  // Relational Integrity
+  lessonProgress        LessonProgress[]
+  refund                CourseRefund?
+  certificate           CourseCertificate?
+
+  @@unique([studentId, courseId])
+  @@index([studentId, status])
+  @@index([courseId, status])
+  @@index([createdAt])
+  @@map("course_enrollments")
+}
+
+model LessonProgress {
+  id                    String            @id @default(uuid())
+  enrollmentId          String
+  enrollment            CourseEnrollment  @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  
+  lessonId              String
+  lesson                CourseLesson      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  
+  isCompleted           Boolean           @default(false)
+  completedAt           DateTime?
+  
+  // Live Class Attendance Tracking
+  attendedLive          Boolean           @default(false)
+  attendedAt            DateTime?
+  liveAttendanceMinutes Int               @default(0)
+  
+  // Video / Playback Tracking
+  lastPositionSeconds   Int               @default(0)
+  
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@unique([enrollmentId, lessonId])
+  @@index([enrollmentId, isCompleted])
+  @@map("lesson_progress")
+}
+
+model CourseRefund {
+  id                       String            @id @default(uuid())
+  enrollmentId             String            @unique
+  enrollment               CourseEnrollment  @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  
+  studentId                String
+  student                  User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  amount                   Decimal           @db.Decimal(10, 2)
+  currency                 String            @default("INR")
+  reason                   String            @db.Text
+  status                   RefundStatus      @default(PROCESSED)
+  destination              RefundDestination @default(WALLET)
+  
+  // Gateway Metadata
+  gatewayRefundId          String?
+  
+  // Audit Snapshot of 20-Day / 4-Class Policy at time of refund
+  classesConductedAtRefund Int               @default(0)
+  classesAttendedAtRefund  Int               @default(0)
+  daysElapsedAtRefund      Int               @default(0)
+  
+  processedAt              DateTime          @default(now())
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+
+  @@index([studentId, status])
+  @@index([createdAt])
+  @@map("course_refunds")
+}
+
+model CourseCertificate {
+  id                    String            @id @default(uuid())
+  enrollmentId          String            @unique
+  enrollment            CourseEnrollment  @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  
+  certificateCode       String            @unique // e.g. "CRT-2026-X89Q2"
+  studentName           String
+  courseTitle           String
+  instructorName        String
+  
+  issuedAt              DateTime          @default(now())
+  pdfUrl                String?
+  
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@index([certificateCode])
+  @@map("course_certificates")
+}

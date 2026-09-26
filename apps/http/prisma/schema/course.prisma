@@ -21,23 +21,6 @@ enum CourseStatus {
   FROZEN
 }
 
-enum LessonType {
-  VIDEO
-  ARTICLE
-  QUIZ
-  LIVE_CLASS
-  ATTACHMENT
-}
-
-enum VideoProvider {
-  LOCAL
-  S3
-  CLOUDFRONT
-  YOUTUBE
-  VIMEO
-  MUX
-}
-
 // ==========================================
 // 1. MAIN COURSE MODEL
 // ==========================================
@@ -99,9 +82,11 @@ model Course {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
-  // Curriculum Relations
+  // Curriculum & Enrollment Relations
   modules            CourseModule[]
   wishlistItems      WishlistItem[]
+  enrollments        CourseEnrollment[]
+  coupons            TeacherCoupon[]
 
   @@index([teacherProfileId, status])
   @@index([categoryId, subcategoryId, status])
@@ -132,33 +117,4 @@ model CourseModule {
   @@map("course_modules")
 }
 
-// ==========================================
-// 3. CURRICULUM LESSONS (LECTURES & CONTENT)
-// ==========================================
 
-model CourseLesson {
-  id              String           @id @default(uuid())
-  moduleId        String
-  module          CourseModule     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-
-  title           String           // e.g. "Lesson 3: Implementing Token Auth"
-  description     String?          @db.Text
-  lessonType      LessonType       @default(VIDEO)
-  durationSeconds Int              @default(0)
-  sortOrder       Int              @default(0)
-  isFreePreview   Boolean          @default(false) // Allows guest preview
-  isPublished     Boolean          @default(true)
-
-  // Multi-format Content Payloads
-  videoUrl        String?          // Stored video or stream manifest URL
-  videoProvider   VideoProvider?   @default(S3)
-  videoThumbnail  String?
-  articleBody     String?          @db.Text // Markdown / HTML text reading content
-  attachments     Json?            @default("[]") // [{ name: string, url: string, sizeBytes: number, type: string }]
-
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-
-  @@index([moduleId, sortOrder])
-  @@map("course_lessons")
-}

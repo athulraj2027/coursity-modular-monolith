@@ -10,6 +10,9 @@ import courseRouter from '@/modules/course';
 import wishlistRouter from '@/modules/wishlist';
 import bankDetailRouter from '@/modules/bank-detail';
 import walletRouter from '@/modules/wallet';
+import couponRouter from '@/modules/coupon';
+import enrollmentRouter from '@/modules/enrollment';
+import lectureRouter from '@/modules/lecture';
 import uploadRouter from '@/infrastructure/storage';
 import { candidateInterviewRouter, adminInterviewRouter } from '@/modules/interview';
 import { adminAIConfigRouter } from '@/modules/ai-config';
@@ -39,6 +42,9 @@ router.use("/categories", categoryRouter);
 // 5. Courses & Curriculum routes (Public discovery + Teacher studio + Admin moderation)
 router.use("/courses", courseRouter);
 
+// 5.1 Lectures & Live Sessions routes (Teacher studio + Admin moderation + Student learning)
+router.use("/lectures", lectureRouter);
+
 // 6. Wishlist routes (Protected student wishlist management)
 router.use("/wishlist", wishlistRouter);
 
@@ -50,6 +56,15 @@ router.use("/banks", bankDetailRouter);
 // 8. Wallet & Ledger System (Students, Teachers, Admin)
 router.use("/wallet", walletRouter);
 router.use("/wallets", walletRouter);
+
+// 9. Teacher Coupons (Validation & Creator Management)
+router.use("/coupons", couponRouter);
+router.use("/teacher/coupons", couponRouter);
+
+// 10. Course Enrollments, Live Classroom, Attendance, 20-Day Refunds & Certificates
+router.use("/enrollments", enrollmentRouter);
+router.use("/learning", enrollmentRouter);
+router.use("/certificates", enrollmentRouter);
 
 // 4. AI Interview routes (Candidate endpoints & Admin management)
 router.use("/interviews", candidateInterviewRouter);

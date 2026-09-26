@@ -17,6 +17,8 @@ import {
   Check,
   Share2,
   Snowflake,
+  Users,
+  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,12 +29,16 @@ import {
 import { CourseFormModal } from "../components/CourseFormModal";
 import { ConfirmationModal } from "@/components/common/ConfirmationModal";
 import { toast } from "@/lib/toast";
+import { TeacherEnrolledStudentsTab } from "@/features/enrollment";
+import { TeacherCouponsTab } from "@/features/coupons";
 
 export const TeacherCourseDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<"curriculum" | "overview" | "schedule">("curriculum");
+  const [activeTab, setActiveTab] = useState<
+    "curriculum" | "overview" | "schedule" | "students" | "coupons"
+  >("curriculum");
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -394,6 +400,30 @@ export const TeacherCourseDetailPage: React.FC = () => {
           <Calendar className="w-4 h-4" />
           <span>Schedule & Live Delivery</span>
         </button>
+
+        <button
+          onClick={() => setActiveTab("students")}
+          className={`px-4 py-2.5 text-sm font-semibold rounded-t-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+            activeTab === "students"
+              ? "text-[#F42A18] border-b-2 border-[#F42A18] bg-[#F42A18]/5"
+              : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Enrolled Students</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("coupons")}
+          className={`px-4 py-2.5 text-sm font-semibold rounded-t-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+            activeTab === "coupons"
+              ? "text-[#F42A18] border-b-2 border-[#F42A18] bg-[#F42A18]/5"
+              : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+          }`}
+        >
+          <Tag className="w-4 h-4" />
+          <span>Discount Coupons</span>
+        </button>
       </div>
 
       {/* Tab 1: Curriculum */}
@@ -663,6 +693,12 @@ export const TeacherCourseDetailPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Tab 4: Enrolled Students */}
+      {activeTab === "students" && <TeacherEnrolledStudentsTab courseId={course.id} />}
+
+      {/* Tab 5: Discount Coupons */}
+      {activeTab === "coupons" && <TeacherCouponsTab courseId={course.id} />}
 
       {/* Edit Course Modal */}
       {isEditModalOpen && (

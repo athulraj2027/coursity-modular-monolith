@@ -7,7 +7,7 @@ import { seedPlansIfEmpty } from "@/modules/plan";
 import { seedCategoriesIfEmpty } from "@/modules/category";
 import { seedOffersIfEmpty } from "@/modules/offer";
 
-// Trigger reload: wishlist routes and schemas updated
+// Trigger reload: lecture module registered at 2026-09-26T13:48:00
 const server = http.createServer(app);
 
 const startServer = async () => {

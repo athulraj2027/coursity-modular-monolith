@@ -31,6 +31,7 @@ import { CourseCard } from "../components/CourseCard";
 import { WishlistButton } from "@/features/wishlist";
 import { useCurrentUser } from "@/features/auth";
 import { toast } from "@/lib/toast";
+import { CourseCheckoutModal, useMyEnrollments } from "@/features/enrollment";
 import type { CourseLesson } from "../types/course.types";
 
 const formatDuration = (seconds: number): string => {
@@ -62,6 +63,14 @@ export const PublicCourseDetailPage: React.FC = () => {
   const [previewLesson, setPreviewLesson] = useState<CourseLesson | null>(null);
   const [showTrailerModal, setShowTrailerModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+
+  const { data: myEnrollments = [] } = useMyEnrollments(undefined, {
+    enabled: Boolean(currentUser),
+  });
+  const userEnrollment = myEnrollments.find((e) => e.courseId === course?.id);
+  const existingEnrollment = userEnrollment?.status === "ACTIVE" ? userEnrollment : null;
+  const isRefundedEnrollment = userEnrollment?.status === "REFUNDED";
 
   // Initialize first module expanded
   React.useEffect(() => {
@@ -96,12 +105,28 @@ export const PublicCourseDetailPage: React.FC = () => {
   };
 
   const handleEnrollClick = () => {
-    if (!currentUser) {
-      toast.info("Please sign in or create an account to enroll in this course.");
-      navigate(`/signin?redirect=/courses/${course?.slug || slug}`);
+    if (existingEnrollment) {
+      navigate(`/learn/${course?.slug || slug}`);
       return;
     }
-    toast.success(`You are enrolling in "${course?.title}".`);
+
+    if (isRefundedEnrollment) {
+      toast.error("You previously claimed a full refund for this course and are not eligible to re-enroll.");
+      return;
+    }
+
+    if (!currentUser) {
+      navigate(`/signin?redirect=/courses/${course?.slug || slug}/checkout`);
+      return;
+    }
+
+    const role = currentUser.role?.toLowerCase();
+    if (role !== "student") {
+      toast.error("Only students can enroll in courses.");
+      return;
+    }
+
+    navigate(`/courses/${course?.slug || slug}/checkout`);
   };
 
   if (isLoading) {
@@ -585,7 +610,23 @@ export const PublicCourseDetailPage: React.FC = () => {
           <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-3xl p-6 shadow-xl space-y-5">
             {/* Price Header */}
             <div>
-              {course.pricingType === "FREE" ? (
+              {existingEnrollment ? (
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs font-bold py-1 px-3">
+                    ✓ YOU ARE ENROLLED
+                  </Badge>
+                </div>
+              ) : isRefundedEnrollment ? (
+                <div className="space-y-2">
+                  <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-bold py-1 px-3 flex items-center gap-1.5 w-fit">
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                    <span>TUITION REFUNDED</span>
+                  </Badge>
+                  <p className="text-xs text-neutral-500">
+                    You claimed a 100% money-back refund for this course under our 20-Day Guarantee.
+                  </p>
+                </div>
+              ) : course.pricingType === "FREE" ? (
                 <div className="flex items-center gap-2">
                   <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
                     FREE
@@ -597,13 +638,13 @@ export const PublicCourseDetailPage: React.FC = () => {
               ) : (
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-black text-neutral-900 dark:text-white font-mono">
-                    ${course.price}
+                    ₹{course.price}
                   </span>
                   <span className="text-xs text-neutral-400 line-through font-mono">
-                    ${(Number(course.price) * 1.6).toFixed(2)}
+                    ₹{(Number(course.price) * 1.5).toFixed(0)}
                   </span>
                   <Badge className="bg-[#F42A18]/10 text-[#F42A18] border-red-500/20 text-[10px] font-bold">
-                    38% OFF
+                    33% OFF
                   </Badge>
                 </div>
               )}
@@ -612,10 +653,36 @@ export const PublicCourseDetailPage: React.FC = () => {
             {/* Primary Action Button */}
             <Button
               onClick={handleEnrollClick}
-              className="w-full h-12 bg-[#F42A18] hover:bg-[#D92212] text-white font-bold text-sm rounded-2xl shadow-lg shadow-[#F42A18]/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+              disabled={isRefundedEnrollment}
+              className={`w-full h-12 text-white font-bold text-sm rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 ${
+                isRefundedEnrollment
+                  ? "bg-neutral-400 dark:bg-neutral-700 text-neutral-200 cursor-not-allowed shadow-none"
+                  : existingEnrollment
+                  ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/25 cursor-pointer"
+                  : "bg-[#F42A18] hover:bg-[#D92212] shadow-[#F42A18]/25 cursor-pointer"
+              }`}
             >
-              <Sparkles className="w-4 h-4" />
-              <span>{course.pricingType === "FREE" ? "Enroll for Free" : "Buy & Enroll Now"}</span>
+              {isRefundedEnrollment ? (
+                <>
+                  <ShieldAlert className="w-4 h-4" />
+                  <span>Ineligible to Re-Enroll (Refunded)</span>
+                </>
+              ) : existingEnrollment ? (
+                <>
+                  <PlayCircle className="w-4 h-4" />
+                  <span>Go to Live Classroom</span>
+                </>
+              ) : course.pricingType === "FREE" ? (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Enroll for Free</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Buy & Enroll in Live Cohort</span>
+                </>
+              )}
             </Button>
 
             {/* Wishlist Toggle Button */}
@@ -623,27 +690,29 @@ export const PublicCourseDetailPage: React.FC = () => {
 
             {/* Checklist */}
             <div className="space-y-2.5 pt-3 border-t border-neutral-100 dark:border-neutral-800">
-              <p className="text-xs font-bold text-neutral-900 dark:text-white">This course includes:</p>
+              <p className="text-xs font-bold text-neutral-900 dark:text-white">This live cohort includes:</p>
               <div className="space-y-2 text-xs text-neutral-600 dark:text-neutral-400">
                 <div className="flex items-center gap-2.5">
+                  <Radio className="w-4 h-4 text-[#F42A18] shrink-0" />
+                  <span>Interactive live lecture sessions</span>
+                </div>
+                <div className="flex items-center gap-2.5">
                   <Clock className="w-4 h-4 text-neutral-400 shrink-0" />
-                  <span>{formatDuration(course.totalDurationSeconds)} on-demand content</span>
+                  <span>{formatDuration(course.totalDurationSeconds)} curriculum content</span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <BookOpen className="w-4 h-4 text-neutral-400 shrink-0" />
                   <span>{course.totalLessons} lectures and downloadable resources</span>
                 </div>
                 <div className="flex items-center gap-2.5">
-                  <Smartphone className="w-4 h-4 text-neutral-400 shrink-0" />
-                  <span>Access on mobile, tablet and desktop</span>
-                </div>
-                <div className="flex items-center gap-2.5">
                   <Award className="w-4 h-4 text-neutral-400 shrink-0" />
-                  <span>Certificate of completion</span>
+                  <span>Verified certificate of completion</span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <span>Full lifetime access to updates</span>
+                  <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
+                    100% refund within 20 days or before 4 classes
+                  </span>
                 </div>
               </div>
             </div>
@@ -689,7 +758,24 @@ export const PublicCourseDetailPage: React.FC = () => {
         onEnrollClick={handleEnrollClick}
       />
 
-      {/* 6. Video Trailer Preview Modal */}
+      {/* 6. Course Checkout Modal */}
+      <CourseCheckoutModal
+        isOpen={isCheckoutModalOpen}
+        onClose={() => setIsCheckoutModalOpen(false)}
+        course={{
+          id: course.id,
+          title: course.title,
+          slug: course.slug,
+          thumbnail: course.thumbnail,
+          price: Number(course.price),
+          pricingType: course.pricingType,
+          currency: course.currency,
+          startingDate: course.startingDate,
+          teacherName: instructor?.name,
+        }}
+      />
+
+      {/* 7. Video Trailer Preview Modal */}
       {showTrailerModal && course.promoVideoUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
           <div className="relative w-full max-w-4xl bg-black rounded-3xl overflow-hidden shadow-2xl border border-neutral-800">

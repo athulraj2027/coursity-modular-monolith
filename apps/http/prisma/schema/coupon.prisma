@@ -1,0 +1,42 @@
+// ==========================================
+// TEACHER COURSE COUPONS SCHEMA
+// ==========================================
+
+model TeacherCoupon {
+  id                    String              @id @default(uuid())
+  code                  String              // e.g. "REACT20", "SPRING50"
+  description           String?             // e.g. "20% off for live cohort batch"
+  
+  discountType          DiscountType        @default(PERCENTAGE)
+  discountValue         Decimal             @db.Decimal(10, 2) // e.g. 20.00 for 20% or 500.00 for ₹500
+  maxDiscountAmount     Decimal?            @db.Decimal(10, 2) // Optional cap for percentage discounts
+  minOrderAmount        Decimal?            @db.Decimal(10, 2) // Minimum course price required
+  
+  // Scoping: Specific course or all courses of this teacher
+  teacherProfileId      String
+  teacherProfile        TeacherProfile      @relation(fields: [teacherProfileId], references: [id], onDelete: Cascade)
+  
+  courseId              String?             // If null, applies to any course by this instructor
+  course                Course?             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  // Usage & Quotas
+  maxUses               Int?                // Global maximum redemptions (e.g. first 50 students)
+  usedCount             Int                 @default(0)
+  maxUsesPerStudent     Int                 @default(1)
+  
+  // Validity Window & Status
+  validFrom             DateTime            @default(now())
+  expiresAt             DateTime?           // Expiration date
+  isActive              Boolean             @default(true)
+  
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  // Audit Relations
+  enrollments           CourseEnrollment[]
+
+  @@unique([teacherProfileId, code])
+  @@index([code, isActive])
+  @@index([teacherProfileId, isActive])
+  @@map("teacher_coupons")
+}

@@ -16,13 +16,16 @@ import { cn } from "@/lib/utils"
 export const Navbar: React.FC = () => {
   const location = useLocation()
   const isHome = location.pathname === "/"
+  const isCheckoutRoute =
+    location.pathname.includes("/checkout") ||
+    location.pathname.endsWith("/checkout")
   const isTeachersRoute =
     location.pathname.startsWith("/teachers") ||
     new URLSearchParams(location.search).get("role") === "teacher"
   const isAdminRoute =
     location.pathname.startsWith("/admin") ||
     new URLSearchParams(location.search).get("role") === "admin"
-  const [scrolled, setScrolled] = useState(!isHome)
+  const [scrolled, setScrolled] = useState(!isHome || isCheckoutRoute)
 
   const { data: user } = useCurrentUser()
   const { data: wishlistIds = [] } = useWishlistIds()
@@ -47,6 +50,7 @@ export const Navbar: React.FC = () => {
       (link) => link.href !== "/signup" && link.href !== "/teachers"
     )
     : baseNavLinks
+
 
   // Track dismissed state for dynamic callouts
   const [dismissedKeys, setDismissedKeys] = useState<Record<string, boolean>>(() => {
@@ -148,12 +152,12 @@ export const Navbar: React.FC = () => {
   return (
     <header className="bg-transparent z-50 sticky top-0 w-full">
       <div className="container mx-auto h-15 flex items-center justify-between px-6">
-        {/* Brand logo on the left - emerges when scrolled past hero */}
+        {/* Brand logo on the left - emerges when scrolled past hero or on checkout */}
         <Link
           to="/"
           className={cn(
             "flex items-center space-x-3 transition-all duration-300 ease-out",
-            scrolled
+            scrolled || isCheckoutRoute
               ? "opacity-100 translate-y-0 pointer-events-auto"
               : "opacity-0 -translate-y-2 pointer-events-none"
           )}
@@ -167,97 +171,103 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center space-x-3.5 sm:space-x-5">
           <ThemeToggle />
 
-          {/* Wishlist Icon Button for Students & Guests */}
-          {!isAdminRoute && !isTeachersRoute && (
-            <Link
-              to="/wishlist"
-              title="My Wishlist"
-              aria-label="View Wishlist"
-              className={cn(
-                "relative p-2 rounded-full border transition-all duration-200 cursor-pointer flex items-center justify-center",
-                location.pathname === "/wishlist"
-                  ? "bg-red-500/15 border-red-500/40 text-red-600 dark:text-red-400"
-                  : "border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 text-neutral-700 dark:text-neutral-300 hover:text-red-600 dark:hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5 shadow-xs"
-              )}
-            >
-              <Heart
-                className={cn(
-                  "w-4 h-4 transition-transform active:scale-125",
-                  wishlistIds.length > 0 ? "fill-red-500 text-red-500" : ""
-                )}
-              />
-              {wishlistIds.length > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-[#F42A18] text-white text-[9px] font-extrabold flex items-center justify-center shadow-xs animate-in zoom-in-50 duration-200 font-mono">
-                  {wishlistIds.length > 99 ? "99+" : wishlistIds.length}
-                </span>
-              )}
-            </Link>
-          )}
-
-          {!isAdminRoute && (
-            <nav className="flex items-center space-x-4 sm:space-x-7">
-              {activeNavLinks.map((link) => {
-                // Highlighted / mobile visible option
-                const isHighlight = isTeachersRoute
-                  ? link.href === "/"
-                  : link.href === "/teachers"
-                const hasCallout = Boolean(link.callout)
-
-                return (
-                  <div
-                    key={link.href}
+          {/* If on Checkout Page: Do NOT render any other options */}
+          {!isCheckoutRoute && (
+            <>
+              {/* Wishlist Icon Button for Students & Guests */}
+              {!isAdminRoute && !isTeachersRoute && (
+                <Link
+                  to="/wishlist"
+                  title="My Wishlist"
+                  aria-label="View Wishlist"
+                  className={cn(
+                    "relative p-2 rounded-full border transition-all duration-200 cursor-pointer flex items-center justify-center",
+                    location.pathname === "/wishlist"
+                      ? "bg-red-500/15 border-red-500/40 text-red-600 dark:text-red-400"
+                      : "border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 text-neutral-700 dark:text-neutral-300 hover:text-red-600 dark:hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5 shadow-xs"
+                  )}
+                >
+                  <Heart
                     className={cn(
-                      "relative",
-                      !isHighlight && "hidden min-[1001px]:inline-block"
+                      "w-4 h-4 transition-transform active:scale-125",
+                      wishlistIds.length > 0 ? "fill-red-500 text-red-500" : ""
                     )}
-                  >
-                    <Link
-                      to={link.href}
-                      className="text-sm font-medium text-neutral-800 dark:text-white hover:text-brand dark:hover:text-brand transition-colors whitespace-nowrap flex items-center gap-2"
-                    >
-                      <span>{link.label}</span>
-                      {hasCallout && (
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F42A18] opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#F42A18]" />
-                        </span>
-                      )}
-                    </Link>
-
-                    {link.callout && renderCalloutPopup(link.callout)}
-                  </div>
-                )
-              })}
-
-              {/* Once student is logged in, show Go to Dashboard and Sign Out button */}
-              {isStudent && (
-                <div className="flex items-center gap-2">
-                  <Link
-                    to="/students/dashboard"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#F42A18] text-white text-xs font-semibold hover:bg-[#d92211] transition-all shadow-md shadow-[#F42A18]/25 hover:shadow-lg hover:shadow-[#F42A18]/40 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-                  >
-                    <LayoutDashboard className="w-3.5 h-3.5" />
-                    <span>Go to Dashboard</span>
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={handleSignOut}
-                    disabled={logout.isPending}
-                    title="Sign Out"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-neutral-200 dark:border-neutral-800 bg-transparent text-neutral-700 dark:text-neutral-300 hover:text-[#F42A18] hover:border-[#F42A18]/30 hover:bg-[#F42A18]/5 text-xs font-medium transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    {logout.isPending ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-[#F42A18]" />
-                    ) : (
-                      <LogOut className="w-3.5 h-3.5" />
-                    )}
-                    <span className="hidden sm:inline">Sign Out</span>
-                  </button>
-                </div>
+                  />
+                  {wishlistIds.length > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-[#F42A18] text-white text-[9px] font-extrabold flex items-center justify-center shadow-xs animate-in zoom-in-50 duration-200 font-mono">
+                      {wishlistIds.length > 99 ? "99+" : wishlistIds.length}
+                    </span>
+                  )}
+                </Link>
               )}
-            </nav>
+
+              {!isAdminRoute && (
+                <nav className="flex items-center space-x-4 sm:space-x-7">
+                  {activeNavLinks.map((link) => {
+                    // Highlighted / mobile visible option
+                    const isHighlight = isTeachersRoute
+                      ? link.href === "/"
+                      : link.href === "/teachers"
+                    const hasCallout = Boolean(link.callout)
+
+                    return (
+                      <div
+                        key={link.href}
+                        className={cn(
+                          "relative",
+                          !isHighlight && "hidden min-[1001px]:inline-block"
+                        )}
+                      >
+                        <Link
+                          to={link.href}
+                          className="text-sm font-medium text-neutral-800 dark:text-white hover:text-brand dark:hover:text-brand transition-colors whitespace-nowrap flex items-center gap-2"
+                        >
+                          <span>{link.label}</span>
+                          {hasCallout && (
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F42A18] opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#F42A18]" />
+                            </span>
+                          )}
+                        </Link>
+
+                        {link.callout && renderCalloutPopup(link.callout)}
+                      </div>
+                    )
+                  })}
+
+                  {/* Once student is logged in, show Go to Dashboard and Sign Out button */}
+                  {isStudent && (
+                    <div className="flex items-center gap-2">
+                      <Link
+                        to="/students/dashboard"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#F42A18] text-white text-xs font-semibold hover:bg-[#d92211] transition-all shadow-md shadow-[#F42A18]/25 hover:shadow-lg hover:shadow-[#F42A18]/40 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                      >
+                        <LayoutDashboard className="w-3.5 h-3.5" />
+                        <span>Go to Dashboard</span>
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={handleSignOut}
+                        disabled={logout.isPending}
+                        title="Sign Out"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-neutral-200 dark:border-neutral-800 bg-transparent text-neutral-700 dark:text-neutral-300 hover:text-[#F42A18] hover:border-[#F42A18]/30 hover:bg-[#F42A18]/5 text-xs font-medium transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {logout.isPending ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#F42A18]" />
+                        ) : (
+                          <LogOut className="w-3.5 h-3.5" />
+                        )}
+                        <span className="hidden sm:inline">Sign Out</span>
+                      </button>
+                    </div>
+                  )}
+                </nav>
+              )}
+            </>
           )}
         </div>
+
       </div>
       <ConfirmDialog />
     </header>

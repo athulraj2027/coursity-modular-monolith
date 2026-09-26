@@ -1,0 +1,39 @@
+// ==========================================
+// LECTURES & LIVE SESSIONS SCHEMA
+// ==========================================
+
+model CourseLesson {
+  id              String           @id @default(uuid())
+  moduleId        String
+  module          CourseModule     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  // 📝 Name & Description
+  title           String           // Lecture Name / Title
+  description     String?          @db.Text // Lecture Description
+
+  // ⏰ Start Time & Duration
+  scheduledAt     DateTime?        // Start Time (When the live class starts)
+  durationSeconds Int              @default(3600) // Duration in seconds (e.g. 3600 = 60 mins)
+  sortOrder       Int              @default(0)
+
+  // 📡 Live Status
+  liveStatus      LiveClassStatus  @default(SCHEDULED) // SCHEDULED | LIVE_NOW | COMPLETED | CANCELLED
+  isLiveNow       Boolean          @default(false)
+  isPublished     Boolean          @default(true)
+
+  // 🗑️ Soft Deletion
+  isDeleted       Boolean          @default(false)
+  deletedAt       DateTime?
+
+  // ⏱️ Timestamps
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // 📊 Progress & Attendance
+  lessonProgress  LessonProgress[]
+
+  @@index([moduleId, sortOrder])
+  @@index([scheduledAt, liveStatus])
+  @@index([isDeleted, scheduledAt])
+  @@map("course_lessons")
+}
