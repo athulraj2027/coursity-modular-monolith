@@ -18,6 +18,7 @@ import {
   ArrowUpRight,
   BookCheck,
   Ticket,
+  Video,
   type LucideIcon,
 } from "lucide-react"
 
@@ -47,6 +48,11 @@ export const STUDENT_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "My Enrolled Courses",
         url: "/students/courses",
         icon: GraduationCap,
+      },
+      {
+        title: "My Live Classes",
+        url: "/students/lectures",
+        icon: Video,
       },
     ],
   },
@@ -100,6 +106,11 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Courses & Studio",
         url: "/teachers/courses",
         icon: GraduationCap,
+      },
+      {
+        title: "Live Lectures Studio",
+        url: "/teachers/lectures",
+        icon: Video,
       },
       {
         title: "Student Enrollments",
@@ -194,6 +205,11 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Courses",
         url: "/admin/courses",
         icon: GraduationCap,
+      },
+      {
+        title: "Live Lectures",
+        url: "/admin/lectures",
+        icon: Video,
       },
       {
         title: "Enrollments",

@@ -12,6 +12,7 @@ import {
   IndianRupee,
   Eye,
   Snowflake,
+  Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ import {
 } from "@/components/common/DataTableTemplate";
 import { ConfirmationModal } from "@/components/common/ConfirmationModal";
 import { CourseFormModal } from "../components/CourseFormModal";
+import { LectureFormModal } from "@/features/lecture/components/LectureFormModal";
 import {
   useTeacherCourses,
   useTeacherCourseMetrics,
@@ -49,6 +51,10 @@ export const TeacherCoursesPage: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [courseToEdit, setCourseToEdit] = useState<Course | null>(null);
   const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
+
+  // Lecture Creation Modal from Course Table
+  const [isLectureModalOpen, setIsLectureModalOpen] = useState(false);
+  const [courseForNewLecture, setCourseForNewLecture] = useState<Course | null>(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -320,6 +326,21 @@ export const TeacherCoursesPage: React.FC = () => {
 
         return (
           <div className="flex items-center justify-end gap-1.5">
+            {/* Create Lecture for this course */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setCourseForNewLecture(course);
+                setIsLectureModalOpen(true);
+              }}
+              className="h-8 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer font-semibold"
+              title="Schedule Live Lecture for this course"
+            >
+              <Video className="w-3.5 h-3.5 mr-1" />
+              + Lecture
+            </Button>
+
             {/* Details / Overview */}
             <Button
               variant="ghost"
@@ -451,6 +472,20 @@ export const TeacherCoursesPage: React.FC = () => {
         onClose={() => setIsCreateModalOpen(false)}
         initialCourse={courseToEdit}
         onSuccess={() => refetch()}
+      />
+
+      {/* Create Lecture Modal directly for course */}
+      <LectureFormModal
+        isOpen={isLectureModalOpen}
+        onClose={() => {
+          setIsLectureModalOpen(false);
+          setCourseForNewLecture(null);
+        }}
+        defaultCourseId={courseForNewLecture?.id}
+        defaultCourseTitle={courseForNewLecture?.title}
+        onSuccess={() => {
+          refetch();
+        }}
       />
 
       {/* Archive / Delete Confirmation */}

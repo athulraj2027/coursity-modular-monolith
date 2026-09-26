@@ -69,7 +69,7 @@ export class PrismaEnrollmentRepository implements EnrollmentRepository {
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
       lessonTitle: record.lesson?.title,
-      lessonType: record.lesson?.lessonType,
+      lessonType: "LIVE_CLASS",
       scheduledAt: record.lesson?.scheduledAt,
       liveStatus: record.lesson?.liveStatus,
     };

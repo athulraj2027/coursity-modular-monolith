@@ -21,23 +21,6 @@ enum CourseStatus {
   FROZEN
 }
 
-enum LessonType {
-  VIDEO
-  ARTICLE
-  QUIZ
-  LIVE_CLASS
-  ATTACHMENT
-}
-
-enum VideoProvider {
-  LOCAL
-  S3
-  CLOUDFRONT
-  YOUTUBE
-  VIMEO
-  MUX
-}
-
 // ==========================================
 // 1. MAIN COURSE MODEL
 // ==========================================
@@ -134,44 +117,4 @@ model CourseModule {
   @@map("course_modules")
 }
 
-// ==========================================
-// 3. CURRICULUM LESSONS (LIVE CLASSES & CONTENT)
-// ==========================================
-
-model CourseLesson {
-  id              String           @id @default(uuid())
-  moduleId        String
-  module          CourseModule     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-
-  title           String           // e.g. "Class 1: System Architecture Deep-Dive"
-  description     String?          @db.Text
-  lessonType      LessonType       @default(LIVE_CLASS)
-  durationSeconds Int              @default(0)
-  sortOrder       Int              @default(0)
-  isFreePreview   Boolean          @default(false) // Allows guest preview
-  isPublished     Boolean          @default(true)
-
-  // Live Class Scheduling & Session Management
-  scheduledAt     DateTime?        // When this live session starts
-  liveMeetingUrl  String?          // Meeting link (Zoom/Meet/Live Room)
-  isLiveNow       Boolean          @default(false)
-  recordingUrl    String?          // Cloud recording link after live session ends
-  liveStatus      LiveClassStatus  @default(SCHEDULED)
-
-  // Multi-format Content Payloads
-  videoUrl        String?          // Stored video or stream manifest URL
-  videoProvider   VideoProvider?   @default(S3)
-  videoThumbnail  String?
-  articleBody     String?          @db.Text // Markdown / HTML text reading content
-  attachments     Json?            @default("[]") // [{ name: string, url: string, sizeBytes: number, type: string }]
-
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-
-  lessonProgress  LessonProgress[]
-
-  @@index([moduleId, sortOrder])
-  @@index([scheduledAt, liveStatus])
-  @@map("course_lessons")
-}
 

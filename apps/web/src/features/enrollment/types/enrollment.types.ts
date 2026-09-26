@@ -93,7 +93,6 @@ export interface ClassroomLesson {
   durationSeconds: number;
   sortOrder: number;
   scheduledAt: string | null;
-  liveMeetingUrl: string | null;
   isLiveNow: boolean;
   recordingUrl: string | null;
   liveStatus: string;

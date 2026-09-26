@@ -97,16 +97,11 @@ export function CourseClassroomPage() {
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
-  const handleJoinLiveClass = (lesson: ClassroomLesson) => {
-    if (lesson.liveMeetingUrl) {
-      // Mark attendance
-      markAttendanceMutation.mutate({
-        enrollmentId: enrollment.id,
-        lessonId: lesson.id,
-      });
-      // Open meeting in new tab
-      window.open(lesson.liveMeetingUrl, "_blank", "noopener,noreferrer");
-    }
+  const handleMarkAttendance = (lesson: ClassroomLesson) => {
+    markAttendanceMutation.mutate({
+      enrollmentId: enrollment.id,
+      lessonId: lesson.id,
+    });
   };
 
   const handleToggleCompleted = (lesson: ClassroomLesson) => {
@@ -217,24 +212,26 @@ export function CourseClassroomPage() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3 pt-2">
-                    {activeLesson.liveMeetingUrl ? (
-                      <Button
-                        onClick={() => handleJoinLiveClass(activeLesson)}
-                        className="bg-[#F42A18] hover:bg-[#D92212] text-white rounded-2xl text-xs font-bold gap-2 px-6 h-11 shadow-lg shadow-[#F42A18]/30 cursor-pointer"
-                      >
-                        <Radio className="w-4 h-4" />
-                        <span>Join Live Classroom Session</span>
-                      </Button>
-                    ) : (
-                      <div className="text-xs text-neutral-400 italic">
-                        Meeting room link will be provided by instructor before session start.
+                    {activeLesson.isLiveNow || activeLesson.liveStatus === "LIVE_NOW" ? (
+                      <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold">
+                        <Radio className="w-4 h-4 animate-pulse" />
+                        <span>Live Session In Progress</span>
                       </div>
-                    )}
+                    ) : null}
 
-                    {activeLesson.attendedLive && (
+                    {activeLesson.attendedLive ? (
                       <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs py-1 px-3">
                         ✓ Attendance Verified
                       </Badge>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => handleMarkAttendance(activeLesson)}
+                        disabled={markAttendanceMutation.isPending}
+                        className="bg-[#F42A18] hover:bg-[#D92212] text-white rounded-xl text-xs font-semibold px-4 h-9 cursor-pointer"
+                      >
+                        Mark Attended
+                      </Button>
                     )}
                   </div>
                 </div>

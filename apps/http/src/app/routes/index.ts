@@ -12,6 +12,7 @@ import bankDetailRouter from '@/modules/bank-detail';
 import walletRouter from '@/modules/wallet';
 import couponRouter from '@/modules/coupon';
 import enrollmentRouter from '@/modules/enrollment';
+import lectureRouter from '@/modules/lecture';
 import uploadRouter from '@/infrastructure/storage';
 import { candidateInterviewRouter, adminInterviewRouter } from '@/modules/interview';
 import { adminAIConfigRouter } from '@/modules/ai-config';
@@ -40,6 +41,9 @@ router.use("/categories", categoryRouter);
 
 // 5. Courses & Curriculum routes (Public discovery + Teacher studio + Admin moderation)
 router.use("/courses", courseRouter);
+
+// 5.1 Lectures & Live Sessions routes (Teacher studio + Admin moderation + Student learning)
+router.use("/lectures", lectureRouter);
 
 // 6. Wishlist routes (Protected student wishlist management)
 router.use("/wishlist", wishlistRouter);

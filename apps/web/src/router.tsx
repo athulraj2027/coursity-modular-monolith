@@ -72,6 +72,14 @@ import {
   TeacherCouponsPage,
   TeacherCouponDetailPage,
 } from "@/features/coupons"
+import {
+  TeacherLecturesPage,
+  TeacherLectureDetailPage,
+  AdminLecturesPage,
+  AdminLectureDetailPage,
+  StudentLecturesPage,
+  StudentLectureDetailPage,
+} from "@/features/lecture"
 import { AdminAIConfigPage } from "@/features/ai-config"
 
 import {
@@ -159,6 +167,10 @@ export function AppRoutes() {
           <Route path="/students/courses" element={<DashboardLayout role="student" />}>
             <Route index element={<StudentCoursesPage />} />
           </Route>
+          <Route path="/students/lectures" element={<DashboardLayout role="student" />}>
+            <Route index element={<StudentLecturesPage />} />
+            <Route path=":id" element={<StudentLectureDetailPage />} />
+          </Route>
           <Route path="/students/profile" element={<DashboardLayout role="student" />}>
             <Route index element={<StudentProfilePage />} />
           </Route>
@@ -221,6 +233,14 @@ export function AppRoutes() {
               <Route index element={<TeacherCoursesPage />} />
               <Route path=":id" element={<TeacherCourseDetailPage />} />
               <Route path=":id/curriculum" element={<TeacherCurriculumPage />} />
+            </Route>
+            <Route path="/teachers/lectures" element={<DashboardLayout role="teacher" />}>
+              <Route index element={<TeacherLecturesPage />} />
+              <Route path=":id" element={<TeacherLectureDetailPage />} />
+            </Route>
+            <Route path="/teacher/lectures" element={<DashboardLayout role="teacher" />}>
+              <Route index element={<TeacherLecturesPage />} />
+              <Route path=":id" element={<TeacherLectureDetailPage />} />
             </Route>
             <Route path="/teachers/enrollments" element={<DashboardLayout role="teacher" />}>
               <Route index element={<TeacherEnrollmentsPage />} />
@@ -331,6 +351,10 @@ export function AppRoutes() {
           <Route path="/admin/courses" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminCoursesPage />} />
             <Route path=":id" element={<AdminCourseDetailPage />} />
+          </Route>
+          <Route path="/admin/lectures" element={<DashboardLayout role="admin" />}>
+            <Route index element={<AdminLecturesPage />} />
+            <Route path=":id" element={<AdminLectureDetailPage />} />
           </Route>
           <Route path="/admin/enrollments" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminEnrollmentsPage />} />
