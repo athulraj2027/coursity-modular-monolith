@@ -18,7 +18,10 @@ Monorepo Root
 ├── docker-compose.dev.yml       # Development stack with live hot-reloading
 ├── docker-compose.yml           # Production multi-stage build stack
 ├── apps/http/Dockerfile         # Core API & Worker container
-└── apps/web/Dockerfile          # Static Nginx + SPA container
+├── apps/web/Dockerfile          # Static Nginx + SPA container
+├── apps/ai-interview/Dockerfile # AI Voice Interview container
+├── apps/media-sfu/Dockerfile    # Mediasoup SFU Node container
+└── apps/media-signaling/Dockerfile # Stateless Signaling Gateway container
 ```
 
 ### Port Map & Service Topology
@@ -27,8 +30,10 @@ Monorepo Root
 | **Frontend Web** | `coursity-web` | `5173` | HTTP | Vite Dev Server / Nginx Production |
 | **Backend API** | `coursity-backend` | `3000` | HTTP | Express 5 Core REST API |
 | **AI Interview** | `coursity-ai` | `4000` | WS / HTTP | AI Voice & Evaluation Server |
+| **Media Signaling** | `coursity-signaling`| `5001` | WS / HTTP | Room Placement & Signaling Gateway |
+| **Media SFU Node** | `coursity-sfu` | `5000` / `20000-20100` | WS / UDP / TCP | Mediasoup WebRTC Media SFU |
 | **PostgreSQL** | `coursity-postgres` | `5432` | TCP | Relational Database Engine |
-| **Redis** | `coursity-redis` | `6379` | TCP | Caching, Rate-limits & BullMQ Queue |
+| **Redis** | `coursity-redis` | `6379` | TCP | Caching, Rate-limits, Queue & SFU Bus |
 
 ---
 

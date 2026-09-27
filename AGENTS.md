@@ -13,7 +13,8 @@ Coursity is organized as a containerized **Modular Monolith**:
 | [`apps/web`](file:///d:/second-project/coursity-rebuild/apps/web) | Frontend SPA | React 19, Vite 6, Tailwind CSS v4, TanStack Query v5, React Router v7 |
 | [`apps/http`](file:///d:/second-project/coursity-rebuild/apps/http) | Core REST API | Node.js 22, Express 5, TypeScript, Clean Architecture / DDD, Prisma 6 |
 | [`apps/ai-interview`](file:///d:/second-project/coursity-rebuild/apps/ai-interview) | AI Real-Time Microservice | WebSockets, LangChain/LangGraph, Google GenAI, S3 |
-| [`apps/media-sfu`](file:///d:/second-project/coursity-rebuild/apps/media-sfu) | Live SFU Video | Mediasoup, WebRTC *(Roadmap)* |
+| [`apps/media-sfu`](file:///d:/second-project/coursity-rebuild/apps/media-sfu) | Live SFU Video Daemon | Mediasoup v3, Node.js 22, C++ Workers, WebSockets, ioredis |
+| [`apps/media-signaling`](file:///d:/second-project/coursity-rebuild/apps/media-signaling) | WebRTC Signaling Gateway | Express 5, WebSockets, LeastLoaded Allocator, Redis Bus |
 
 ---
 
@@ -25,6 +26,7 @@ When working on specific domains, refer to and activate the corresponding worksp
 * [**frontend-feature-development**](file:///d:/second-project/coursity-rebuild/.agents/skills/frontend-feature-development/SKILL.md) — Building React 19 UI components, TanStack Query hooks, forms, and composite templates.
 * [**prisma-database-workflow**](file:///d:/second-project/coursity-rebuild/.agents/skills/prisma-database-workflow/SKILL.md) — Multi-file Prisma schemas, database migrations, relations, and seeding scripts.
 * [**ai-interview-realtime**](file:///d:/second-project/coursity-rebuild/.agents/skills/ai-interview-realtime/SKILL.md) — Real-time WebSocket audio streaming, VAD, and LangGraph conversation state machines.
+* [**media-sfu-signaling**](file:///d:/second-project/coursity-rebuild/.agents/skills/media-sfu-signaling/SKILL.md) — Two-tier live WebRTC SFU daemon, Mediasoup worker pool, stateless signaling gateway, and room placement.
 * [**docker-environment-devops**](file:///d:/second-project/coursity-rebuild/.agents/skills/docker-environment-devops/SKILL.md) — Multi-container Docker Compose workflows, hot-reload, and containerized operations.
 * [**teacher-verification-plans**](file:///d:/second-project/coursity-rebuild/.agents/skills/teacher-verification-plans/SKILL.md) — Instructor vetting state machine, plan tiers, and metered quota enforcement.
 
