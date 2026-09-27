@@ -103,12 +103,12 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         icon: LayoutDashboard,
       },
       {
-        title: "Courses & Studio",
+        title: "My Courses",
         url: "/teachers/courses",
         icon: GraduationCap,
       },
       {
-        title: "Live Lectures Studio",
+        title: "Lectures",
         url: "/teachers/lectures",
         icon: Video,
       },
@@ -121,11 +121,6 @@ export const TEACHER_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Course Coupons",
         url: "/teachers/coupons",
         icon: Ticket,
-      },
-      {
-        title: "Community & Cohorts",
-        url: "/community",
-        icon: Users,
       },
     ],
   },

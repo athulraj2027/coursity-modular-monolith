@@ -1,0 +1,33 @@
+{
+  "name": "media-sfu",
+  "version": "1.0.0",
+  "description": "High-performance Mediasoup SFU Node Daemon for Coursity",
+  "license": "ISC",
+  "type": "module",
+  "main": "src/app/server.ts",
+  "scripts": {
+    "dev": "tsx watch src/app/server.ts",
+    "build": "tsc",
+    "start": "node dist/app/server.js",
+    "test": "tsx --test tests/**/*.test.ts"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "ioredis": "^6.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "mediasoup": "^3.15.2",
+    "ws": "^8.18.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^26.4.0",
+    "@types/ws": "^8.5.14",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}
