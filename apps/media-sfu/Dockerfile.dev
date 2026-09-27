@@ -1,0 +1,22 @@
+FROM node:22-bullseye-slim
+
+WORKDIR /app
+
+# Install native build tools for Mediasoup
+RUN apt-get update && apt-get install -y \
+    python3 \
+    build-essential \
+    pkg-config \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+EXPOSE 5000
+EXPOSE 20000-20100/udp
+EXPOSE 20000-20100/tcp
+
+CMD ["npm", "run", "dev"]
