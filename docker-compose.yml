@@ -139,6 +139,65 @@ services:
     networks:
       - coursity-network
 
+  media-signaling:
+    build:
+      context: ./apps/media-signaling
+      dockerfile: Dockerfile
+    container_name: coursity-media-signaling
+    restart: unless-stopped
+    ports:
+      - "${SIGNALING_PORT:-5001}:5001"
+    environment:
+      NODE_ENV: production
+      PORT: 5001
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_coursity_2026}
+      CORE_BACKEND_URL: http://backend:3000
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5001/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - coursity-network
+
+  media-sfu:
+    build:
+      context: ./apps/media-sfu
+      dockerfile: Dockerfile
+    container_name: coursity-media-sfu
+    restart: unless-stopped
+    ports:
+      - "${SFU_PORT:-5000}:5000"
+      - "20000-20100:20000-20100/udp"
+      - "20000-20100:20000-20100/tcp"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      NODE_ID: sfu-node-1
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_coursity_2026}
+      MEDIASOUP_LISTEN_IP: 0.0.0.0
+      MEDIASOUP_ANNOUNCED_IP: ${MEDIASOUP_ANNOUNCED_IP:-127.0.0.1}
+      RTC_MIN_PORT: 20000
+      RTC_MAX_PORT: 20100
+      CORE_BACKEND_URL: http://backend:3000
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - coursity-network
+
 volumes:
   postgres_data:
     driver: local
