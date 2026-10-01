@@ -13,6 +13,10 @@ export interface ParticipantProps {
   displayName?: string;
   rtpCapabilities?: RtpCapabilities;
   socket: WebSocket;
+  canProduceAudio?: boolean;
+  canProduceVideo?: boolean;
+  canProduceScreen?: boolean;
+  canConsume?: boolean;
 }
 
 export class Participant {
@@ -22,6 +26,10 @@ export class Participant {
   public readonly joinedAt: Date;
   public rtpCapabilities?: RtpCapabilities;
   public socket: WebSocket;
+  public readonly canProduceAudio: boolean;
+  public readonly canProduceVideo: boolean;
+  public readonly canProduceScreen: boolean;
+  public readonly canConsume: boolean;
 
   // Mediasoup objects owned by this participant
   public readonly transports = new Map<string, WebRtcTransport>();
@@ -34,7 +42,15 @@ export class Participant {
     this.displayName = props.displayName || `User-${props.userId.substring(0, 6)}`;
     this.rtpCapabilities = props.rtpCapabilities;
     this.socket = props.socket;
+    this.canProduceAudio = props.canProduceAudio ?? (props.role === "TEACHER" || props.role === "ADMIN");
+    this.canProduceVideo = props.canProduceVideo ?? (props.role === "TEACHER" || props.role === "ADMIN");
+    this.canProduceScreen = props.canProduceScreen ?? (props.role === "TEACHER" || props.role === "ADMIN");
+    this.canConsume = props.canConsume ?? true;
     this.joinedAt = new Date();
+  }
+
+  public canPublishMedia(): boolean {
+    return this.canProduceAudio || this.canProduceVideo || this.canProduceScreen;
   }
 
   public addTransport(transport: WebRtcTransport): void {

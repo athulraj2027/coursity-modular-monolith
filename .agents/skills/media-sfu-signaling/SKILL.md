@@ -115,3 +115,40 @@ $$\text{Score} = (\text{CPU}\% \times 0.40) + (\text{Mem}\% \times 0.20) + (\min
 | `sfu:room:{id}:node` | String (TTL: 4h) | Pinning map of `classSessionId` $\rightarrow$ `nodeId` |
 | `sfu:rooms:active` | Set | Set of currently allocated active room IDs |
 | `sfu:events:bus` | PubSub Channel | Cross-service coordination events (`session:released`, `node:drain`) |
+| `sfu:room:{id}:chat` | List (TTL: 4h) | Recent live chat messages list (capped at 100) |
+| `sfu:room:{id}:chat:pinned` | String (TTL: 4h) | Current teacher pinned announcement message JSON |
+| `sfu:room:{id}:poll:active` | String (TTL: 4h) | Current active poll entity JSON |
+| `sfu:room:{id}:poll:{pollId}:votes` | Hash (TTL: 4h) | Map of `userId` $\rightarrow$ `optionId` |
+| `sfu:room:{id}:events` | PubSub Channel | Real-time room events distribution (`chat:message`, `poll:updated`, `room:reaction`) |
+
+---
+
+## 📺 YouTube Live Broadcast Model (One-to-Many Streaming)
+
+In YouTube Live classroom mode:
+1. **Teacher (Broadcaster)**:
+   - Publishes WebRTC Audio and Video RTP streams (`canProduceAudio: true`, `canProduceVideo: true`, `canProduceScreen: true`).
+   - Creates and ends live interactive polls (`poll:create`, `poll:end`).
+   - Pins important announcements and moderates chat comments (`chat:pin`, `chat:delete`).
+2. **Students (Viewers)**:
+   - Consume/subscribe to the Teacher's WebRTC streams (`canConsume: true`).
+   - Strictly forbidden by `apps/media-sfu` from creating send transports or publishing media (`canProduceAudio: false`, `canProduceVideo: false`, `canProduceScreen: false`).
+   - Can post real-time comments (`chat:send`) with rate limiting.
+   - Can vote on active polls (`poll:vote`) and receive live percentage updates.
+   - Can send live emoji reactions (`room:reaction`).
+
+---
+
+## 💬 Live Comments & Polls Signaling Protocol
+
+### Client to Server WebSocket Messages (`/ws` on `apps/media-signaling`)
+- `room:enter` $\rightarrow$ Payload: `{ roomId, token?, displayName? }`. Returns initial state: recent chat history, pinned comment, active poll.
+- `chat:send` $\rightarrow$ Payload: `{ roomId, message, pinned? }`. Broadcasts `chat:message` event.
+- `chat:pin` $\rightarrow$ Payload: `{ roomId, commentId, pinned }` (Teacher only). Broadcasts `chat:pinned` event.
+- `chat:delete` $\rightarrow$ Payload: `{ roomId, commentId }` (Teacher or author). Broadcasts `chat:deleted` event.
+- `poll:create` $\rightarrow$ Payload: `{ roomId, question, options, durationSeconds? }` (Teacher only). Broadcasts `poll:created` event.
+- `poll:vote` $\rightarrow$ Payload: `{ roomId, pollId, optionId }`. Computes percentages and broadcasts `poll:updated` event.
+- `poll:end` $\rightarrow$ Payload: `{ roomId, pollId }` (Teacher only). Broadcasts `poll:ended` event.
+- `poll:active` $\rightarrow$ Payload: `{ roomId }`. Returns active poll with `userVotedOptionId`.
+- `room:reaction` $\rightarrow$ Payload: `{ roomId, reaction }`. Broadcasts floating emoji reaction event.
+

@@ -31,6 +31,7 @@ model CourseLesson {
 
   // 📊 Progress & Attendance
   lessonProgress  LessonProgress[]
+  notes           LectureNote[]
 
   @@index([moduleId, sortOrder])
   @@index([scheduledAt, liveStatus])

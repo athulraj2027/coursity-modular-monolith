@@ -6,16 +6,26 @@ import {
   Clock,
   User,
   Loader2,
+  FileText,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmationModal } from "@/components/common/ConfirmationModal";
 import { LectureStatusBadge } from "../components/LectureStatusBadge";
 import { useAdminLectureDetail } from "../hooks/useLectures";
+import { useLectureNotes, useDeleteNote, NoteCard, NoteUploadModal } from "@/features/note";
 
 export const AdminLectureDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const { data: lecture, isLoading, isError } = useAdminLectureDetail(id || "");
+  const { data: lecture, isLoading, isError, refetch } = useAdminLectureDetail(id || "");
+
+  // Notes state & hooks
+  const { data: lectureNotes = [], isLoading: isNotesLoading, refetch: refetchNotes } = useLectureNotes(id || "");
+  const deleteNoteMutation = useDeleteNote();
+  const [isNoteUploadOpen, setIsNoteUploadOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<any | null>(null);
 
   if (isLoading) {
     return (
@@ -125,6 +135,59 @@ export const AdminLectureDetailPage: React.FC = () => {
               <p className="text-xs text-neutral-400 italic">No description provided.</p>
             )}
           </div>
+
+          {/* Lecture Notes & Materials Section for Admin */}
+          <div className="p-6 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#F42A18]" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-200">
+                  Lecture Notes & Handouts ({lectureNotes.length})
+                </h3>
+              </div>
+
+              <Button
+                size="sm"
+                onClick={() => setIsNoteUploadOpen(true)}
+                className="text-xs h-8 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-neutral-100 dark:hover:bg-neutral-200 text-white dark:text-neutral-900 font-semibold cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1.5" />
+                Add Document
+              </Button>
+            </div>
+
+            {isNotesLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-neutral-400" />
+              </div>
+            ) : lectureNotes.length === 0 ? (
+              <div className="text-center py-8 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 bg-neutral-50/50 dark:bg-neutral-950/40 space-y-2">
+                <p className="text-xs text-neutral-500">
+                  No notes or slide decks uploaded for this lecture yet.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsNoteUploadOpen(true)}
+                  className="text-xs rounded-xl cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" />
+                  Upload Note Document
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {lectureNotes.map((note) => (
+                  <NoteCard
+                    key={note.id}
+                    note={note}
+                    canManage={true}
+                    onDelete={(n) => setNoteToDelete(n)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="md:col-span-4 space-y-6">
@@ -161,6 +224,42 @@ export const AdminLectureDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Note Upload Modal for Admin */}
+      {isNoteUploadOpen && (
+        <NoteUploadModal
+          isOpen={isNoteUploadOpen}
+          onClose={() => {
+            setIsNoteUploadOpen(false);
+            refetchNotes();
+          }}
+          lectureId={lecture.id}
+          lectureTitle={lecture.title}
+          courseTitle={lecture.courseTitle}
+        />
+      )}
+
+      {/* Note Delete Confirmation Modal */}
+      {Boolean(noteToDelete)}
+      <ConfirmationModal
+        isOpen={Boolean(noteToDelete)}
+        onClose={() => setNoteToDelete(null)}
+        onConfirm={() => {
+          if (noteToDelete) {
+            deleteNoteMutation.mutate(noteToDelete.id, {
+              onSuccess: () => {
+                setNoteToDelete(null);
+                refetchNotes();
+              },
+            });
+          }
+        }}
+        title="Moderate & Delete Lecture Note"
+        description={`Are you sure you want to administratively delete "${noteToDelete?.name}"?`}
+        confirmText="Delete Document"
+        variant="destructive"
+        isLoading={deleteNoteMutation.isPending}
+      />
     </div>
   );
 };

@@ -10,6 +10,11 @@ import type {
 
 const ALLOWED_MIME_MAP: Record<string, string> = {
   pdf: "application/pdf",
+  ppt: "application/vnd.ms-powerpoint",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  txt: "text/plain",
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
   png: "image/png",

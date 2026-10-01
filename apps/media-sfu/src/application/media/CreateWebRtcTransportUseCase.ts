@@ -1,6 +1,6 @@
 import { ISessionRegistry } from "@/domain/ports/ISessionRegistry";
 import { TransportFactory } from "@/infrastructure/mediasoup/TransportFactory";
-import { RoomNotFoundError, ParticipantNotFoundError } from "@/shared/errors/AppErrors";
+import { RoomNotFoundError, ParticipantNotFoundError, ForbiddenError } from "@/shared/errors/AppErrors";
 import type { CreateTransportResponseData, TransportDirection } from "@/shared/types/ws-protocol.types";
 
 export interface CreateWebRtcTransportDTO {
@@ -21,6 +21,20 @@ export class CreateWebRtcTransportUseCase {
     const participant = session.getParticipant(dto.userId);
     if (!participant) {
       throw new ParticipantNotFoundError(`Participant ${dto.userId} not found in session`);
+    }
+
+    // Strict YouTube Live Broadcast Permission Enforcement:
+    // Students/viewers are strictly prohibited from creating send transports to share media.
+    if (dto.direction === "send" && !participant.canPublishMedia()) {
+      throw new ForbiddenError(
+        `Participant [${participant.displayName} (${participant.role})] is a viewer-only participant and is not permitted to publish media streams.`
+      );
+    }
+
+    if (dto.direction === "recv" && !participant.canConsume) {
+      throw new ForbiddenError(
+        `Participant [${participant.displayName}] is not permitted to consume media in this session.`
+      );
     }
 
     const transport = await TransportFactory.createWebRtcTransport(session.router, {

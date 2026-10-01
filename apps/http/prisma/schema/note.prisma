@@ -1,0 +1,43 @@
+// ==========================================
+// LECTURE & COURSE NOTES SCHEMA
+// ==========================================
+
+model LectureNote {
+  id               String          @id @default(uuid())
+
+  // 📝 Note Content
+  name             String          // Title / Name of the note (e.g. "Lecture 04 Slide Deck")
+  description      String?         @db.Text // Optional notes overview or instructor instructions
+
+  // 📁 S3 Storage File Metadata
+  fileUrl          String          // Public S3 or CDN URL
+  fileKey          String          // S3 Object Key (e.g. "notes/uuid-presentation.pptx")
+  fileType         String          // MIME type (application/pdf, application/vnd.ms-powerpoint, etc.)
+  fileExtension    String?         // Extension: "pdf", "ppt", "pptx", "docx", "txt"
+  fileSizeBytes    Int?            @default(0) // Size in bytes
+
+  // 🔗 Relations
+  lectureId        String
+  lecture          CourseLesson    @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+
+  courseId         String
+  course           Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  teacherProfileId String
+  teacherProfile   TeacherProfile  @relation(fields: [teacherProfileId], references: [id], onDelete: Cascade)
+
+  // ⚙️ Status & Display
+  sortOrder        Int             @default(0)
+  isPublished      Boolean         @default(true)
+  isDeleted        Boolean         @default(false)
+  deletedAt        DateTime?
+
+  // ⏱️ Timestamps
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([lectureId, isDeleted])
+  @@index([courseId, isDeleted])
+  @@index([teacherProfileId])
+  @@map("lecture_notes")
+}

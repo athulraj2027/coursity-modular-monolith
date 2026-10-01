@@ -34,6 +34,10 @@ export class SessionHandler {
       displayName: payload.displayName,
       rtpCapabilities: data.rtpCapabilities,
       socket,
+      canProduceAudio: payload.canProduceAudio,
+      canProduceVideo: payload.canProduceVideo,
+      canProduceScreen: payload.canProduceScreen,
+      canConsume: payload.canConsume,
     });
 
     return {

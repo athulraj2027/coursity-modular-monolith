@@ -87,6 +87,7 @@ model Course {
   wishlistItems      WishlistItem[]
   enrollments        CourseEnrollment[]
   coupons            TeacherCoupon[]
+  notes              LectureNote[]
 
   @@index([teacherProfileId, status])
   @@index([categoryId, subcategoryId, status])
