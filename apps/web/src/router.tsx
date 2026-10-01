@@ -80,6 +80,7 @@ import {
   StudentLecturesPage,
   StudentLectureDetailPage,
 } from "@/features/lecture"
+import { AdminNotesPage } from "@/features/note"
 import { AdminAIConfigPage } from "@/features/ai-config"
 
 import {
@@ -356,6 +357,9 @@ export function AppRoutes() {
             <Route index element={<AdminLecturesPage />} />
             <Route path=":id" element={<AdminLectureDetailPage />} />
           </Route>
+          <Route path="/admin/notes" element={<DashboardLayout role="admin" />}>
+            <Route index element={<AdminNotesPage />} />
+          </Route>
           <Route path="/admin/enrollments" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminEnrollmentsPage />} />
           </Route>
@@ -397,6 +401,8 @@ export function AppRoutes() {
           <Route path="/admin/students" element={<Navigate to="/admin/users" replace />} />
           <Route path="/admin/course" element={<Navigate to="/admin/courses" replace />} />
           <Route path="/courses/admin" element={<Navigate to="/admin/courses" replace />} />
+          <Route path="/admin/lecture-notes" element={<Navigate to="/admin/notes" replace />} />
+          <Route path="/admin/materials" element={<Navigate to="/admin/notes" replace />} />
 
         </Route>
       </Route>

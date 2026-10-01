@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   BookOpen,
   RefreshCw,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +25,7 @@ import {
 import { ConfirmationModal } from "@/components/common/ConfirmationModal";
 import { LectureFormModal } from "../components/LectureFormModal";
 import { LectureStatusBadge } from "../components/LectureStatusBadge";
+import { LectureNotesDrawer } from "@/features/note";
 import { useTeacherLectures, useTeacherDeleteLecture } from "../hooks/useLectures";
 import type { Lecture } from "../types/lecture.types";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -45,6 +47,7 @@ export const TeacherLecturesPage: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [lectureToEdit, setLectureToEdit] = useState<Lecture | null>(null);
   const [lectureToDelete, setLectureToDelete] = useState<Lecture | null>(null);
+  const [lectureForNotes, setLectureForNotes] = useState<Lecture | null>(null);
 
   const { data: lecturesData, isLoading, refetch } = useTeacherLectures({
     page: currentPage,
@@ -172,6 +175,17 @@ export const TeacherLecturesPage: React.FC = () => {
           <Button
             variant="ghost"
             size="sm"
+            onClick={() => setLectureForNotes(row)}
+            className="h-7 px-2 gap-1 rounded-lg text-neutral-600 dark:text-neutral-300 hover:text-[#F42A18] hover:bg-red-500/10 cursor-pointer text-xs font-semibold"
+            title="Manage Lecture Notes"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline text-[11px]">Notes</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => navigate(`/teachers/lectures/${row.id}`)}
             className="h-7 w-7 p-0 rounded-lg text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
             title="View Lecture Details"
@@ -294,6 +308,18 @@ export const TeacherLecturesPage: React.FC = () => {
         variant="destructive"
         isLoading={deleteMutation.isPending}
       />
+
+      {/* Lecture Notes Drawer */}
+      {Boolean(lectureForNotes) && (
+        <LectureNotesDrawer
+          isOpen={Boolean(lectureForNotes)}
+          onClose={() => setLectureForNotes(null)}
+          lectureId={lectureForNotes!.id}
+          lectureTitle={lectureForNotes!.title}
+          courseTitle={lectureForNotes!.courseTitle}
+          canManage={true}
+        />
+      )}
     </div>
   );
 };
