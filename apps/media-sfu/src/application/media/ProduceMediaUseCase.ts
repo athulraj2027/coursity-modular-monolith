@@ -1,6 +1,11 @@
 import type { MediaKind, RtpParameters } from "mediasoup/node/lib/types";
 import { ISessionRegistry } from "@/domain/ports/ISessionRegistry";
-import { RoomNotFoundError, ParticipantNotFoundError, TransportNotFoundError } from "@/shared/errors/AppErrors";
+import {
+  RoomNotFoundError,
+  ParticipantNotFoundError,
+  TransportNotFoundError,
+  ForbiddenError,
+} from "@/shared/errors/AppErrors";
 import { logger } from "@/shared/logger/Logger";
 
 export interface ProduceMediaDTO {
@@ -24,6 +29,27 @@ export class ProduceMediaUseCase {
     const participant = session.getParticipant(dto.userId);
     if (!participant) {
       throw new ParticipantNotFoundError(`Participant ${dto.userId} not found`);
+    }
+
+    // Broadcast permission validation:
+    // Students/viewers are not permitted to stream audio/video
+    if (dto.kind === "audio" && !participant.canProduceAudio) {
+      throw new ForbiddenError(
+        `Participant [${participant.displayName} (${participant.role})] is not authorized to publish audio streams.`
+      );
+    }
+
+    const isScreenShare = dto.appData?.shareScreen === true || dto.appData?.source === "screen";
+    if (dto.kind === "video") {
+      if (isScreenShare && !participant.canProduceScreen) {
+        throw new ForbiddenError(
+          `Participant [${participant.displayName} (${participant.role})] is not authorized to share screen.`
+        );
+      } else if (!isScreenShare && !participant.canProduceVideo) {
+        throw new ForbiddenError(
+          `Participant [${participant.displayName} (${participant.role})] is not authorized to publish video streams.`
+        );
+      }
     }
 
     const transport = participant.getTransport(dto.transportId);

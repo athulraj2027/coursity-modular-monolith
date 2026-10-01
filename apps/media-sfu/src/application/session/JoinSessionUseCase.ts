@@ -12,6 +12,10 @@ export interface JoinSessionDTO {
   displayName?: string;
   rtpCapabilities: RtpCapabilities;
   socket: WebSocket;
+  canProduceAudio?: boolean;
+  canProduceVideo?: boolean;
+  canProduceScreen?: boolean;
+  canConsume?: boolean;
 }
 
 export class JoinSessionUseCase {
@@ -33,6 +37,10 @@ export class JoinSessionUseCase {
       displayName: dto.displayName,
       rtpCapabilities: dto.rtpCapabilities,
       socket: dto.socket,
+      canProduceAudio: dto.canProduceAudio,
+      canProduceVideo: dto.canProduceVideo,
+      canProduceScreen: dto.canProduceScreen,
+      canConsume: dto.canConsume,
     });
 
     session.addParticipant(participant);
