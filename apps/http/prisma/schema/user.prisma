@@ -90,6 +90,7 @@ model TeacherProfile {
   courses               Course[]
   offerRedemptions      OfferRedemption[]
   coupons               TeacherCoupon[]
+  notes                 LectureNote[]
 
   @@map("teacher_profiles")
 }

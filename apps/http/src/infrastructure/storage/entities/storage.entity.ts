@@ -5,6 +5,7 @@ export const STORAGE_FOLDERS = [
     "thumbnails",
     "videos",
     "documents",
+    "notes",
     "identity",
     "general",
 ] as const;
@@ -22,6 +23,11 @@ export const ALLOWED_IMAGE_MIME_TYPES = [
 
 export const ALLOWED_DOCUMENT_MIME_TYPES = [
     "application/pdf",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain",
 ] as const;
 
 export const ALLOWED_VIDEO_MIME_TYPES = [

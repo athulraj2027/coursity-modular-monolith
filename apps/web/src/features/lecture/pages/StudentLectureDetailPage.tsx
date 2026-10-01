@@ -12,12 +12,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LectureStatusBadge } from "../components/LectureStatusBadge";
 import { useStudentLectureDetail } from "../hooks/useLectures";
+import { useLectureNotes, NoteCard } from "@/features/note";
+import { FileText } from "lucide-react";
 
 export const StudentLectureDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   const { data: lecture, isLoading, isError } = useStudentLectureDetail(id || "");
+  const { data: lectureNotes = [], isLoading: isNotesLoading } = useLectureNotes(id || "");
 
   if (isLoading) {
     return (
@@ -138,6 +141,32 @@ export const StudentLectureDetailPage: React.FC = () => {
               </p>
             ) : (
               <p className="text-xs text-neutral-400 italic">No notes provided for this session.</p>
+            )}
+          </div>
+
+          {/* Lecture Handouts & Notes */}
+          <div className="p-6 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm space-y-4">
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-[#F42A18]" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-200">
+                Class Notes & Study Materials ({lectureNotes.length})
+              </h3>
+            </div>
+
+            {isNotesLoading ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="w-5 h-5 animate-spin text-neutral-400" />
+              </div>
+            ) : lectureNotes.length === 0 ? (
+              <p className="text-xs text-neutral-400 italic py-2">
+                No downloadable notes attached to this class yet.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {lectureNotes.map((note) => (
+                  <NoteCard key={note.id} note={note} canManage={false} />
+                ))}
+              </div>
             )}
           </div>
         </div>
