@@ -81,6 +81,7 @@ import {
   StudentLectureDetailPage,
 } from "@/features/lecture"
 import { AdminNotesPage } from "@/features/note"
+import { AdminHomeworkPage } from "@/features/homework"
 import { AdminAIConfigPage } from "@/features/ai-config"
 
 import {
@@ -359,6 +360,9 @@ export function AppRoutes() {
           </Route>
           <Route path="/admin/notes" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminNotesPage />} />
+          </Route>
+          <Route path="/admin/homework" element={<DashboardLayout role="admin" />}>
+            <Route index element={<AdminHomeworkPage />} />
           </Route>
           <Route path="/admin/enrollments" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminEnrollmentsPage />} />

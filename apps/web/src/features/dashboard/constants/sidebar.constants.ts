@@ -20,6 +20,7 @@ import {
   Ticket,
   Video,
   FileText,
+  FileCheck,
   type LucideIcon,
 } from "lucide-react"
 
@@ -216,6 +217,11 @@ export const ADMIN_SIDEBAR_GROUPS: SidebarNavGroup[] = [
         title: "Lecture Notes",
         url: "/admin/notes",
         icon: FileText,
+      },
+      {
+        title: "Homework",
+        url: "/admin/homework",
+        icon: FileCheck,
       },
       {
         title: "Enrollments",

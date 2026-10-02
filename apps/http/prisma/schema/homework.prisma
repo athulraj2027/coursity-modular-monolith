@@ -1,0 +1,110 @@
+// ==========================================
+// HOMEWORK & ASSIGNMENT SUBMISSIONS SCHEMA
+// ==========================================
+
+enum SubmissionStatus {
+  NOT_DONE
+  SUBMITTED
+  RESUBMITTED
+}
+
+enum HomeworkVerificationStatus {
+  PENDING
+  VERIFIED
+  REDO
+}
+
+// ------------------------------------------
+// 1. HOMEWORK TASK MODEL (Created by Teacher/Admin)
+// ------------------------------------------
+model LectureHomework {
+  id                 String               @id @default(uuid())
+  title              String               // Assignment Title
+  description        String?              @db.Text // Full prompt, instructions, rubrics
+
+  // 📎 Multi-Format Task Payload (Text, Link, File)
+  taskContent        String?              @db.Text // Embedded markdown / text task
+  taskUrl            String?              // External link (e.g. GitHub template, Figma, Colab)
+  attachmentUrl      String?              // S3 Document / Worksheet URL
+  attachmentKey      String?              // S3 storage key
+  attachmentName     String?              // File original name
+  attachmentType     String?              // MIME type
+  attachmentSize     Int?                 @default(0) // File size in bytes
+
+  // ⏰ Deadline & Scoring
+  dueDate            DateTime?            // Submission deadline
+  maxScore           Int?                 @default(100) // Optional grading scale
+
+  // 🔗 Relations
+  lectureId          String
+  lecture            CourseLesson         @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+
+  courseId           String
+  course             Course               @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  teacherProfileId   String
+  teacherProfile     TeacherProfile       @relation(fields: [teacherProfileId], references: [id], onDelete: Cascade)
+
+  // ⚙️ Status & Lifecycle
+  sortOrder          Int                  @default(0)
+  isPublished        Boolean              @default(true)
+  isDeleted          Boolean              @default(false)
+  deletedAt          DateTime?
+
+  // ⏱️ Timestamps
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  // 📥 Submissions Relation
+  submissions        HomeworkSubmission[]
+
+  @@index([lectureId, isDeleted])
+  @@index([courseId, isDeleted])
+  @@index([teacherProfileId])
+  @@map("lecture_homeworks")
+}
+
+// ------------------------------------------
+// 2. STUDENT SUBMISSION MODEL
+// ------------------------------------------
+model HomeworkSubmission {
+  id                   String                     @id @default(uuid())
+
+  homeworkId           String
+  homework             LectureHomework            @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+
+  studentId            String
+  student              User                       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  // 📤 Multi-Format Student Submission (Text, Link, S3 File)
+  submissionText       String?                    @db.Text // Written response / explanation
+  submissionUrl        String?                    // Project URL (GitHub repo, Vercel URL, Figma link)
+  fileUrl              String?                    // S3 upload URL (ZIP, PDF, DOCX, etc.)
+  fileKey              String?                    // S3 storage key
+  fileName             String?
+  fileType             String?
+  fileSizeBytes        Int?                       @default(0)
+
+  // 📊 Status & State Machine
+  status               SubmissionStatus           @default(SUBMITTED)
+  verificationStatus   HomeworkVerificationStatus @default(PENDING)
+
+  // 📝 Instructor Review & Feedback
+  feedback             String?                    @db.Text // Teacher's critique or redo requirements
+  score                Int?                       // Optional score awarded
+  reviewedAt           DateTime?
+  reviewedByTeacherId  String?
+
+  // ⏰ Submission Metadata
+  submittedAt          DateTime                   @default(now())
+  isLate               Boolean                    @default(false) // Automatically flagged if submitted > dueDate
+  attemptCount         Int                        @default(1) // Number of submission attempts
+
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
+
+  @@unique([homeworkId, studentId]) // 1 active record per student per homework
+  @@index([homeworkId, verificationStatus])
+  @@index([studentId, status])
+  @@map("homework_submissions")
+}

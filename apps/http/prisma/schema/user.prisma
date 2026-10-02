@@ -36,6 +36,7 @@ model User {
   wallet       Wallet?
   enrollments  CourseEnrollment[]
   refunds      CourseRefund[]
+  homeworkSubmissions HomeworkSubmission[]
 
   @@map("users")
 }
@@ -91,6 +92,7 @@ model TeacherProfile {
   offerRedemptions      OfferRedemption[]
   coupons               TeacherCoupon[]
   notes                 LectureNote[]
+  homeworks             LectureHomework[]
 
   @@map("teacher_profiles")
 }

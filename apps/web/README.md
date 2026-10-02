@@ -29,6 +29,11 @@ src/
 │   ├── wallet/               # User Wallets, Top-Ups, Ledger, Teacher Payouts & Admin Balances
 │   ├── bank-details/         # User & Teacher Bank accounts and UPI IDs management
 │   ├── course/               # Course catalog, Teacher studio, Curriculum builder & Reviews
+│   ├── lecture/              # Live interactive studio, Schedule lecture, Student classroom player
+│   ├── note/                 # Lecture notes drawer, PDF/PPT uploaders, Handout card previews & Admin catalog
+│   ├── homework/             # Multi-format task creation, Student submission modal, Teacher review & Admin grid
+│   ├── enrollment/           # Course classroom, 20-day refund modal, Attendance & Certificates
+│   ├── coupons/              # Teacher coupon builder, Code generation & Usage statistics
 │   ├── categories/           # Category & taxonomy management
 │   ├── plans/                # Dynamic Pricing Catalog, Plan Details & Subscription Flow
 │   ├── offers/               # Promo codes, Discounts & Redemption rules
@@ -114,6 +119,23 @@ Powers all data grids with search, faceted dropdown filters, status tabs, pagina
 ### 4. Direct-to-S3 File Uploaders
 * `<ImageUploadInput />`: Handles avatar image selection, preview, and uploads directly to AWS S3 using presigned PUT URLs.
 * `<ResumeUploadInput />`: Validates PDF/DOCX resumes (up to 10MB) and handles direct S3 upload with status indicators.
+* `<NoteUploadModal />` & `<CreateHomeworkModal />`: Drag-and-drop S3 direct uploaders for course slide decks, PDF handouts, and starter archive files (ZIP, RAR, PPTX, DOCX up to 100MB).
+
+### 5. Lecture Notes & Handouts System
+* `<LectureNotesDrawer />`: Slide-over drawer displaying all attached PDF/PPT notes and slide decks for any lecture.
+* `<NoteCard />`: File icon visualization with file extension tags, direct download triggers, and instructor moderation.
+* `<AdminNotesPage />`: Platform-wide administrative catalog of all educational materials across courses.
+
+### 6. Homework & Assignment Submissions System
+* `<LectureHomeworkDrawer />`: Interactive drawer providing homework management for instructors and submission workflows for students.
+* `<HomeworkCard />`: Comprehensive card displaying task specifications, starter repository links, download handouts, deadline countdowns, max score, and submission state.
+* `<StudentSubmitHomeworkModal />`: Student solution uploader supporting written explanation/code, project URL, and direct S3 ZIP/PDF upload with attempt tracking and teacher redo notes.
+* `<TeacherSubmissionsModal />` & `<SubmissionReviewModal />`: Instructor grading workspace with status tabs (`All`, `Pending`, `Verified`, `Redo`, `Late`), scoring inputs, and feedback critique.
+* `<HomeworkStatusBadge />`: Real-time lifecycle badges (`NOT_DONE`, `SUBMITTED`, `RESUBMITTED`, `VERIFIED`, `REDO`, `Late`).
+* `<AdminHomeworkPage />`: Platform-wide oversight dashboard with metrics, search, and moderation.
+
+### 7. Course Classroom & Live Cohort Learning
+* `<CourseClassroomPage />`: Unified student classroom experience with video playback, syllabus navigation, real-time attendance verification, quick access to lecture notes and homework drawers, and 20-day refund guarantee modals.
 
 ---
 

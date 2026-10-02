@@ -13,6 +13,7 @@ import {
   BookOpen,
   RefreshCw,
   FileText,
+  FileCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +27,7 @@ import { ConfirmationModal } from "@/components/common/ConfirmationModal";
 import { LectureFormModal } from "../components/LectureFormModal";
 import { LectureStatusBadge } from "../components/LectureStatusBadge";
 import { LectureNotesDrawer } from "@/features/note";
+import { LectureHomeworkDrawer } from "@/features/homework";
 import { useTeacherLectures, useTeacherDeleteLecture } from "../hooks/useLectures";
 import type { Lecture } from "../types/lecture.types";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -48,6 +50,7 @@ export const TeacherLecturesPage: React.FC = () => {
   const [lectureToEdit, setLectureToEdit] = useState<Lecture | null>(null);
   const [lectureToDelete, setLectureToDelete] = useState<Lecture | null>(null);
   const [lectureForNotes, setLectureForNotes] = useState<Lecture | null>(null);
+  const [lectureForHomework, setLectureForHomework] = useState<Lecture | null>(null);
 
   const { data: lecturesData, isLoading, refetch } = useTeacherLectures({
     page: currentPage,
@@ -186,6 +189,17 @@ export const TeacherLecturesPage: React.FC = () => {
           <Button
             variant="ghost"
             size="sm"
+            onClick={() => setLectureForHomework(row)}
+            className="h-7 px-2 gap-1 rounded-lg text-neutral-600 dark:text-neutral-300 hover:text-amber-500 hover:bg-amber-500/10 cursor-pointer text-xs font-semibold"
+            title="Manage Homework & Tasks"
+          >
+            <FileCheck className="w-3.5 h-3.5 text-amber-500" />
+            <span className="hidden xl:inline text-[11px]">Homework</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => navigate(`/teachers/lectures/${row.id}`)}
             className="h-7 w-7 p-0 rounded-lg text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
             title="View Lecture Details"
@@ -317,6 +331,19 @@ export const TeacherLecturesPage: React.FC = () => {
           lectureId={lectureForNotes!.id}
           lectureTitle={lectureForNotes!.title}
           courseTitle={lectureForNotes!.courseTitle}
+          canManage={true}
+        />
+      )}
+
+      {/* Lecture Homework Drawer */}
+      {Boolean(lectureForHomework) && (
+        <LectureHomeworkDrawer
+          isOpen={Boolean(lectureForHomework)}
+          onClose={() => setLectureForHomework(null)}
+          lectureId={lectureForHomework!.id}
+          lectureTitle={lectureForHomework!.title}
+          courseTitle={lectureForHomework!.courseTitle}
+          userRole="TEACHER"
           canManage={true}
         />
       )}

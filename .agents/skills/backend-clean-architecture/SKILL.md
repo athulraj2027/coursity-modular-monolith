@@ -206,6 +206,43 @@ export default exampleRouter;
 
 ---
 
+## 🔄 State Machines & Multi-Format Submissions Pattern
+
+When implementing domain entities with submission or vetting lifecycles (e.g., `HomeworkSubmission`, `TeacherProfileVerification`, `PayoutRequest`):
+
+### 1. Dual-Status State Machine
+Decouple the submission attempt status from the reviewer verification state:
+* **`SubmissionStatus`**: `NOT_DONE` ➔ `SUBMITTED` ➔ `RESUBMITTED`
+* **`VerificationStatus`**: `PENDING` ➔ `VERIFIED` (Passed) OR `REDO` (Corrections requested with feedback)
+
+### 2. Multi-Format Payload Storage
+Support text responses, external project URLs, and direct S3 file uploads without schema fragmentation:
+* `submissionText` (`@db.Text`): Markdown explanations or written solutions.
+* `submissionUrl` (`String?`): Project repositories (GitHub, Figma, Colab).
+* `fileUrl`, `fileKey`, `fileName`, `fileType`, `fileSizeBytes`: Direct S3 attachments (PDF, ZIP, DOCX).
+* `isLate`: Automatically computed as `new Date() > homework.dueDate`.
+* `attemptCount`: Incremented upon each resubmission.
+
+### 3. Role-Based Resource Authorization Pattern
+Enforce access boundaries within application use cases:
+```typescript
+if (userRole === "ADMIN" || userRole === "SUPERADMIN") {
+  // Global access granted
+} else if (userRole === "TEACHER") {
+  const teacherProfileId = await this.repo.getTeacherProfileIdByUserId(userId);
+  if (teacherProfileId !== resource.teacherProfileId) {
+    throw new ForbiddenError("You can only manage resources for courses you instruct");
+  }
+} else if (userRole === "STUDENT") {
+  const isEnrolled = await this.repo.isStudentEnrolled(userId, resource.courseId);
+  if (!isEnrolled) {
+    throw new ForbiddenError("You must be enrolled in this course to access this resource");
+  }
+}
+```
+
+---
+
 ## 🛡️ Error Handling Hierarchy
 
 Always throw standard error classes extending from `AppError` in [`src/app/errors/`](file:///d:/second-project/coursity-rebuild/apps/http/src/app/errors):

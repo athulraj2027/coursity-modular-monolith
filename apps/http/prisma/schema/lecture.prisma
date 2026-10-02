@@ -32,6 +32,7 @@ model CourseLesson {
   // 📊 Progress & Attendance
   lessonProgress  LessonProgress[]
   notes           LectureNote[]
+  homeworks       LectureHomework[]
 
   @@index([moduleId, sortOrder])
   @@index([scheduledAt, liveStatus])
