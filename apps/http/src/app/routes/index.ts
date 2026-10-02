@@ -14,6 +14,7 @@ import couponRouter from '@/modules/coupon';
 import enrollmentRouter from '@/modules/enrollment';
 import lectureRouter from '@/modules/lecture';
 import noteRouter from '@/modules/note';
+import homeworkRouter from '@/modules/homework';
 import uploadRouter from '@/infrastructure/storage';
 import { candidateInterviewRouter, adminInterviewRouter } from '@/modules/interview';
 import { adminAIConfigRouter } from '@/modules/ai-config';
@@ -48,6 +49,9 @@ router.use("/lectures", lectureRouter);
 
 // 5.2 Notes & Learning Materials routes (Teacher studio + Admin moderation + Student learning)
 router.use("/notes", noteRouter);
+
+// 5.3 Homework & Assignments routes (Teacher studio + Admin moderation + Student submission & review)
+router.use("/homework", homeworkRouter);
 
 // 6. Wishlist routes (Protected student wishlist management)
 router.use("/wishlist", wishlistRouter);

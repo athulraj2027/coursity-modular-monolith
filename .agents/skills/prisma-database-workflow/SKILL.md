@@ -22,7 +22,12 @@ apps/http/prisma/
 │   ├── user.prisma              # User accounts, TeacherProfile, Profile, RefreshTokens
 │   ├── wallet.prisma            # Wallets, WalletTransactions & PayoutRequests
 │   ├── bank-detail.prisma       # Instructor & Student BankDetails & UPI IDs
-│   ├── course.prisma            # Courses, Modules, Lessons, Attachments, Enrollments
+│   ├── course.prisma            # Courses, Modules, Lessons, Attachments
+│   ├── lecture.prisma           # Live class sessions, Broadcast streams & Attendance
+│   ├── note.prisma              # Lecture study notes, Slide decks, Document handouts
+│   ├── homework.prisma          # Multi-format tasks, Student submissions & Grading
+│   ├── enrollment.prisma        # Student enrollments, 20-day refunds & Completion certificates
+│   ├── coupon.prisma            # Teacher discount coupons & usage redemptions
 │   ├── category.prisma          # Course categories, subcategories, metadata
 │   ├── plan.prisma              # Plan, Feature, PlanFeature, Subscription, UsageRecord
 │   ├── offer.prisma             # Platform promotional offers, coupons & redemptions
@@ -118,3 +123,25 @@ export async function processSubscriptionUpgrade(
 
 ### 2. Idempotency Key Handling
 Check the `idempotency` table before executing side-effect heavy operations (such as payment captures and invoice generation).
+
+### 3. Compound Unique Constraints for Single-Record Lifecycles
+When modeling unique student-to-resource interactions (e.g. homework submissions, class attendance, course reviews), enforce single active record integrity via compound unique indexes:
+```prisma
+model HomeworkSubmission {
+  id                   String                     @id @default(uuid())
+  homeworkId           String
+  homework             LectureHomework            @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  studentId            String
+  student              User                       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status               SubmissionStatus           @default(SUBMITTED)
+  verificationStatus   HomeworkVerificationStatus @default(PENDING)
+  attemptCount         Int                        @default(1)
+
+  @@unique([homeworkId, studentId]) // Prevents row fragmentation upon student resubmission
+  @@index([homeworkId, verificationStatus])
+}
+```
+
+### 4. Cascade vs Soft Deletion Strategy
+* Use `onDelete: Cascade` on child relationships that strictly belong to their parent container (e.g., `CourseLesson` ➔ `LectureHomework` ➔ `HomeworkSubmission`).
+* Use `isDeleted Boolean @default(false)` with `deletedAt DateTime?` on top-level recoverable entities (Courses, Lectures, Handouts, Homework). Ensure all read queries filter out `{ isDeleted: false }` unless executing administrative audits.

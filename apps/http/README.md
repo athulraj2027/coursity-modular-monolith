@@ -31,6 +31,11 @@ src/
 │   ├── wallet/               # Double-entry ledger, Top-ups, Payments & Teacher Payouts
 │   ├── bank-detail/          # Instructor & Student Bank accounts and UPI IDs
 │   ├── course/               # Courses, Modules, Lessons, Curriculum & Publishing
+│   ├── lecture/              # Live class sessions, Broadcast state, WebRTC rooms & Attendance
+│   ├── note/                 # S3 lecture handouts, Slide decks, Document materials & Admin moderation
+│   ├── homework/             # Multi-format assignments, Student submissions, Review state machine & Grading
+│   ├── enrollment/           # Course enrollments, 20-day money-back refunds & Certificates
+│   ├── coupon/               # Teacher discount coupons & redemption verification
 │   ├── category/             # Educational taxonomies, Categories & Subcategories
 │   ├── plan/                 # Dynamic pricing plans, Feature catalog & Tiers
 │   ├── subscription/         # Teacher subscriptions, Usage meters & Quota validation
@@ -184,6 +189,53 @@ npm run worker
 * `POST /api/courses` — Teacher create a new course draft.
 * `PUT /api/courses/:id` — Teacher update course details and pricing.
 * `POST /api/courses/:id/modules` — Manage course modules, lessons, and video attachments.
+
+### 🎥 Lectures & Live Interactive Classes (`/api/lectures`)
+* `GET /api/lectures/teacher` — Teacher list scheduled, active, and completed live sessions.
+* `GET /api/lectures/student` — Student list live classes for enrolled courses.
+* `POST /api/lectures` — Teacher schedule a new live class or lesson.
+* `GET /api/lectures/:id` — Fetch lecture details, stream metadata, and attendance status.
+* `PUT /api/lectures/:id` — Update lecture schedule, duration, or stream configurations.
+* `POST /api/lectures/:id/start` — Start live broadcasting and generate SFU tokens.
+* `POST /api/lectures/:id/end` — End live broadcasting and record class duration.
+* `GET /api/lectures/admin/all` — Admin list and moderate platform live sessions.
+
+### 📝 Lecture Notes & Handouts (`/api/notes`)
+* `POST /api/notes` — Teacher upload and attach study materials (PDF, PPT, DOCX) to a lecture.
+* `GET /api/notes/lecture/:lectureId` — Fetch notes and handouts for a specific lecture.
+* `GET /api/notes/course/:courseId` — Fetch all notes attached across a course curriculum.
+* `GET /api/notes/:id` — Retrieve individual note details and download URL.
+* `PUT /api/notes/:id` — Update note title, description, or published state.
+* `DELETE /api/notes/:id` — Delete note record from lecture.
+* `GET /api/notes/admin/all` — Admin platform-wide notes catalog with search and filtering.
+
+### 📋 Homework & Assignment Submissions (`/api/homework`)
+* `POST /api/homework` — Teacher create multi-format assignment (text prompt, starter URL, S3 attachment, deadline, max score).
+* `GET /api/homework/lecture/:lectureId` — Fetch homework for a lecture (enriches with student's submission if student).
+* `GET /api/homework/course/:courseId` — Fetch homework across course curriculum.
+* `GET /api/homework/:id` — Get assignment details, submission status, and feedback.
+* `PUT /api/homework/:id` — Update homework prompt, deadline, or points.
+* `DELETE /api/homework/:id` — Soft-delete homework and cascade submissions.
+* `POST /api/homework/:id/submit` — Student submit/resubmit solution (text, project URL, S3 ZIP/PDF file, automatic late detection).
+* `GET /api/homework/:id/my-submission` — Student retrieve own submission history and teacher review.
+* `GET /api/homework/:id/submissions` — Teacher/Admin view all student submissions for an assignment.
+* `PUT /api/homework/submissions/:submissionId/review` — Teacher/Admin grade submission (`VERIFIED` or `REDO` with feedback and score).
+* `GET /api/homework/admin/all` — Admin platform-wide homework oversight grid with metrics.
+
+### 🎓 Course Enrollments, 20-Day Refunds & Certificates (`/api/enrollments`)
+* `POST /api/enrollments/checkout` — Enroll in a course (using wallet balance or Razorpay payment).
+* `GET /api/enrollments/my` — Student list active and completed course enrollments.
+* `GET /api/learning/:slug` — Student access live classroom, modules, lessons, and attendance.
+* `POST /api/enrollments/:id/refund` — Request 20-day money-back guarantee refund (automatic eligibility validation).
+* `POST /api/enrollments/:id/attendance` — Record live class attendance.
+* `POST /api/certificates/:enrollmentId/claim` — Generate and claim verified course completion certificate.
+* `GET /api/certificates/:code` — Public verification of a completion certificate.
+
+### 🎟️ Teacher Coupons (`/api/coupons`)
+* `POST /api/coupons/validate` — Validate a teacher discount coupon during checkout.
+* `GET /api/teacher/coupons` — Teacher list own discount coupons and redemption stats.
+* `POST /api/teacher/coupons` — Teacher create a discount coupon for a course.
+* `PATCH /api/teacher/coupons/:id/toggle` — Activate / deactivate coupon.
 
 ### 🎙️ AI Interview Session Sync (`/api/interviews`)
 * `POST /api/interviews/sessions` — Initialize AI technical interview session for teacher/student.

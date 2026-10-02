@@ -13,7 +13,13 @@ import { Badge } from "@/components/ui/badge";
 import { LectureStatusBadge } from "../components/LectureStatusBadge";
 import { useStudentLectureDetail } from "../hooks/useLectures";
 import { useLectureNotes, NoteCard } from "@/features/note";
-import { FileText } from "lucide-react";
+import {
+  useLectureHomework,
+  HomeworkCard,
+  StudentSubmitHomeworkModal,
+  type Homework,
+} from "@/features/homework";
+import { FileText, FileCheck } from "lucide-react";
 
 export const StudentLectureDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +27,13 @@ export const StudentLectureDetailPage: React.FC = () => {
 
   const { data: lecture, isLoading, isError } = useStudentLectureDetail(id || "");
   const { data: lectureNotes = [], isLoading: isNotesLoading } = useLectureNotes(id || "");
+  const {
+    data: lectureHomework = [],
+    isLoading: isHomeworkLoading,
+    refetch: refetchHomework,
+  } = useLectureHomework(id || "");
+
+  const [homeworkToSubmit, setHomeworkToSubmit] = React.useState<Homework | null>(null);
 
   if (isLoading) {
     return (
@@ -169,6 +182,38 @@ export const StudentLectureDetailPage: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Homework & Assignments Section */}
+          <div className="p-6 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm space-y-4">
+            <div className="flex items-center gap-2">
+              <FileCheck className="w-4 h-4 text-amber-500" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-200">
+                Homework & Assignments ({lectureHomework.length})
+              </h3>
+            </div>
+
+            {isHomeworkLoading ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="w-5 h-5 animate-spin text-[#F42A18]" />
+              </div>
+            ) : lectureHomework.length === 0 ? (
+              <p className="text-xs text-neutral-400 italic py-2">
+                No homework tasks assigned for this class yet.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {lectureHomework.map((hw) => (
+                  <HomeworkCard
+                    key={hw.id}
+                    homework={hw}
+                    userRole="STUDENT"
+                    isInstructor={false}
+                    onSubmitHomework={(item) => setHomeworkToSubmit(item)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="md:col-span-4 space-y-6">
@@ -201,6 +246,19 @@ export const StudentLectureDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Student Submit Homework Modal */}
+      {homeworkToSubmit && (
+        <StudentSubmitHomeworkModal
+          isOpen={Boolean(homeworkToSubmit)}
+          onClose={() => {
+            setHomeworkToSubmit(null);
+            refetchHomework();
+          }}
+          homework={homeworkToSubmit}
+          existingSubmission={homeworkToSubmit.mySubmission}
+        />
+      )}
     </div>
   );
 };
