@@ -161,28 +161,48 @@ npm run dev
 
 ## 📊 Core Business Capabilities
 
-1. **Dual Role Architecture (Students & Teachers)**:
-   - Students can discover courses, manage wallets, enroll in courses, and track learning progress.
-   - Teachers submit comprehensive verification applications (Resumes, LinkedIn/Portfolios, AI voice evaluations, and Bank accounts).
+1. **Dual Role Architecture (Students, Instructors & Admins)**:
+   - Students discover courses, enroll, participate in live video cohorts, access lecture handouts, submit homework assignments, and earn verified completion certificates.
+   - Teachers manage curriculum, schedule live interactive classes, upload study notes, assign multi-format homework, review/grade submissions, and manage earnings & payouts.
+   - Administrators possess platform-wide oversight, user vetting, course catalog moderation, and treasury controls.
 
 2. **Teacher Verification & AI Vetting State Machine**:
-   - Statuses: `PENDING` ➔ `IN_PROGRESS` ➔ `VERIFIED` / `REDO` / `REVOKED`.
-   - Real-time AI voice technical interview with multi-rubric evaluation, audio archiving, and automated scoring.
+   - Vetting lifecycle: `PENDING` ➔ `IN_PROGRESS` ➔ `VERIFIED` / `REDO` / `REVOKED`.
+   - Real-time AI voice technical interview powered by LangGraph, VAD turn-taking, multi-rubric evaluation, audio archiving, and automated scoring.
 
-3. **Financial Wallet Ledger & Instructor Payouts**:
+3. **Live WebRTC Classroom & SFU Architecture**:
+   - Two-tier SFU daemon (`apps/media-sfu`) powered by Mediasoup v3 C++ worker pools with simulcast video and opus audio.
+   - Stateless Signaling Gateway (`apps/media-signaling`) with dynamic least-loaded node allocation, Redis bus heartbeats, and HMAC token validation.
+   - Live interactive attendance tracking and session recording capabilities.
+
+4. **Lecture Notes & Study Materials Subsystem**:
+   - Direct-to-S3 document handouts (PDF, PPT, PPTX, DOCX) attached to course lectures.
+   - Lecture notes drawer, preview badges, and administrative moderation.
+
+5. **Homework & Assignment Submissions Engine**:
+   - Multi-format assignment creation: text prompt, starter links (GitHub, Figma, Colab), and S3 handout attachments.
+   - Submission state machine: `NOT_DONE` ➔ `SUBMITTED` ➔ `RESUBMITTED`.
+   - Teacher verification & review lifecycle: `PENDING` ➔ `VERIFIED` (passed) OR `REDO` (revision requested with feedback and score).
+   - Automated deadline enforcement, late submission detection, and platform-wide administrative oversight.
+
+6. **Financial Wallet Ledger & Instructor Payouts**:
    - Double-entry ledger recording deposits, course royalties, debit payments, and refunds.
    - Teacher bank/UPI settlement requests with status tracking (`PENDING`, `PROCESSING`, `COMPLETED`, `REJECTED`) and admin balance adjustments.
 
-4. **Dynamic Plan & Metered Feature Catalog**:
+7. **Course Enrollments, 20-Day Refund Guarantee & Certificates**:
+   - Automated money-back refund guarantee engine tracking attendance percentage and conducted sessions.
+   - Digital cryptographic course completion certificates.
+
+8. **Dynamic Plan & Metered Feature Catalog**:
    - Configurable feature limits (Live viewer minutes, max courses, cloud storage GB).
    - Real-time quota validation before executing restricted actions.
 
-5. **Universal Debounced Search & Data Table Engine**:
+9. **Universal Debounced Search & Data Table Engine**:
    - Reusable `<SearchInput />` component ensuring 60fps input responsiveness while debouncing API queries.
    - Unified `<DataTableTemplate />` with pagination, faceted dropdown filters, status tabs, and metrics cards.
 
-6. **Direct-to-S3 Cloud Storage**:
-   - Direct browser-to-S3 uploads via presigned PUT URLs, eliminating backend memory overhead for large files.
+10. **Direct-to-S3 Cloud Storage**:
+    - Direct browser-to-S3 uploads via presigned PUT URLs, eliminating backend memory overhead for large files (resumes, handouts, zip solutions).
 
 ---
 

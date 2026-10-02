@@ -11,6 +11,7 @@ import {
   User,
   RefreshCw,
   FileText,
+  FileCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ import {
 } from "@/components/common/DataTableTemplate";
 import { LectureStatusBadge } from "../components/LectureStatusBadge";
 import { LectureNotesDrawer } from "@/features/note";
+import { LectureHomeworkDrawer } from "@/features/homework";
 import { useAdminLectures } from "../hooks/useLectures";
 import type { Lecture } from "../types/lecture.types";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -37,6 +39,7 @@ export const AdminLecturesPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [lectureForNotes, setLectureForNotes] = useState<Lecture | null>(null);
+  const [lectureForHomework, setLectureForHomework] = useState<Lecture | null>(null);
 
   const { data: lecturesData, isLoading, refetch } = useAdminLectures({
     page: currentPage,
@@ -181,6 +184,17 @@ export const AdminLecturesPage: React.FC = () => {
           <Button
             variant="ghost"
             size="sm"
+            onClick={() => setLectureForHomework(row)}
+            className="h-7 px-2 gap-1 rounded-lg text-xs text-neutral-600 dark:text-neutral-300 hover:text-amber-500 hover:bg-amber-500/10 cursor-pointer font-semibold"
+            title="Lecture Homework & Tasks"
+          >
+            <FileCheck className="w-3.5 h-3.5 text-amber-500" />
+            <span className="hidden xl:inline text-[11px]">Homework</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => navigate(`/admin/lectures/${row.id}`)}
             className="h-7 px-2.5 rounded-lg text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white cursor-pointer gap-1"
           >
@@ -250,6 +264,19 @@ export const AdminLecturesPage: React.FC = () => {
           lectureId={lectureForNotes!.id}
           lectureTitle={lectureForNotes!.title}
           courseTitle={lectureForNotes!.courseTitle}
+          canManage={true}
+        />
+      )}
+
+      {/* Admin Lecture Homework Drawer */}
+      {Boolean(lectureForHomework) && (
+        <LectureHomeworkDrawer
+          isOpen={Boolean(lectureForHomework)}
+          onClose={() => setLectureForHomework(null)}
+          lectureId={lectureForHomework!.id}
+          lectureTitle={lectureForHomework!.title}
+          courseTitle={lectureForHomework!.courseTitle}
+          userRole="ADMIN"
           canManage={true}
         />
       )}

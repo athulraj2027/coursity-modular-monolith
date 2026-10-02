@@ -28,8 +28,11 @@ import {
   BookOpen,
   Calendar,
   Lock,
+  FileCheck,
 } from "lucide-react";
 import type { ClassroomLesson } from "../types/enrollment.types";
+import { LectureNotesDrawer } from "@/features/note";
+import { LectureHomeworkDrawer } from "@/features/homework";
 
 export function CourseClassroomPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -42,6 +45,8 @@ export function CourseClassroomPage() {
 
   const [activeLesson, setActiveLesson] = useState<ClassroomLesson | null>(null);
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
+  const [isNotesDrawerOpen, setIsNotesDrawerOpen] = useState(false);
+  const [isHomeworkDrawerOpen, setIsHomeworkDrawerOpen] = useState(false);
 
   // Initialize first lesson
   useEffect(() => {
@@ -233,6 +238,29 @@ export function CourseClassroomPage() {
                         Mark Attended
                       </Button>
                     )}
+
+                    {/* Quick Access Notes & Homework */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsNotesDrawerOpen(true)}
+                      className="border-neutral-800 hover:border-neutral-700 bg-neutral-900 text-xs rounded-xl h-9 gap-1.5 cursor-pointer text-slate-200"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-[#F42A18]" />
+                      <span>Class Notes</span>
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsHomeworkDrawerOpen(true)}
+                      className="border-neutral-800 hover:border-neutral-700 bg-neutral-900 text-xs rounded-xl h-9 gap-1.5 cursor-pointer text-slate-200"
+                    >
+                      <FileCheck className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Homework</span>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -425,6 +453,31 @@ export function CourseClassroomPage() {
           classesConductedCount: enrollment.classesConductedCount,
         }}
       />
+
+      {/* Classroom Notes Drawer */}
+      {isNotesDrawerOpen && activeLesson && (
+        <LectureNotesDrawer
+          isOpen={isNotesDrawerOpen}
+          onClose={() => setIsNotesDrawerOpen(false)}
+          lectureId={activeLesson.id}
+          lectureTitle={activeLesson.title}
+          courseTitle={course.title}
+          canManage={false}
+        />
+      )}
+
+      {/* Classroom Homework Drawer */}
+      {isHomeworkDrawerOpen && activeLesson && (
+        <LectureHomeworkDrawer
+          isOpen={isHomeworkDrawerOpen}
+          onClose={() => setIsHomeworkDrawerOpen(false)}
+          lectureId={activeLesson.id}
+          lectureTitle={activeLesson.title}
+          courseTitle={course.title}
+          userRole="STUDENT"
+          canManage={false}
+        />
+      )}
     </div>
   );
 }

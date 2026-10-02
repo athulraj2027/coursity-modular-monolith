@@ -6,6 +6,7 @@ export const STORAGE_FOLDERS = [
     "videos",
     "documents",
     "notes",
+    "homework",
     "identity",
     "general",
 ] as const;
@@ -28,6 +29,10 @@ export const ALLOWED_DOCUMENT_MIME_TYPES = [
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "text/plain",
+    "application/zip",
+    "application/x-zip-compressed",
+    "application/x-rar-compressed",
+    "application/octet-stream",
 ] as const;
 
 export const ALLOWED_VIDEO_MIME_TYPES = [
