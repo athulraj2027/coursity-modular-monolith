@@ -5,6 +5,8 @@ import type {
   GetUsersParams,
   PaginatedUsersResponse,
   SingleUserResponse,
+  AdminAnalyticsData,
+  AdminAnalyticsResponse,
 } from "../types/user-management.types"
 
 export const userApi = {
@@ -35,6 +37,13 @@ export const userApi = {
       method: "GET",
     })
     return response.data.user
+  },
+
+  getAdminAnalytics: async (): Promise<AdminAnalyticsData> => {
+    const response = await apiClient<AdminAnalyticsResponse>(USER_API_ROUTES.ANALYTICS, {
+      method: "GET",
+    })
+    return response.data
   },
 
   blockUser: async (id: string, isBlocked?: boolean): Promise<{ message: string; data?: { user: BackendUser } }> => {

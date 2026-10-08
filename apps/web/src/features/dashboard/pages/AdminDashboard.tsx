@@ -24,10 +24,17 @@ import {
   UserDetailsDrawer,
   BlockUserModal,
 } from "@/components/common"
-import { useUsers, useApproveTeacher, useBlockUser } from "../hooks/useUsers"
+import {
+  AdminRevenueChart,
+  AdminUserGrowthChart,
+  AdminCategoryDistributionChart,
+  AdminVerificationFunnelChart,
+} from "../components"
+import { useUsers, useApproveTeacher, useBlockUser, useAdminAnalytics } from "../hooks/useUsers"
 import { useAdminCourseMetrics, useAdminCourses } from "@/features/course/hooks/useCourses"
 import { useAdminWallets, useAdminPayouts } from "@/features/wallet/hooks/useWallet"
 import { useAdminSubscriptions } from "@/features/plans/hooks/useAdminSubscriptions"
+import { usePublicCategoryTree } from "@/features/categories/hooks/useCategories"
 import type { BackendUser, ApprovalStatus } from "../types/user-management.types"
 import type { Course } from "@/features/course/types/course.types"
 import { toast } from "@/lib/toast"
@@ -100,13 +107,14 @@ export const AdminDashboardPage: React.FC = () => {
     limit: 1,
   })
 
-  // 3. Course Metrics & Recent Courses
+  // 3. Course Metrics & Recent Courses & Categories
   const { data: courseMetrics, isLoading: isCourseMetricsLoading } = useAdminCourseMetrics()
   const { data: recentCoursesResponse, isLoading: isRecentCoursesLoading } = useAdminCourses({
     limit: 4,
     sortBy: "createdAt",
     sortOrder: "desc",
   })
+  const { data: categoryTreeResponse } = usePublicCategoryTree()
 
   // 4. Financial & Payout Metrics
   const { data: walletsResponse, isLoading: isWalletsLoading } = useAdminWallets({ limit: 1 })
@@ -116,21 +124,26 @@ export const AdminDashboardPage: React.FC = () => {
   })
   const { data: subscriptionsResponse } = useAdminSubscriptions({ limit: 1 })
 
+  // 5. Real Admin Database Analytics (Revenue, User Growth, Category Share, Verification Funnel)
+  const { data: analyticsResponse, isLoading: isAnalyticsLoading } = useAdminAnalytics()
+  const analyticsData = analyticsResponse?.data
+
   // Mutations
   const approveTeacherMutation = useApproveTeacher()
   const blockUserMutation = useBlockUser()
 
   // Calculated Stats
-  const totalStudents = studentsResponse?.data?.total ?? 0
-  const totalTeachers = teachersResponse?.data?.total ?? 0
+  const totalStudents = studentsResponse?.data?.total ?? analyticsData?.userGrowth?.summary?.totalStudents ?? 0
+  const totalTeachers = teachersResponse?.data?.total ?? analyticsData?.userGrowth?.summary?.totalTeachers ?? 0
   const totalUsers = totalStudents + totalTeachers
-  const verifiedTeachersCount = verifiedTeachersResponse?.data?.total ?? 0
+  const verifiedTeachersCount = verifiedTeachersResponse?.data?.total ?? analyticsData?.userGrowth?.summary?.verifiedTeachers ?? 0
   const pendingApplicants = pendingTeachersResponse?.data?.users ?? []
   const totalPendingApplicantsCount = pendingTeachersResponse?.data?.total ?? 0
 
   const totalPlatformBalance =
     walletsResponse?.stats?.totalPlatformBalance ??
     subscriptionsResponse?.metrics?.totalRevenue ??
+    analyticsData?.revenue?.summary?.totalGmv ??
     0
   const totalLifetimeEarned = walletsResponse?.stats?.totalLifetimeEarned ?? 0
   const pendingPayoutCount = pendingPayoutsResponse?.stats?.pendingCount ?? pendingPayoutsResponse?.total ?? 0
@@ -138,6 +151,7 @@ export const AdminDashboardPage: React.FC = () => {
 
   const recentCourses: Course[] = recentCoursesResponse?.items ?? []
   const recentPayouts = pendingPayoutsResponse?.items ?? []
+  const rawCategories = Array.isArray(categoryTreeResponse) ? categoryTreeResponse : []
 
   // Refresh all dashboard queries
   const handleRefreshAll = async () => {
@@ -145,7 +159,9 @@ export const AdminDashboardPage: React.FC = () => {
     try {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin-users"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-analytics"] }),
         queryClient.invalidateQueries({ queryKey: ["courses"] }),
+        queryClient.invalidateQueries({ queryKey: ["categories"] }),
         queryClient.invalidateQueries({ queryKey: ["wallets"] }),
         queryClient.invalidateQueries({ queryKey: ["admin-subscriptions"] }),
       ])
@@ -211,7 +227,7 @@ export const AdminDashboardPage: React.FC = () => {
               Platform Control Center
             </h1>
             <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
-              Real-time platform overview: audit instructor verifications, monitor course catalog health, manage payout pipelines, and evaluate live microservices.
+              Real-time platform analytics: monitor financial growth curves, audit instructor verifications, track user signups, and evaluate domain catalog distributions.
             </p>
           </div>
 
@@ -385,7 +401,40 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Primary Operational Workspace (2 Columns) */}
+      {/* 3. MULTIPLE DYNAMIC ANALYTICS GRAPHS (With interactive filters & Real Telemetry) */}
+      <div className="space-y-6">
+        {/* Row A: Financial Revenue Growth Area Chart */}
+        <AdminRevenueChart
+          totalPlatformBalance={totalPlatformBalance}
+          timeframeData={analyticsData?.revenue?.timeframes}
+          summary={analyticsData?.revenue?.summary}
+          isLoading={isAnalyticsLoading}
+        />
+
+        {/* Row B: User Acquisition Bar Chart & Category Donut Distribution */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <AdminUserGrowthChart
+            totalStudents={totalStudents}
+            totalTeachers={totalTeachers}
+            verifiedTeachers={verifiedTeachersCount}
+            timeframeData={analyticsData?.userGrowth?.timeframes}
+            isLoading={isAnalyticsLoading}
+          />
+          <AdminCategoryDistributionChart
+            totalCourses={courseMetrics?.total ?? 36}
+            items={analyticsData?.categoryDistribution}
+            isLoading={isAnalyticsLoading}
+          />
+        </div>
+
+        {/* Row C: Instructor Verification & Vetting Pipeline Funnel */}
+        <AdminVerificationFunnelChart
+          funnelStats={analyticsData?.verificationFunnel}
+          isLoading={isAnalyticsLoading}
+        />
+      </div>
+
+      {/* 4. Primary Operational Workspace (2 Columns) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Columns: Teacher Verification Queue & Recent Course Moderation */}
         <div className="lg:col-span-2 space-y-6">

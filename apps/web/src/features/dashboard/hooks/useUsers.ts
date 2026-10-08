@@ -4,6 +4,7 @@ import type { GetUsersParams, ApprovalStatus } from "../types/user-management.ty
 import { toast } from "@/lib/toast"
 
 export const USER_QUERY_KEY = ["admin-users"] as const
+export const ADMIN_ANALYTICS_QUERY_KEY = ["admin-analytics"] as const
 
 export function useUsers(params: GetUsersParams = {}) {
   return useQuery({
@@ -26,6 +27,14 @@ export function useUsers(params: GetUsersParams = {}) {
   })
 }
 
+export function useAdminAnalytics() {
+  return useQuery({
+    queryKey: ADMIN_ANALYTICS_QUERY_KEY,
+    queryFn: () => userApi.getAdminAnalytics(),
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  })
+}
+
 export function useUser(id: string) {
   return useQuery({
     queryKey: [...USER_QUERY_KEY, "detail", id],
@@ -45,6 +54,7 @@ export function useBlockUser() {
     },
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: USER_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: ADMIN_ANALYTICS_QUERY_KEY })
       toast.success(res?.message || "User status updated successfully")
     },
     onError: (error: Error) => {
@@ -75,6 +85,7 @@ export function useApproveTeacher() {
     },
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: USER_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: ADMIN_ANALYTICS_QUERY_KEY })
       queryClient.invalidateQueries({ queryKey: ["user-profile"] })
       queryClient.invalidateQueries({ queryKey: ["currentUser"] })
       toast.success(res?.message || "Teacher verification status updated successfully")
