@@ -109,7 +109,7 @@ export const AdminHomeworkPage: React.FC = () => {
   const columns: TableColumn<Homework>[] = [
     {
       header: "Homework Assignment",
-      accessor: (hw) => (
+      cell: (hw) => (
         <div className="flex flex-col gap-1 min-w-[200px] max-w-sm">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-slate-100 text-sm hover:text-[#F42A18] transition-colors line-clamp-1">
@@ -140,7 +140,7 @@ export const AdminHomeworkPage: React.FC = () => {
     },
     {
       header: "Lecture & Course",
-      accessor: (hw) => (
+      cell: (hw) => (
         <div className="flex flex-col gap-1 max-w-[220px]">
           <div className="flex items-center gap-1.5 text-xs text-slate-200 font-medium truncate">
             <BookOpen className="w-3.5 h-3.5 text-[#F42A18] flex-shrink-0" />
@@ -154,7 +154,7 @@ export const AdminHomeworkPage: React.FC = () => {
     },
     {
       header: "Instructor",
-      accessor: (hw) => (
+      cell: (hw) => (
         <div className="flex items-center gap-2">
           {hw.teacherAvatar ? (
             <img
@@ -175,7 +175,7 @@ export const AdminHomeworkPage: React.FC = () => {
     },
     {
       header: "Deliverables",
-      accessor: (hw) => (
+      cell: (hw) => (
         <div className="flex items-center gap-1.5 flex-wrap">
           {hw.taskContent && (
             <span className="text-[11px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">
@@ -208,7 +208,7 @@ export const AdminHomeworkPage: React.FC = () => {
     },
     {
       header: "Submissions",
-      accessor: (hw) => (
+      cell: (hw) => (
         <div className="flex flex-col gap-1 text-xs">
           <div className="flex items-center gap-1.5 font-semibold text-slate-200">
             <Users className="w-3.5 h-3.5 text-slate-400" />
@@ -227,7 +227,7 @@ export const AdminHomeworkPage: React.FC = () => {
     {
       header: "Actions",
       className: "text-right",
-      accessor: (hw) => (
+      cell: (hw) => (
         <div className="flex items-center justify-end gap-1.5">
           <Button
             size="sm"
@@ -264,19 +264,19 @@ export const AdminHomeworkPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-1 flex-col w-full text-left space-y-6">
       <DataTableTemplate<Homework>
         title="Homework & Assignment Management"
-        subtitle="Global administrative oversight for lecture assignments, starter repositories, student submissions, and review states across all courses."
+        description="Global administrative oversight for lecture assignments, starter repositories, student submissions, and review states across all courses."
         metrics={metricsCards}
         searchPlaceholder="Search homework by title, task details, lecture, or course..."
-        searchValue={searchQuery}
+        searchQuery={searchQuery}
         onSearchChange={(val) => {
           setSearchQuery(val);
           setCurrentPage(1);
         }}
         sortOptions={sortOptions}
-        sortValue={sortOption}
+        currentSort={sortOption}
         onSortChange={(val) => {
           setSortOption(val);
           setCurrentPage(1);
@@ -286,21 +286,21 @@ export const AdminHomeworkPage: React.FC = () => {
         keyExtractor={(hw) => hw.id}
         isLoading={isLoading}
         pagination={{
-          page: currentPage,
-          limit: pageSize,
-          total: totalCount,
+          currentPage,
+          pageSize,
+          totalItems: totalCount,
           onPageChange: setCurrentPage,
-          onLimitChange: (newLimit) => {
+          onPageSizeChange: (newLimit: number) => {
             setPageSize(newLimit);
             setCurrentPage(1);
           },
         }}
-        emptyTitle="No homework assignments found"
-        emptyDescription={
-          searchQuery
+        emptyState={{
+          title: "No homework assignments found",
+          description: searchQuery
             ? "No assignments matched your search criteria."
-            : "No homework assignments have been assigned across any courses yet."
-        }
+            : "No homework assignments have been assigned across any courses yet.",
+        }}
       />
 
       {/* Submissions Modal */}
@@ -323,7 +323,7 @@ export const AdminHomeworkPage: React.FC = () => {
         title="Delete Homework Assignment"
         description={`Are you sure you want to delete "${homeworkToDelete?.title}"? All associated student submissions and records will be deleted.`}
         confirmText="Delete Assignment"
-        variant="destructive"
+        variant="danger"
         isLoading={deleteMutation.isPending}
       />
     </div>

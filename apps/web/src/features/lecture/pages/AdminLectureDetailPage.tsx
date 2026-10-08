@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -73,7 +73,7 @@ export const AdminLectureDetailPage: React.FC = () => {
   const scheduledDate = lecture.scheduledAt ? new Date(lecture.scheduledAt) : null;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12">
+    <div className="flex flex-1 flex-col w-full text-left space-y-6 pb-12">
       {/* 1. Header Banner */}
       <div className="p-6 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
@@ -339,7 +339,7 @@ export const AdminLectureDetailPage: React.FC = () => {
         title="Moderate & Delete Lecture Note"
         description={`Are you sure you want to administratively delete "${noteToDelete?.name}"?`}
         confirmText="Delete Document"
-        variant="destructive"
+        variant="danger"
         isLoading={deleteNoteMutation.isPending}
       />
 
@@ -388,7 +388,7 @@ export const AdminLectureDetailPage: React.FC = () => {
         title="Delete Homework Assignment"
         description={`Are you sure you want to administratively delete "${homeworkToDelete?.title}"? All student submissions will also be deleted.`}
         confirmText="Delete Assignment"
-        variant="destructive"
+        variant="danger"
         isLoading={deleteHomeworkMutation.isPending}
       />
     </div>

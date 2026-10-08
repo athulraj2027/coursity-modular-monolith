@@ -208,7 +208,7 @@ export const AdminAIConfigPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="flex flex-1 flex-col w-full text-left space-y-6 pb-12">
       {/* 1. Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-neutral-900 via-neutral-950 to-neutral-900 text-white p-6 rounded-2xl border border-neutral-800 shadow-xl">
         <div className="space-y-1.5">

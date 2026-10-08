@@ -160,22 +160,22 @@ export const AdminUserDetailPage: React.FC = () => {
 
   if (isError || !user) {
     return (
-      <div className="p-8 max-w-4xl mx-auto">
+      <div className="flex flex-1 flex-col w-full text-left space-y-6">
         <Button
           variant="ghost"
           onClick={() => navigate(-1)}
-          className="mb-6 gap-2 text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+          className="mb-2 gap-2 text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white self-start cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Directory
         </Button>
-        <div className="p-8 rounded-2xl bg-red-500/10 border border-red-500/20 text-center space-y-3">
+        <div className="p-8 rounded-2xl bg-red-500/10 border border-red-500/20 text-center space-y-3 w-full">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
           <h2 className="text-xl font-bold text-neutral-900 dark:text-white">User Record Not Found</h2>
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
             {error instanceof Error ? error.message : "The requested user record could not be loaded."}
           </p>
-          <Button onClick={() => refetch()} variant="outline" className="mt-2">
+          <Button onClick={() => refetch()} variant="outline" className="mt-2 cursor-pointer">
             Retry Loading
           </Button>
         </div>
@@ -203,7 +203,7 @@ export const AdminUserDetailPage: React.FC = () => {
   const credentials = teacherProfile?.credentials || [];
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="flex flex-1 flex-col w-full text-left space-y-6">
       {/* Breadcrumb Navigation */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-sm text-neutral-500">
@@ -457,7 +457,7 @@ export const AdminUserDetailPage: React.FC = () => {
 
       {/* Tab 1: Overview */}
       {activeTab === "overview" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
           {/* Left 2 Cols: Details */}
           <div className="lg:col-span-2 space-y-6">
             {/* Professional Background */}
@@ -687,7 +687,7 @@ export const AdminUserDetailPage: React.FC = () => {
 
       {/* Tab 2: Courses (Teacher) */}
       {activeTab === "courses" && isTeacher && (
-        <div className="space-y-4">
+        <div className="space-y-6 w-full">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
               Published & Catalog Courses ({instructorCourses.length})
@@ -695,13 +695,13 @@ export const AdminUserDetailPage: React.FC = () => {
           </div>
 
           {instructorCourses.length === 0 ? (
-            <div className="p-12 text-center rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-3">
+            <div className="p-12 text-center rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-3 w-full">
               <BookOpen className="w-10 h-10 text-neutral-400 mx-auto" />
               <p className="font-semibold text-neutral-900 dark:text-white">No courses created yet</p>
               <p className="text-xs text-neutral-500">This instructor has not created any courses on the platform.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full">
               {instructorCourses.map((course) => (
                 <div
                   key={course.id}
@@ -774,15 +774,15 @@ export const AdminUserDetailPage: React.FC = () => {
 
       {/* Tab 3: Credentials, Documents & Education (Teacher) */}
       {activeTab === "qualifications" && isTeacher && (
-        <div className="space-y-6">
+        <div className="space-y-6 w-full">
           {/* Primary Teacher Files: Resume & Identity Card */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-4">
+          <div className="p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-4 w-full">
             <h3 className="font-bold text-neutral-900 dark:text-white text-base flex items-center gap-2">
               <FileCheck className="w-4 h-4 text-[#F42A18]" />
               Official Verification Documents & Resume
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
               {/* Resume / CV Document File Card */}
               {teacherProfile?.resume ? (
                 <FileDocumentCard
@@ -816,7 +816,7 @@ export const AdminUserDetailPage: React.FC = () => {
           </div>
 
           {/* Accreditation Certificates & Credentials (Files) */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-4">
+          <div className="p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-4 w-full">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-neutral-900 dark:text-white text-base flex items-center gap-2">
                 <Award className="w-4 h-4 text-emerald-500" />
@@ -836,7 +836,7 @@ export const AdminUserDetailPage: React.FC = () => {
                 <p className="text-[11px] text-neutral-400">The instructor has not uploaded credential certificate files.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
                 {credentials.map((certUrl, i) => (
                   <FileDocumentCard
                     key={i}
@@ -852,7 +852,7 @@ export const AdminUserDetailPage: React.FC = () => {
           </div>
 
           {/* Academic Degrees & Education */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-4">
+          <div className="p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-4 w-full">
             <h3 className="font-bold text-neutral-900 dark:text-white text-base flex items-center gap-2">
               <GraduationCap className="w-4 h-4 text-[#F42A18]" />
               Academic Degrees & Formal Education ({qualifications.length})
@@ -861,7 +861,7 @@ export const AdminUserDetailPage: React.FC = () => {
             {qualifications.length === 0 ? (
               <p className="text-xs text-neutral-400 italic">No formal degrees submitted.</p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                 {qualifications.map((qual, i) => (
                   <div
                     key={i}
@@ -886,13 +886,13 @@ export const AdminUserDetailPage: React.FC = () => {
 
       {/* Tab 4: System & Security */}
       {activeTab === "system" && (
-        <div className="p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-6">
+        <div className="p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-6 w-full">
           <h3 className="font-bold text-neutral-900 dark:text-white text-base flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-[#F42A18]" />
             System Audit & Platform Attributes
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs w-full">
             <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-100 dark:border-neutral-800 space-y-1">
               <span className="text-neutral-400 block">Unique User ID</span>
               <div className="flex items-center justify-between gap-2">
@@ -943,7 +943,7 @@ export const AdminUserDetailPage: React.FC = () => {
 
       {/* Tab: Bank Details & Payout Methods */}
       {activeTab === "bank-details" && (
-        <div className="space-y-6">
+        <div className="space-y-6 w-full">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h3 className="text-lg font-bold text-neutral-900 dark:text-white flex items-center gap-2">
@@ -967,12 +967,12 @@ export const AdminUserDetailPage: React.FC = () => {
           </div>
 
           {isLoadingBanks ? (
-            <div className="p-12 text-center rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-3">
+            <div className="p-12 text-center rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-3 w-full">
               <div className="w-8 h-8 border-3 border-[#F42A18] border-t-transparent rounded-full animate-spin mx-auto" />
               <p className="text-xs text-neutral-500">Loading payout accounts...</p>
             </div>
           ) : !bankDetailsData?.items || bankDetailsData.items.length === 0 ? (
-            <div className="p-12 text-center rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-3">
+            <div className="p-12 text-center rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-3 w-full">
               <Building2 className="w-10 h-10 text-neutral-400 mx-auto" />
               <p className="font-semibold text-neutral-900 dark:text-white">No Bank Accounts Registered</p>
               <p className="text-xs text-neutral-500 max-w-md mx-auto">
@@ -980,7 +980,7 @@ export const AdminUserDetailPage: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
               {bankDetailsData.items.map((bank) => (
                 <div
                   key={bank.id}

@@ -133,22 +133,22 @@ export const AdminCourseDetailPage: React.FC = () => {
 
   if (isError || !course) {
     return (
-      <div className="p-8 max-w-4xl mx-auto">
+      <div className="flex flex-1 flex-col w-full text-left space-y-6">
         <Button
           variant="ghost"
           onClick={() => navigate("/admin/courses")}
-          className="mb-6 gap-2 text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+          className="mb-2 gap-2 text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white self-start cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Courses Catalog
         </Button>
-        <div className="p-8 rounded-2xl bg-red-500/10 border border-red-500/20 text-center space-y-3">
+        <div className="p-8 rounded-2xl bg-red-500/10 border border-red-500/20 text-center space-y-3 w-full">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
           <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Course Not Found</h2>
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
             {error instanceof Error ? error.message : "The requested course could not be loaded."}
           </p>
-          <Button onClick={() => refetch()} variant="outline" className="mt-2">
+          <Button onClick={() => refetch()} variant="outline" className="mt-2 cursor-pointer">
             Retry Loading
           </Button>
         </div>
@@ -181,7 +181,7 @@ export const AdminCourseDetailPage: React.FC = () => {
     : null;
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="flex flex-1 flex-col w-full text-left space-y-6">
       {/* Breadcrumb Navigation */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-sm text-neutral-500">

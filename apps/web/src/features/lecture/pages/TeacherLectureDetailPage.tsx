@@ -89,7 +89,7 @@ export const TeacherLectureDetailPage: React.FC = () => {
   const scheduledDate = lecture.scheduledAt ? new Date(lecture.scheduledAt) : null;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12">
+    <div className="flex flex-1 flex-col w-full text-left space-y-6 pb-12">
       {/* 1. Top Header Banner */}
       <div className="p-6 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
@@ -375,7 +375,7 @@ export const TeacherLectureDetailPage: React.FC = () => {
         title="Delete Live Lecture"
         description={`Are you sure you want to delete "${lecture.title}"?`}
         confirmText="Delete Lecture"
-        variant="destructive"
+        variant="danger"
         isLoading={deleteMutation.isPending}
       />
 
@@ -411,7 +411,7 @@ export const TeacherLectureDetailPage: React.FC = () => {
         title="Delete Lecture Note"
         description={`Are you sure you want to delete "${noteToDelete?.name}"?`}
         confirmText="Delete Note"
-        variant="destructive"
+        variant="danger"
         isLoading={deleteNoteMutation.isPending}
       />
 
@@ -460,7 +460,7 @@ export const TeacherLectureDetailPage: React.FC = () => {
         title="Delete Homework Assignment"
         description={`Are you sure you want to delete "${homeworkToDelete?.title}"? All student submissions will also be deleted.`}
         confirmText="Delete Assignment"
-        variant="destructive"
+        variant="danger"
         isLoading={deleteHomeworkMutation.isPending}
       />
     </div>
