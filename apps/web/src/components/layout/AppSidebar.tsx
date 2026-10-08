@@ -23,7 +23,7 @@ import {
 } from "@/features/dashboard"
 import { HERO_CONTENT } from "@/features/home"
 import { ThemeToggle } from "@/components/common/ThemeToggle"
-import { LogOut, Sparkles, User, ChevronRight, Shield } from "lucide-react"
+import { LogOut, User, Shield } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 import { TeacherVerificationMenu } from "./TeacherVerificationMenu"
@@ -195,26 +195,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         {role === "teacher" && (
           <div className="mt-auto pt-2">
             <TeacherVerificationMenu isCollapsed={isCollapsed} />
-          </div>
-        )}
-
-        {/* Upgrade / Live Mentorship Promo Banner (if expanded and student) */}
-        {!isCollapsed && role === "student" && (
-          <div className="p-3 mx-2 mt-auto rounded-2xl border border-neutral-200/80 dark:border-neutral-900 bg-neutral-50 dark:bg-neutral-900/40 text-left space-y-2">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-neutral-900 dark:text-white">
-              <Sparkles className="w-3.5 h-3.5 text-[#F42A18]" />
-              <span>AI Coding Lab</span>
-            </div>
-            <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
-              Get real-time feedback & automated code execution on your projects.
-            </p>
-            <Link
-              to="/ai-lab"
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#F42A18] hover:underline"
-            >
-              <span>Launch Studio</span>
-              <ChevronRight className="w-3 h-3" />
-            </Link>
           </div>
         )}
       </SidebarContent>

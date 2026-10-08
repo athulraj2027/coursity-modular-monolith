@@ -127,6 +127,12 @@ export interface CourseClassroomResponse {
     classesConductedCount: number;
     isCertificateClaimed: boolean;
     certificateCode?: string;
+    paymentMethod?: string;
+    finalAmount?: number;
+    originalPrice?: number;
+    discountAmount?: number;
+    appliedCouponCode?: string | null;
+    invoiceNumber?: string | null;
   };
   course: {
     id: string;
@@ -134,6 +140,10 @@ export interface CourseClassroomResponse {
     slug: string;
     subtitle: string | null;
     description: string | null;
+    thumbnail?: string | null;
+    category?: string | null;
+    pricingType?: string;
+    price?: number;
     startingDate: string | null;
     level: string;
     instructor: {
