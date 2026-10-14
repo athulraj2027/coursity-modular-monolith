@@ -364,6 +364,7 @@ export const TeacherLectureDetailPage: React.FC = () => {
         initialLecture={lecture}
         defaultCourseId={lecture.courseId}
         defaultCourseTitle={lecture.courseTitle}
+        defaultCourseStartingDate={lecture.courseStartingDate}
         onSuccess={() => refetch()}
       />
 

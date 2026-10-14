@@ -19,6 +19,7 @@ import {
   Snowflake,
   Users,
   Tag,
+  Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,7 @@ import { ConfirmationModal } from "@/components/common/ConfirmationModal";
 import { toast } from "@/lib/toast";
 import { TeacherEnrolledStudentsTab } from "@/features/enrollment";
 import { TeacherCouponsTab } from "@/features/coupons";
+import { LectureFormModal } from "@/features/lecture";
 
 export const TeacherCourseDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -42,6 +44,7 @@ export const TeacherCourseDetailPage: React.FC = () => {
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isLectureModalOpen, setIsLectureModalOpen] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
@@ -173,15 +176,26 @@ export const TeacherCourseDetailPage: React.FC = () => {
           </Button>
 
           {!isFrozen && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditModalOpen(true)}
-              className="gap-1.5 text-xs font-semibold border-neutral-200 dark:border-neutral-800 rounded-xl cursor-pointer"
-            >
-              <Edit className="w-3.5 h-3.5" />
-              Edit Info
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditModalOpen(true)}
+                className="gap-1.5 text-xs font-semibold border-neutral-200 dark:border-neutral-800 rounded-xl cursor-pointer"
+              >
+                <Edit className="w-3.5 h-3.5" />
+                Edit Info
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsLectureModalOpen(true)}
+                className="gap-1.5 text-xs font-semibold text-[#F42A18] border-[#F42A18]/30 hover:bg-[#F42A18]/10 rounded-xl cursor-pointer"
+              >
+                <Video className="w-3.5 h-3.5" />
+                Schedule Lecture
+              </Button>
+            </>
           )}
 
           <Button
@@ -751,6 +765,18 @@ export const TeacherCourseDetailPage: React.FC = () => {
         variant="danger"
         isLoading={deleteCourseMutation.isPending}
       />
+
+      {/* Schedule Lecture Modal */}
+      {course && (
+        <LectureFormModal
+          isOpen={isLectureModalOpen}
+          onClose={() => setIsLectureModalOpen(false)}
+          defaultCourseId={course.id}
+          defaultCourseTitle={course.title}
+          defaultCourseStartingDate={course.startingDate}
+          onSuccess={() => refetch()}
+        />
+      )}
     </div>
   );
 };
