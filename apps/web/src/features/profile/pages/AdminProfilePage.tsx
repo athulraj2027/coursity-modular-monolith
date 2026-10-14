@@ -214,7 +214,7 @@ export const AdminProfilePage: React.FC = () => {
     `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData?.name || "Admin")}&background=F42A18&color=fff`
 
   return (
-    <div className="flex flex-1 flex-col w-full text-left space-y-8 max-w-5xl mx-auto pb-12">
+    <div className="flex flex-1 flex-col w-full text-left space-y-8 pb-12">
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-6 border-b border-neutral-200/80 dark:border-neutral-800">
         <div className="flex items-center gap-5">

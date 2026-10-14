@@ -9,6 +9,7 @@ import { GetAllUsers } from "./application/use-cases/get-all-users.usecase";
 import { GetUserById } from "./application/use-cases/get-user-by-id.usecase";
 import { BlockUser } from "./application/use-cases/block-user.usecase";
 import { ApproveTeacher } from "./application/use-cases/approve-teacher.usecase";
+import { GetAdminAnalytics } from "./application/use-cases/get-admin-analytics.usecase";
 
 // Controllers
 import { GetProfileController } from "./presentation/controllers/get-profile.controller";
@@ -18,6 +19,7 @@ import { GetAllUsersController } from "./presentation/controllers/get-all-users.
 import { GetUserByIdController } from "./presentation/controllers/get-user-by-id.controller";
 import { BlockUserController } from "./presentation/controllers/block-user.controller";
 import { ApproveTeacherController } from "./presentation/controllers/approve-teacher.controller";
+import { GetAdminAnalyticsController } from "./presentation/controllers/get-admin-analytics.controller";
 
 // Middlewares & Routes
 import { createAuthMiddleware } from "@/app/middlewares/auth.middleware";
@@ -49,6 +51,7 @@ const getAllUsers = new GetAllUsers(userRepository);
 const getUserById = new GetUserById(userRepository);
 const blockUser = new BlockUser(userRepository, tokenRepository);
 const approveTeacher = new ApproveTeacher(userRepository, emailService);
+const getAdminAnalytics = new GetAdminAnalytics();
 
 // 4. Controllers
 const getProfileController = new GetProfileController(getProfile);
@@ -58,6 +61,7 @@ const getAllUsersController = new GetAllUsersController(getAllUsers);
 const getUserByIdController = new GetUserByIdController(getUserById);
 const blockUserController = new BlockUserController(blockUser);
 const approveTeacherController = new ApproveTeacherController(approveTeacher);
+const getAdminAnalyticsController = new GetAdminAnalyticsController(getAdminAnalytics);
 
 // 5. Routes
 const userRoutes = new UserRoutes(
@@ -68,6 +72,7 @@ const userRoutes = new UserRoutes(
     getUserByIdController,
     blockUserController,
     approveTeacherController,
+    getAdminAnalyticsController,
     authMiddleware,
     isBlockedMiddleware,
     adminMiddleware
@@ -78,10 +83,10 @@ export * from "./domain/dtos/create-user.dto";
 export * from "./domain/dtos/update-user.dto";
 export * from "./domain/dtos/change-password.dto";
 export * from "./domain/dtos/user-query.dto";
+export * from "./domain/dtos/admin-analytics.dto";
 export * from "./domain/repositories/user.repository";
 export * from "./infrastructure/repositories/prisma-user.repository";
 export * from "./presentation/validators/user.validator";
 
-export const userRouter = userRoutes.router; 78900
+export const userRouter = userRoutes.router;
 export default userRouter;
-

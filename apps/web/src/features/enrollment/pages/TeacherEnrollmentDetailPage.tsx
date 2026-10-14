@@ -104,7 +104,7 @@ export const TeacherEnrollmentDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto w-full">
+    <div className="flex flex-1 flex-col w-full text-left space-y-6">
       {/* 1. Breadcrumbs & Top Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-500">

@@ -26,7 +26,7 @@ export const UserBankDetailsPage: React.FC = () => {
   const homePath = isTeacher ? "/teachers/dashboard" : "/students/dashboard";
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-8 min-h-screen">
+    <div className="flex flex-1 flex-col w-full text-left space-y-6">
       {/* 1. Breadcrumbs */}
       <div className="flex items-center gap-2 text-sm text-neutral-500">
         <Link to={homePath} className="hover:text-[#F42A18] transition-colors">

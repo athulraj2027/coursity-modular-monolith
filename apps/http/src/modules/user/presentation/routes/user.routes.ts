@@ -6,6 +6,7 @@ import { GetAllUsersController } from "../controllers/get-all-users.controller";
 import { GetUserByIdController } from "../controllers/get-user-by-id.controller";
 import { BlockUserController } from "../controllers/block-user.controller";
 import { ApproveTeacherController } from "../controllers/approve-teacher.controller";
+import { GetAdminAnalyticsController } from "../controllers/get-admin-analytics.controller";
 import {
     updateProfileSchema,
     changePasswordSchema,
@@ -24,6 +25,7 @@ export class UserRoutes {
         private readonly getUserByIdController: GetUserByIdController,
         private readonly blockUserController: BlockUserController,
         private readonly approveTeacherController: ApproveTeacherController,
+        private readonly getAdminAnalyticsController: GetAdminAnalyticsController,
         private readonly authMiddleware: RequestHandler,
         private readonly isBlockedMiddleware: RequestHandler,
         private readonly adminMiddleware: RequestHandler
@@ -65,7 +67,15 @@ export class UserRoutes {
             this.changePasswordController.execute
         );
 
-        // --- 2. Admin User Directory & Operations ---
+        // --- 2. Admin Analytics ---
+        this.router.get(
+            "/analytics",
+            this.authMiddleware,
+            this.adminMiddleware,
+            this.getAdminAnalyticsController.execute
+        );
+
+        // --- 3. Admin User Directory & Operations ---
         this.router.get(
             "/",
             this.authMiddleware,
@@ -111,4 +121,3 @@ export class UserRoutes {
         );
     }
 }
-

@@ -168,6 +168,7 @@ export function AppRoutes() {
           </Route>
           <Route path="/students/courses" element={<DashboardLayout role="student" />}>
             <Route index element={<StudentCoursesPage />} />
+            <Route path=":slug" element={<CourseClassroomPage />} />
           </Route>
           <Route path="/students/lectures" element={<DashboardLayout role="student" />}>
             <Route index element={<StudentLecturesPage />} />

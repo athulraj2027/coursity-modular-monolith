@@ -6,6 +6,7 @@ export const USER_API_ROUTES = {
   BASE: "/users",
   LIST: (queryString?: string): string =>
     queryString ? `/users?${queryString}` : "/users",
+  ANALYTICS: "/users/analytics",
   BY_ID: (id: string): string => `/users/${id}`,
   BLOCK: (id: string): string => `/users/${id}/block`,
   APPROVE: (id: string): string => `/users/${id}/approve`,

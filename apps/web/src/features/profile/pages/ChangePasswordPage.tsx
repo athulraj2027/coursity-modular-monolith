@@ -117,7 +117,7 @@ export const ChangePasswordPage: React.FC<ChangePasswordPageProps> = ({ role = "
 
   if (isGoogleAccount) {
     return (
-      <div className="flex flex-1 flex-col w-full text-left space-y-8 max-w-4xl mx-auto pb-12">
+      <div className="flex flex-1 flex-col w-full text-left space-y-8 pb-12">
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <Link
@@ -189,7 +189,7 @@ export const ChangePasswordPage: React.FC<ChangePasswordPageProps> = ({ role = "
   }
 
   return (
-    <div className="flex flex-1 flex-col w-full text-left space-y-8 max-w-4xl mx-auto pb-12">
+    <div className="flex flex-1 flex-col w-full text-left space-y-8 pb-12">
       {/* 1. Header Banner & Back Link */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">

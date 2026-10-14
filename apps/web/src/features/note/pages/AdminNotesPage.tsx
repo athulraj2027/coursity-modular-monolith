@@ -331,7 +331,7 @@ export const AdminNotesPage: React.FC = () => {
         title="Moderate & Delete Note"
         description={`Are you sure you want to administratively delete "${noteToDelete?.name}"? This document will be unlinked from the lecture and removed from student access.`}
         confirmText="Delete Document"
-        variant="destructive"
+        variant="danger"
         isLoading={deleteMutation.isPending}
       />
     </div>

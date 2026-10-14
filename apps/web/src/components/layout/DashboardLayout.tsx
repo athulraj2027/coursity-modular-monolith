@@ -53,7 +53,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </header>
 
         {/* Nested Route Outlet */}
-        <main className="flex-1 flex flex-col p-6 max-w-7xl w-full mx-auto">
+        <main className="flex-1 flex flex-col p-6 w-full">
           {children || <Outlet />}
         </main>
       </SidebarInset>

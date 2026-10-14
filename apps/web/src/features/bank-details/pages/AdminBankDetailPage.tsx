@@ -97,7 +97,7 @@ export const AdminBankDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-1 flex-col w-full text-left space-y-6">
       {/* 1. Breadcrumbs */}
       <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-500">
         <Link to="/admin/dashboard" className="hover:text-[#F42A18] transition-colors">

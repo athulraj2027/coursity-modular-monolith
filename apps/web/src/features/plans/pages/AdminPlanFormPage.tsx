@@ -242,7 +242,7 @@ export const AdminPlanFormPage: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-1 flex-col w-full text-left space-y-6 max-w-5xl mx-auto pb-12">
+    <div className="flex flex-1 flex-col w-full text-left space-y-6 pb-12">
       {/* Top Header & Breadcrumb */}
       <div className="flex items-center justify-between gap-4">
         <Button

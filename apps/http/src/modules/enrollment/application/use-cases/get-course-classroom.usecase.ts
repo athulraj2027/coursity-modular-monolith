@@ -13,6 +13,7 @@ export class GetCourseClassroomUseCase {
         OR: [{ id: courseIdOrSlug }, { slug: courseIdOrSlug }],
       },
       include: {
+        category: true,
         teacherProfile: {
           include: {
             profile: {
@@ -135,6 +136,12 @@ export class GetCourseClassroomUseCase {
         classesConductedCount,
         isCertificateClaimed: Boolean(certificate),
         certificateCode: certificate?.certificateCode,
+        paymentMethod: enrollment.paymentMethod,
+        finalAmount: enrollment.finalAmount,
+        originalPrice: enrollment.originalPrice,
+        discountAmount: enrollment.discountAmount,
+        appliedCouponCode: enrollment.appliedCouponCode,
+        invoiceNumber: enrollment.invoiceNumber,
       },
       course: {
         id: course.id,
@@ -142,6 +149,10 @@ export class GetCourseClassroomUseCase {
         slug: course.slug,
         subtitle: course.subtitle,
         description: course.description,
+        thumbnail: course.thumbnail,
+        category: course.category?.name || null,
+        pricingType: course.pricingType,
+        price: course.price ? Number(course.price) : 0,
         startingDate: course.startingDate,
         level: course.level,
         instructor: {

@@ -319,7 +319,7 @@ export const TeacherLecturesPage: React.FC = () => {
         title="Delete Live Lecture"
         description={`Are you sure you want to delete "${lectureToDelete?.title}"? This will remove the lecture from the course schedule.`}
         confirmText="Delete Lecture"
-        variant="destructive"
+        variant="danger"
         isLoading={deleteMutation.isPending}
       />
 

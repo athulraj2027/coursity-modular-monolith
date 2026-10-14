@@ -176,7 +176,7 @@ export const LectureNotesDrawer: React.FC<LectureNotesDrawerProps> = ({
         title="Delete Lecture Note"
         description={`Are you sure you want to delete "${noteToDelete?.name}"? This will remove the document from the lecture.`}
         confirmText="Delete Note"
-        variant="destructive"
+        variant="danger"
         isLoading={deleteMutation.isPending}
       />
     </>
