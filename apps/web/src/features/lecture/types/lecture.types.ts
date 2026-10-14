@@ -21,6 +21,7 @@ export interface Lecture {
   courseTitle?: string;
   courseSlug?: string;
   courseThumbnail?: string | null;
+  courseStartingDate?: string | null;
   moduleTitle?: string;
   teacherId?: string;
   teacherName?: string;

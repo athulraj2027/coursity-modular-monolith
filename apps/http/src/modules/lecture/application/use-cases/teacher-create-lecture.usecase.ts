@@ -39,6 +39,31 @@ export class TeacherCreateLectureUseCase {
         throw new BadRequestError("Lecture start time cannot be in the past.");
       }
 
+      // Ensure lecture is not scheduled before the course start date
+      if (courseInfo.startingDate) {
+        const courseStartDate = new Date(courseInfo.startingDate);
+        const isDateOnly =
+          courseStartDate.getUTCHours() === 0 &&
+          courseStartDate.getUTCMinutes() === 0 &&
+          courseStartDate.getUTCSeconds() === 0;
+
+        // Allow 12 hours buffer if date-only so all world timezones on that date are permitted
+        const minAllowedTime = isDateOnly
+          ? courseStartDate.getTime() - 12 * 60 * 60 * 1000
+          : courseStartDate.getTime();
+
+        if (scheduledDate.getTime() < minAllowedTime) {
+          const formattedCourseStart = courseStartDate.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          });
+          throw new BadRequestError(
+            `Lecture start time cannot be earlier than the course start date (${formattedCourseStart}).`
+          );
+        }
+      }
+
       const endTime = new Date(scheduledDate.getTime() + durationSeconds * 1000);
 
       // Check for overlapping/conflicting lectures

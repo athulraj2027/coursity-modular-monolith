@@ -38,6 +38,35 @@ export class TeacherUpdateLectureUseCase {
         throw new BadRequestError("Invalid start time date format.");
       }
 
+      // Validate against course start date if scheduledAt is being updated
+      if (dto.scheduledAt !== undefined && lecture.courseStartingDate) {
+        const courseStartDate = new Date(lecture.courseStartingDate);
+        const isDateOnly =
+          courseStartDate.getUTCHours() === 0 &&
+          courseStartDate.getUTCMinutes() === 0 &&
+          courseStartDate.getUTCSeconds() === 0;
+
+        const minAllowedTime = isDateOnly
+          ? courseStartDate.getTime() - 12 * 60 * 60 * 1000
+          : courseStartDate.getTime();
+
+        if (scheduledDate.getTime() < minAllowedTime) {
+          const formattedCourseStart = courseStartDate.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          });
+          throw new BadRequestError(
+            `Lecture start time cannot be earlier than the course start date (${formattedCourseStart}).`
+          );
+        }
+      }
+
+      // Allow 5 minutes leeway for clock drift if updating start time
+      if (dto.scheduledAt !== undefined && scheduledDate.getTime() < Date.now() - 5 * 60 * 1000) {
+        throw new BadRequestError("Lecture start time cannot be in the past.");
+      }
+
       const endTime = new Date(scheduledDate.getTime() + newDurationSeconds * 1000);
 
       // Check for overlapping/conflicting lectures (excluding current lectureId)

@@ -483,6 +483,7 @@ export const TeacherCoursesPage: React.FC = () => {
         }}
         defaultCourseId={courseForNewLecture?.id}
         defaultCourseTitle={courseForNewLecture?.title}
+        defaultCourseStartingDate={courseForNewLecture?.startingDate}
         onSuccess={() => {
           refetch();
         }}

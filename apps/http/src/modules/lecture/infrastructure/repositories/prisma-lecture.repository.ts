@@ -39,6 +39,7 @@ export class PrismaLectureRepository implements ILectureRepository {
       courseTitle: course?.title,
       courseSlug: course?.slug,
       courseThumbnail: course?.thumbnail,
+      courseStartingDate: course?.startingDate ?? null,
       moduleTitle: record.module?.title,
       teacherId: course?.teacherProfile?.id,
       teacherName: teacherUser?.name || "Instructor",
@@ -83,7 +84,13 @@ export class PrismaLectureRepository implements ILectureRepository {
 
   async findCourseWithDefaultModule(
     courseId: string
-  ): Promise<{ id: string; teacherProfileId: string; defaultModuleId: string } | null> {
+  ): Promise<{
+    id: string;
+    teacherProfileId: string;
+    defaultModuleId: string;
+    startingDate: Date | null;
+    title: string;
+  } | null> {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
       include: {
@@ -112,6 +119,8 @@ export class PrismaLectureRepository implements ILectureRepository {
       id: course.id,
       teacherProfileId: course.teacherProfileId,
       defaultModuleId,
+      startingDate: course.startingDate,
+      title: course.title,
     };
   }
 

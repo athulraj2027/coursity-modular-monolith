@@ -21,6 +21,7 @@ export interface LectureEntity {
   courseTitle?: string;
   courseSlug?: string;
   courseThumbnail?: string | null;
+  courseStartingDate?: Date | null;
   moduleTitle?: string;
   teacherId?: string;
   teacherName?: string;

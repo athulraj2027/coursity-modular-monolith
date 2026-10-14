@@ -45,5 +45,11 @@ export interface ILectureRepository {
 
   findCourseWithDefaultModule(
     courseId: string
-  ): Promise<{ id: string; teacherProfileId: string; defaultModuleId: string } | null>;
+  ): Promise<{
+    id: string;
+    teacherProfileId: string;
+    defaultModuleId: string;
+    startingDate: Date | null;
+    title: string;
+  } | null>;
 }
