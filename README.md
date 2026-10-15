@@ -20,14 +20,12 @@ graph TD
         Frontend[React 19 + Vite SPA\napps/web]
         Backend[Node.js + Express 5 Core API\napps/http : Port 3000]
         AIInterview[AI Real-Time Voice Microservice\napps/ai-interview : Port 4000]
-        MediaSignaling[Media Signaling Gateway\napps/media-signaling : Port 5001]
-        MediaSFU[Mediasoup WebRTC SFU Node\napps/media-sfu : Port 5000 + UDP 20000-20100]
         Worker[BullMQ Background Queue Worker\nEmail & Async Tasks]
     end
 
     subgraph Data & Cloud Tier
         Postgres[(PostgreSQL 16\nPrimary Database & Multi-File Prisma)]
-        Redis[(Redis 7\nCache, Queue & SFU Bus)]
+        Redis[(Redis 7\nCache & Queues)]
         S3[(AWS S3 Storage\nResumes, Avatars & Audio)]
     end
 
@@ -35,10 +33,6 @@ graph TD
     Nginx --> Frontend
     Frontend -->|REST API / Port 3000| Backend
     Frontend <-->|WebSockets Audio / Port 4000| AIInterview
-    Frontend <-->|Signaling & Room Placement / Port 5001| MediaSignaling
-    Frontend <-->|WebRTC Live Media Streams / Port 5000| MediaSFU
-    MediaSignaling <-->|Room Registry & Node Load| Redis
-    MediaSFU <-->|Heartbeats & Node Stats| Redis
     Backend --> Postgres
     Backend --> Redis
     Backend --> S3
@@ -57,8 +51,6 @@ The repository is divided into self-contained applications located in [`/apps`](
 | **Frontend Web App** | [`apps/web`](file:///d:/second-project/coursity-rebuild/apps/web) | React 19, Vite, Tailwind CSS v4, TanStack Query v5 | [**Frontend README**](file:///d:/second-project/coursity-rebuild/apps/web/README.md) |
 | **Core REST API** | [`apps/http`](file:///d:/second-project/coursity-rebuild/apps/http) | Express 5, TypeScript, Clean Architecture / DDD, Prisma 6 | [**Backend README**](file:///d:/second-project/coursity-rebuild/apps/http/README.md) |
 | **AI Interview Engine** | [`apps/ai-interview`](file:///d:/second-project/coursity-rebuild/apps/ai-interview) | WebSockets, VAD, Google GenAI, Deepgram STT, ElevenLabs TTS | [**AI Interview README**](file:///d:/second-project/coursity-rebuild/apps/ai-interview/README.md) |
-| **Media Signaling Gateway** | [`apps/media-signaling`](file:///d:/second-project/coursity-rebuild/apps/media-signaling) | Express 5, WebSockets, Least-Loaded Node Allocator, Redis Bus | [**Signaling README**](file:///d:/second-project/coursity-rebuild/apps/media-signaling/README.md) |
-| **Live Classroom SFU** | [`apps/media-sfu`](file:///d:/second-project/coursity-rebuild/apps/media-sfu) | Mediasoup v3, Node.js 22, C++ Workers, WebRTC Video SFU | [**Media SFU README**](file:///d:/second-project/coursity-rebuild/apps/media-sfu/README.md) |
 
 ---
 
@@ -67,10 +59,8 @@ The repository is divided into self-contained applications located in [`/apps`](
 * **Frontend:** React 19, Vite 6, TypeScript, Tailwind CSS v4, TanStack Query v5, React Router v7, Lucide Icons.
 * **Backend:** Node.js 22, Express 5, TypeScript, Clean Architecture / DDD, Zod 4 runtime validation.
 * **AI & Realtime:** Node.js, WebSockets, Google Gemini 1.5 Flash / 2.0 Flash, Deepgram Nova-2 STT, ElevenLabs TTS.
-* **Live Video SFU:** Mediasoup v3 (multi-core C++ worker pool, WebRTC transports, simulcast, opus/VP8/H.264/VP9 codecs).
-* **Media Signaling:** Stateless Express 5 + WebSocket control plane, dynamic least-loaded node placement, short-lived HMAC join tickets.
 * **Database & ORM:** PostgreSQL 16, Prisma ORM 6 with modular multi-file schema (`prisma/schema/*.prisma`).
-* **Caching & Queues:** Redis 7, BullMQ (Transactional email delivery, async tasks, SFU room registry & heartbeat bus).
+* **Caching & Queues:** Redis 7, BullMQ (Transactional email delivery, async tasks).
 * **Storage & Media:** AWS S3 (Presigned direct-to-S3 uploads for resumes, avatars, and audio records).
 * **DevOps & Containers:** Docker, Docker Compose (Development with hot-reload & Production multi-stage builds).
 
@@ -78,7 +68,7 @@ The repository is divided into self-contained applications located in [`/apps`](
 
 ## 🚀 Quick Start (Dockerized)
 
-The fastest way to spin up the complete Coursity stack (PostgreSQL, Redis, Backend, AI Interview, Media SFU, Media Signaling, and Frontend):
+The fastest way to spin up the complete Coursity stack (PostgreSQL, Redis, Backend, AI Interview, and Frontend):
 
 ### 1. Setup Environment Variables
 Copy `.env.example` to `.env` in the root:
@@ -93,7 +83,7 @@ cp .env.example .env
 ```bash
 docker compose -f docker-compose.dev.yml up --build
 ```
-- Code changes in `./apps/http/src`, `./apps/media-signaling/src`, and `./apps/media-sfu/src` trigger hot-reload via `tsx watch`.
+- Code changes in `./apps/http/src` trigger hot-reload via `tsx watch`.
 - Code changes in `./apps/web/src` reflect immediately via Vite Hot Module Replacement (HMR).
 
 #### 🔹 Production Mode:
@@ -105,8 +95,6 @@ docker compose up --build -d
 * **Frontend Web App:** [http://localhost:5173](http://localhost:5173)
 * **Backend REST API:** [http://localhost:3000/api](http://localhost:3000/api)
 * **AI Interview Engine:** [ws://localhost:4000](ws://localhost:4000)
-* **Media Signaling Gateway:** [http://localhost:5001](http://localhost:5001) / [ws://localhost:5001/ws](ws://localhost:5001/ws)
-* **Media SFU Daemon:** [http://localhost:5000](http://localhost:5000) / [ws://localhost:5000/ws](ws://localhost:5000/ws)
 * **Health Checks:** [http://localhost:3000/health](http://localhost:3000/health)
 
 ---
@@ -136,21 +124,7 @@ npm install
 npm run dev
 ```
 
-### 3. Media Signaling Setup (`apps/media-signaling`)
-```bash
-cd apps/media-signaling
-npm install
-npm run dev
-```
-
-### 4. Media SFU Setup (`apps/media-sfu`)
-```bash
-cd apps/media-sfu
-npm install
-npm run dev
-```
-
-### 5. Frontend Setup (`apps/web`)
+### 3. Frontend Setup (`apps/web`)
 ```bash
 cd apps/web
 npm install
@@ -170,10 +144,9 @@ npm run dev
    - Vetting lifecycle: `PENDING` ➔ `IN_PROGRESS` ➔ `VERIFIED` / `REDO` / `REVOKED`.
    - Real-time AI voice technical interview powered by LangGraph, VAD turn-taking, multi-rubric evaluation, audio archiving, and automated scoring.
 
-3. **Live WebRTC Classroom & SFU Architecture**:
-   - Two-tier SFU daemon (`apps/media-sfu`) powered by Mediasoup v3 C++ worker pools with simulcast video and opus audio.
-   - Stateless Signaling Gateway (`apps/media-signaling`) with dynamic least-loaded node allocation, Redis bus heartbeats, and HMAC token validation.
-   - Live interactive attendance tracking and session recording capabilities.
+3. **Live Classrooms & Interactive Learning**:
+   - Live session scheduling, duration enforcement, and cohort commencement dates.
+   - Live interactive attendance tracking and session progress capabilities.
 
 4. **Lecture Notes & Study Materials Subsystem**:
    - Direct-to-S3 document handouts (PDF, PPT, PPTX, DOCX) attached to course lectures.

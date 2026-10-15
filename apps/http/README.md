@@ -196,7 +196,7 @@ npm run worker
 * `POST /api/lectures` — Teacher schedule a new live class or lesson.
 * `GET /api/lectures/:id` — Fetch lecture details, stream metadata, and attendance status.
 * `PUT /api/lectures/:id` — Update lecture schedule, duration, or stream configurations.
-* `POST /api/lectures/:id/start` — Start live broadcasting and generate SFU tokens.
+* `POST /api/lectures/:id/start` — Start live broadcasting and generate stream session.
 * `POST /api/lectures/:id/end` — End live broadcasting and record class duration.
 * `GET /api/lectures/admin/all` — Admin list and moderate platform live sessions.
 

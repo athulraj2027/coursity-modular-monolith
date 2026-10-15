@@ -800,9 +800,9 @@ export const AdminDashboardPage: React.FC = () => {
               <div className="flex items-center justify-between p-2.5 rounded-lg bg-neutral-50 dark:bg-neutral-950 border border-neutral-200/60 dark:border-neutral-800">
                 <div className="flex items-center gap-2">
                   <Zap className="w-3.5 h-3.5 text-neutral-400" />
-                  <span className="text-neutral-600 dark:text-neutral-400">Mediasoup SFU Daemon</span>
+                  <span className="text-neutral-600 dark:text-neutral-400">Redis Cache & Queues</span>
                 </div>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">C++ Workers Live</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">Cluster Active</span>
               </div>
 
               <div className="flex items-center justify-between p-2.5 rounded-lg bg-neutral-50 dark:bg-neutral-950 border border-neutral-200/60 dark:border-neutral-800">
