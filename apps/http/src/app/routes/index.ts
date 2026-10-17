@@ -18,6 +18,7 @@ import homeworkRouter from '@/modules/homework';
 import uploadRouter from '@/infrastructure/storage';
 import { candidateInterviewRouter, adminInterviewRouter } from '@/modules/interview';
 import { adminAIConfigRouter } from '@/modules/ai-config';
+import healthRouter from './health.routes';
 
 import { authMiddleware } from '@/app/middlewares/auth.middleware';
 import { isBlockedMiddleware } from '@/app/middlewares/is-blocked.middleware';
@@ -25,65 +26,37 @@ import { idempotencyMiddleware } from '@/app/middlewares/idempotency.middleware'
 
 const router = express.Router();
 
-// 1. Global Idempotency Layer (Handles Idempotency-Key across all API mutations)
 router.use(idempotencyMiddleware);
-
-// 2. Auth routes (Public signup/signin/OTP + protected /me)
 router.use("/auth", authRouter);
-
-// 3. Plan Catalog & Subscription routes
 router.use("/subscriptions", subscriptionRouter);
 router.use("/plans", subscriptionRouter);
 router.use("/plans", planRouter);
 router.use("/offers", offerRouter);
 router.use("/", offerRouter);
-
-// 4. Categories & Hierarchy routes (Public listing + protected admin management)
 router.use("/categories", categoryRouter);
-
-// 5. Courses & Curriculum routes (Public discovery + Teacher studio + Admin moderation)
 router.use("/courses", courseRouter);
-
-// 5.1 Lectures & Live Sessions routes (Teacher studio + Admin moderation + Student learning)
 router.use("/lectures", lectureRouter);
-
-// 5.2 Notes & Learning Materials routes (Teacher studio + Admin moderation + Student learning)
 router.use("/notes", noteRouter);
-
-// 5.3 Homework & Assignments routes (Teacher studio + Admin moderation + Student submission & review)
 router.use("/homework", homeworkRouter);
-
-// 6. Wishlist routes (Protected student wishlist management)
 router.use("/wishlist", wishlistRouter);
-
-// 7. Bank Details & Payout Accounts (Students, Teachers, Admin)
 router.use("/bank-details", bankDetailRouter);
 router.use("/admin/bank-details", bankDetailRouter);
 router.use("/banks", bankDetailRouter);
-
-// 8. Wallet & Ledger System (Students, Teachers, Admin)
 router.use("/wallet", walletRouter);
 router.use("/wallets", walletRouter);
-
-// 9. Teacher Coupons (Validation & Creator Management)
 router.use("/coupons", couponRouter);
 router.use("/teacher/coupons", couponRouter);
-
-// 10. Course Enrollments, Live Classroom, Attendance, 20-Day Refunds & Certificates
 router.use("/enrollments", enrollmentRouter);
 router.use("/learning", enrollmentRouter);
 router.use("/certificates", enrollmentRouter);
-
-// 4. AI Interview routes (Candidate endpoints & Admin management)
 router.use("/interviews", candidateInterviewRouter);
 router.use("/admin/interviews", adminInterviewRouter);
 router.use("/admin/ai", adminAIConfigRouter);
-
-// 5. Storage & File Upload routes (contains internal auth for presigned-url and delete, open PUT for local binary upload)
 router.use("/upload", uploadRouter);
-
-// 6. Protected User & Profile routes
 router.use("/users", authMiddleware, isBlockedMiddleware, userRouter);
 router.use("/profile", authMiddleware, isBlockedMiddleware, profileRouter);
 
+router.use("/health", healthRouter);
+
+export { healthRouter };
 export default router;
