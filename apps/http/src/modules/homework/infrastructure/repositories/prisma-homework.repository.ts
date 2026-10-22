@@ -1,4 +1,6 @@
 import { PrismaClient, Prisma } from "@prisma/client";
+import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { IHomeworkRepository } from "../../domain/repositories/homework.repository";
 import { HomeworkEntity, HomeworkSubmissionEntity } from "../../domain/entities/homework.entity";
 import {
@@ -10,8 +12,23 @@ import {
   PaginatedResult,
 } from "../../domain/dtos/homework.dto";
 
-export class PrismaHomeworkRepository implements IHomeworkRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+export class PrismaHomeworkRepository
+  extends PrismaBaseRepository<
+    HomeworkEntity,
+    any,
+    any,
+    UpdateHomeworkDTO,
+    HomeworkFilterParams
+  >
+  implements IHomeworkRepository
+{
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).lectureHomework);
+  }
+
+  protected mapToEntity(record: any): HomeworkEntity {
+    return this.mapHomeworkToEntity(record);
+  }
 
   private mapSubmissionToEntity(record: any): HomeworkSubmissionEntity {
     const studentUser = record.student;

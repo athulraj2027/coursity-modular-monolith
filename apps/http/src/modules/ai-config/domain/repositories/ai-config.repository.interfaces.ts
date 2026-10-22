@@ -1,3 +1,4 @@
+import { IBaseRepository } from "@/shared/domain/repositories/base.repository.interface";
 import {
   AIProviderEntity,
   AIModelEntity,
@@ -7,7 +8,13 @@ import {
   AIAuditLogEntity,
 } from "../entities/ai-config.entities";
 
-export interface IAIProviderRepository {
+export interface IAIProviderRepository
+  extends IBaseRepository<
+    AIProviderEntity,
+    string,
+    Omit<AIProviderEntity, "id" | "createdAt" | "updatedAt">,
+    Partial<AIProviderEntity>
+  > {
   findById(id: string): Promise<AIProviderEntity | null>;
   findBySlug(slug: string): Promise<AIProviderEntity | null>;
   findAll(): Promise<AIProviderEntity[]>;
@@ -15,7 +22,13 @@ export interface IAIProviderRepository {
   update(id: string, data: Partial<AIProviderEntity>): Promise<AIProviderEntity>;
 }
 
-export interface IAIModelRepository {
+export interface IAIModelRepository
+  extends IBaseRepository<
+    AIModelEntity,
+    string,
+    Omit<AIModelEntity, "id" | "createdAt" | "updatedAt">,
+    Partial<AIModelEntity>
+  > {
   findById(id: string): Promise<AIModelEntity | null>;
   findByProviderAndModelId(providerId: string, modelId: string): Promise<AIModelEntity | null>;
   findAll(filters?: { providerId?: string; type?: string }): Promise<AIModelEntity[]>;
@@ -23,7 +36,13 @@ export interface IAIModelRepository {
   update(id: string, data: Partial<AIModelEntity>): Promise<AIModelEntity>;
 }
 
-export interface IAICredentialRepository {
+export interface IAICredentialRepository
+  extends IBaseRepository<
+    AICredentialEntity,
+    string,
+    Omit<AICredentialEntity, "id" | "createdAt" | "updatedAt">,
+    Partial<AICredentialEntity>
+  > {
   findById(id: string): Promise<AICredentialEntity | null>;
   findBySecretReference(ref: string): Promise<AICredentialEntity | null>;
   findAll(providerId?: string): Promise<AICredentialEntity[]>;

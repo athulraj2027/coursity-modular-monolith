@@ -1,7 +1,8 @@
+import { IBaseRepository } from "@/shared/domain/repositories/base.repository.interface";
 import { WishlistEntity, WishlistItemEntity } from "../entities/wishlist.entity";
 import { GetUserWishlistDTO, PaginatedWishlistResultDTO } from "../dtos/wishlist.dto";
 
-export interface IWishlistRepository {
+export interface IWishlistRepository extends IBaseRepository<WishlistEntity, string> {
   /**
    * Find or create a user's parent wishlist container
    */

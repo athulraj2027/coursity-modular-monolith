@@ -1,4 +1,6 @@
 import { PrismaClient, Prisma } from "@prisma/client";
+import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { INoteRepository } from "../../domain/repositories/note.repository";
 import { NoteEntity } from "../../domain/entities/note.entity";
 import {
@@ -8,10 +10,21 @@ import {
   PaginatedNotesResult,
 } from "../../domain/dtos/note.dto";
 
-export class PrismaNoteRepository implements INoteRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+export class PrismaNoteRepository
+  extends PrismaBaseRepository<
+    NoteEntity,
+    any,
+    any,
+    UpdateNoteDTO,
+    NoteFilterParams
+  >
+  implements INoteRepository
+{
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).lectureNote);
+  }
 
-  private mapToEntity(record: any): NoteEntity {
+  protected mapToEntity(record: any): NoteEntity {
     const course = record.course;
     const lecture = record.lecture;
     const teacherUser = record.teacherProfile?.profile?.user || course?.teacherProfile?.profile?.user;
@@ -269,9 +282,7 @@ export class PrismaNoteRepository implements INoteRepository {
   }
 
   async hardDelete(id: string): Promise<boolean> {
-    await (this.prisma as any).lectureNote.delete({
-      where: { id },
-    });
+    await this.delete(id);
     return true;
   }
 

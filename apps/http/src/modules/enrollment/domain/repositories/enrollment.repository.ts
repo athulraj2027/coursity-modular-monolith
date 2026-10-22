@@ -1,3 +1,4 @@
+import { IBaseRepository } from "@/shared/domain/repositories/base.repository.interface";
 import {
   CourseEnrollmentEntity,
   EnrollmentStatus,
@@ -5,7 +6,7 @@ import {
 import { LessonProgressEntity } from "../entities/lesson-progress.entity";
 import { CourseRefundEntity, CourseCertificateEntity } from "../entities/refund.entity";
 
-export interface EnrollmentRepository {
+export interface EnrollmentRepository extends IBaseRepository<CourseEnrollmentEntity, string> {
   createEnrollment(data: {
     studentId: string;
     courseId: string;

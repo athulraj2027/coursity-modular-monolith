@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import {
     CreateUserData,
     FindUsersOptions,
@@ -8,10 +9,21 @@ import {
 import { User, UserRole, AuthProvider, ApprovalStatus } from "../../domain/entities/user.entity";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
 
-export class PrismaUserRepository implements UserRepository {
+export class PrismaUserRepository
+    extends PrismaBaseRepository<
+        User,
+        typeof defaultPrisma.user,
+        CreateUserData,
+        Partial<Omit<User, "id" | "createdAt">>,
+        FindUsersOptions
+    >
+    implements UserRepository
+{
     constructor(
-        private readonly prisma: PrismaClient = defaultPrisma,
-    ) { }
+        prisma: PrismaClient = defaultPrisma,
+    ) {
+        super(prisma, (prisma as any).user);
+    }
 
     async findById(id: string): Promise<User | null> {
         const user = await this.prisma.user.findUnique({
@@ -323,7 +335,7 @@ export class PrismaUserRepository implements UserRepository {
         return this.prisma.user.count({ where });
     }
 
-    private mapToEntity(raw: any): User {
+    protected mapToEntity(raw: any): User {
         const rawTeacherProfile = raw.profile?.teacherProfile;
         const isTeacherVerified = Boolean(
             rawTeacherProfile &&

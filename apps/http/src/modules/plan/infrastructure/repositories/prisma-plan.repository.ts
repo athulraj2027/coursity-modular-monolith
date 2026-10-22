@@ -1,11 +1,21 @@
 import { PrismaClient } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { PlanRepository } from "../../domain/repositories/plan.repository";
 import { Plan, Feature, BillingCycle } from "../../domain/entities/plan.entity";
 import { CreatePlanDto, UpdatePlanDto } from "../../domain/dtos/plan.dto";
 
-export class PrismaPlanRepository implements PlanRepository {
-  constructor(private readonly prisma: PrismaClient = defaultPrisma) {}
+export class PrismaPlanRepository
+  extends PrismaBaseRepository<Plan, typeof defaultPrisma.plan, CreatePlanDto, UpdatePlanDto>
+  implements PlanRepository
+{
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).plan);
+  }
+
+  protected mapToEntity(record: any): Plan {
+    return this.mapToPlanEntity(record);
+  }
 
   async findAll(includeInactive = false): Promise<Plan[]> {
     const records = await this.prisma.plan.findMany({

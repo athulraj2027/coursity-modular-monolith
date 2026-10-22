@@ -1,3 +1,4 @@
+import { IBaseRepository } from "@/shared/domain/repositories/base.repository.interface";
 import { WalletEntity } from "../entities/wallet.entity";
 import {
   WalletTransactionEntity,
@@ -10,7 +11,7 @@ import {
 } from "../dtos/wallet.dto";
 import { ListTransactionsQueryDto } from "../dtos/wallet-transaction.dto";
 
-export interface IWalletRepository {
+export interface IWalletRepository extends IBaseRepository<WalletEntity, string> {
   /**
    * Get or automatically initialize a wallet for a user
    */

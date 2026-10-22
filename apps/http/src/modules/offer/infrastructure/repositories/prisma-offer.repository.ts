@@ -1,4 +1,6 @@
 import { PrismaClient, Prisma } from "@prisma/client";
+import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { IOfferRepository } from "../../domain/repositories/offer.repository";
 import {
   OfferEntity,
@@ -12,10 +14,21 @@ import {
   OfferAnalyticsDto,
 } from "../../domain/dtos/offer.dto";
 
-export class PrismaOfferRepository implements IOfferRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+export class PrismaOfferRepository
+  extends PrismaBaseRepository<
+    OfferEntity,
+    typeof defaultPrisma.offer,
+    CreateOfferDto,
+    UpdateOfferDto,
+    ListOffersQueryDto
+  >
+  implements IOfferRepository
+{
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).offer);
+  }
 
-  private mapToEntity(raw: any): OfferEntity {
+  protected mapToEntity(raw: any): OfferEntity {
     return {
       id: raw.id,
       title: raw.title,

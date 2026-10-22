@@ -1,5 +1,6 @@
 import { PrismaClient, BillingCycle, SubscriptionStatus } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { SubscriptionRepository } from "../../domain/repositories/subscription.repository";
 import {
   TeacherSubscription,
@@ -13,8 +14,23 @@ import {
   AdminSubscriptionMetrics,
 } from "../../domain/dtos/subscription.dto";
 
-export class PrismaSubscriptionRepository implements SubscriptionRepository {
-  constructor(private readonly prisma: PrismaClient = defaultPrisma) {}
+export class PrismaSubscriptionRepository
+  extends PrismaBaseRepository<
+    TeacherSubscription,
+    typeof defaultPrisma.teacherSubscription,
+    CreateSubscriptionDto,
+    any,
+    AdminSubscriptionFilterDto
+  >
+  implements SubscriptionRepository
+{
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).teacherSubscription);
+  }
+
+  protected mapToEntity(raw: any): TeacherSubscription {
+    return this.mapToSubscriptionEntity(raw);
+  }
 
   async findById(id: string): Promise<TeacherSubscription | null> {
     const record = await this.prisma.teacherSubscription.findUnique({

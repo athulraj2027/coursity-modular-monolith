@@ -1,4 +1,6 @@
 import { PrismaClient } from "@prisma/client";
+import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { EnrollmentRepository } from "../../domain/repositories/enrollment.repository";
 import {
   CourseEnrollmentEntity,
@@ -7,8 +9,21 @@ import {
 import { LessonProgressEntity } from "../../domain/entities/lesson-progress.entity";
 import { CourseRefundEntity, CourseCertificateEntity } from "../../domain/entities/refund.entity";
 
-export class PrismaEnrollmentRepository implements EnrollmentRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+export class PrismaEnrollmentRepository
+  extends PrismaBaseRepository<CourseEnrollmentEntity, typeof defaultPrisma.courseEnrollment>
+  implements EnrollmentRepository
+{
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).courseEnrollment);
+  }
+
+  protected mapToEntity(record: any): CourseEnrollmentEntity {
+    return this.mapEnrollment(record);
+  }
+
+  override async findById(id: string): Promise<CourseEnrollmentEntity | null> {
+    return this.findEnrollmentById(id);
+  }
 
   private mapEnrollment(record: any): CourseEnrollmentEntity {
     const instructorUser = record.course?.teacherProfile?.profile?.user;

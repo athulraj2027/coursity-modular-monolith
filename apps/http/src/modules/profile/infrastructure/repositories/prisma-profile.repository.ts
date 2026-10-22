@@ -1,10 +1,24 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { ProfileRepository } from "../../domain/repositories/profile.repository";
 import { FullUserProfile, UserProfile, TeacherProfile } from "../../domain/entities/profile.entity";
 
-export class PrismaProfileRepository implements ProfileRepository {
-    constructor(private readonly prisma: PrismaClient = defaultPrisma) { }
+export class PrismaProfileRepository
+    extends PrismaBaseRepository<UserProfile, typeof defaultPrisma.profile>
+    implements ProfileRepository
+{
+    constructor(prisma: PrismaClient = defaultPrisma) {
+        super(prisma, (prisma as any).profile);
+    }
+
+    protected mapToEntity(record: any): UserProfile {
+        return record as UserProfile;
+    }
+
+    override async findById(id: string): Promise<UserProfile | null> {
+        return this.getProfileByUserId(id);
+    }
 
     async getFullProfileByUserId(userId: string): Promise<FullUserProfile | null> {
         const user = await this.prisma.user.findUnique({

@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { IInterviewSessionRepository } from "../../domain/repositories/interview-session.repository.interface";
 import {
   InterviewAuditLogEntity,
@@ -12,9 +13,12 @@ import {
 import { CandidateListSessionsQueryDto } from "../../domain/dtos/candidate-interview.dto";
 
 export class PrismaInterviewSessionRepository
+  extends PrismaBaseRepository<InterviewSessionEntity, typeof defaultPrisma.interviewSession>
   implements IInterviewSessionRepository
 {
-  constructor(private readonly prisma: PrismaClient = defaultPrisma) {}
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).interviewSession);
+  }
 
   async create(data: {
     userId: string;
@@ -427,7 +431,7 @@ export class PrismaInterviewSessionRepository
     return this.mapToEntity(result);
   }
 
-  private mapToEntity(raw: any): InterviewSessionEntity {
+  protected mapToEntity(raw: any): InterviewSessionEntity {
     return {
       id: raw.id,
       userId: raw.userId,

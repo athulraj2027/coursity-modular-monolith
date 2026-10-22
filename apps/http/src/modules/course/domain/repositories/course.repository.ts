@@ -1,3 +1,4 @@
+import { IBaseRepository, PaginatedResult } from "@/shared/domain/repositories/base.repository.interface";
 import {
   CourseEntity,
   CourseModuleEntity,
@@ -15,10 +16,17 @@ import {
   ReorderItemDTO,
 } from "../dtos/course.dto";
 
-export interface ICourseRepository {
+export interface ICourseRepository
+  extends IBaseRepository<
+    CourseEntity,
+    string,
+    CreateCourseDTO,
+    UpdateCourseDTO,
+    CourseFilterParams
+  > {
   findById(id: string, includeDeleted?: boolean, includeCurriculum?: boolean): Promise<CourseEntity | null>;
   findBySlug(slug: string, includeDeleted?: boolean, includeCurriculum?: boolean): Promise<CourseEntity | null>;
-  findMany(params?: CourseFilterParams): Promise<{ items: CourseEntity[]; total: number }>;
+  findMany(params?: CourseFilterParams): Promise<PaginatedResult<CourseEntity>>;
   create(data: CreateCourseDTO): Promise<CourseEntity>;
   update(id: string, data: UpdateCourseDTO): Promise<CourseEntity>;
   updateStatus(

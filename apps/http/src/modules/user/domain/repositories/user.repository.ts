@@ -1,3 +1,4 @@
+import { IBaseRepository } from "@/shared/domain/repositories/base.repository.interface";
 import { User, ApprovalStatus } from "../entities/user.entity";
 import { CreateUserData } from "../dtos/create-user.dto";
 import { FindUsersOptions, PaginatedUsersResult } from "../dtos/user-query.dto";
@@ -5,7 +6,14 @@ import { FindUsersOptions, PaginatedUsersResult } from "../dtos/user-query.dto";
 export { CreateUserData, CreateUserDTO } from "../dtos/create-user.dto";
 export { FindUsersOptions, PaginatedUsersResult } from "../dtos/user-query.dto";
 
-export interface UserRepository {
+export interface UserRepository
+    extends IBaseRepository<
+        User,
+        string,
+        CreateUserData,
+        Partial<Omit<User, "id" | "createdAt">>,
+        FindUsersOptions
+    > {
     findById(
         id: string
     ): Promise<User | null>;

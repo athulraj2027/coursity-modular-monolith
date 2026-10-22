@@ -1,6 +1,7 @@
+import { IBaseRepository } from "@/shared/domain/repositories/base.repository.interface";
 import { FullUserProfile, UserProfile, TeacherProfile } from "../entities/profile.entity";
 
-export interface ProfileRepository {
+export interface ProfileRepository extends IBaseRepository<UserProfile, string> {
     getFullProfileByUserId(userId: string): Promise<FullUserProfile | null>;
     getProfileByUserId(userId: string): Promise<UserProfile | null>;
     getTeacherProfileByProfileId(profileId: string): Promise<TeacherProfile | null>;

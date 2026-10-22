@@ -1,3 +1,4 @@
+import { IBaseRepository } from "@/shared/domain/repositories/base.repository.interface";
 import { OfferEntity, OfferRedemptionEntity } from "../entities/offer.entity";
 import {
   CreateOfferDto,
@@ -7,7 +8,14 @@ import {
   OfferAnalyticsDto,
 } from "../dtos/offer.dto";
 
-export interface IOfferRepository {
+export interface IOfferRepository
+  extends IBaseRepository<
+    OfferEntity,
+    string,
+    CreateOfferDto,
+    UpdateOfferDto,
+    ListOffersQueryDto
+  > {
   findById(id: string): Promise<OfferEntity | null>;
   findActiveOffers(planId?: string, billingCycle?: string): Promise<OfferEntity[]>;
   findRedemptionCountByUser(offerId: string, teacherProfileId: string): Promise<number>;

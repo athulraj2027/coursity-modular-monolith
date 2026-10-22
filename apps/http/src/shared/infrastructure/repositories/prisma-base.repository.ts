@@ -9,14 +9,7 @@ export type PrismaTransactionClient = Omit<
 
 export abstract class PrismaBaseRepository<
     TEntity,
-    TDelegate extends {
-        findUnique: Function;
-        findMany: Function;
-        create: Function;
-        update: Function;
-        delete: Function;
-        count: Function;
-    },
+    TDelegate = any,
     TCreateDTO = any,
     TUpdateDTO = any,
     TFilter = any
@@ -30,46 +23,51 @@ export abstract class PrismaBaseRepository<
     protected abstract mapToEntity(record: any): TEntity;
 
     async findById(id: string): Promise<TEntity | null> {
-        const record = await this.modelDelegate.findUnique({
+        const record = await (this.modelDelegate as any).findUnique({
             where: { id },
         });
         return record ? this.mapToEntity(record) : null;
     }
 
     async exists(id: string): Promise<boolean> {
-        const count = await this.modelDelegate.count({
+        const count = await (this.modelDelegate as any).count({
             where: { id },
         });
         return count > 0;
     }
 
-    async create(data: TCreateDTO): Promise<TEntity> {
-        const record = await this.modelDelegate.create({
+    async create(data: TCreateDTO, ..._args: any[]): Promise<TEntity> {
+        const record = await (this.modelDelegate as any).create({
             data: data as any,
         });
         return this.mapToEntity(record);
     }
 
     async update(id: string, data: TUpdateDTO): Promise<TEntity> {
-        const record = await this.modelDelegate.update({
+        const record = await (this.modelDelegate as any).update({
             where: { id },
             data: data as any,
         });
         return this.mapToEntity(record);
     }
 
-    async delete(id: string): Promise<boolean> {
-        await this.modelDelegate.delete({
+    async delete(id: string, ..._args: any[]): Promise<boolean | void> {
+        await (this.modelDelegate as any).delete({
             where: { id },
         });
         return true;
     }
 
     async count(filter?: TFilter): Promise<number> {
-        return this.modelDelegate.count({
+        return (this.modelDelegate as any).count({
             where: filter as any,
         });
     }
 
-    abstract findMany(filter?: TFilter): Promise<PaginatedResult<TEntity>>;
+    async findMany(filter?: TFilter): Promise<PaginatedResult<TEntity> | TEntity[] | any> {
+        const records = await (this.modelDelegate as any).findMany({
+            where: filter as any,
+        });
+        return Array.isArray(records) ? records.map((r: any) => this.mapToEntity(r)) : [];
+    }
 }

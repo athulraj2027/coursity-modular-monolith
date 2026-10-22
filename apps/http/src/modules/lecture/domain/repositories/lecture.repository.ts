@@ -1,3 +1,4 @@
+import { IBaseRepository } from "@/shared/domain/repositories/base.repository.interface";
 import { LectureEntity } from "../entities/lecture.entity";
 import {
   CreateLectureDTO,
@@ -6,7 +7,14 @@ import {
   PaginatedLecturesResult,
 } from "../dtos/lecture.dto";
 
-export interface ILectureRepository {
+export interface ILectureRepository
+  extends IBaseRepository<
+    LectureEntity,
+    string,
+    any,
+    UpdateLectureDTO,
+    LectureFilterParams
+  > {
   findById(id: string, includeDeleted?: boolean): Promise<LectureEntity | null>;
   
   findManyTeacherLectures(

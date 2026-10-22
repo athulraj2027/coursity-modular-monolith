@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { IWalletRepository } from "../../domain/repositories/wallet.repository.interface";
 import { WalletEntity } from "../../domain/entities/wallet.entity";
 import {
@@ -10,8 +11,17 @@ import { AdminListWalletsQueryDto } from "../../domain/dtos/wallet.dto";
 import { ListTransactionsQueryDto } from "../../domain/dtos/wallet-transaction.dto";
 import { BadRequestError, NotFoundError } from "@/app/errors";
 
-export class PrismaWalletRepository implements IWalletRepository {
-  constructor(private readonly prisma: PrismaClient = defaultPrisma) {}
+export class PrismaWalletRepository
+  extends PrismaBaseRepository<WalletEntity, typeof defaultPrisma.wallet>
+  implements IWalletRepository
+{
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).wallet);
+  }
+
+  protected mapToEntity(raw: any): WalletEntity {
+    return this.mapToWalletEntity(raw);
+  }
 
   private mapToWalletEntity(raw: any): WalletEntity {
     const balance = Number(raw.balance);

@@ -1,12 +1,25 @@
 import { PrismaClient } from "@prisma/client";
+import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { TeacherCouponRepository } from "../../domain/repositories/teacher-coupon.repository";
 import { TeacherCouponEntity } from "../../domain/entities/teacher-coupon.entity";
 import { CreateTeacherCouponDto, UpdateTeacherCouponDto } from "../../domain/dtos/teacher-coupon.dto";
 
-export class PrismaTeacherCouponRepository implements TeacherCouponRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+export class PrismaTeacherCouponRepository
+  extends PrismaBaseRepository<
+    TeacherCouponEntity,
+    typeof defaultPrisma.teacherCoupon,
+    any,
+    UpdateTeacherCouponDto,
+    any
+  >
+  implements TeacherCouponRepository
+{
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).teacherCoupon);
+  }
 
-  private mapToEntity(record: any): TeacherCouponEntity {
+  protected mapToEntity(record: any): TeacherCouponEntity {
     const instructorUser = record.teacherProfile?.profile?.user;
     return {
       id: record.id,
