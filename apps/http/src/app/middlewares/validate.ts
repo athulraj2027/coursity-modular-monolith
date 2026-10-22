@@ -5,12 +5,11 @@ import { z, ZodError } from "zod";
 export default function validate(schema: z.ZodSchema) {
     return async (req: Request, res: Response, next: NextFunction) => {
         try {
-            if (!req.body || typeof req.body !== "object") {
+            if (!req.body || typeof req.body !== "object")
                 return res.status(STATUS_CODES.BAD_REQUEST).json({
                     message: "Request body is required and must be JSON",
                     errors: [{ field: "body", message: "Request body is required and must be JSON" }],
                 });
-            }
 
             const parsed = await schema.parseAsync(req.body);
             req.body = parsed;

@@ -8,10 +8,7 @@ export default function errorMiddleware(
     res: Response,
     next: NextFunction
 ) {
-    // 1. Log actual server/database error in server console for debugging
-    console.error(`\n❌ [Error Handler] ${req.method} ${req.url}:`, err);
-
-    // 2. Check if error is an expected operational AppError (e.g. BadRequest, Unauthorized, Conflict)
+    console.error(`\n [Error Handler] ${req.method} ${req.url}:`, err);
     if (err instanceof AppError) {
         return res.status(err.statusCode).json({
             message: err.message,
@@ -19,7 +16,6 @@ export default function errorMiddleware(
         });
     }
 
-    // 3. Handle unexpected errors (e.g. Database connection failure, Prisma runtime, syntax errors)
     const statusCode = (err as any).statusCode || STATUS_CODES.INTERNAL_SERVER_ERROR;
     const isDevelopment = process.env.NODE_ENV === "development";
 

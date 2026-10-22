@@ -9,11 +9,8 @@ const server = http.createServer(app);
 
 const startServer = async () => {
     try {
-        if (redis.status === "wait") {
-            await redis.connect().catch((err) => {
-                console.warn(`⚠️ Redis connection failed on startup: ${err?.message || err || "Could not connect"}`);
-            });
-        }
+        if (redis.status === "wait")
+            await redis.connect().catch((err) => console.warn(`⚠️ Redis connection failed on startup: ${err?.message || err || "Could not connect"}`));
         startEmailWorker();
         await seed();
 
@@ -37,9 +34,7 @@ const shutdown = () => {
                 await redis.quit();
                 console.log("📦 Redis disconnected");
             }
-        } catch (e) {
-            // ignore
-        }
+        } catch (e) { }
         console.log("✅ Server closed");
         process.exit(0);
     });

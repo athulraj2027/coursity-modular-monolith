@@ -9,11 +9,6 @@ import { clearAuthCookies } from "@/app/config/cookie";
 const defaultUserRepo = new PrismaUserRepository();
 const defaultTokenRepo = new RedisTokenRepository();
 
-/**
- * Middleware factory to check if the authenticated user has been blocked.
- * This middleware should run AFTER authMiddleware (which populates req.user).
- * If the user is blocked or deleted, all authentication cookies and active sessions are cleared.
- */
 export const createIsBlockedMiddleware = (
     userRepository: UserRepository = defaultUserRepo,
     tokenRepository: TokenRepository = defaultTokenRepo
@@ -32,13 +27,10 @@ export const createIsBlockedMiddleware = (
             }
 
             if (user.isBlocked) {
-                // Immediately remove all session tokens and cookies
                 clearAuthCookies(res);
                 try {
                     await tokenRepository.deleteRefreshToken(user.id);
-                } catch (e) {
-                    // ignore if Redis is temporarily unreachable
-                }
+                } catch (e) { }
                 throw new ForbiddenError("Your account has been blocked. Please contact support.");
             }
 
