@@ -1,4 +1,5 @@
 import { EventEmitter } from "events";
+import { IVadService } from "../../domain/ports/vad.port";
 
 export interface VadConfig {
   sampleRate: number;
@@ -8,7 +9,7 @@ export interface VadConfig {
   minSpeechDurationMs: number;
 }
 
-export class VadService extends EventEmitter {
+export class VadService extends EventEmitter implements IVadService {
   private isSpeaking: boolean = false;
   private lastSpeechTimestamp: number = 0;
   private speechStartTimestamp: number = 0;

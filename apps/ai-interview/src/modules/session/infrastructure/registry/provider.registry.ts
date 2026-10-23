@@ -8,8 +8,22 @@ import { FallbackModelRouter, ProviderCandidate } from "../routing/fallback-mode
 import { AIConfigClient, globalAIConfigClient } from "../../../../shared/config/ai-config.client";
 import { env } from "../../../../shared/config/env.config";
 
+export type LLMFactoryFn = (apiKey: string, modelId: string) => ILLMService;
+
 export class ProviderRegistry {
-  constructor(private readonly configClient: AIConfigClient = globalAIConfigClient) {}
+  private readonly llmFactories = new Map<string, LLMFactoryFn>();
+
+  constructor(private readonly configClient: AIConfigClient = globalAIConfigClient) {
+    this.registerLLMProvider("gemini", (apiKey, modelId) => new GeminiProvider(apiKey, modelId));
+    this.registerLLMProvider("google", (apiKey, modelId) => new GeminiProvider(apiKey, modelId));
+  }
+
+  /**
+   * Registers a new LLM provider factory, satisfying the Open/Closed Principle.
+   */
+  registerLLMProvider(providerName: string, factory: LLMFactoryFn): void {
+    this.llmFactories.set(providerName.toLowerCase(), factory);
+  }
 
   /**
    * Resolves the configured LLM service (primary + fallbacks) for a specific agent type.
@@ -19,7 +33,7 @@ export class ProviderRegistry {
     const agentConfig = config.agents[agentType] || config.agents["DEFAULT"];
 
     if (!agentConfig) {
-      return new GeminiProvider(env.LLM_API_KEY, env.LLM_MODEL);
+      return this.instantiateLLM("gemini", env.LLM_MODEL, env.LLM_API_KEY);
     }
 
     // 1. Primary candidate
@@ -65,8 +79,10 @@ export class ProviderRegistry {
   }
 
   private instantiateLLM(provider: string, modelId: string, apiKey: string): ILLMService {
-    // Currently GeminiProvider handles Gemini / Google models.
-    // Can easily extend to OpenAI / Anthropic / Local models while preserving ILLMService.
+    const factory = this.llmFactories.get((provider || "").toLowerCase());
+    if (factory) {
+      return factory(apiKey || env.LLM_API_KEY, modelId || env.LLM_MODEL);
+    }
     return new GeminiProvider(apiKey || env.LLM_API_KEY, modelId || env.LLM_MODEL);
   }
 }

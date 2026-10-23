@@ -1,10 +1,6 @@
 import { InterviewGraphStateType } from "../state-annotations";
-import { QuestionGenerationAgent } from "../../../domain/agents/question-generation.agent";
-import { GeminiProvider } from "../../../../session/infrastructure/providers/gemini.provider";
+import { globalAgentContainer } from "../../di/agent-container";
 import { logger } from "../../../../../shared/logger";
-
-const gemini = new GeminiProvider();
-const questionAgent = new QuestionGenerationAgent(gemini);
 
 export async function questionNode(
   state: InterviewGraphStateType
@@ -14,6 +10,7 @@ export async function questionNode(
   );
 
   const targetTopic = state.currentTopic || state.topics[0] || "Foundational Knowledge";
+  const questionAgent = await globalAgentContainer.getQuestionAgent();
 
   const decision = await questionAgent.generateQuestion({
     domain: state.domain,

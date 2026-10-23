@@ -1,8 +1,13 @@
-import { InterviewSessionCoordinator } from "../../application/coordinator/interview-session.coordinator";
+import { IInterviewSession } from "./interview-session.port";
 
-export interface ISessionRegistry {
-  registerSession(sessionId: string, session: InterviewSessionCoordinator): void;
-  getSession(sessionId: string): InterviewSessionCoordinator | undefined;
+export interface ISessionMetricsReader {
+  getActiveCount(): number;
+}
+
+export interface ISessionRegistry extends ISessionMetricsReader {
+  registerSession(sessionId: string, session: IInterviewSession): void;
+  getSession(sessionId: string): IInterviewSession | undefined;
   removeSession(sessionId: string): boolean;
   getActiveCount(): number;
 }
+

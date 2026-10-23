@@ -1,11 +1,15 @@
 import { WebSocket } from "ws";
 import { VadService } from "../../infrastructure/audio/vad.service";
 import { AudioRecorderService } from "../../infrastructure/audio/audio-recorder.service";
+import { IVadService } from "../../domain/ports/vad.port";
+import { IAudioRecorderService } from "../../domain/ports/audio-recorder.port";
 import { ISTTService } from "../../domain/ports/stt.port";
 import { ITTSService } from "../../domain/ports/tts.port";
 import { IBackendSyncService } from "../../domain/ports/backend-sync.port";
 import { IAudioStorageService } from "../../domain/ports/audio-storage.port";
+import { IInterviewSession, InboundSessionMessage } from "../../domain/ports/interview-session.port";
 import { InterviewLangGraph } from "../../../reasoning/infrastructure/graph/interview-langgraph";
+import { IInterviewGraph } from "../../../reasoning/domain/ports/interview-graph.port";
 import { InterviewGraphStateType } from "../../../reasoning/infrastructure/graph/state-annotations";
 import {
   CandidateContext,
@@ -13,6 +17,11 @@ import {
   InterviewPhase,
 } from "../../../../shared/types/common.types";
 import { logger } from "../../../../shared/logger";
+
+export interface ISessionSocket {
+  readyState: number;
+  send(data: string): void;
+}
 
 export interface SessionCoordinatorOptions {
   sessionId: string;
@@ -24,14 +33,18 @@ export interface SessionCoordinatorOptions {
   maxQuestions?: number;
   topics?: string[];
   voiceId?: string;
-  ws: WebSocket;
+  ws: ISessionSocket | WebSocket;
   sttService: ISTTService;
   ttsService: ITTSService;
   syncService: IBackendSyncService;
   storageService: IAudioStorageService;
+  vadService?: IVadService;
+  sessionRecorder?: IAudioRecorderService;
+  turnRecorder?: IAudioRecorderService;
+  graphService?: IInterviewGraph;
 }
 
-export class InterviewSessionCoordinator {
+export class InterviewSessionCoordinator implements IInterviewSession {
   public readonly sessionId: string;
   public readonly candidate: CandidateContext;
   public readonly domain: string;
@@ -41,15 +54,15 @@ export class InterviewSessionCoordinator {
   private readonly topics: string[];
   private readonly voiceId?: string;
 
-  private ws: WebSocket;
-  private vad: VadService;
-  private sessionRecorder: AudioRecorderService;
-  private turnRecorder: AudioRecorderService;
+  private ws: ISessionSocket | WebSocket;
+  private vad: IVadService;
+  private sessionRecorder: IAudioRecorderService;
+  private turnRecorder: IAudioRecorderService;
   private stt: ISTTService;
   private tts: ITTSService;
   private sync: IBackendSyncService;
   private storage: IAudioStorageService;
-  private graph: InterviewLangGraph;
+  private graph: IInterviewGraph;
 
   private graphState: Partial<InterviewGraphStateType>;
   private isAiSpeaking: boolean = false;
@@ -78,10 +91,10 @@ export class InterviewSessionCoordinator {
     this.sync = opts.syncService;
     this.storage = opts.storageService;
 
-    this.vad = new VadService();
-    this.sessionRecorder = new AudioRecorderService();
-    this.turnRecorder = new AudioRecorderService();
-    this.graph = new InterviewLangGraph();
+    this.vad = opts.vadService || new VadService();
+    this.sessionRecorder = opts.sessionRecorder || new AudioRecorderService();
+    this.turnRecorder = opts.turnRecorder || new AudioRecorderService();
+    this.graph = opts.graphService || new InterviewLangGraph();
 
     this.graphState = {
       interviewId: this.sessionId,
@@ -152,11 +165,7 @@ export class InterviewSessionCoordinator {
     }
   }
 
-  async handleInboundMessage(msg: {
-    type: string;
-    audioBase64?: string;
-    text?: string;
-  }): Promise<void> {
+  async handleInboundMessage(msg: InboundSessionMessage): Promise<void> {
     switch (msg.type) {
       case "AUDIO_CHUNK":
         if (msg.audioBase64) {

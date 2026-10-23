@@ -11,7 +11,9 @@ import { followUpNode } from "./nodes/follow-up.node";
 import { evaluateNode } from "./nodes/evaluate.node";
 import { routeFromSupervisor } from "./routing/interview-router";
 
-export class InterviewLangGraph {
+import { IInterviewGraph } from "../../domain/ports/interview-graph.port";
+
+export class InterviewLangGraph implements IInterviewGraph {
   private app: any;
 
   constructor() {

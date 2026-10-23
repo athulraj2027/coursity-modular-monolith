@@ -1,10 +1,17 @@
-import { describe, it } from "node:test";
+import { describe, it, before } from "node:test";
 import assert from "node:assert/strict";
 
 import { InterviewLangGraph } from "../src/modules/reasoning/infrastructure/graph/interview-langgraph";
+import { globalAgentContainer } from "../src/modules/reasoning/infrastructure/di/agent-container";
+import { globalSimulatedLLM } from "../src/modules/session/infrastructure/providers/simulated-llm.provider";
 
 describe("InterviewLangGraph Multi-Agent Workflow", () => {
   const graph = new InterviewLangGraph();
+
+  before(() => {
+    // Utilize simulated LLM for deterministic, fast unit tests without external network dependencies
+    globalAgentContainer.setCustomLLM(globalSimulatedLLM);
+  });
 
   it("should initialize, run Planner and Supervisor, and output Greeting + Question 1", async () => {
     const result = await graph.invoke({

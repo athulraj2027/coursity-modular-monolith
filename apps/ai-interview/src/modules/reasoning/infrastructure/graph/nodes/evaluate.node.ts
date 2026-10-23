@@ -1,14 +1,6 @@
 import { InterviewGraphStateType } from "../state-annotations";
-import { InterviewEvaluationAgent } from "../../../domain/agents/interview-evaluation.agent";
-import { ReportGenerationAgent } from "../../../domain/agents/report-generation.agent";
-import { FeedbackCoachingAgent } from "../../../domain/agents/feedback-coaching.agent";
-import { GeminiProvider } from "../../../../session/infrastructure/providers/gemini.provider";
+import { globalAgentContainer } from "../../di/agent-container";
 import { logger } from "../../../../../shared/logger";
-
-const gemini = new GeminiProvider();
-const evaluationAgent = new InterviewEvaluationAgent(gemini);
-const reportAgent = new ReportGenerationAgent(gemini);
-const coachingAgent = new FeedbackCoachingAgent(gemini);
 
 export async function evaluateNode(
   state: InterviewGraphStateType
@@ -20,6 +12,12 @@ export async function evaluateNode(
   const anomalies = state.anomaly?.anomalyDetected
     ? [`[${state.anomaly.severity}] ${state.anomaly.reason || state.anomaly.anomalyType}`]
     : undefined;
+
+  const [evaluationAgent, reportAgent, coachingAgent] = await Promise.all([
+    globalAgentContainer.getEvaluationAgent(),
+    globalAgentContainer.getReportAgent(),
+    globalAgentContainer.getCoachingAgent(),
+  ]);
 
   // 1. Agent 9: Interview Evaluation Agent
   const rawEval = await evaluationAgent.evaluateSession({

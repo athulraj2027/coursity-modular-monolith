@@ -1,18 +1,6 @@
 import { InterviewGraphStateType } from "../state-annotations";
-import { AnswerAnalysisAgent } from "../../../domain/agents/answer-analysis.agent";
-import { EvidenceExtractionAgent } from "../../../domain/agents/evidence-extraction.agent";
-import { ConversationQualityAgent } from "../../../domain/agents/conversation-quality.agent";
-import { IntegrityAnomalyAgent } from "../../../domain/agents/integrity-anomaly.agent";
-import { DifficultyAdaptationAgent } from "../../../domain/agents/difficulty-adaptation.agent";
-import { GeminiProvider } from "../../../../session/infrastructure/providers/gemini.provider";
+import { globalAgentContainer } from "../../di/agent-container";
 import { logger } from "../../../../../shared/logger";
-
-const gemini = new GeminiProvider();
-const answerAnalysisAgent = new AnswerAnalysisAgent(gemini);
-const evidenceExtractionAgent = new EvidenceExtractionAgent(gemini);
-const conversationQualityAgent = new ConversationQualityAgent(gemini);
-const integrityAnomalyAgent = new IntegrityAnomalyAgent(gemini);
-const difficultyAdaptationAgent = new DifficultyAdaptationAgent();
 
 export async function turnAnalysisNode(
   state: InterviewGraphStateType
@@ -29,6 +17,20 @@ export async function turnAnalysisNode(
   const currentQ = state.currentQuestion || "Current question";
   const currentT = state.currentTopic || state.topics[0] || "General";
   const answer = state.candidateAnswer;
+
+  const [
+    answerAnalysisAgent,
+    evidenceExtractionAgent,
+    conversationQualityAgent,
+    integrityAnomalyAgent,
+  ] = await Promise.all([
+    globalAgentContainer.getAnswerAnalysisAgent(),
+    globalAgentContainer.getEvidenceExtractionAgent(),
+    globalAgentContainer.getConversationQualityAgent(),
+    globalAgentContainer.getIntegrityAnomalyAgent(),
+  ]);
+
+  const difficultyAdaptationAgent = globalAgentContainer.getDifficultyAdaptationAgent();
 
   // Run Agents 4, 5, 8, 12 in parallel for near-instant execution
   const [analysis, evidence, quality, anomaly] = await Promise.all([
