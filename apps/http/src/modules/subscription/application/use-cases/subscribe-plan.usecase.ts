@@ -3,7 +3,6 @@ import { PlanRepository } from "@/modules/plan/domain/repositories/plan.reposito
 import { TeacherSubscription } from "../../domain/entities/subscription.entity";
 import { SubscribePlanDto } from "../../domain/dtos/subscription.dto";
 import { BadRequestError, NotFoundError } from "@/app/errors";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
 
 export class SubscribePlanUseCase {
   constructor(
@@ -80,31 +79,26 @@ export class SubscribePlanUseCase {
     // If free plan, record ₹0 initial activation invoice
     if (targetPlan.price === 0) {
       try {
-        const teacherProfile = await defaultPrisma.teacherProfile.findUnique({
-          where: { id: dto.teacherProfileId },
-          include: { profile: { include: { user: true } } },
-        });
+        const teacherProfile = await this.subscriptionRepo.findTeacherWithUser(dto.teacherProfileId);
 
         const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
-        await defaultPrisma.subscriptionInvoice.create({
-          data: {
-            subscriptionId: subscription.id,
-            invoiceNumber,
-            amount: 0,
-            currency: "INR",
-            status: "PAID",
-            paymentMethod: "FREE_ACTIVATION",
-            paidAt: now,
-            planName: targetPlan.name,
-            billingCycle: targetPlan.billingCycle,
-            baseAmount: 0,
-            taxAmount: 0,
-            taxPercent: 0,
-            userName: teacherProfile?.profile?.user?.name || "Instructor",
-            userEmail: teacherProfile?.profile?.user?.email || "",
-            userPhone: teacherProfile?.profile?.phone || null,
-            userCountry: teacherProfile?.profile?.country || "India",
-          },
+        await this.subscriptionRepo.createInvoice({
+          subscriptionId: subscription.id,
+          invoiceNumber,
+          amount: 0,
+          currency: "INR",
+          status: "PAID",
+          paymentMethod: "FREE_ACTIVATION",
+          paidAt: now,
+          planName: targetPlan.name,
+          billingCycle: targetPlan.billingCycle,
+          baseAmount: 0,
+          taxAmount: 0,
+          taxPercent: 0,
+          userName: teacherProfile?.profile?.user?.name || "Instructor",
+          userEmail: teacherProfile?.profile?.user?.email || "",
+          userPhone: teacherProfile?.profile?.phone || null,
+          userCountry: teacherProfile?.profile?.country || "India",
         });
       } catch (e) {
         console.warn("⚠️ [Subscribe Plan] Non-fatal error creating free activation invoice:", e);

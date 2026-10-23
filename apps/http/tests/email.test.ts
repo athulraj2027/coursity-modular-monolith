@@ -107,38 +107,71 @@ describe("📧 Email Infrastructure & Worker Queue Tests", () => {
     });
 
     describe("3. Email Queue & Service", () => {
-        let queue: EmailQueue;
-        let worker: EmailWorker;
-        let emailService: EmailService;
+        let queue: EmailQueue | undefined;
+        let worker: EmailWorker | undefined;
+        let emailService: EmailService | undefined;
+        let isRedisRunning = false;
 
-        before(() => {
-            queue = new EmailQueue();
-            const transport = new NodemailerTransport();
-            worker = new EmailWorker(transport);
-            const useCase = new QueueEmailUseCase(queue);
-            emailService = new EmailService(useCase);
-            worker.start();
+        before(async () => {
+            try {
+                const Redis = (await import("ioredis")).default;
+                const testRedis = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
+                    connectTimeout: 500,
+                    maxRetriesPerRequest: 0,
+                    retryStrategy: () => null,
+                    lazyConnect: false,
+                });
+                testRedis.on("error", () => {});
+                await testRedis.ping();
+                isRedisRunning = true;
+                await testRedis.quit();
+            } catch {
+                isRedisRunning = false;
+            }
+
+            if (isRedisRunning) {
+                queue = new EmailQueue();
+                const transport = new NodemailerTransport();
+                worker = new EmailWorker(transport);
+                const useCase = new QueueEmailUseCase(queue);
+                emailService = new EmailService(useCase);
+                worker.start();
+            }
         });
 
         after(async () => {
-            await new Promise((resolve) => setTimeout(resolve, 600));
-            await worker.close();
-            await queue.close();
+            if (isRedisRunning) {
+                await new Promise((resolve) => setTimeout(resolve, 600));
+                await worker?.close();
+                await queue?.close();
+            }
         });
 
-        it("should enqueue signup OTP email job without throwing", async () => {
+        it("should enqueue signup OTP email job without throwing", async (t) => {
+            if (!isRedisRunning || !emailService) {
+                t.skip("Redis server is not running in this environment");
+                return;
+            }
             await assert.doesNotReject(async () => {
                 await emailService.sendSignupOtp("user@test.com", "654321", "Test User");
             });
         });
 
-        it("should enqueue password reset OTP email job without throwing", async () => {
+        it("should enqueue password reset OTP email job without throwing", async (t) => {
+            if (!isRedisRunning || !emailService) {
+                t.skip("Redis server is not running in this environment");
+                return;
+            }
             await assert.doesNotReject(async () => {
                 await emailService.sendPasswordResetOtp("reset@test.com", "998877", "Reset User");
             });
         });
 
-        it("should enqueue teacher status update email job without throwing", async () => {
+        it("should enqueue teacher status update email job without throwing", async (t) => {
+            if (!isRedisRunning || !emailService) {
+                t.skip("Redis server is not running in this environment");
+                return;
+            }
             await assert.doesNotReject(async () => {
                 await emailService.sendTeacherStatusUpdate(
                     "instructor@test.com",

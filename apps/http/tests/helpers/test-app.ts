@@ -44,6 +44,7 @@ import {
     GetUserById,
     BlockUser,
     ApproveTeacher,
+    GetAdminAnalytics,
 } from "../../src/modules/user/application/use-cases";
 import {
     GetProfileController,
@@ -53,6 +54,7 @@ import {
     GetUserByIdController,
     BlockUserController,
     ApproveTeacherController,
+    GetAdminAnalyticsController,
 } from "../../src/modules/user/presentation/controllers";
 import { UserRoutes } from "../../src/modules/user/presentation/routes/user.routes";
 import { OtpRepository, StoredOtpData, StoredResetPasswordOtpData, TempSignupUser } from "../../src/modules/auth/domain/repositories/redis-otp.repository";
@@ -733,6 +735,8 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
     const getUserByIdController = new GetUserByIdController(getUserById);
     const blockUserController = new BlockUserController(blockUser);
     const approveTeacherController = new ApproveTeacherController(approveTeacher);
+    const getAdminAnalytics = new GetAdminAnalytics({ getAnalyticsData: async () => ({} as any) });
+    const getAdminAnalyticsController = new GetAdminAnalyticsController(getAdminAnalytics);
 
     // User Routes
     const userRoutes = new UserRoutes(
@@ -743,6 +747,7 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
         getUserByIdController,
         blockUserController,
         approveTeacherController,
+        getAdminAnalyticsController,
         authMiddleware,
         isBlockedMiddleware,
         adminMiddleware

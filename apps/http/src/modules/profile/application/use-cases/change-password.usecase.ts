@@ -1,5 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
 import { IEmailService } from "@/infrastructure/email";
 import { PasswordService } from "@/infrastructure/security";
 import { BadRequestError, NotFoundError } from "@/app/errors";
@@ -7,23 +6,14 @@ import { ChangePasswordDto, ChangePasswordResultDto } from "../../domain/dtos/ch
 
 export class ChangePassword {
     constructor(
-        private readonly prisma: PrismaClient = defaultPrisma,
+        private readonly userRepository: UserRepository,
         private readonly passwordService: PasswordService,
         private readonly emailService: IEmailService
     ) {}
 
     async execute(dto: ChangePasswordDto): Promise<ChangePasswordResultDto> {
-        // 1. Fetch user from database
-        const user = await this.prisma.user.findUnique({
-            where: { id: dto.userId },
-            select: {
-                id: true,
-                email: true,
-                name: true,
-                password: true,
-                authProvider: true,
-            },
-        });
+        // 1. Fetch user from repository
+        const user = await this.userRepository.findById(dto.userId);
 
         if (!user) {
             throw new NotFoundError("User account not found");
@@ -55,13 +45,8 @@ export class ChangePassword {
         // 3. Hash the new password securely
         const hashedPassword = await this.passwordService.hash(dto.newPassword);
 
-        // 4. Update password in database
-        await this.prisma.user.update({
-            where: { id: dto.userId },
-            data: {
-                password: hashedPassword,
-            },
-        });
+        // 4. Update password in repository
+        await this.userRepository.updatePassword(dto.userId, hashedPassword);
 
         // 5. Send security notification email to user
         try {

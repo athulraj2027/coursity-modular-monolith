@@ -65,4 +65,10 @@ export interface SubscriptionRepository
     status: "PAID" | "PENDING" | "FAILED" | "REFUNDED",
     receiptUrl?: string
   ): Promise<any>;
+
+  // Invoices & Billing
+  createInvoice(data: any): Promise<any>;
+  findInvoiceById(invoiceId: string): Promise<any | null>;
+  findInvoicesByTeacher(teacherProfileId: string): Promise<any[]>;
+  findTeacherWithUser(teacherProfileId: string): Promise<any | null>;
 }

@@ -1,16 +1,21 @@
 import { EnrollmentRepository } from "../../domain/repositories/enrollment.repository";
 import { RequestCourseRefundDto } from "../../domain/dtos/enrollment.dto";
 import { CourseRefundEntity } from "../../domain/entities/refund.entity";
-import { IPaymentGateway } from "@/infrastructure/payment";
-import { IEmailService } from "@/infrastructure/email";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { ICourseRepository } from "@/modules/course/domain/repositories/course.repository";
+import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
+import { IWalletRepository } from "@/modules/wallet/domain/repositories/wallet.repository.interface";
+import { IPaymentRefundGateway } from "@/shared/application/ports/payment.port";
+import { ICustomEmailNotifier } from "@/shared/application/ports/email.port";
 import { BadRequestError, NotFoundError } from "@/app/errors";
 
 export class RequestCourseRefundUseCase {
   constructor(
     private readonly enrollmentRepo: EnrollmentRepository,
-    private readonly paymentGateway: IPaymentGateway,
-    private readonly emailService: IEmailService
+    private readonly courseRepo: ICourseRepository,
+    private readonly userRepo: UserRepository,
+    private readonly walletRepo: IWalletRepository,
+    private readonly paymentGateway: IPaymentRefundGateway,
+    private readonly emailService: ICustomEmailNotifier
   ) {}
 
   async execute(studentId: string, dto: RequestCourseRefundDto): Promise<CourseRefundEntity> {
@@ -51,16 +56,7 @@ export class RequestCourseRefundUseCase {
     }
 
     // 3. Policy Check: Before 4 Live Classes Conducted or Attended
-    const classesConductedCount = await defaultPrisma.courseLesson.count({
-      where: {
-        module: { courseId: enrollment.courseId },
-        OR: [
-          { liveStatus: "COMPLETED" },
-          { scheduledAt: { lte: now } },
-        ],
-      },
-    });
-
+    const classesConductedCount = await this.enrollmentRepo.countConductedClasses(enrollment.courseId);
     const classesAttendedCount = enrollment.attendedClassesCount;
 
     if (classesConductedCount >= 4) {
@@ -108,78 +104,34 @@ export class RequestCourseRefundUseCase {
     }
 
     if (actualDestination === "WALLET") {
-      let studentWallet = await defaultPrisma.wallet.findUnique({
-        where: { userId: studentId },
+      await this.walletRepo.credit({
+        userId: studentId,
+        amount: refundAmount,
+        type: "REFUND",
+        description: `100% full refund for live course "${enrollment.courseTitle}" (within 20 days / 4 classes)`,
+        referenceType: "ENROLLMENT",
+        referenceId: enrollment.id,
       });
-      if (!studentWallet) {
-        studentWallet = await defaultPrisma.wallet.create({
-          data: { userId: studentId, balance: 0 },
-        });
-      }
-      const currentBal = Number(studentWallet.balance);
-      const newBal = currentBal + refundAmount;
-
-      await defaultPrisma.$transaction([
-        defaultPrisma.wallet.update({
-          where: { id: studentWallet.id },
-          data: {
-            balance: newBal,
-            totalSpent: { decrement: Math.min(Number(studentWallet.totalSpent), refundAmount) },
-          },
-        }),
-        defaultPrisma.walletTransaction.create({
-          data: {
-            walletId: studentWallet.id,
-            type: "REFUND",
-            direction: "CREDIT",
-            amount: refundAmount,
-            balanceBefore: currentBal,
-            balanceAfter: newBal,
-            description: `100% full refund for live course "${enrollment.courseTitle}" (within 20 days / 4 classes)`,
-            referenceType: "ENROLLMENT",
-            referenceId: enrollment.id,
-          },
-        }),
-      ]);
     }
 
     // 6. Reverse Teacher Royalty Earning (85%)
-    const course = await defaultPrisma.course.findUnique({
-      where: { id: enrollment.courseId },
-      include: { teacherProfile: { include: { profile: true } } },
-    });
-    const teacherUserId = course?.teacherProfile?.profile?.userId;
+    const course = await this.courseRepo.findById(enrollment.courseId);
+    const teacherUserId = course?.teacherProfile?.profile?.userId || course?.teacherProfile?.profile?.user?.id;
 
     if (teacherUserId) {
       const teacherRoyalty = Number((refundAmount * 0.85).toFixed(2));
-      const teacherWallet = await defaultPrisma.wallet.findUnique({
-        where: { userId: teacherUserId },
-      });
-      if (teacherWallet && teacherRoyalty > 0) {
-        const teacherBal = Number(teacherWallet.balance);
-        const newTeacherBal = Math.max(0, teacherBal - teacherRoyalty);
-        await defaultPrisma.$transaction([
-          defaultPrisma.wallet.update({
-            where: { id: teacherWallet.id },
-            data: {
-              balance: newTeacherBal,
-              totalEarned: { decrement: Math.min(Number(teacherWallet.totalEarned), teacherRoyalty) },
-            },
-          }),
-          defaultPrisma.walletTransaction.create({
-            data: {
-              walletId: teacherWallet.id,
-              type: "ADJUSTMENT",
-              direction: "DEBIT",
-              amount: teacherRoyalty,
-              balanceBefore: teacherBal,
-              balanceAfter: newTeacherBal,
-              description: `Revenue reversal for refunded student enrollment in "${enrollment.courseTitle}"`,
-              referenceType: "ENROLLMENT",
-              referenceId: enrollment.id,
-            },
-          }),
-        ]);
+      if (teacherRoyalty > 0) {
+        const teacherWallet = await this.walletRepo.findByUserId(teacherUserId);
+        if (teacherWallet && Number(teacherWallet.balance) >= teacherRoyalty) {
+          await this.walletRepo.debit({
+            userId: teacherUserId,
+            amount: teacherRoyalty,
+            type: "ADJUSTMENT",
+            description: `Revenue reversal for refunded student enrollment in "${enrollment.courseTitle}"`,
+            referenceType: "ENROLLMENT",
+            referenceId: enrollment.id,
+          });
+        }
       }
     }
 
@@ -203,7 +155,7 @@ export class RequestCourseRefundUseCase {
     });
 
     // 9. Send Refund Notification Email
-    const student = await defaultPrisma.user.findUnique({ where: { id: studentId } });
+    const student = await this.userRepo.findById(studentId);
     if (student?.email) {
       this.emailService
         .sendCustomEmail({

@@ -1,10 +1,13 @@
 import { EnrollmentRepository } from "../../domain/repositories/enrollment.repository";
 import { CourseCertificateEntity } from "../../domain/entities/refund.entity";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
 import { BadRequestError, NotFoundError } from "@/app/errors";
 
 export class ClaimCertificateUseCase {
-  constructor(private readonly enrollmentRepo: EnrollmentRepository) {}
+  constructor(
+    private readonly enrollmentRepo: EnrollmentRepository,
+    private readonly userRepo: UserRepository
+  ) {}
 
   async execute(studentId: string, enrollmentId: string): Promise<CourseCertificateEntity> {
     const enrollment = await this.enrollmentRepo.findEnrollmentById(enrollmentId);
@@ -37,7 +40,7 @@ export class ClaimCertificateUseCase {
     const randomHex = Math.random().toString(36).substring(2, 7).toUpperCase();
     const certificateCode = `CRT-${year}-${randomHex}`;
 
-    const student = await defaultPrisma.user.findUnique({ where: { id: studentId } });
+    const student = await this.userRepo.findById(studentId);
 
     return this.enrollmentRepo.createCertificate({
       enrollmentId,

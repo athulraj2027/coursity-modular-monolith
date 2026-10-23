@@ -60,4 +60,14 @@ export interface ILectureRepository
     startingDate: Date | null;
     title: string;
   } | null>;
+
+  findStudentLessonAccess(
+    studentId: string,
+    courseId: string,
+    lessonId: string
+  ): Promise<{
+    hasActiveEnrollment: boolean;
+    attendedLive: boolean;
+    isCompleted: boolean;
+  }>;
 }

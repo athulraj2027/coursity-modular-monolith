@@ -15,7 +15,7 @@ import {
   queryCoursesSchema,
 } from "../validators/course.validator";
 import { BadRequestError, ForbiddenError, UnauthorizedError } from "@/app/errors";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { profileRepository } from "@/modules/profile";
 
 export class CourseController {
   constructor(
@@ -25,35 +25,11 @@ export class CourseController {
   ) {}
 
   private async getTeacherProfileId(userId: string): Promise<string> {
-    let profile = await defaultPrisma.profile.findUnique({
-      where: { userId },
-      include: { teacherProfile: true },
-    });
-
-    if (!profile) {
-      profile = await defaultPrisma.profile.create({
-        data: {
-          userId,
-          teacherProfile: {
-            create: {},
-          },
-        },
-        include: { teacherProfile: true },
-      });
-    } else if (!profile.teacherProfile) {
-      const teacherProfile = await defaultPrisma.teacherProfile.create({
-        data: {
-          profileId: profile.id,
-        },
-      });
-      return teacherProfile.id;
-    }
-
-    if (!profile.teacherProfile) {
+    try {
+      return await profileRepository.getOrCreateTeacherProfileId(userId);
+    } catch {
       throw new BadRequestError("Unable to locate or initialize instructor profile.");
     }
-
-    return profile.teacherProfile.id;
   }
 
   // ================= 1. PUBLIC DISCOVERY ENDPOINTS =================

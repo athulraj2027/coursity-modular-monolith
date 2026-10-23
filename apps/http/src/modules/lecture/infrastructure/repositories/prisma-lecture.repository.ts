@@ -542,4 +542,48 @@ export class PrismaLectureRepository
     });
     return true;
   }
+
+  async findStudentLessonAccess(
+    studentId: string,
+    courseId: string,
+    lessonId: string
+  ): Promise<{
+    hasActiveEnrollment: boolean;
+    attendedLive: boolean;
+    isCompleted: boolean;
+  }> {
+    const enrollment = await this.prisma.courseEnrollment.findFirst({
+      where: {
+        studentId,
+        courseId,
+        status: "ACTIVE",
+      },
+      select: { id: true },
+    });
+
+    if (!enrollment) {
+      return {
+        hasActiveEnrollment: false,
+        attendedLive: false,
+        isCompleted: false,
+      };
+    }
+
+    const progress = await this.prisma.lessonProgress.findFirst({
+      where: {
+        enrollmentId: enrollment.id,
+        lessonId,
+      },
+      select: {
+        attendedLive: true,
+        isCompleted: true,
+      },
+    });
+
+    return {
+      hasActiveEnrollment: true,
+      attendedLive: progress?.attendedLive ?? false,
+      isCompleted: progress?.isCompleted ?? false,
+    };
+  }
 }

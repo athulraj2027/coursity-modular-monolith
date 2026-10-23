@@ -1,7 +1,6 @@
 import { ILectureRepository } from "../../domain/repositories/lecture.repository";
 import { LectureEntity } from "../../domain/entities/lecture.entity";
 import { NotFoundError, ForbiddenError } from "@/app/errors";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
 
 export class StudentGetLectureDetailUseCase {
   constructor(private readonly lectureRepo: ILectureRepository) {}
@@ -14,30 +13,20 @@ export class StudentGetLectureDetailUseCase {
 
     // Verify student has active enrollment in parent course
     if (lecture.courseId) {
-      const enrollment = await defaultPrisma.courseEnrollment.findFirst({
-        where: {
-          studentId,
-          courseId: lecture.courseId,
-          status: "ACTIVE",
-        },
-      });
+      const access = await this.lectureRepo.findStudentLessonAccess(
+        studentId,
+        lecture.courseId,
+        lectureId
+      );
 
-      if (!enrollment) {
+      if (!access.hasActiveEnrollment) {
         throw new ForbiddenError("You must be actively enrolled in this course to access this lecture.");
       }
 
-      // Fetch progress for this specific student & lecture
-      const progress = await defaultPrisma.lessonProgress.findFirst({
-        where: {
-          enrollmentId: enrollment.id,
-          lessonId: lectureId,
-        },
-      });
-
       return {
         ...lecture,
-        attendedLive: progress?.attendedLive ?? false,
-        isCompleted: progress?.isCompleted ?? false,
+        attendedLive: access.attendedLive,
+        isCompleted: access.isCompleted,
       };
     }
 

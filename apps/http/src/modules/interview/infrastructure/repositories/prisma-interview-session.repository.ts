@@ -486,4 +486,59 @@ export class PrismaInterviewSessionRepository
       user: raw.user || null,
     };
   }
+
+  async canCandidateStartInterview(userId: string): Promise<{
+    allowed: boolean;
+    reason?: "ALREADY_PASSED" | "MAX_ATTEMPTS";
+  }> {
+    const teacherProfile = await (this.prisma as any).teacherProfile.findFirst({
+      where: {
+        profile: {
+          userId,
+        },
+      },
+      select: {
+        isInterviewPassed: true,
+        interviewAttempts: true,
+      },
+    });
+
+    if (teacherProfile?.isInterviewPassed) {
+      return { allowed: false, reason: "ALREADY_PASSED" };
+    }
+
+    if (teacherProfile && (teacherProfile.interviewAttempts ?? 0) >= 3) {
+      return { allowed: false, reason: "MAX_ATTEMPTS" };
+    }
+
+    const passedSession = await (this.prisma as any).interviewSession.findFirst({
+      where: {
+        userId,
+        outcome: "PASSED",
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (passedSession) {
+      return { allowed: false, reason: "ALREADY_PASSED" };
+    }
+
+    const totalVettingSessions = await (this.prisma as any).interviewSession.count({
+      where: {
+        userId,
+        type: "TEACHER_VETTING",
+        status: {
+          in: ["COMPLETED", "IN_PROGRESS", "INITIALIZING"],
+        },
+      },
+    });
+
+    if (totalVettingSessions >= 3) {
+      return { allowed: false, reason: "MAX_ATTEMPTS" };
+    }
+
+    return { allowed: true };
+  }
 }

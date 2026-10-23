@@ -1,11 +1,14 @@
 import { TeacherCouponRepository } from "../../domain/repositories/teacher-coupon.repository";
+import { ICourseRepository } from "@/modules/course/domain/repositories/course.repository";
 import { CreateTeacherCouponDto } from "../../domain/dtos/teacher-coupon.dto";
 import { TeacherCouponEntity } from "../../domain/entities/teacher-coupon.entity";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
 import { BadRequestError, ConflictError, NotFoundError } from "@/app/errors";
 
 export class CreateTeacherCouponUseCase {
-  constructor(private readonly couponRepo: TeacherCouponRepository) {}
+  constructor(
+    private readonly couponRepo: TeacherCouponRepository,
+    private readonly courseRepo?: ICourseRepository
+  ) {}
 
   async execute(teacherProfileId: string, dto: CreateTeacherCouponDto): Promise<TeacherCouponEntity> {
     if (!dto.code || dto.code.trim().length < 3) {
@@ -22,9 +25,9 @@ export class CreateTeacherCouponUseCase {
 
     // Verify course belongs to teacher if courseId is provided
     if (dto.courseId) {
-      const course = await defaultPrisma.course.findUnique({
-        where: { id: dto.courseId },
-      });
+      const course = this.courseRepo
+        ? await this.courseRepo.findById(dto.courseId, true)
+        : null;
       if (!course) {
         throw new NotFoundError("Course not found.");
       }

@@ -39,5 +39,6 @@ export interface TeacherCouponRepository
   delete(id: string): Promise<void>;
   incrementUsedCount(id: string): Promise<void>;
   getStudentUsageCount(couponId: string, studentId: string): Promise<number>;
+  findCouponWithRedemptions(id: string): Promise<any | null>;
 }
 

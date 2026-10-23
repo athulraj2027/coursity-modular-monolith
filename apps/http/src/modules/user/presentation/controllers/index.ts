@@ -5,4 +5,5 @@ export * from "./get-all-users.controller";
 export * from "./get-user-by-id.controller";
 export * from "./block-user.controller";
 export * from "./approve-teacher.controller";
+export * from "./get-admin-analytics.controller";
 

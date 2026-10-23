@@ -3,7 +3,6 @@ import { IPaymentGateway } from "@/infrastructure/payment";
 import { IEmailService } from "@/infrastructure/email";
 import { AdminRefundSubscriptionDto } from "../../domain/dtos/subscription.dto";
 import { BadRequestError, NotFoundError } from "@/app/errors";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
 
 export class AdminRefundSubscriptionUseCase {
   constructor(
@@ -26,24 +25,7 @@ export class AdminRefundSubscriptionUseCase {
       throw new NotFoundError(`Subscription with ID '${dto.subscriptionId}' not found.`);
     }
 
-    const invoice = await defaultPrisma.subscriptionInvoice.findUnique({
-      where: { id: dto.invoiceId },
-      include: {
-        subscription: {
-          include: {
-            teacherProfile: {
-              include: {
-                profile: {
-                  include: {
-                    user: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
+    const invoice = await this.subscriptionRepo.findInvoiceById(dto.invoiceId);
 
     if (!invoice) {
       throw new NotFoundError(`Invoice with ID '${dto.invoiceId}' not found.`);

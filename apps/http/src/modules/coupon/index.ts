@@ -10,13 +10,16 @@ import { AdminToggleCouponStatusUseCase } from "./application/use-cases/admin-to
 import { TeacherCouponController } from "./presentation/controllers/teacher-coupon.controller";
 import { createTeacherCouponRouter } from "./presentation/routes/teacher-coupon.routes";
 
+import { PrismaCourseRepository } from "@/modules/course/infrastructure/repositories/prisma-course.repository";
+
 export function createCouponModule() {
   const couponRepo = new PrismaTeacherCouponRepository(defaultPrisma);
-  const createCouponUseCase = new CreateTeacherCouponUseCase(couponRepo);
+  const courseRepo = new PrismaCourseRepository(defaultPrisma);
+  const createCouponUseCase = new CreateTeacherCouponUseCase(couponRepo, courseRepo);
   const getCouponsUseCase = new GetTeacherCouponsUseCase(couponRepo);
   const updateCouponUseCase = new UpdateTeacherCouponUseCase(couponRepo);
   const deleteCouponUseCase = new DeleteTeacherCouponUseCase(couponRepo);
-  const validateCouponUseCase = new ValidateCouponUseCase(couponRepo);
+  const validateCouponUseCase = new ValidateCouponUseCase(couponRepo, courseRepo);
   const adminGetCouponsUseCase = new AdminGetCouponsUseCase(couponRepo);
   const adminToggleCouponUseCase = new AdminToggleCouponStatusUseCase(couponRepo);
 
@@ -27,7 +30,8 @@ export function createCouponModule() {
     deleteCouponUseCase,
     validateCouponUseCase,
     adminGetCouponsUseCase,
-    adminToggleCouponUseCase
+    adminToggleCouponUseCase,
+    couponRepo
   );
 
   const couponRouter = createTeacherCouponRouter(couponController);

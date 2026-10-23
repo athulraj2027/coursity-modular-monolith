@@ -206,4 +206,44 @@ export class PrismaProfileRepository
             data: { name },
         });
     }
+
+    async getOrCreateTeacherProfileId(userId: string): Promise<string> {
+        let profile = await this.prisma.profile.findUnique({
+            where: { userId },
+            include: { teacherProfile: true },
+        });
+
+        if (!profile) {
+            profile = await this.prisma.profile.create({
+                data: {
+                    userId,
+                    teacherProfile: {
+                        create: {},
+                    },
+                },
+                include: { teacherProfile: true },
+            });
+        } else if (!profile.teacherProfile) {
+            const createdTeacher = await this.prisma.teacherProfile.create({
+                data: {
+                    profileId: profile.id,
+                },
+            });
+            return createdTeacher.id;
+        }
+
+        if (!profile.teacherProfile) {
+            throw new Error("Unable to locate or initialize instructor profile.");
+        }
+
+        return profile.teacherProfile.id;
+    }
+
+    async getTeacherProfileIdByUserId(userId: string): Promise<string | null> {
+        const teacherProfile = await this.prisma.teacherProfile.findFirst({
+            where: { profile: { userId } },
+            select: { id: true },
+        });
+        return teacherProfile?.id || null;
+    }
 }

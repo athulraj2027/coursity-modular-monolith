@@ -1,16 +1,16 @@
 import { EnrollmentRepository } from "../../domain/repositories/enrollment.repository";
 import { CourseEnrollmentEntity } from "../../domain/entities/enrollment.entity";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { ICourseRepository } from "@/modules/course/domain/repositories/course.repository";
 import { ForbiddenError, NotFoundError } from "@/app/errors";
 
 export class TeacherGetCourseStudentsUseCase {
-  constructor(private readonly enrollmentRepo: EnrollmentRepository) {}
+  constructor(
+    private readonly enrollmentRepo: EnrollmentRepository,
+    private readonly courseRepo: ICourseRepository
+  ) {}
 
   async execute(teacherProfileId: string, courseId: string): Promise<CourseEnrollmentEntity[]> {
-    const course = await defaultPrisma.course.findUnique({
-      where: { id: courseId },
-      select: { id: true, teacherProfileId: true },
-    });
+    const course = await this.courseRepo.findById(courseId);
 
     if (!course) {
       throw new NotFoundError("Course not found.");

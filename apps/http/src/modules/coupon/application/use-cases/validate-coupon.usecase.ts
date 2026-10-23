@@ -1,23 +1,18 @@
 import { TeacherCouponRepository } from "../../domain/repositories/teacher-coupon.repository";
+import { ICourseRepository } from "@/modules/course/domain/repositories/course.repository";
 import { ValidateCouponDto, CouponValidationResult } from "../../domain/dtos/teacher-coupon.dto";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
 import { BadRequestError, NotFoundError } from "@/app/errors";
 
 export class ValidateCouponUseCase {
-  constructor(private readonly couponRepo: TeacherCouponRepository) {}
+  constructor(
+    private readonly couponRepo: TeacherCouponRepository,
+    private readonly courseRepo?: ICourseRepository
+  ) {}
 
   async execute(dto: ValidateCouponDto): Promise<CouponValidationResult> {
-    const course = await defaultPrisma.course.findUnique({
-      where: { id: dto.courseId },
-      select: {
-        id: true,
-        price: true,
-        pricingType: true,
-        teacherProfileId: true,
-        isFrozen: true,
-        status: true,
-      },
-    });
+    const course = this.courseRepo
+      ? await this.courseRepo.findById(dto.courseId, true)
+      : null;
 
     if (!course) {
       throw new NotFoundError("Course not found.");

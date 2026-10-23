@@ -7,7 +7,8 @@ import { CourseController } from "./presentation/controllers/course.controller";
 import { CourseRoutes } from "./presentation/routes/course.routes";
 import { emailService } from "@/infrastructure/email";
 
-const courseRepository = new PrismaCourseRepository();
+export const courseRepository = new PrismaCourseRepository();
+export const courseRepo = courseRepository;
 const curriculumRepository = new PrismaCurriculumRepository();
 
 const getCoursesUseCase = new GetCoursesUseCase(courseRepository);

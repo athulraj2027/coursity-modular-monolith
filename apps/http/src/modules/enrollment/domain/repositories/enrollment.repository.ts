@@ -102,5 +102,12 @@ export interface EnrollmentRepository extends IBaseRepository<CourseEnrollmentEn
     refund: CourseRefundEntity | null;
     certificate: CourseCertificateEntity | null;
   } | null>;
+
+  countConductedClasses(courseId: string): Promise<number>;
+  countTotalCourseLessons(courseId: string): Promise<number>;
+  countCompletedLessons(enrollmentId: string): Promise<number>;
+  countAttendedLessons(enrollmentId: string): Promise<number>;
+  findLessonById(lessonId: string): Promise<{ id: string } | null>;
+  findCourseClassroomData(courseIdOrSlug: string): Promise<any | null>;
 }
 

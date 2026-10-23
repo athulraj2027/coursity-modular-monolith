@@ -1,7 +1,6 @@
 import { EnrollmentRepository } from "../../domain/repositories/enrollment.repository";
 import { UpdateLessonProgressDto } from "../../domain/dtos/enrollment.dto";
 import { LessonProgressEntity } from "../../domain/entities/lesson-progress.entity";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
 import { BadRequestError, NotFoundError } from "@/app/errors";
 
 export class UpdateLessonProgressUseCase {
@@ -29,19 +28,9 @@ export class UpdateLessonProgressUseCase {
     });
 
     // Count total and completed lessons to recalculate percentage
-    const totalLessons = await defaultPrisma.courseLesson.count({
-      where: {
-        module: { courseId: enrollment.courseId, isPublished: true },
-        isPublished: true,
-      },
-    });
+    const totalLessons = await this.enrollmentRepo.countTotalCourseLessons(enrollment.courseId);
 
-    const completedLessonsCount = await defaultPrisma.lessonProgress.count({
-      where: {
-        enrollmentId: dto.enrollmentId,
-        isCompleted: true,
-      },
-    });
+    const completedLessonsCount = await this.enrollmentRepo.countCompletedLessons(dto.enrollmentId);
 
     const progressPercentage = totalLessons > 0 ? Number(((completedLessonsCount / totalLessons) * 100).toFixed(1)) : 0;
     const isNowCompleted = progressPercentage >= 100;

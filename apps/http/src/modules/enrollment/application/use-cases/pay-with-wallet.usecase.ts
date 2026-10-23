@@ -2,26 +2,24 @@ import { EnrollmentRepository } from "../../domain/repositories/enrollment.repos
 import { PayWithWalletDto } from "../../domain/dtos/enrollment.dto";
 import { CourseEnrollmentEntity } from "../../domain/entities/enrollment.entity";
 import { TeacherCouponRepository } from "@/modules/coupon/domain/repositories/teacher-coupon.repository";
-import { IEmailService } from "@/infrastructure/email";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { ICourseRepository } from "@/modules/course/domain/repositories/course.repository";
+import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
+import { IWalletRepository } from "@/modules/wallet/domain/repositories/wallet.repository.interface";
+import { ICustomEmailNotifier } from "@/shared/application/ports/email.port";
 import { BadRequestError, ConflictError, NotFoundError } from "@/app/errors";
 
 export class PayWithWalletUseCase {
   constructor(
     private readonly enrollmentRepo: EnrollmentRepository,
     private readonly couponRepo: TeacherCouponRepository,
-    private readonly emailService: IEmailService
+    private readonly courseRepo: ICourseRepository,
+    private readonly userRepo: UserRepository,
+    private readonly walletRepo: IWalletRepository,
+    private readonly emailService: ICustomEmailNotifier
   ) {}
 
   async execute(studentId: string, dto: PayWithWalletDto): Promise<CourseEnrollmentEntity> {
-    const course = await defaultPrisma.course.findUnique({
-      where: { id: dto.courseId },
-      include: {
-        teacherProfile: {
-          include: { profile: { include: { user: true } } },
-        },
-      },
-    });
+    const course = await this.courseRepo.findById(dto.courseId);
 
     if (!course) {
       throw new NotFoundError("Course not found.");
@@ -44,9 +42,7 @@ export class PayWithWalletUseCase {
       }
     }
 
-    const student = await defaultPrisma.user.findUnique({
-      where: { id: studentId },
-    });
+    const student = await this.userRepo.findById(studentId);
     if (!student) {
       throw new NotFoundError("Student not found.");
     }
@@ -77,42 +73,16 @@ export class PayWithWalletUseCase {
 
     const finalAmount = Math.max(0, originalPrice - discountAmount);
 
-    // Verify student wallet balance if payment amount is greater than 0
+    // Verify & Debit student wallet balance if payment amount is greater than 0
     if (finalAmount > 0) {
-      const wallet = await defaultPrisma.wallet.findUnique({
-        where: { userId: studentId },
+      await this.walletRepo.debit({
+        userId: studentId,
+        amount: finalAmount,
+        type: "ENROLLMENT_PAYMENT",
+        description: `Full wallet payment for live course "${course.title}"`,
+        referenceType: "ENROLLMENT",
+        referenceId: course.id,
       });
-      const currentBalance = wallet ? Number(wallet.balance) : 0;
-      if (!wallet || currentBalance < finalAmount) {
-        throw new BadRequestError(
-          `Insufficient wallet balance. Available: ₹${currentBalance.toFixed(2)}, Required: ₹${finalAmount.toFixed(2)}.`
-        );
-      }
-
-      // Debit student wallet
-      const newStudentBal = currentBalance - finalAmount;
-      await defaultPrisma.$transaction([
-        defaultPrisma.wallet.update({
-          where: { id: wallet.id },
-          data: {
-            balance: newStudentBal,
-            totalSpent: { increment: finalAmount },
-          },
-        }),
-        defaultPrisma.walletTransaction.create({
-          data: {
-            walletId: wallet.id,
-            type: "ENROLLMENT_PAYMENT",
-            direction: "DEBIT",
-            amount: finalAmount,
-            balanceBefore: currentBalance,
-            balanceAfter: newStudentBal,
-            description: `Full wallet payment for live course "${course.title}"`,
-            referenceType: "ENROLLMENT",
-            referenceId: course.id,
-          },
-        }),
-      ]);
     }
 
     // Calculate 20-Day Refund Window
@@ -139,42 +109,18 @@ export class PayWithWalletUseCase {
     });
 
     // Credit Teacher Royalty Earnings (85%)
-    const teacherUserId = course.teacherProfile?.profile?.userId;
+    const teacherUserId = course.teacherProfile?.profile?.userId || course.teacherProfile?.profile?.user?.id;
     if (teacherUserId) {
       const teacherEarnings = Number((finalAmount * 0.85).toFixed(2));
       if (teacherEarnings > 0) {
-        let teacherWallet = await defaultPrisma.wallet.findUnique({
-          where: { userId: teacherUserId },
+        await this.walletRepo.credit({
+          userId: teacherUserId,
+          amount: teacherEarnings,
+          type: "EARNING",
+          description: `Sales revenue royalty (85%) for student wallet enrollment in "${course.title}"`,
+          referenceType: "ENROLLMENT",
+          referenceId: enrollment.id,
         });
-        if (!teacherWallet) {
-          teacherWallet = await defaultPrisma.wallet.create({
-            data: { userId: teacherUserId, balance: 0 },
-          });
-        }
-        const currentTeacherBal = Number(teacherWallet.balance);
-        const newTeacherBal = currentTeacherBal + teacherEarnings;
-        await defaultPrisma.$transaction([
-          defaultPrisma.wallet.update({
-            where: { id: teacherWallet.id },
-            data: {
-              balance: newTeacherBal,
-              totalEarned: { increment: teacherEarnings },
-            },
-          }),
-          defaultPrisma.walletTransaction.create({
-            data: {
-              walletId: teacherWallet.id,
-              type: "EARNING",
-              direction: "CREDIT",
-              amount: teacherEarnings,
-              balanceBefore: currentTeacherBal,
-              balanceAfter: newTeacherBal,
-              description: `Sales revenue royalty (85%) for student wallet enrollment in "${course.title}"`,
-              referenceType: "ENROLLMENT",
-              referenceId: enrollment.id,
-            },
-          }),
-        ]);
       }
     }
 

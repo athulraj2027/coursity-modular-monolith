@@ -790,4 +790,70 @@ export class PrismaSubscriptionRepository
       updatedAt: raw.updatedAt,
     };
   }
+
+  async createInvoice(data: any): Promise<any> {
+    return this.prisma.subscriptionInvoice.create({ data });
+  }
+
+  async findInvoiceById(invoiceId: string): Promise<any | null> {
+    return this.prisma.subscriptionInvoice.findUnique({
+      where: { id: invoiceId },
+      include: {
+        subscription: {
+          include: {
+            teacherProfile: {
+              include: {
+                profile: {
+                  include: {
+                    user: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  async findInvoicesByTeacher(teacherProfileId: string): Promise<any[]> {
+    return this.prisma.subscriptionInvoice.findMany({
+      where: {
+        subscription: {
+          teacherProfileId,
+        },
+      },
+      include: {
+        subscription: {
+          include: {
+            plan: true,
+            teacherProfile: {
+              include: {
+                profile: {
+                  include: {
+                    user: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 50,
+    });
+  }
+
+  async findTeacherWithUser(teacherProfileId: string): Promise<any | null> {
+    return this.prisma.teacherProfile.findUnique({
+      where: { id: teacherProfileId },
+      include: {
+        profile: {
+          include: { user: true },
+        },
+      },
+    });
+  }
 }

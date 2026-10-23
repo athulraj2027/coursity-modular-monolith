@@ -1,6 +1,5 @@
 import { EnrollmentRepository } from "../../domain/repositories/enrollment.repository";
 import { CourseEnrollmentEntity, EnrollmentStatus } from "../../domain/entities/enrollment.entity";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
 
 export class GetStudentEnrollmentsUseCase {
   constructor(private readonly enrollmentRepo: EnrollmentRepository) {}
@@ -16,15 +15,7 @@ export class GetStudentEnrollmentsUseCase {
     const enhanced = await Promise.all(
       enrollments.map(async (enr) => {
         // Count conducted live classes for this course (completed lessons or scheduled in the past)
-        const classesConductedCount = await defaultPrisma.courseLesson.count({
-          where: {
-            module: { courseId: enr.courseId },
-            OR: [
-              { liveStatus: "COMPLETED" },
-              { scheduledAt: { lte: now } },
-            ],
-          },
-        });
+        const classesConductedCount = await this.enrollmentRepo.countConductedClasses(enr.courseId);
 
         const refundDeadline = new Date(enr.refundEligibleUntil).getTime();
         const daysRemaining = Math.max(0, Math.ceil((refundDeadline - now.getTime()) / (1000 * 60 * 60 * 24)));

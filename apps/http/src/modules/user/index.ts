@@ -1,5 +1,6 @@
 // Repositories & Services
 import { PrismaUserRepository } from "./infrastructure/repositories/prisma-user.repository";
+import { PrismaAdminAnalyticsRepository } from "./infrastructure/repositories/prisma-admin-analytics.repository";
 
 // Use Cases
 import { GetProfile } from "./application/use-cases/get-profile.usecase";
@@ -33,7 +34,9 @@ import { RedisTokenRepository } from "@/modules/auth/infrastructure/repositories
 import { emailService } from "@/infrastructure/email";
 
 // 1. Repositories & Services
-const userRepository = new PrismaUserRepository();
+export const userRepository = new PrismaUserRepository();
+export const userRepo = userRepository;
+const adminAnalyticsRepository = new PrismaAdminAnalyticsRepository();
 const passwordService = new BcryptPasswordService();
 const tokenRepository = new RedisTokenRepository();
 const tokenService = new JwtTokenService();
@@ -51,7 +54,7 @@ const getAllUsers = new GetAllUsers(userRepository);
 const getUserById = new GetUserById(userRepository);
 const blockUser = new BlockUser(userRepository, tokenRepository);
 const approveTeacher = new ApproveTeacher(userRepository, emailService);
-const getAdminAnalytics = new GetAdminAnalytics();
+const getAdminAnalytics = new GetAdminAnalytics(adminAnalyticsRepository);
 
 // 4. Controllers
 const getProfileController = new GetProfileController(getProfile);

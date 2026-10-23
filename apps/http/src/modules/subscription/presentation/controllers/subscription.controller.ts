@@ -26,7 +26,7 @@ import {
   adminChangeSubscriptionPlanSchema,
 } from "../validators/subscription.validator";
 import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError } from "@/app/errors";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { profileRepository } from "@/modules/profile";
 
 export class SubscriptionController {
   constructor(
@@ -47,35 +47,11 @@ export class SubscriptionController {
   ) {}
 
   private async getTeacherProfileId(userId: string): Promise<string> {
-    let profile = await defaultPrisma.profile.findUnique({
-      where: { userId },
-      include: { teacherProfile: true },
-    });
-
-    if (!profile) {
-      profile = await defaultPrisma.profile.create({
-        data: {
-          userId,
-          teacherProfile: {
-            create: {},
-          },
-        },
-        include: { teacherProfile: true },
-      });
-    } else if (!profile.teacherProfile) {
-      const teacherProfile = await defaultPrisma.teacherProfile.create({
-        data: {
-          profileId: profile.id,
-        },
-      });
-      return teacherProfile.id;
-    }
-
-    if (!profile.teacherProfile) {
+    try {
+      return await profileRepository.getOrCreateTeacherProfileId(userId);
+    } catch {
       throw new BadRequestError("Unable to locate or create instructor profile");
     }
-
-    return profile.teacherProfile.id;
   }
 
   // GET /api/subscriptions/my-subscription (Protected - Teacher)

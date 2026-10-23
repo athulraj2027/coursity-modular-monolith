@@ -702,5 +702,80 @@ export class PrismaEnrollmentRepository
       certificate,
     };
   }
+
+  async countConductedClasses(courseId: string): Promise<number> {
+    const now = new Date();
+    return this.prisma.courseLesson.count({
+      where: {
+        module: { courseId },
+        OR: [
+          { liveStatus: "COMPLETED" },
+          { scheduledAt: { lte: now } },
+        ],
+      },
+    });
+  }
+
+  async countTotalCourseLessons(courseId: string): Promise<number> {
+    return this.prisma.courseLesson.count({
+      where: {
+        module: { courseId, isPublished: true },
+        isPublished: true,
+      },
+    });
+  }
+
+  async countCompletedLessons(enrollmentId: string): Promise<number> {
+    return this.prisma.lessonProgress.count({
+      where: {
+        enrollmentId,
+        isCompleted: true,
+      },
+    });
+  }
+
+  async countAttendedLessons(enrollmentId: string): Promise<number> {
+    return this.prisma.lessonProgress.count({
+      where: {
+        enrollmentId,
+        attendedLive: true,
+      },
+    });
+  }
+
+  async findLessonById(lessonId: string): Promise<{ id: string } | null> {
+    return this.prisma.courseLesson.findUnique({
+      where: { id: lessonId },
+      select: { id: true },
+    });
+  }
+
+  async findCourseClassroomData(courseIdOrSlug: string): Promise<any | null> {
+    return this.prisma.course.findFirst({
+      where: {
+        OR: [{ id: courseIdOrSlug }, { slug: courseIdOrSlug }],
+      },
+      include: {
+        category: true,
+        teacherProfile: {
+          include: {
+            profile: {
+              include: { user: true },
+            },
+          },
+        },
+        modules: {
+          where: { isPublished: true },
+          orderBy: { sortOrder: "asc" },
+          include: {
+            lessons: {
+              where: { isPublished: true },
+              orderBy: { sortOrder: "asc" },
+            },
+          },
+        },
+      },
+    });
+  }
 }
 

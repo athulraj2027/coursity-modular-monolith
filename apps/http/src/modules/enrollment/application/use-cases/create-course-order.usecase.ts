@@ -1,24 +1,22 @@
 import { CreateCourseCheckoutOrderDto, CheckoutOrderResult } from "../../domain/dtos/enrollment.dto";
 import { ValidateCouponUseCase } from "@/modules/coupon/application/use-cases/validate-coupon.usecase";
-import { IPaymentGateway } from "@/infrastructure/payment";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { IPaymentOrderGateway } from "@/shared/application/ports/payment.port";
+import { ICourseRepository } from "@/modules/course/domain/repositories/course.repository";
+import { EnrollmentRepository } from "../../domain/repositories/enrollment.repository";
+import { IWalletRepository } from "@/modules/wallet/domain/repositories/wallet.repository.interface";
 import { BadRequestError, ConflictError, NotFoundError } from "@/app/errors";
 
 export class CreateCourseCheckoutOrderUseCase {
   constructor(
     private readonly validateCouponUseCase: ValidateCouponUseCase,
-    private readonly paymentGateway: IPaymentGateway
+    private readonly paymentGateway: IPaymentOrderGateway,
+    private readonly courseRepo: ICourseRepository,
+    private readonly enrollmentRepo: EnrollmentRepository,
+    private readonly walletRepo: IWalletRepository
   ) {}
 
   async execute(studentId: string, dto: CreateCourseCheckoutOrderDto): Promise<CheckoutOrderResult> {
-    const course = await defaultPrisma.course.findUnique({
-      where: { id: dto.courseId },
-      include: {
-        teacherProfile: {
-          include: { profile: { include: { user: true } } },
-        },
-      },
-    });
+    const course = await this.courseRepo.findById(dto.courseId);
 
     if (!course) {
       throw new NotFoundError("Course not found.");
@@ -29,14 +27,7 @@ export class CreateCourseCheckoutOrderUseCase {
     }
 
     // Check existing enrollment status
-    const existing = await defaultPrisma.courseEnrollment.findUnique({
-      where: {
-        studentId_courseId: {
-          studentId,
-          courseId: dto.courseId,
-        },
-      },
-    });
+    const existing = await this.enrollmentRepo.findEnrollmentByStudentAndCourse(studentId, dto.courseId);
     if (existing) {
       if (existing.status === "ACTIVE") {
         throw new ConflictError("You are already actively enrolled in this course.");
@@ -78,9 +69,7 @@ export class CreateCourseCheckoutOrderUseCase {
 
     // Apply wallet balance if requested
     if (dto.useWalletBalance && priceAfterCoupon > 0) {
-      const wallet = await defaultPrisma.wallet.findUnique({
-        where: { userId: studentId },
-      });
+      const wallet = await this.walletRepo.findByUserId(studentId);
       const availableBalance = wallet ? Number(wallet.balance) : 0;
       walletDeductedAmount = Math.min(availableBalance, priceAfterCoupon);
     }

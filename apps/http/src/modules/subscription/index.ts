@@ -56,7 +56,7 @@ export function createSubscriptionModule(): {
     offerRepo,
     getPlanOfferUseCase
   );
-  const getInvoicesUseCase = new GetInvoicesUseCase();
+  const getInvoicesUseCase = new GetInvoicesUseCase(subscriptionRepo);
 
   const adminGetSubscriptionsUseCase = new AdminGetSubscriptionsUseCase(subscriptionRepo);
   const adminGetSubscriptionDetailUseCase = new AdminGetSubscriptionDetailUseCase(subscriptionRepo);

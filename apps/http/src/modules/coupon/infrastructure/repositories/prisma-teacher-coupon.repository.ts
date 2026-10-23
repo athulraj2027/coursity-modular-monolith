@@ -340,5 +340,37 @@ export class PrismaTeacherCouponRepository
       },
     });
   }
+
+  async findCouponWithRedemptions(id: string): Promise<any | null> {
+    return this.prisma.teacherCoupon.findUnique({
+      where: { id },
+      include: {
+        course: { select: { id: true, title: true, slug: true, price: true, thumbnail: true } },
+        teacherProfile: {
+          include: {
+            profile: {
+              include: { user: true },
+            },
+          },
+        },
+        enrollments: {
+          include: {
+            student: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                profile: { select: { avatar: true } },
+              },
+            },
+            course: {
+              select: { title: true, slug: true },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+  }
 }
 

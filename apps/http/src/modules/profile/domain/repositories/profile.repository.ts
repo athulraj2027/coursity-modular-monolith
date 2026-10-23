@@ -14,4 +14,6 @@ export interface ProfileRepository extends IBaseRepository<UserProfile, string> 
         data: Partial<Omit<TeacherProfile, "id" | "profileId" | "createdAt" | "updatedAt">>
     ): Promise<TeacherProfile>;
     updateUserName(userId: string, name: string): Promise<void>;
+    getOrCreateTeacherProfileId(userId: string): Promise<string>;
+    getTeacherProfileIdByUserId(userId: string): Promise<string | null>;
 }

@@ -70,4 +70,9 @@ export interface IInterviewSessionRepository extends IBaseRepository<InterviewSe
       feedback?: string;
     }>;
   }): Promise<InterviewSessionEntity>;
+
+  canCandidateStartInterview(userId: string): Promise<{
+    allowed: boolean;
+    reason?: "ALREADY_PASSED" | "MAX_ATTEMPTS";
+  }>;
 }
