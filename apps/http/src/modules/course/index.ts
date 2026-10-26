@@ -31,7 +31,7 @@ export * from "./infrastructure/repositories/prisma-curriculum.repository";
 export * from "./application/use-cases/get-courses.usecase";
 export * from "./application/use-cases/teacher-course.usecase";
 export * from "./application/use-cases/admin-manage-courses.usecase";
-export * from "./presentation/controllers/course.controller";
+export * from "./presentation/controllers";
 export * from "./presentation/validators/course.validator";
 export * from "./presentation/routes/course.routes";
 

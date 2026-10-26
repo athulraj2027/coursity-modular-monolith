@@ -8,6 +8,7 @@ import {
   InternalStartSessionSchema,
   InternalUpdateMetadataSchema,
 } from "../validators/interview.validator";
+import { ApiResponse } from "@/shared";
 
 export class InternalInterviewController {
   constructor(private readonly useCases: InternalInterviewUseCases) {}
@@ -22,7 +23,7 @@ export class InternalInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const validated = InternalInitializeSessionSchema.parse(req.body);
@@ -33,11 +34,11 @@ export class InternalInterviewController {
         meta: validated.meta,
       });
 
-      res.status(200).json({
-        success: true,
-        message: "Interview session initialized by AI engine",
-        data: session,
-      });
+      return ApiResponse.success(
+        res,
+        session,
+        "Interview session initialized by AI engine"
+      );
     } catch (error) {
       next(error);
     }
@@ -48,7 +49,7 @@ export class InternalInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const validated = InternalStartSessionSchema.parse(req.body);
@@ -59,11 +60,11 @@ export class InternalInterviewController {
         meta: validated.meta,
       });
 
-      res.status(200).json({
-        success: true,
-        message: "Interview session started by AI engine",
-        data: session,
-      });
+      return ApiResponse.success(
+        res,
+        session,
+        "Interview session started by AI engine"
+      );
     } catch (error) {
       next(error);
     }
@@ -74,7 +75,7 @@ export class InternalInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const validated = InternalEndSessionSchema.parse(req.body);
@@ -93,11 +94,11 @@ export class InternalInterviewController {
         meta: validated.meta,
       });
 
-      res.status(200).json({
-        success: true,
-        message: "Interview evaluation processed and finalized",
-        data: session,
-      });
+      return ApiResponse.success(
+        res,
+        session,
+        "Interview evaluation processed and finalized"
+      );
     } catch (error) {
       next(error);
     }
@@ -108,7 +109,7 @@ export class InternalInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const validated = InternalAppendTranscriptSchema.parse(req.body);
@@ -124,11 +125,11 @@ export class InternalInterviewController {
         turnFeedback: validated.turnFeedback,
       });
 
-      res.status(201).json({
-        success: true,
-        message: "Speech turn transcript appended",
-        data: transcript,
-      });
+      return ApiResponse.created(
+        res,
+        transcript,
+        "Speech turn transcript appended"
+      );
     } catch (error) {
       next(error);
     }
@@ -139,7 +140,7 @@ export class InternalInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const validated = InternalUpdateMetadataSchema.parse(req.body);
@@ -151,11 +152,11 @@ export class InternalInterviewController {
         meta: validated.meta,
       });
 
-      res.status(200).json({
-        success: true,
-        message: "Session metadata updated",
-        data: session,
-      });
+      return ApiResponse.success(
+        res,
+        session,
+        "Session metadata updated"
+      );
     } catch (error) {
       next(error);
     }
@@ -166,7 +167,7 @@ export class InternalInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const validated = InternalAbandonSessionSchema.parse(req.body);
@@ -176,11 +177,11 @@ export class InternalInterviewController {
         reason: validated.reason,
       });
 
-      res.status(200).json({
-        success: true,
-        message: "Session marked as abandoned",
-        data: session,
-      });
+      return ApiResponse.success(
+        res,
+        session,
+        "Session marked as abandoned"
+      );
     } catch (error) {
       next(error);
     }

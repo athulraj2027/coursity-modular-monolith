@@ -1,12 +1,12 @@
 import { Router, Request, Response } from "express";
+import { ApiResponse } from "@/shared";
 
 const healthRouter = Router();
 
 const getHealthStatus = (_req: Request, res: Response): void => {
-    res.status(200).json({
+    ApiResponse.success(res, {
         status: "ok",
         uptime: process.uptime(),
-        timestamp: new Date().toISOString(),
     });
 };
 

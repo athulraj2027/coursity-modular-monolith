@@ -8,131 +8,77 @@ import { AdminGetLecturesUseCase } from "../../application/use-cases/admin-get-l
 import { AdminGetLectureDetailUseCase } from "../../application/use-cases/admin-get-lecture-detail.usecase";
 import { StudentGetLecturesUseCase } from "../../application/use-cases/student-get-lectures.usecase";
 import { StudentGetLectureDetailUseCase } from "../../application/use-cases/student-get-lecture-detail.usecase";
-import { BadRequestError, UnauthorizedError } from "@/app/errors";
-import { profileRepository } from "@/modules/profile";
+
+import { TeacherGetLecturesController } from "./teacher-get-lectures.controller";
+import { TeacherGetLectureDetailController } from "./teacher-get-lecture-detail.controller";
+import { TeacherCreateLectureController } from "./teacher-create-lecture.controller";
+import { TeacherUpdateLectureController } from "./teacher-update-lecture.controller";
+import { TeacherDeleteLectureController } from "./teacher-delete-lecture.controller";
+import { AdminGetLecturesController } from "./admin-get-lectures.controller";
+import { AdminGetLectureDetailController } from "./admin-get-lecture-detail.controller";
+import { StudentGetLecturesController } from "./student-get-lectures.controller";
+import { StudentGetLectureDetailController } from "./student-get-lecture-detail.controller";
 
 export class LectureController {
-  constructor(
-    private readonly teacherGetLecturesUseCase: TeacherGetLecturesUseCase,
-    private readonly teacherGetLectureDetailUseCase: TeacherGetLectureDetailUseCase,
-    private readonly teacherCreateLectureUseCase: TeacherCreateLectureUseCase,
-    private readonly teacherUpdateLectureUseCase: TeacherUpdateLectureUseCase,
-    private readonly teacherDeleteLectureUseCase: TeacherDeleteLectureUseCase,
-    private readonly adminGetLecturesUseCase: AdminGetLecturesUseCase,
-    private readonly adminGetLectureDetailUseCase: AdminGetLectureDetailUseCase,
-    private readonly studentGetLecturesUseCase: StudentGetLecturesUseCase,
-    private readonly studentGetLectureDetailUseCase: StudentGetLectureDetailUseCase
-  ) {}
+  private readonly teacherGetLecturesController: TeacherGetLecturesController;
+  private readonly teacherGetLectureDetailController: TeacherGetLectureDetailController;
+  private readonly teacherCreateLectureController: TeacherCreateLectureController;
+  private readonly teacherUpdateLectureController: TeacherUpdateLectureController;
+  private readonly teacherDeleteLectureController: TeacherDeleteLectureController;
+  private readonly adminGetLecturesController: AdminGetLecturesController;
+  private readonly adminGetLectureDetailController: AdminGetLectureDetailController;
+  private readonly studentGetLecturesController: StudentGetLecturesController;
+  private readonly studentGetLectureDetailController: StudentGetLectureDetailController;
 
-  private async getTeacherProfileId(userId: string): Promise<string> {
-    try {
-      return await profileRepository.getOrCreateTeacherProfileId(userId);
-    } catch {
-      throw new BadRequestError("Unable to locate or initialize instructor profile.");
-    }
+  constructor(
+    teacherGetLecturesUseCase: TeacherGetLecturesUseCase,
+    teacherGetLectureDetailUseCase: TeacherGetLectureDetailUseCase,
+    teacherCreateLectureUseCase: TeacherCreateLectureUseCase,
+    teacherUpdateLectureUseCase: TeacherUpdateLectureUseCase,
+    teacherDeleteLectureUseCase: TeacherDeleteLectureUseCase,
+    adminGetLecturesUseCase: AdminGetLecturesUseCase,
+    adminGetLectureDetailUseCase: AdminGetLectureDetailUseCase,
+    studentGetLecturesUseCase: StudentGetLecturesUseCase,
+    studentGetLectureDetailUseCase: StudentGetLectureDetailUseCase
+  ) {
+    this.teacherGetLecturesController = new TeacherGetLecturesController(teacherGetLecturesUseCase);
+    this.teacherGetLectureDetailController = new TeacherGetLectureDetailController(teacherGetLectureDetailUseCase);
+    this.teacherCreateLectureController = new TeacherCreateLectureController(teacherCreateLectureUseCase);
+    this.teacherUpdateLectureController = new TeacherUpdateLectureController(teacherUpdateLectureUseCase);
+    this.teacherDeleteLectureController = new TeacherDeleteLectureController(teacherDeleteLectureUseCase);
+    this.adminGetLecturesController = new AdminGetLecturesController(adminGetLecturesUseCase);
+    this.adminGetLectureDetailController = new AdminGetLectureDetailController(adminGetLectureDetailUseCase);
+    this.studentGetLecturesController = new StudentGetLecturesController(studentGetLecturesUseCase);
+    this.studentGetLectureDetailController = new StudentGetLectureDetailController(studentGetLectureDetailUseCase);
   }
 
-  // ================= 1. TEACHER LECTURE HANDLERS =================
+  // Teacher handlers
+  teacherGetLectures = (req: Request, res: Response, next: NextFunction) =>
+    this.teacherGetLecturesController.execute(req, res, next);
 
-  teacherGetLectures = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const result = await this.teacherGetLecturesUseCase.execute(teacherProfileId, req.query as any);
-      return res.status(200).json({ success: true, data: result });
-    } catch (error) {
-      next(error);
-    }
-  };
+  teacherGetLectureDetail = (req: Request, res: Response, next: NextFunction) =>
+    this.teacherGetLectureDetailController.execute(req, res, next);
 
-  teacherGetLectureDetail = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const lectureId = req.params.id as string;
-      const result = await this.teacherGetLectureDetailUseCase.execute(teacherProfileId, lectureId);
-      return res.status(200).json({ success: true, data: result });
-    } catch (error) {
-      next(error);
-    }
-  };
+  teacherCreateLecture = (req: Request, res: Response, next: NextFunction) =>
+    this.teacherCreateLectureController.execute(req, res, next);
 
-  teacherCreateLecture = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const result = await this.teacherCreateLectureUseCase.execute(teacherProfileId, req.body);
-      return res.status(201).json({ success: true, data: result, message: "Lecture created successfully." });
-    } catch (error) {
-      next(error);
-    }
-  };
+  teacherUpdateLecture = (req: Request, res: Response, next: NextFunction) =>
+    this.teacherUpdateLectureController.execute(req, res, next);
 
-  teacherUpdateLecture = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const lectureId = req.params.id as string;
-      const result = await this.teacherUpdateLectureUseCase.execute(teacherProfileId, lectureId, req.body);
-      return res.status(200).json({ success: true, data: result, message: "Lecture updated successfully." });
-    } catch (error) {
-      next(error);
-    }
-  };
+  teacherDeleteLecture = (req: Request, res: Response, next: NextFunction) =>
+    this.teacherDeleteLectureController.execute(req, res, next);
 
-  teacherDeleteLecture = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const lectureId = req.params.id as string;
-      await this.teacherDeleteLectureUseCase.execute(teacherProfileId, lectureId);
-      return res.status(200).json({ success: true, message: "Lecture deleted successfully." });
-    } catch (error) {
-      next(error);
-    }
-  };
+  // Admin handlers
+  adminGetLectures = (req: Request, res: Response, next: NextFunction) =>
+    this.adminGetLecturesController.execute(req, res, next);
 
-  // ================= 2. ADMIN LECTURE HANDLERS =================
+  adminGetLectureDetail = (req: Request, res: Response, next: NextFunction) =>
+    this.adminGetLectureDetailController.execute(req, res, next);
 
-  adminGetLectures = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const result = await this.adminGetLecturesUseCase.execute(req.query as any);
-      return res.status(200).json({ success: true, data: result });
-    } catch (error) {
-      next(error);
-    }
-  };
+  // Student handlers
+  studentGetLectures = (req: Request, res: Response, next: NextFunction) =>
+    this.studentGetLecturesController.execute(req, res, next);
 
-  adminGetLectureDetail = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const lectureId = req.params.id as string;
-      const result = await this.adminGetLectureDetailUseCase.execute(lectureId);
-      return res.status(200).json({ success: true, data: result });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // ================= 3. STUDENT LECTURE HANDLERS =================
-
-  studentGetLectures = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const result = await this.studentGetLecturesUseCase.execute(req.user.userId, req.query as any);
-      return res.status(200).json({ success: true, data: result });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  studentGetLectureDetail = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const lectureId = req.params.id as string;
-      const result = await this.studentGetLectureDetailUseCase.execute(req.user.userId, lectureId);
-      return res.status(200).json({ success: true, data: result });
-    } catch (error) {
-      next(error);
-    }
-  };
+  studentGetLectureDetail = (req: Request, res: Response, next: NextFunction) =>
+    this.studentGetLectureDetailController.execute(req, res, next);
 }

@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
-import { STATUS_CODES } from "@/app/config/status";
 import { ResendSignupOtp } from "../../application/use-cases/resend-signup-otp.usecase";
+import { ApiResponse } from "@/shared/utils/api-response";
 
 export class ResendOtpController {
     constructor(private readonly resendOtp: ResendSignupOtp) { }
@@ -10,10 +10,7 @@ export class ResendOtpController {
             const { email } = req.body;
             const result = await this.resendOtp.execute({ email });
 
-            res.status(STATUS_CODES.OK).json({
-                message: result.message,
-                data: { email: result.email },
-            });
+            return ApiResponse.success(res, { email: result.email }, result.message);
         } catch (error) {
             next(error);
         }

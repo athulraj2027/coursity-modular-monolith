@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { STATUS_CODES } from "../config/status";
 import { AppError } from "../errors/app.error";
+import { ApiResponse } from "@/shared/utils/api-response";
 
 export default function errorMiddleware(
     err: Error,
@@ -9,19 +10,25 @@ export default function errorMiddleware(
     next: NextFunction
 ) {
     console.error(`\n [Error Handler] ${req.method} ${req.url}:`, err);
+
     if (err instanceof AppError) {
-        return res.status(err.statusCode).json({
-            message: err.message,
-            error: err.name || "Application Error",
-        });
+        return ApiResponse.error(
+            res,
+            err.message,
+            err.statusCode,
+            err.name || "Application Error"
+        );
     }
 
     const statusCode = (err as any).statusCode || STATUS_CODES.INTERNAL_SERVER_ERROR;
     const isDevelopment = process.env.NODE_ENV === "development";
+    const errorDetail = isDevelopment ? err.message : "Internal Server Error";
 
-    return res.status(statusCode).json({
-        message: "Something went wrong on our end. Please try again later.",
-        error: isDevelopment ? err.message : "Internal Server Error",
-        stack: isDevelopment ? err.stack : undefined,
-    });
+    return ApiResponse.error(
+        res,
+        "Something went wrong on our end. Please try again later.",
+        statusCode,
+        errorDetail
+    );
 }
+

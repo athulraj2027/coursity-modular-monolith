@@ -9,6 +9,7 @@ import {
   ToggleTemplateStatusSchema,
   UpdateInterviewTemplateSchema,
 } from "../validators/interview.validator";
+import { ApiResponse } from "@/shared";
 
 export class AdminInterviewController {
   constructor(private readonly useCases: AdminInterviewUseCases) {}
@@ -33,20 +34,15 @@ export class AdminInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const query = AdminListSessionsQuerySchema.parse(req.query);
       const result = await this.useCases.getSessions(query);
 
-      res.status(200).json({
-        success: true,
-        data: result.sessions,
-        meta: {
-          total: result.total,
-          page: query.page,
-          limit: query.limit,
-          totalPages: Math.ceil(result.total / query.limit),
-        },
+      return ApiResponse.paginated(res, result.sessions, {
+        total: result.total,
+        page: query.page,
+        limit: query.limit,
       });
     } catch (error) {
       next(error);
@@ -58,11 +54,11 @@ export class AdminInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const session = await this.useCases.getSessionDetails(id);
-      res.status(200).json({ success: true, data: session });
+      return ApiResponse.success(res, session);
     } catch (error) {
       next(error);
     }
@@ -73,11 +69,11 @@ export class AdminInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const transcripts = await this.useCases.getSessionTranscripts(id);
-      res.status(200).json({ success: true, data: transcripts });
+      return ApiResponse.success(res, transcripts);
     } catch (error) {
       next(error);
     }
@@ -88,11 +84,11 @@ export class AdminInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const recordingData = await this.useCases.getSessionRecording(id);
-      res.status(200).json({ success: true, data: recordingData });
+      return ApiResponse.success(res, recordingData);
     } catch (error) {
       next(error);
     }
@@ -103,7 +99,7 @@ export class AdminInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const adminId = this.getUserId(req);
@@ -117,11 +113,11 @@ export class AdminInterviewController {
         adminNote: validated.adminNote,
       });
 
-      res.status(200).json({
-        success: true,
-        message: "Interview decision overridden successfully",
-        data: session,
-      });
+      return ApiResponse.success(
+        res,
+        session,
+        "Interview decision overridden successfully"
+      );
     } catch (error) {
       next(error);
     }
@@ -132,7 +128,7 @@ export class AdminInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const adminId = this.getUserId(req);
@@ -149,11 +145,11 @@ export class AdminInterviewController {
         adminNote: validated.adminNote,
       });
 
-      res.status(200).json({
-        success: true,
-        message: "Interview evaluation adjusted successfully",
-        data: session,
-      });
+      return ApiResponse.success(
+        res,
+        session,
+        "Interview evaluation adjusted successfully"
+      );
     } catch (error) {
       next(error);
     }
@@ -164,11 +160,11 @@ export class AdminInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const auditLogs = await this.useCases.getSessionAudit(id);
-      res.status(200).json({ success: true, data: auditLogs });
+      return ApiResponse.success(res, auditLogs);
     } catch (error) {
       next(error);
     }
@@ -183,7 +179,7 @@ export class AdminInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const adminId = (req as any).user?.id || (req as any).userId;
       const validated = CreateInterviewTemplateSchema.parse(req.body);
@@ -193,11 +189,11 @@ export class AdminInterviewController {
         adminId,
       });
 
-      res.status(201).json({
-        success: true,
-        message: "Interview template created successfully",
-        data: template,
-      });
+      return ApiResponse.created(
+        res,
+        template,
+        "Interview template created successfully"
+      );
     } catch (error) {
       next(error);
     }
@@ -208,20 +204,15 @@ export class AdminInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const query = AdminListTemplatesQuerySchema.parse(req.query);
       const result = await this.useCases.getTemplates(query);
 
-      res.status(200).json({
-        success: true,
-        data: result.templates,
-        meta: {
-          total: result.total,
-          page: query.page,
-          limit: query.limit,
-          totalPages: Math.ceil(result.total / query.limit),
-        },
+      return ApiResponse.paginated(res, result.templates, {
+        total: result.total,
+        page: query.page,
+        limit: query.limit,
       });
     } catch (error) {
       next(error);
@@ -233,11 +224,11 @@ export class AdminInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const template = await this.useCases.getTemplateById(id);
-      res.status(200).json({ success: true, data: template });
+      return ApiResponse.success(res, template);
     } catch (error) {
       next(error);
     }
@@ -248,7 +239,7 @@ export class AdminInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const adminId = (req as any).user?.id || (req as any).userId;
@@ -259,11 +250,11 @@ export class AdminInterviewController {
         adminId,
       });
 
-      res.status(200).json({
-        success: true,
-        message: "Interview template updated successfully",
-        data: template,
-      });
+      return ApiResponse.success(
+        res,
+        template,
+        "Interview template updated successfully"
+      );
     } catch (error) {
       next(error);
     }
@@ -274,7 +265,7 @@ export class AdminInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const validated = ToggleTemplateStatusSchema.parse(req.body);
@@ -284,11 +275,11 @@ export class AdminInterviewController {
         validated.isActive
       );
 
-      res.status(200).json({
-        success: true,
-        message: `Template ${validated.isActive ? "activated" : "deactivated"} successfully`,
-        data: template,
-      });
+      return ApiResponse.success(
+        res,
+        template,
+        `Template ${validated.isActive ? "activated" : "deactivated"} successfully`
+      );
     } catch (error) {
       next(error);
     }
@@ -299,11 +290,11 @@ export class AdminInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const versions = await this.useCases.getTemplateVersions(id);
-      res.status(200).json({ success: true, data: versions });
+      return ApiResponse.success(res, versions);
     } catch (error) {
       next(error);
     }
@@ -318,7 +309,7 @@ export class AdminInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const { startDate, endDate } = req.query as {
         startDate?: string;
@@ -328,7 +319,7 @@ export class AdminInterviewController {
         startDate,
         endDate
       );
-      res.status(200).json({ success: true, data: overview });
+      return ApiResponse.success(res, overview);
     } catch (error) {
       next(error);
     }
@@ -339,11 +330,11 @@ export class AdminInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const days = req.query.days ? Number(req.query.days) : 30;
       const timeseries = await this.useCases.getAnalyticsTimeseries(days);
-      res.status(200).json({ success: true, data: timeseries });
+      return ApiResponse.success(res, timeseries);
     } catch (error) {
       next(error);
     }
@@ -354,11 +345,11 @@ export class AdminInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const templateId = this.getIdParam(req.params.templateId);
       const analytics = await this.useCases.getTemplateAnalytics(templateId);
-      res.status(200).json({ success: true, data: analytics });
+      return ApiResponse.success(res, analytics);
     } catch (error) {
       next(error);
     }

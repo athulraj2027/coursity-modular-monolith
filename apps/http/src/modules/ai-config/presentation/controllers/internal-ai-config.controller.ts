@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { GetPublishedInternalConfigUseCase } from "../../application/use-cases/get-published-internal-config.usecase";
+import { ApiResponse } from "@/shared";
 
 export class InternalAIConfigController {
   constructor(
@@ -10,10 +11,7 @@ export class InternalAIConfigController {
     try {
       const versionId = req.query.versionId as string | undefined;
       const config = await this.getPublishedConfig.execute(versionId);
-      res.status(200).json({
-        success: true,
-        data: config,
-      });
+      return ApiResponse.success(res, config);
     } catch (error) {
       next(error);
     }

@@ -2,586 +2,201 @@ import { Request, Response, NextFunction } from "express";
 import { GetCoursesUseCase } from "../../application/use-cases/get-courses.usecase";
 import { TeacherCourseUseCase } from "../../application/use-cases/teacher-course.usecase";
 import { AdminManageCoursesUseCase } from "../../application/use-cases/admin-manage-courses.usecase";
-import {
-  createCourseSchema,
-  updateCourseSchema,
-  createModuleSchema,
-  updateModuleSchema,
-  createLessonSchema,
-  updateLessonSchema,
-  reorderItemsSchema,
-  adminDelistCourseSchema,
-  adminFreezeCourseSchema,
-  queryCoursesSchema,
-} from "../validators/course.validator";
-import { BadRequestError, ForbiddenError, UnauthorizedError } from "@/app/errors";
-import { profileRepository } from "@/modules/profile";
+
+import { GetPublicCoursesController } from "./get-public-courses.controller";
+import { GetFeaturedCoursesController } from "./get-featured-courses.controller";
+import { GetTrendingCoursesController } from "./get-trending-courses.controller";
+import { GetCourseBySlugController } from "./get-course-by-slug.controller";
+
+import { GetTeacherCoursesController } from "./get-teacher-courses.controller";
+import { GetTeacherMetricsController } from "./get-teacher-metrics.controller";
+import { GetTeacherCourseByIdController } from "./get-teacher-course-by-id.controller";
+import { CreateCourseController } from "./create-course.controller";
+import { UpdateCourseController } from "./update-course.controller";
+import { DeleteCourseController } from "./delete-course.controller";
+
+import { CreateModuleController } from "./create-module.controller";
+import { UpdateModuleController } from "./update-module.controller";
+import { DeleteModuleController } from "./delete-module.controller";
+import { ReorderModulesController } from "./reorder-modules.controller";
+import { CreateLessonController } from "./create-lesson.controller";
+import { UpdateLessonController } from "./update-lesson.controller";
+import { DeleteLessonController } from "./delete-lesson.controller";
+import { ReorderLessonsController } from "./reorder-lessons.controller";
+
+import { AdminGetAllCoursesController } from "./admin-get-all-courses.controller";
+import { AdminGetCourseMetricsController } from "./admin-get-course-metrics.controller";
+import { AdminGetCourseByIdController } from "./admin-get-course-by-id.controller";
+import { AdminToggleFeaturedController } from "./admin-toggle-featured.controller";
+import { AdminToggleTrendingController } from "./admin-toggle-trending.controller";
+import { AdminDelistCourseController } from "./admin-delist-course.controller";
+import { AdminFreezeCourseController } from "./admin-freeze-course.controller";
+import { AdminUnfreezeCourseController } from "./admin-unfreeze-course.controller";
+import { AdminSoftDeleteCourseController } from "./admin-soft-delete-course.controller";
+import { AdminRestoreCourseController } from "./admin-restore-course.controller";
+import { AdminHardDeleteCourseController } from "./admin-hard-delete-course.controller";
 
 export class CourseController {
+  private readonly getPublicCoursesController: GetPublicCoursesController;
+  private readonly getFeaturedCoursesController: GetFeaturedCoursesController;
+  private readonly getTrendingCoursesController: GetTrendingCoursesController;
+  private readonly getCourseBySlugController: GetCourseBySlugController;
+
+  private readonly getTeacherCoursesController: GetTeacherCoursesController;
+  private readonly getTeacherMetricsController: GetTeacherMetricsController;
+  private readonly getTeacherCourseByIdController: GetTeacherCourseByIdController;
+  private readonly createCourseController: CreateCourseController;
+  private readonly updateCourseController: UpdateCourseController;
+  private readonly deleteCourseController: DeleteCourseController;
+
+  private readonly createModuleController: CreateModuleController;
+  private readonly updateModuleController: UpdateModuleController;
+  private readonly deleteModuleController: DeleteModuleController;
+  private readonly reorderModulesController: ReorderModulesController;
+  private readonly createLessonController: CreateLessonController;
+  private readonly updateLessonController: UpdateLessonController;
+  private readonly deleteLessonController: DeleteLessonController;
+  private readonly reorderLessonsController: ReorderLessonsController;
+
+  private readonly adminGetAllCoursesController: AdminGetAllCoursesController;
+  private readonly adminGetMetricsController: AdminGetCourseMetricsController;
+  private readonly adminGetCourseByIdController: AdminGetCourseByIdController;
+  private readonly adminToggleFeaturedController: AdminToggleFeaturedController;
+  private readonly adminToggleTrendingController: AdminToggleTrendingController;
+  private readonly adminDelistCourseController: AdminDelistCourseController;
+  private readonly adminFreezeCourseController: AdminFreezeCourseController;
+  private readonly adminUnfreezeCourseController: AdminUnfreezeCourseController;
+  private readonly adminSoftDeleteCourseController: AdminSoftDeleteCourseController;
+  private readonly adminRestoreCourseController: AdminRestoreCourseController;
+  private readonly adminHardDeleteCourseController: AdminHardDeleteCourseController;
+
   constructor(
-    private readonly getCoursesUseCase: GetCoursesUseCase,
-    private readonly teacherCourseUseCase: TeacherCourseUseCase,
-    private readonly adminManageCoursesUseCase: AdminManageCoursesUseCase
-  ) {}
+    getCoursesUseCase: GetCoursesUseCase,
+    teacherCourseUseCase: TeacherCourseUseCase,
+    adminManageCoursesUseCase: AdminManageCoursesUseCase
+  ) {
+    this.getPublicCoursesController = new GetPublicCoursesController(getCoursesUseCase);
+    this.getFeaturedCoursesController = new GetFeaturedCoursesController(getCoursesUseCase);
+    this.getTrendingCoursesController = new GetTrendingCoursesController(getCoursesUseCase);
+    this.getCourseBySlugController = new GetCourseBySlugController(getCoursesUseCase);
 
-  private async getTeacherProfileId(userId: string): Promise<string> {
-    try {
-      return await profileRepository.getOrCreateTeacherProfileId(userId);
-    } catch {
-      throw new BadRequestError("Unable to locate or initialize instructor profile.");
-    }
+    this.getTeacherCoursesController = new GetTeacherCoursesController(teacherCourseUseCase);
+    this.getTeacherMetricsController = new GetTeacherMetricsController(teacherCourseUseCase);
+    this.getTeacherCourseByIdController = new GetTeacherCourseByIdController(teacherCourseUseCase);
+    this.createCourseController = new CreateCourseController(teacherCourseUseCase);
+    this.updateCourseController = new UpdateCourseController(teacherCourseUseCase);
+    this.deleteCourseController = new DeleteCourseController(teacherCourseUseCase);
+
+    this.createModuleController = new CreateModuleController(teacherCourseUseCase);
+    this.updateModuleController = new UpdateModuleController(teacherCourseUseCase);
+    this.deleteModuleController = new DeleteModuleController(teacherCourseUseCase);
+    this.reorderModulesController = new ReorderModulesController(teacherCourseUseCase);
+    this.createLessonController = new CreateLessonController(teacherCourseUseCase);
+    this.updateLessonController = new UpdateLessonController(teacherCourseUseCase);
+    this.deleteLessonController = new DeleteLessonController(teacherCourseUseCase);
+    this.reorderLessonsController = new ReorderLessonsController(teacherCourseUseCase);
+
+    this.adminGetAllCoursesController = new AdminGetAllCoursesController(adminManageCoursesUseCase);
+    this.adminGetMetricsController = new AdminGetCourseMetricsController(adminManageCoursesUseCase);
+    this.adminGetCourseByIdController = new AdminGetCourseByIdController(adminManageCoursesUseCase);
+    this.adminToggleFeaturedController = new AdminToggleFeaturedController(adminManageCoursesUseCase);
+    this.adminToggleTrendingController = new AdminToggleTrendingController(adminManageCoursesUseCase);
+    this.adminDelistCourseController = new AdminDelistCourseController(adminManageCoursesUseCase);
+    this.adminFreezeCourseController = new AdminFreezeCourseController(adminManageCoursesUseCase);
+    this.adminUnfreezeCourseController = new AdminUnfreezeCourseController(adminManageCoursesUseCase);
+    this.adminSoftDeleteCourseController = new AdminSoftDeleteCourseController(adminManageCoursesUseCase);
+    this.adminRestoreCourseController = new AdminRestoreCourseController(adminManageCoursesUseCase);
+    this.adminHardDeleteCourseController = new AdminHardDeleteCourseController(adminManageCoursesUseCase);
   }
 
-  // ================= 1. PUBLIC DISCOVERY ENDPOINTS =================
+  // 1. PUBLIC DISCOVERY ENDPOINTS
+  getPublicCourses = (req: Request, res: Response, next: NextFunction) =>
+    this.getPublicCoursesController.execute(req, res, next);
 
-  // GET /api/courses (Public published catalog)
-  getPublicCourses = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const query = queryCoursesSchema.parse(req.query);
-      const result = await this.getCoursesUseCase.getPublicCourses(query as any);
+  getFeaturedCourses = (req: Request, res: Response, next: NextFunction) =>
+    this.getFeaturedCoursesController.execute(req, res, next);
 
-      res.status(200).json({
-        success: true,
-        data: result.items,
-        meta: {
-          total: result.total,
-          page: query.page,
-          limit: query.limit,
-          totalPages: Math.ceil(result.total / query.limit),
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  getTrendingCourses = (req: Request, res: Response, next: NextFunction) =>
+    this.getTrendingCoursesController.execute(req, res, next);
 
-  // GET /api/courses/featured (Public featured courses)
-  getFeaturedCourses = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const limit = req.query.limit ? Number(req.query.limit) : 6;
-      const courses = await this.getCoursesUseCase.getFeaturedCourses(limit);
-      res.status(200).json({
-        success: true,
-        data: courses,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  getCourseBySlug = (req: Request, res: Response, next: NextFunction) =>
+    this.getCourseBySlugController.execute(req, res, next);
 
-  // GET /api/courses/trending (Public trending courses)
-  getTrendingCourses = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const limit = req.query.limit ? Number(req.query.limit) : 6;
-      const courses = await this.getCoursesUseCase.getTrendingCourses(limit);
-      res.status(200).json({
-        success: true,
-        data: courses,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  // 2. TEACHER STUDIO ENDPOINTS
+  getTeacherCourses = (req: Request, res: Response, next: NextFunction) =>
+    this.getTeacherCoursesController.execute(req, res, next);
 
-  // GET /api/courses/slug/:slug (Public get course by slug with syllabus)
-  getCourseBySlug = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const slug = Array.isArray(req.params.slug) ? req.params.slug[0] : (req.params.slug as string);
-      const course = await this.getCoursesUseCase.getCourseBySlug(slug);
+  getTeacherMetrics = (req: Request, res: Response, next: NextFunction) =>
+    this.getTeacherMetricsController.execute(req, res, next);
 
-      res.status(200).json({
-        success: true,
-        data: course,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  getTeacherCourseById = (req: Request, res: Response, next: NextFunction) =>
+    this.getTeacherCourseByIdController.execute(req, res, next);
 
-  // ================= 2. TEACHER STUDIO ENDPOINTS =================
+  createCourse = (req: Request, res: Response, next: NextFunction) =>
+    this.createCourseController.execute(req, res, next);
 
-  // GET /api/courses/teacher/mine (Protected - Teacher: List own courses)
-  getTeacherCourses = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const query = queryCoursesSchema.parse(req.query);
+  updateCourse = (req: Request, res: Response, next: NextFunction) =>
+    this.updateCourseController.execute(req, res, next);
 
-      const result = await this.teacherCourseUseCase.getTeacherCourses(teacherProfileId, query as any);
+  deleteCourse = (req: Request, res: Response, next: NextFunction) =>
+    this.deleteCourseController.execute(req, res, next);
 
-      res.status(200).json({
-        success: true,
-        data: result.items,
-        meta: {
-          total: result.total,
-          page: query.page,
-          limit: query.limit,
-          totalPages: Math.ceil(result.total / query.limit),
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  // 3. TEACHER CURRICULUM ENDPOINTS
+  createModule = (req: Request, res: Response, next: NextFunction) =>
+    this.createModuleController.execute(req, res, next);
 
-  // GET /api/courses/teacher/metrics (Protected - Teacher: Metrics overview)
-  getTeacherMetrics = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const metrics = await this.teacherCourseUseCase.getTeacherMetrics(teacherProfileId);
+  updateModule = (req: Request, res: Response, next: NextFunction) =>
+    this.updateModuleController.execute(req, res, next);
 
-      res.status(200).json({
-        success: true,
-        data: metrics,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  deleteModule = (req: Request, res: Response, next: NextFunction) =>
+    this.deleteModuleController.execute(req, res, next);
 
-  // GET /api/courses/teacher/:id (Protected - Teacher: Get own course details + curriculum)
-  getTeacherCourseById = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
+  reorderModules = (req: Request, res: Response, next: NextFunction) =>
+    this.reorderModulesController.execute(req, res, next);
 
-      const course = await this.teacherCourseUseCase.getTeacherCourseById(teacherProfileId, id);
+  createLesson = (req: Request, res: Response, next: NextFunction) =>
+    this.createLessonController.execute(req, res, next);
 
-      res.status(200).json({
-        success: true,
-        data: course,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  updateLesson = (req: Request, res: Response, next: NextFunction) =>
+    this.updateLessonController.execute(req, res, next);
 
-  // POST /api/courses/teacher (Protected - Teacher: Create course)
-  createCourse = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const validated = createCourseSchema.parse(req.body);
+  deleteLesson = (req: Request, res: Response, next: NextFunction) =>
+    this.deleteLessonController.execute(req, res, next);
 
-      const course = await this.teacherCourseUseCase.createCourse({
-        ...validated,
-        teacherProfileId,
-      });
+  reorderLessons = (req: Request, res: Response, next: NextFunction) =>
+    this.reorderLessonsController.execute(req, res, next);
 
-      res.status(201).json({
-        success: true,
-        message: "Course created successfully",
-        data: course,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  // 4. ADMIN MODERATION ENDPOINTS
+  adminGetAllCourses = (req: Request, res: Response, next: NextFunction) =>
+    this.adminGetAllCoursesController.execute(req, res, next);
 
-  // PUT /api/courses/teacher/:id (Protected - Teacher: Update course)
-  updateCourse = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      const validated = updateCourseSchema.parse(req.body);
+  adminGetMetrics = (req: Request, res: Response, next: NextFunction) =>
+    this.adminGetMetricsController.execute(req, res, next);
 
-      const course = await this.teacherCourseUseCase.updateCourse(teacherProfileId, id, validated as any);
+  adminGetCourseById = (req: Request, res: Response, next: NextFunction) =>
+    this.adminGetCourseByIdController.execute(req, res, next);
 
-      res.status(200).json({
-        success: true,
-        message: "Course updated successfully",
-        data: course,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  adminToggleFeatured = (req: Request, res: Response, next: NextFunction) =>
+    this.adminToggleFeaturedController.execute(req, res, next);
 
-  // DELETE /api/courses/teacher/:id (Protected - Teacher: Soft delete course)
-  deleteCourse = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
+  adminToggleTrending = (req: Request, res: Response, next: NextFunction) =>
+    this.adminToggleTrendingController.execute(req, res, next);
 
-      const course = await this.teacherCourseUseCase.deleteCourse(teacherProfileId, id);
+  adminDelistCourse = (req: Request, res: Response, next: NextFunction) =>
+    this.adminDelistCourseController.execute(req, res, next);
 
-      res.status(200).json({
-        success: true,
-        message: "Course archived successfully",
-        data: course,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  adminFreezeCourse = (req: Request, res: Response, next: NextFunction) =>
+    this.adminFreezeCourseController.execute(req, res, next);
 
-  // ================= 3. TEACHER CURRICULUM ENDPOINTS =================
+  adminUnfreezeCourse = (req: Request, res: Response, next: NextFunction) =>
+    this.adminUnfreezeCourseController.execute(req, res, next);
 
-  // POST /api/courses/teacher/:id/modules (Add Module)
-  createModule = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const courseId = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      const validated = createModuleSchema.parse(req.body);
+  adminSoftDeleteCourse = (req: Request, res: Response, next: NextFunction) =>
+    this.adminSoftDeleteCourseController.execute(req, res, next);
 
-      const module = await this.teacherCourseUseCase.createModule(teacherProfileId, {
-        ...validated,
-        courseId,
-      });
+  adminRestoreCourse = (req: Request, res: Response, next: NextFunction) =>
+    this.adminRestoreCourseController.execute(req, res, next);
 
-      res.status(201).json({
-        success: true,
-        message: "Module added successfully",
-        data: module,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // PUT /api/courses/teacher/modules/:moduleId (Update Module)
-  updateModule = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const moduleId = Array.isArray(req.params.moduleId) ? req.params.moduleId[0] : (req.params.moduleId as string);
-      const validated = updateModuleSchema.parse(req.body);
-
-      const module = await this.teacherCourseUseCase.updateModule(teacherProfileId, moduleId, validated);
-
-      res.status(200).json({
-        success: true,
-        message: "Module updated successfully",
-        data: module,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // DELETE /api/courses/teacher/modules/:moduleId (Delete Module)
-  deleteModule = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const moduleId = Array.isArray(req.params.moduleId) ? req.params.moduleId[0] : (req.params.moduleId as string);
-
-      await this.teacherCourseUseCase.deleteModule(teacherProfileId, moduleId);
-
-      res.status(200).json({
-        success: true,
-        message: "Module deleted successfully",
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // POST /api/courses/teacher/:id/modules/reorder (Reorder Modules)
-  reorderModules = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const courseId = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      const validated = reorderItemsSchema.parse(req.body);
-
-      await this.teacherCourseUseCase.reorderModules(teacherProfileId, courseId, validated.items);
-
-      res.status(200).json({
-        success: true,
-        message: "Modules reordered successfully",
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // POST /api/courses/teacher/modules/:moduleId/lessons (Add Lesson)
-  createLesson = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const moduleId = Array.isArray(req.params.moduleId) ? req.params.moduleId[0] : (req.params.moduleId as string);
-      const validated = createLessonSchema.parse(req.body);
-
-      const lesson = await this.teacherCourseUseCase.createLesson(teacherProfileId, {
-        ...validated,
-        moduleId,
-      } as any);
-
-      res.status(201).json({
-        success: true,
-        message: "Lesson added successfully",
-        data: lesson,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // PUT /api/courses/teacher/lessons/:lessonId (Update Lesson)
-  updateLesson = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const lessonId = Array.isArray(req.params.lessonId) ? req.params.lessonId[0] : (req.params.lessonId as string);
-      const validated = updateLessonSchema.parse(req.body);
-
-      const lesson = await this.teacherCourseUseCase.updateLesson(teacherProfileId, lessonId, validated as any);
-
-      res.status(200).json({
-        success: true,
-        message: "Lesson updated successfully",
-        data: lesson,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // DELETE /api/courses/teacher/lessons/:lessonId (Delete Lesson)
-  deleteLesson = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const lessonId = Array.isArray(req.params.lessonId) ? req.params.lessonId[0] : (req.params.lessonId as string);
-
-      await this.teacherCourseUseCase.deleteLesson(teacherProfileId, lessonId);
-
-      res.status(200).json({
-        success: true,
-        message: "Lesson deleted successfully",
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // POST /api/courses/teacher/modules/:moduleId/lessons/reorder (Reorder Lessons)
-  reorderLessons = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required.");
-      const teacherProfileId = await this.getTeacherProfileId(req.user.userId);
-      const moduleId = Array.isArray(req.params.moduleId) ? req.params.moduleId[0] : (req.params.moduleId as string);
-      const validated = reorderItemsSchema.parse(req.body);
-
-      await this.teacherCourseUseCase.reorderLessons(teacherProfileId, moduleId, validated.items);
-
-      res.status(200).json({
-        success: true,
-        message: "Lessons reordered successfully",
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // ================= 4. ADMIN MODERATION ENDPOINTS =================
-
-  // GET /api/courses/admin/all (Protected - Admin: Get all courses)
-  adminGetAllCourses = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const query = queryCoursesSchema.parse(req.query);
-      const result = await this.adminManageCoursesUseCase.getAllCourses(query as any);
-
-      res.status(200).json({
-        success: true,
-        data: result.items,
-        meta: {
-          total: result.total,
-          page: query.page,
-          limit: query.limit,
-          totalPages: Math.ceil(result.total / query.limit),
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // GET /api/courses/admin/metrics (Protected - Admin: Platform Course Metrics)
-  adminGetMetrics = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const metrics = await this.adminManageCoursesUseCase.getMetrics();
-      res.status(200).json({
-        success: true,
-        data: metrics,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // GET /api/courses/admin/:id (Protected - Admin: Get single course)
-  adminGetCourseById = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      const course = await this.adminManageCoursesUseCase.getCourseById(id);
-
-      res.status(200).json({
-        success: true,
-        data: course,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // PATCH /api/courses/admin/:id/featured (Protected - Admin: Toggle featured)
-  adminToggleFeatured = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      const isFeatured = req.body.isFeatured === true;
-
-      const course = await this.adminManageCoursesUseCase.toggleFeatured(id, isFeatured);
-
-      res.status(200).json({
-        success: true,
-        message: `Course featured status updated to ${isFeatured}`,
-        data: course,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // PATCH /api/courses/admin/:id/trending (Protected - Admin: Toggle trending)
-  adminToggleTrending = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      const isTrending = req.body.isTrending === true;
-
-      const course = await this.adminManageCoursesUseCase.toggleTrending(id, isTrending);
-
-      res.status(200).json({
-        success: true,
-        message: `Course trending status updated to ${isTrending}`,
-        data: course,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // POST /api/courses/admin/:id/delist (Protected - Admin: Delist unstarted course with reason)
-  adminDelistCourse = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      const validated = adminDelistCourseSchema.parse(req.body);
-
-      const course = await this.adminManageCoursesUseCase.delistCourse(id, validated);
-
-      res.status(200).json({
-        success: true,
-        message: "Course delisted successfully and instructor notified via email",
-        data: course,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // POST /api/courses/admin/:id/freeze (Protected - Admin: Freeze started course with reason)
-  adminFreezeCourse = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      const validated = adminFreezeCourseSchema.parse(req.body);
-
-      const course = await this.adminManageCoursesUseCase.freezeCourse(id, validated);
-
-      res.status(200).json({
-        success: true,
-        message: "Course frozen successfully and instructor notified via email",
-        data: course,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // POST /api/courses/admin/:id/unfreeze (Protected - Admin: Unfreeze course)
-  adminUnfreezeCourse = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      const course = await this.adminManageCoursesUseCase.unfreezeCourse(id);
-
-      res.status(200).json({
-        success: true,
-        message: "Course unfrozen successfully",
-        data: course,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // DELETE /api/courses/admin/:id (Protected - Admin: Soft delete)
-  adminSoftDeleteCourse = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      const reason = typeof req.body?.reason === "string" ? req.body.reason : undefined;
-      const course = await this.adminManageCoursesUseCase.softDelete(id, reason);
-
-      res.status(200).json({
-        success: true,
-        message: "Course archived successfully",
-        data: course,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // POST /api/courses/admin/:id/restore (Protected - Admin: Restore)
-  adminRestoreCourse = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      const course = await this.adminManageCoursesUseCase.restore(id);
-
-      res.status(200).json({
-        success: true,
-        message: "Course restored successfully",
-        data: course,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // DELETE /api/courses/admin/:id/permanent (Protected - Admin: Hard delete)
-  adminHardDeleteCourse = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      await this.adminManageCoursesUseCase.hardDelete(id);
-
-      res.status(200).json({
-        success: true,
-        message: "Course permanently deleted",
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  private ensureAdmin(req: Request) {
-    if (!req.user || req.user.role !== "ADMIN") {
-      throw new ForbiddenError("Admin privileges required to manage course records.");
-    }
-  }
+  adminHardDeleteCourse = (req: Request, res: Response, next: NextFunction) =>
+    this.adminHardDeleteCourseController.execute(req, res, next);
 }

@@ -1,157 +1,45 @@
-import { Request, Response, NextFunction } from "express";
 import { GetPlansUseCase } from "../../application/use-cases/get-plans.usecase";
 import { AdminManagePlansUseCase } from "../../application/use-cases/admin-manage-plans.usecase";
-import {
-  createPlanSchema,
-  updatePlanSchema,
-} from "../validators/plan.validator";
-import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError } from "@/app/errors";
+
+import { GetPlansController } from "./get-plans.controller";
+import { GetPlanByIdController } from "./get-plan-by-id.controller";
+import { AdminGetAllPlansController } from "./admin-get-all-plans.controller";
+import { AdminGetAllFeaturesController } from "./admin-get-all-features.controller";
+import { AdminGetPlanByIdController } from "./admin-get-plan-by-id.controller";
+import { AdminCreatePlanController } from "./admin-create-plan.controller";
+import { AdminUpdatePlanController } from "./admin-update-plan.controller";
+import { AdminDeletePlanController } from "./admin-delete-plan.controller";
 
 export class PlanController {
+  public readonly getPlansController: GetPlansController;
+  public readonly getPlanByIdController: GetPlanByIdController;
+  public readonly adminGetAllPlansController: AdminGetAllPlansController;
+  public readonly adminGetAllFeaturesController: AdminGetAllFeaturesController;
+  public readonly adminGetPlanByIdController: AdminGetPlanByIdController;
+  public readonly adminCreatePlanController: AdminCreatePlanController;
+  public readonly adminUpdatePlanController: AdminUpdatePlanController;
+  public readonly adminDeletePlanController: AdminDeletePlanController;
+
   constructor(
-    private readonly getPlansUseCase: GetPlansUseCase,
-    private readonly adminManagePlansUseCase: AdminManagePlansUseCase
-  ) {}
-
-  // GET /api/plans (Public / Authenticated)
-  getPlans = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const result = await this.getPlansUseCase.execute(false);
-      res.status(200).json({
-        success: true,
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // GET /api/plans/:id (Public / Authenticated)
-  getPlanById = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const id = req.params.id as string;
-      const plan = await this.adminManagePlansUseCase.getPlanById(id);
-      if (!plan) {
-        throw new NotFoundError(`Plan with id '${id}' not found`);
-      }
-
-      res.status(200).json({
-        success: true,
-        data: plan,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // ==========================================
-  // ADMIN PLAN & FEATURE MANAGEMENT HANDLERS
-  // ==========================================
-
-  // GET /api/plans/admin/all (Protected - Admin)
-  adminGetAllPlans = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.assertAdmin(req);
-      const plans = await this.adminManagePlansUseCase.getAllPlans();
-      res.status(200).json({
-        success: true,
-        data: plans,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // GET /api/plans/admin/features (Protected - Admin)
-  adminGetAllFeatures = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.assertAdmin(req);
-      const features = await this.adminManagePlansUseCase.getAllFeatures();
-      res.status(200).json({
-        success: true,
-        data: features,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // GET /api/plans/admin/:id (Protected - Admin)
-  adminGetPlanById = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.assertAdmin(req);
-      const id = req.params.id as string;
-      const plan = await this.adminManagePlansUseCase.getPlanById(id);
-      if (!plan) {
-        throw new NotFoundError(`Plan with id '${id}' not found`);
-      }
-      res.status(200).json({
-        success: true,
-        data: plan,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // POST /api/plans/admin (Protected - Admin)
-  adminCreatePlan = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.assertAdmin(req);
-      const validated = createPlanSchema.parse(req.body);
-      const plan = await this.adminManagePlansUseCase.createPlan(validated as any);
-
-      res.status(201).json({
-        success: true,
-        message: "Subscription plan created successfully",
-        data: plan,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // PUT /api/plans/admin/:id (Protected - Admin)
-  adminUpdatePlan = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.assertAdmin(req);
-      const id = req.params.id as string;
-      const validated = updatePlanSchema.parse(req.body);
-      const plan = await this.adminManagePlansUseCase.updatePlan(id, validated as any);
-
-      res.status(200).json({
-        success: true,
-        message: "Subscription plan updated successfully",
-        data: plan,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // DELETE /api/plans/admin/:id (Protected - Admin)
-  adminDeletePlan = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.assertAdmin(req);
-      const id = req.params.id as string;
-      await this.adminManagePlansUseCase.deletePlan(id);
-
-      res.status(200).json({
-        success: true,
-        message: "Subscription plan deactivated/deleted successfully",
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  private assertAdmin(req: Request) {
-    if (!req.user) {
-      throw new UnauthorizedError("Authentication required");
-    }
-    const role = (req.user.role || "").toUpperCase();
-    if (role !== "ADMIN" && role !== "SUPERADMIN") {
-      throw new ForbiddenError("Administrative privileges required");
-    }
+    getPlansUseCase: GetPlansUseCase,
+    adminManagePlansUseCase: AdminManagePlansUseCase
+  ) {
+    this.getPlansController = new GetPlansController(getPlansUseCase);
+    this.getPlanByIdController = new GetPlanByIdController(adminManagePlansUseCase);
+    this.adminGetAllPlansController = new AdminGetAllPlansController(adminManagePlansUseCase);
+    this.adminGetAllFeaturesController = new AdminGetAllFeaturesController(adminManagePlansUseCase);
+    this.adminGetPlanByIdController = new AdminGetPlanByIdController(adminManagePlansUseCase);
+    this.adminCreatePlanController = new AdminCreatePlanController(adminManagePlansUseCase);
+    this.adminUpdatePlanController = new AdminUpdatePlanController(adminManagePlansUseCase);
+    this.adminDeletePlanController = new AdminDeletePlanController(adminManagePlansUseCase);
   }
+
+  getPlans = (req: any, res: any, next: any) => this.getPlansController.execute(req, res, next);
+  getPlanById = (req: any, res: any, next: any) => this.getPlanByIdController.execute(req, res, next);
+  adminGetAllPlans = (req: any, res: any, next: any) => this.adminGetAllPlansController.execute(req, res, next);
+  adminGetAllFeatures = (req: any, res: any, next: any) => this.adminGetAllFeaturesController.execute(req, res, next);
+  adminGetPlanById = (req: any, res: any, next: any) => this.adminGetPlanByIdController.execute(req, res, next);
+  adminCreatePlan = (req: any, res: any, next: any) => this.adminCreatePlanController.execute(req, res, next);
+  adminUpdatePlan = (req: any, res: any, next: any) => this.adminUpdatePlanController.execute(req, res, next);
+  adminDeletePlan = (req: any, res: any, next: any) => this.adminDeletePlanController.execute(req, res, next);
 }

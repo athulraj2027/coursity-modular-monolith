@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { ApproveTeacher } from "../../application/use-cases/approve-teacher.usecase";
-import { STATUS_CODES } from "@/app/config/status";
+import { ApiResponse } from "@/shared/utils/api-response";
 
 export class ApproveTeacherController {
     constructor(private readonly approveTeacher: ApproveTeacher) { }
@@ -17,12 +17,7 @@ export class ApproveTeacherController {
                 rejectionReason,
             });
 
-            res.status(STATUS_CODES.OK).json({
-                message: result.message,
-                data: {
-                    user: result.user,
-                },
-            });
+            return ApiResponse.success(res, { user: result.user }, result.message);
         } catch (error) {
             next(error);
         }

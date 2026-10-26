@@ -44,3 +44,4 @@ export function createBankDetailModule(prisma = defaultPrisma) {
 const defaultModule = createBankDetailModule();
 export const bankDetailRouter: Router = defaultModule.bankDetailRouter;
 export default bankDetailRouter;
+export * from "./presentation/controllers";

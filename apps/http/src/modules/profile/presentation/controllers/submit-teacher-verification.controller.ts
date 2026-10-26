@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { SubmitTeacherVerification } from "../../application/use-cases/submit-teacher-verification.usecase";
-import { STATUS_CODES } from "@/app/config/status";
 import { UnauthorizedError } from "@/app/errors";
+import { ApiResponse } from "@/shared/utils/api-response";
 
 export class SubmitTeacherVerificationController {
     constructor(private readonly submitTeacherVerification: SubmitTeacherVerification) { }
@@ -15,10 +15,7 @@ export class SubmitTeacherVerificationController {
 
             const result = await this.submitTeacherVerification.execute(userId);
 
-            res.status(STATUS_CODES.OK).json({
-                message: result.message,
-                data: { profile: result.profile },
-            });
+            return ApiResponse.success(res, { profile: result.profile }, result.message);
         } catch (error) {
             next(error);
         }

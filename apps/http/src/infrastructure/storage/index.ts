@@ -36,7 +36,7 @@ export * from "./errors/storage.error";
 export * from "./config/s3.config";
 export * from "./use-cases/get-presigned-url.usecase";
 export * from "./use-cases/delete-file.usecase";
-export * from "./presentation/controllers/upload.controller";
+export * from "./presentation/controllers";
 export * from "./presentation/routes/upload.routes";
 export * from "./presentation/validators/upload.validator";
 

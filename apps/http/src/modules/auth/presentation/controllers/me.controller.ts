@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { GetCurrentUser } from "../../application/use-cases/get-current-user.usecase";
-import { STATUS_CODES } from "@/app/config/status";
 import { UnauthorizedError } from "@/app/errors";
+import { ApiResponse } from "@/shared/utils/api-response";
 
 export class MeController {
     constructor(private readonly getCurrentUser: GetCurrentUser) { }
@@ -15,10 +15,7 @@ export class MeController {
 
             const user = await this.getCurrentUser.execute(userId);
 
-            res.status(STATUS_CODES.OK).json({
-                message: "Current user profile fetched successfully",
-                data: { user },
-            });
+            return ApiResponse.success(res, { user }, "Current user profile fetched successfully");
         } catch (error) {
             next(error);
         }

@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { LogoutUser } from "../../application/use-cases/logout.user.usecase";
-import { STATUS_CODES } from "@/app/config/status";
 import { clearAuthCookies } from "@/app/config/cookie";
+import { ApiResponse } from "@/shared/utils/api-response";
 
 export class LogoutController {
     constructor(private readonly logoutUser: LogoutUser) { }
@@ -16,9 +16,7 @@ export class LogoutController {
             // Clear HTTP-only auth cookies
             clearAuthCookies(res);
 
-            res.status(STATUS_CODES.OK).json({
-                message: result.message,
-            });
+            return ApiResponse.success(res, undefined, result.message);
         } catch (error) {
             next(error);
         }

@@ -58,3 +58,4 @@ export * from "./domain/entities/homework.entity";
 export * from "./domain/dtos/homework.dto";
 export * from "./domain/repositories/homework.repository";
 export * from "./domain/errors/homework.errors";
+export * from "./presentation/controllers";

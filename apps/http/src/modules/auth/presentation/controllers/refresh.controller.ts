@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { RefreshToken } from "../../application/use-cases/refresh-token.usecase";
-import { STATUS_CODES } from "@/app/config/status";
 import { setAuthCookies, clearAuthCookies } from "@/app/config/cookie";
+import { ApiResponse } from "@/shared/utils/api-response";
 
 export class RefreshController {
     constructor(private readonly refreshTokenUseCase: RefreshToken) { }
@@ -17,10 +17,7 @@ export class RefreshController {
                 refreshToken: result.refreshToken,
             });
 
-            res.status(STATUS_CODES.OK).json({
-                message: "Token refreshed successfully",
-                data: result,
-            });
+            return ApiResponse.success(res, result, "Token refreshed successfully");
         } catch (error) {
             clearAuthCookies(res);
             next(error);

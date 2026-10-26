@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { BlockUser } from "../../application/use-cases/block-user.usecase";
-import { STATUS_CODES } from "@/app/config/status";
+import { ApiResponse } from "@/shared/utils/api-response";
 
 export class BlockUserController {
     constructor(private readonly blockUser: BlockUser) { }
@@ -12,12 +12,7 @@ export class BlockUserController {
 
             const result = await this.blockUser.execute(id, isBlocked);
 
-            res.status(STATUS_CODES.OK).json({
-                message: result.message,
-                data: {
-                    user: result.user,
-                },
-            });
+            return ApiResponse.success(res, { user: result.user }, result.message);
         } catch (error) {
             next(error);
         }

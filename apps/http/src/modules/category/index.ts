@@ -31,7 +31,7 @@ export * from "./domain/repositories/category.repository";
 export * from "./infrastructure/repositories/prisma-category.repository";
 export * from "./application/use-cases/get-categories.usecase";
 export * from "./application/use-cases/admin-manage-categories.usecase";
-export * from "./presentation/controllers/category.controller";
+export * from "./presentation/controllers";
 export * from "./presentation/validators/category.validator";
 export * from "./presentation/routes/category.routes";
 export * from "./infrastructure/seed/default-categories.seed";

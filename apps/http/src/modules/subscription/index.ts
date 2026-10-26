@@ -106,3 +106,4 @@ export * from "./domain/entities/subscription.entity";
 export * from "./domain/constants/billing.constants";
 export * from "./domain/dtos/subscription.dto";
 export * from "./domain/repositories/subscription.repository";
+export * from "./presentation/controllers";

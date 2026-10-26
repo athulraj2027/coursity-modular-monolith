@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { DeleteUser } from "../../application/use-cases/delete-user.usecase";
-import { STATUS_CODES } from "@/app/config/status";
+import { ApiResponse } from "@/shared/utils/api-response";
 
 export class DeleteUserController {
     constructor(private readonly deleteUser: DeleteUser) { }
@@ -10,9 +10,7 @@ export class DeleteUserController {
             const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
             const result = await this.deleteUser.execute(id);
 
-            res.status(STATUS_CODES.OK).json({
-                message: result.message,
-            });
+            return ApiResponse.success(res, undefined, result.message);
         } catch (error) {
             next(error);
         }

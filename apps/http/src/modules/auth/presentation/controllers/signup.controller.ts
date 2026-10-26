@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { SignupUser } from "../../application/use-cases/signup.user.usecase";
-import { STATUS_CODES } from "@/app/config/status";
+import { ApiResponse } from "@/shared/utils/api-response";
 
 export class SignupController {
     constructor(
@@ -11,11 +11,8 @@ export class SignupController {
         try {
             const { name, email, password, role } = req.body;
 
-            const user = await this.signupUser.execute({ name, email, password, role })
-            res.status(STATUS_CODES.CREATED).json({
-                message: "Signup successful",
-                data: user,
-            });
+            const user = await this.signupUser.execute({ name, email, password, role });
+            return ApiResponse.created(res, user, "Signup successful");
         } catch (error) {
             next(error);
         }
