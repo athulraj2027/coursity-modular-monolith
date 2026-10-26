@@ -4,6 +4,7 @@ import { ManageModelsUseCase } from "../../application/use-cases/manage-models.u
 import { ManageCredentialsUseCase } from "../../application/use-cases/manage-credentials.usecase";
 import { TestCredentialUseCase } from "../../application/use-cases/test-credential.usecase";
 import { ManageConfigVersionUseCase } from "../../application/use-cases/manage-config-version.usecase";
+import { ApiResponse } from "@/shared";
 
 export class AdminAIConfigController {
   constructor(
@@ -18,7 +19,7 @@ export class AdminAIConfigController {
   getProviders = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const providers = await this.manageProviders.listProviders();
-      res.status(200).json({ success: true, data: providers });
+      return ApiResponse.success(res, providers);
     } catch (error) {
       next(error);
     }
@@ -27,7 +28,7 @@ export class AdminAIConfigController {
   getProviderById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const provider = await this.manageProviders.getProviderById(req.params.id as string);
-      res.status(200).json({ success: true, data: provider });
+      return ApiResponse.success(res, provider);
     } catch (error) {
       next(error);
     }
@@ -37,7 +38,7 @@ export class AdminAIConfigController {
     try {
       const adminId = (req as any).user?.id || "admin";
       const created = await this.manageProviders.createProvider(req.body, adminId);
-      res.status(201).json({ success: true, data: created });
+      return ApiResponse.created(res, created);
     } catch (error) {
       next(error);
     }
@@ -47,7 +48,7 @@ export class AdminAIConfigController {
     try {
       const adminId = (req as any).user?.id || "admin";
       const updated = await this.manageProviders.updateProvider(req.params.id as string, req.body, adminId);
-      res.status(200).json({ success: true, data: updated });
+      return ApiResponse.success(res, updated);
     } catch (error) {
       next(error);
     }
@@ -58,7 +59,7 @@ export class AdminAIConfigController {
     try {
       const { providerId, type } = req.query as { providerId?: string; type?: string };
       const models = await this.manageModels.listModels({ providerId, type });
-      res.status(200).json({ success: true, data: models });
+      return ApiResponse.success(res, models);
     } catch (error) {
       next(error);
     }
@@ -68,7 +69,7 @@ export class AdminAIConfigController {
     try {
       const adminId = (req as any).user?.id || "admin";
       const created = await this.manageModels.createModel(req.body, adminId);
-      res.status(201).json({ success: true, data: created });
+      return ApiResponse.created(res, created);
     } catch (error) {
       next(error);
     }
@@ -78,7 +79,7 @@ export class AdminAIConfigController {
     try {
       const adminId = (req as any).user?.id || "admin";
       const updated = await this.manageModels.updateModel(req.params.id as string, req.body, adminId);
-      res.status(200).json({ success: true, data: updated });
+      return ApiResponse.success(res, updated);
     } catch (error) {
       next(error);
     }
@@ -89,7 +90,7 @@ export class AdminAIConfigController {
     try {
       const { providerId } = req.query as { providerId?: string };
       const credentials = await this.manageCredentials.listCredentials(providerId);
-      res.status(200).json({ success: true, data: credentials });
+      return ApiResponse.success(res, credentials);
     } catch (error) {
       next(error);
     }
@@ -99,7 +100,7 @@ export class AdminAIConfigController {
     try {
       const adminId = (req as any).user?.id || "admin";
       const created = await this.manageCredentials.createCredential(req.body, adminId);
-      res.status(201).json({ success: true, data: created });
+      return ApiResponse.created(res, created);
     } catch (error) {
       next(error);
     }
@@ -109,7 +110,7 @@ export class AdminAIConfigController {
     try {
       const adminId = (req as any).user?.id || "admin";
       const rotated = await this.manageCredentials.rotateCredential(req.params.id as string, req.body, adminId);
-      res.status(200).json({ success: true, data: rotated });
+      return ApiResponse.success(res, rotated);
     } catch (error) {
       next(error);
     }
@@ -119,7 +120,7 @@ export class AdminAIConfigController {
     try {
       const adminId = (req as any).user?.id || "admin";
       const result = await this.manageCredentials.revokeCredential(req.params.id as string, adminId);
-      res.status(200).json({ success: true, data: result });
+      return ApiResponse.success(res, result);
     } catch (error) {
       next(error);
     }
@@ -128,7 +129,7 @@ export class AdminAIConfigController {
   testCredential = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await this.testCredentialUseCase.testCredentialById(req.params.id as string);
-      res.status(200).json({ success: true, data: result });
+      return ApiResponse.success(res, result);
     } catch (error) {
       next(error);
     }
@@ -138,7 +139,7 @@ export class AdminAIConfigController {
   getConfig = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const data = await this.manageConfigVersion.getActiveAndDraft();
-      res.status(200).json({ success: true, data });
+      return ApiResponse.success(res, data);
     } catch (error) {
       next(error);
     }
@@ -148,7 +149,7 @@ export class AdminAIConfigController {
     try {
       const adminId = (req as any).user?.id || "admin";
       const saved = await this.manageConfigVersion.saveDraft(req.body, adminId);
-      res.status(200).json({ success: true, data: saved });
+      return ApiResponse.success(res, saved);
     } catch (error) {
       next(error);
     }
@@ -159,7 +160,7 @@ export class AdminAIConfigController {
       const adminId = (req as any).user?.id || "admin";
       const { versionId } = req.body;
       const published = await this.manageConfigVersion.publish(versionId, adminId);
-      res.status(200).json({ success: true, data: published });
+      return ApiResponse.success(res, published);
     } catch (error) {
       next(error);
     }
@@ -170,7 +171,7 @@ export class AdminAIConfigController {
       const adminId = (req as any).user?.id || "admin";
       const { targetVersionId } = req.body;
       const rolledBack = await this.manageConfigVersion.rollback(targetVersionId, adminId);
-      res.status(200).json({ success: true, data: rolledBack });
+      return ApiResponse.success(res, rolledBack);
     } catch (error) {
       next(error);
     }
@@ -179,7 +180,7 @@ export class AdminAIConfigController {
   getVersions = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const versions = await this.manageConfigVersion.listVersions();
-      res.status(200).json({ success: true, data: versions });
+      return ApiResponse.success(res, versions);
     } catch (error) {
       next(error);
     }
@@ -189,7 +190,7 @@ export class AdminAIConfigController {
     try {
       const limit = req.query.limit ? Number(req.query.limit) : 50;
       const logs = await this.manageConfigVersion.listAuditLogs(limit);
-      res.status(200).json({ success: true, data: logs });
+      return ApiResponse.success(res, logs);
     } catch (error) {
       next(error);
     }

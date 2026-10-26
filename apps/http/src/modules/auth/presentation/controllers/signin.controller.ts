@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { SigninUser } from "../../application/use-cases/signin.user.usecase";
-import { STATUS_CODES } from "@/app/config/status";
 import { setAuthCookies } from "@/app/config/cookie";
+import { ApiResponse } from "@/shared/utils/api-response";
 
 export class SigninController {
     constructor(private readonly signinUser: SigninUser) { }
@@ -17,12 +17,10 @@ export class SigninController {
                 refreshToken: result.refreshToken,
             });
 
-            res.status(STATUS_CODES.OK).json({
-                message: "Signed in successfully",
-                data: result,
-            });
+            return ApiResponse.success(res, result, "Signed in successfully");
         } catch (error) {
             next(error);
         }
     };
 }
+

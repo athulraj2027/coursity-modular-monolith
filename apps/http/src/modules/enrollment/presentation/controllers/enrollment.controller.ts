@@ -15,321 +15,123 @@ import { TeacherGetEnrollmentsUseCase } from "../../application/use-cases/teache
 import { TeacherGetEnrollmentDetailUseCase } from "../../application/use-cases/teacher-get-enrollment-detail.usecase";
 import { AdminGetEnrollmentsUseCase } from "../../application/use-cases/admin-get-enrollments.usecase";
 import { AdminGetEnrollmentDetailUseCase } from "../../application/use-cases/admin-get-enrollment-detail.usecase";
-import { ForbiddenError, UnauthorizedError } from "@/app/errors";
-import { profileRepository } from "@/modules/profile";
+
+import { EnrollFreeController } from "./enroll-free.controller";
+import { CreateCourseOrderController } from "./create-course-order.controller";
+import { VerifyCoursePaymentController } from "./verify-course-payment.controller";
+import { PayWithWalletController } from "./pay-with-wallet.controller";
+import { GetMyEnrollmentsController } from "./get-my-enrollments.controller";
+import { GetClassroomController } from "./get-classroom.controller";
+import { MarkAttendanceController } from "./mark-attendance.controller";
+import { UpdateProgressController } from "./update-progress.controller";
+import { RequestRefundController } from "./request-refund.controller";
+import { ClaimCertificateController } from "./claim-certificate.controller";
+import { GetCertificateController } from "./get-certificate.controller";
+import { TeacherGetCourseStudentsController } from "./teacher-get-course-students.controller";
+import { AdminListEnrollmentsController } from "./admin-list-enrollments.controller";
+import { AdminGetEnrollmentDetailController } from "./admin-get-enrollment-detail.controller";
+import { TeacherListEnrollmentsController } from "./teacher-list-enrollments.controller";
+import { TeacherGetEnrollmentDetailController } from "./teacher-get-enrollment-detail.controller";
 
 export class EnrollmentController {
+  private readonly enrollFreeController: EnrollFreeController;
+  private readonly createOrderController: CreateCourseOrderController;
+  private readonly verifyPaymentController: VerifyCoursePaymentController;
+  private readonly payWithWalletController: PayWithWalletController;
+  private readonly getStudentEnrollmentsController: GetMyEnrollmentsController;
+  private readonly getClassroomController: GetClassroomController;
+  private readonly markAttendanceController: MarkAttendanceController;
+  private readonly updateProgressController: UpdateProgressController;
+  private readonly requestRefundController: RequestRefundController;
+  private readonly claimCertificateController: ClaimCertificateController;
+  private readonly getCertificateController: GetCertificateController;
+  private readonly teacherGetStudentsController: TeacherGetCourseStudentsController;
+  private readonly adminGetEnrollmentsController: AdminListEnrollmentsController;
+  private readonly adminGetEnrollmentDetailController: AdminGetEnrollmentDetailController;
+  private readonly teacherGetEnrollmentsController: TeacherListEnrollmentsController;
+  private readonly teacherGetEnrollmentDetailController: TeacherGetEnrollmentDetailController;
+
   constructor(
-    private readonly enrollFreeUseCase: EnrollFreeCourseUseCase,
-    private readonly createOrderUseCase: CreateCourseCheckoutOrderUseCase,
-    private readonly verifyPaymentUseCase: VerifyCoursePaymentUseCase,
-    private readonly payWithWalletUseCase: PayWithWalletUseCase,
-    private readonly getStudentEnrollmentsUseCase: GetStudentEnrollmentsUseCase,
-    private readonly getClassroomUseCase: GetCourseClassroomUseCase,
-    private readonly markAttendanceUseCase: MarkClassAttendanceUseCase,
-    private readonly updateProgressUseCase: UpdateLessonProgressUseCase,
-    private readonly requestRefundUseCase: RequestCourseRefundUseCase,
-    private readonly claimCertificateUseCase: ClaimCertificateUseCase,
-    private readonly getCertificateUseCase: GetCertificateUseCase,
-    private readonly teacherGetStudentsUseCase: TeacherGetCourseStudentsUseCase,
-    private readonly adminGetEnrollmentsUseCase?: AdminGetEnrollmentsUseCase,
-    private readonly adminGetEnrollmentDetailUseCase?: AdminGetEnrollmentDetailUseCase,
-    private readonly teacherGetEnrollmentsUseCase?: TeacherGetEnrollmentsUseCase,
-    private readonly teacherGetEnrollmentDetailUseCase?: TeacherGetEnrollmentDetailUseCase
-  ) {}
-
-
-  private getUserId(req: Request): string {
-    const userId = req.user?.userId;
-    if (!userId) {
-      throw new UnauthorizedError("Authentication required.");
-    }
-    return userId;
+    enrollFreeUseCase: EnrollFreeCourseUseCase,
+    createOrderUseCase: CreateCourseCheckoutOrderUseCase,
+    verifyPaymentUseCase: VerifyCoursePaymentUseCase,
+    payWithWalletUseCase: PayWithWalletUseCase,
+    getStudentEnrollmentsUseCase: GetStudentEnrollmentsUseCase,
+    getClassroomUseCase: GetCourseClassroomUseCase,
+    markAttendanceUseCase: MarkClassAttendanceUseCase,
+    updateProgressUseCase: UpdateLessonProgressUseCase,
+    requestRefundUseCase: RequestCourseRefundUseCase,
+    claimCertificateUseCase: ClaimCertificateUseCase,
+    getCertificateUseCase: GetCertificateUseCase,
+    teacherGetStudentsUseCase: TeacherGetCourseStudentsUseCase,
+    adminGetEnrollmentsUseCase?: AdminGetEnrollmentsUseCase,
+    adminGetEnrollmentDetailUseCase?: AdminGetEnrollmentDetailUseCase,
+    teacherGetEnrollmentsUseCase?: TeacherGetEnrollmentsUseCase,
+    teacherGetEnrollmentDetailUseCase?: TeacherGetEnrollmentDetailUseCase
+  ) {
+    this.enrollFreeController = new EnrollFreeController(enrollFreeUseCase);
+    this.createOrderController = new CreateCourseOrderController(createOrderUseCase);
+    this.verifyPaymentController = new VerifyCoursePaymentController(verifyPaymentUseCase);
+    this.payWithWalletController = new PayWithWalletController(payWithWalletUseCase);
+    this.getStudentEnrollmentsController = new GetMyEnrollmentsController(getStudentEnrollmentsUseCase);
+    this.getClassroomController = new GetClassroomController(getClassroomUseCase);
+    this.markAttendanceController = new MarkAttendanceController(markAttendanceUseCase);
+    this.updateProgressController = new UpdateProgressController(updateProgressUseCase);
+    this.requestRefundController = new RequestRefundController(requestRefundUseCase);
+    this.claimCertificateController = new ClaimCertificateController(claimCertificateUseCase);
+    this.getCertificateController = new GetCertificateController(getCertificateUseCase);
+    this.teacherGetStudentsController = new TeacherGetCourseStudentsController(teacherGetStudentsUseCase);
+    this.adminGetEnrollmentsController = new AdminListEnrollmentsController(adminGetEnrollmentsUseCase);
+    this.adminGetEnrollmentDetailController = new AdminGetEnrollmentDetailController(adminGetEnrollmentDetailUseCase);
+    this.teacherGetEnrollmentsController = new TeacherListEnrollmentsController(teacherGetEnrollmentsUseCase);
+    this.teacherGetEnrollmentDetailController = new TeacherGetEnrollmentDetailController(teacherGetEnrollmentDetailUseCase);
   }
 
-  private async getTeacherProfileId(userId: string): Promise<string> {
-    const profileId = await profileRepository.getTeacherProfileIdByUserId(userId);
-    if (!profileId) {
-      throw new ForbiddenError("Teacher profile required.");
-    }
-    return profileId;
-  }
+  enrollFree = (req: Request, res: Response, next: NextFunction) =>
+    this.enrollFreeController.execute(req, res, next);
 
-  enrollFree = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const studentId = this.getUserId(req);
-      const { courseId } = req.body;
-      const result = await this.enrollFreeUseCase.execute(studentId, courseId);
-      return res.status(201).json({
-        success: true,
-        message: "Enrolled in course successfully.",
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  createOrder = (req: Request, res: Response, next: NextFunction) =>
+    this.createOrderController.execute(req, res, next);
 
-  createOrder = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const studentId = this.getUserId(req);
-      const result = await this.createOrderUseCase.execute(studentId, req.body);
-      return res.status(200).json({
-        success: true,
-        message: "Checkout order created.",
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  verifyPayment = (req: Request, res: Response, next: NextFunction) =>
+    this.verifyPaymentController.execute(req, res, next);
 
-  verifyPayment = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const studentId = this.getUserId(req);
-      const result = await this.verifyPaymentUseCase.execute(studentId, req.body);
-      return res.status(201).json({
-        success: true,
-        message: "Payment verified and course enrollment confirmed.",
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  payWithWallet = (req: Request, res: Response, next: NextFunction) =>
+    this.payWithWalletController.execute(req, res, next);
 
-  payWithWallet = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const studentId = this.getUserId(req);
-      const result = await this.payWithWalletUseCase.execute(studentId, req.body);
-      return res.status(201).json({
-        success: true,
-        message: "Enrollment completed using wallet balance.",
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  getMyEnrollments = (req: Request, res: Response, next: NextFunction) =>
+    this.getStudentEnrollmentsController.execute(req, res, next);
 
-  getMyEnrollments = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const studentId = this.getUserId(req);
-      const status = req.query.status as any;
-      const result = await this.getStudentEnrollmentsUseCase.execute(studentId, status);
-      return res.status(200).json({
-        success: true,
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  getClassroom = (req: Request, res: Response, next: NextFunction) =>
+    this.getClassroomController.execute(req, res, next);
 
-  getClassroom = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const studentId = this.getUserId(req);
-      const courseIdOrSlug = Array.isArray(req.params.courseIdOrSlug)
-        ? req.params.courseIdOrSlug[0]
-        : req.params.courseIdOrSlug;
-      const result = await this.getClassroomUseCase.execute(studentId, courseIdOrSlug);
-      return res.status(200).json({
-        success: true,
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  markAttendance = (req: Request, res: Response, next: NextFunction) =>
+    this.markAttendanceController.execute(req, res, next);
 
-  markAttendance = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const studentId = this.getUserId(req);
-      const enrollmentId = Array.isArray(req.params.enrollmentId)
-        ? req.params.enrollmentId[0]
-        : req.params.enrollmentId;
-      const result = await this.markAttendanceUseCase.execute(studentId, {
-        enrollmentId,
-        ...req.body,
-      });
-      return res.status(200).json({
-        success: true,
-        message: "Live class attendance recorded.",
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  updateProgress = (req: Request, res: Response, next: NextFunction) =>
+    this.updateProgressController.execute(req, res, next);
 
-  updateProgress = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const studentId = this.getUserId(req);
-      const enrollmentId = Array.isArray(req.params.enrollmentId)
-        ? req.params.enrollmentId[0]
-        : req.params.enrollmentId;
-      const result = await this.updateProgressUseCase.execute(studentId, {
-        enrollmentId,
-        ...req.body,
-      });
-      return res.status(200).json({
-        success: true,
-        message: "Learning progress updated.",
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  requestRefund = (req: Request, res: Response, next: NextFunction) =>
+    this.requestRefundController.execute(req, res, next);
 
-  requestRefund = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const studentId = this.getUserId(req);
-      const enrollmentId = Array.isArray(req.params.enrollmentId)
-        ? req.params.enrollmentId[0]
-        : req.params.enrollmentId;
-      const result = await this.requestRefundUseCase.execute(studentId, {
-        enrollmentId,
-        ...req.body,
-      });
-      return res.status(200).json({
-        success: true,
-        message: "100% Full refund processed successfully under 20-Day / 4-Classes guarantee.",
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  claimCertificate = (req: Request, res: Response, next: NextFunction) =>
+    this.claimCertificateController.execute(req, res, next);
 
-  claimCertificate = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const studentId = this.getUserId(req);
-      const enrollmentId = Array.isArray(req.params.enrollmentId)
-        ? req.params.enrollmentId[0]
-        : req.params.enrollmentId;
-      const result = await this.claimCertificateUseCase.execute(studentId, enrollmentId);
-      return res.status(201).json({
-        success: true,
-        message: "Course completion certificate unlocked!",
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  getCertificate = (req: Request, res: Response, next: NextFunction) =>
+    this.getCertificateController.execute(req, res, next);
 
-  getCertificate = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const code = Array.isArray(req.params.code) ? req.params.code[0] : req.params.code;
-      const result = await this.getCertificateUseCase.execute(code);
-      return res.status(200).json({
-        success: true,
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  getTeacherCourseStudents = (req: Request, res: Response, next: NextFunction) =>
+    this.teacherGetStudentsController.execute(req, res, next);
 
-  getTeacherCourseStudents = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const userId = this.getUserId(req);
-      const teacherProfileId = await this.getTeacherProfileId(userId);
-      const courseId = Array.isArray(req.params.courseId) ? req.params.courseId[0] : req.params.courseId;
-      const result = await this.teacherGetStudentsUseCase.execute(teacherProfileId, courseId);
-      return res.status(200).json({
-        success: true,
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  adminListEnrollments = (req: Request, res: Response, next: NextFunction) =>
+    this.adminGetEnrollmentsController.execute(req, res, next);
 
-  adminListEnrollments = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!this.adminGetEnrollmentsUseCase) {
-        throw new Error("AdminGetEnrollmentsUseCase not initialized.");
-      }
-      const { search, status, courseId, paymentMethod, page, limit, sortBy, sortOrder } = req.query;
-      const result = await this.adminGetEnrollmentsUseCase.execute({
-        search: search ? String(search) : undefined,
-        status: status ? (String(status) as any) : undefined,
-        courseId: courseId ? String(courseId) : undefined,
-        paymentMethod: paymentMethod ? String(paymentMethod) : undefined,
-        page: page ? parseInt(String(page), 10) : 1,
-        limit: limit ? parseInt(String(limit), 10) : 10,
-        sortBy: sortBy ? String(sortBy) : "createdAt",
-        sortOrder: sortOrder === "asc" ? "asc" : "desc",
-      });
-      return res.status(200).json({
-        success: true,
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  adminGetEnrollmentDetail = (req: Request, res: Response, next: NextFunction) =>
+    this.adminGetEnrollmentDetailController.execute(req, res, next);
 
-  adminGetEnrollmentDetail = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!this.adminGetEnrollmentDetailUseCase) {
-        throw new Error("AdminGetEnrollmentDetailUseCase not initialized.");
-      }
-      const enrollmentId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const result = await this.adminGetEnrollmentDetailUseCase.execute(enrollmentId);
-      return res.status(200).json({
-        success: true,
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  teacherListEnrollments = (req: Request, res: Response, next: NextFunction) =>
+    this.teacherGetEnrollmentsController.execute(req, res, next);
 
-  teacherListEnrollments = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!this.teacherGetEnrollmentsUseCase) {
-        throw new Error("TeacherGetEnrollmentsUseCase not initialized.");
-      }
-      const teacherUserId = this.getUserId(req);
-      const { search, status, courseId, paymentMethod, page, limit, sortBy, sortOrder } = req.query;
-      const result = await this.teacherGetEnrollmentsUseCase.execute({
-        teacherUserId,
-        search: search ? String(search) : undefined,
-        status: status ? (String(status) as any) : undefined,
-        courseId: courseId ? String(courseId) : undefined,
-        paymentMethod: paymentMethod ? String(paymentMethod) : undefined,
-        page: page ? parseInt(String(page), 10) : 1,
-        limit: limit ? parseInt(String(limit), 10) : 10,
-        sortBy: sortBy ? String(sortBy) : "createdAt",
-        sortOrder: sortOrder === "asc" ? "asc" : "desc",
-      });
-      return res.status(200).json({
-        success: true,
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  teacherGetEnrollmentDetail = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!this.teacherGetEnrollmentDetailUseCase) {
-        throw new Error("TeacherGetEnrollmentDetailUseCase not initialized.");
-      }
-      const teacherUserId = this.getUserId(req);
-      const enrollmentId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const result = await this.teacherGetEnrollmentDetailUseCase.execute(teacherUserId, enrollmentId);
-      return res.status(200).json({
-        success: true,
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  teacherGetEnrollmentDetail = (req: Request, res: Response, next: NextFunction) =>
+    this.teacherGetEnrollmentDetailController.execute(req, res, next);
 }
-

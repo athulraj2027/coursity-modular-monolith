@@ -6,9 +6,24 @@ import { GetNoteDetailUseCase } from "../../application/use-cases/get-note-detai
 import { UpdateNoteUseCase } from "../../application/use-cases/update-note.usecase";
 import { DeleteNoteUseCase } from "../../application/use-cases/delete-note.usecase";
 import { AdminListNotesUseCase } from "../../application/use-cases/admin-list-notes.usecase";
-import { UnauthorizedError } from "@/app/errors";
+
+import { CreateNoteController } from "./create-note.controller";
+import { GetNotesByLectureController } from "./get-notes-by-lecture.controller";
+import { GetNotesByCourseController } from "./get-notes-by-course.controller";
+import { GetNoteDetailController } from "./get-note-detail.controller";
+import { UpdateNoteController } from "./update-note.controller";
+import { DeleteNoteController } from "./delete-note.controller";
+import { AdminListNotesController } from "./admin-list-notes.controller";
 
 export class NoteController {
+  private readonly createNoteController: CreateNoteController;
+  private readonly getNotesByLectureController: GetNotesByLectureController;
+  private readonly getNotesByCourseController: GetNotesByCourseController;
+  private readonly getNoteDetailController: GetNoteDetailController;
+  private readonly updateNoteController: UpdateNoteController;
+  private readonly deleteNoteController: DeleteNoteController;
+  private readonly adminListNotesController: AdminListNotesController;
+
   constructor(
     private readonly createNoteUseCase: CreateNoteUseCase,
     private readonly getNotesByLectureUseCase: GetNotesByLectureUseCase,
@@ -17,115 +32,34 @@ export class NoteController {
     private readonly updateNoteUseCase: UpdateNoteUseCase,
     private readonly deleteNoteUseCase: DeleteNoteUseCase,
     private readonly adminListNotesUseCase: AdminListNotesUseCase
-  ) {}
+  ) {
+    this.createNoteController = new CreateNoteController(createNoteUseCase);
+    this.getNotesByLectureController = new GetNotesByLectureController(getNotesByLectureUseCase);
+    this.getNotesByCourseController = new GetNotesByCourseController(getNotesByCourseUseCase);
+    this.getNoteDetailController = new GetNoteDetailController(getNoteDetailUseCase);
+    this.updateNoteController = new UpdateNoteController(updateNoteUseCase);
+    this.deleteNoteController = new DeleteNoteController(deleteNoteUseCase);
+    this.adminListNotesController = new AdminListNotesController(adminListNotesUseCase);
+  }
 
-  createNote = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required");
-      const result = await this.createNoteUseCase.execute({
-        userId: req.user.userId,
-        userRole: req.user.role,
-        data: req.body,
-      });
-      return res.status(201).json({
-        success: true,
-        data: result,
-        message: "Note uploaded and created successfully",
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  createNote = (req: Request, res: Response, next: NextFunction) =>
+    this.createNoteController.execute(req, res, next);
 
-  getNotesByLecture = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required");
-      const lectureId = req.params.lectureId as string;
-      const result = await this.getNotesByLectureUseCase.execute({
-        lectureId,
-        userId: req.user.userId,
-        userRole: req.user.role,
-      });
-      return res.status(200).json({ success: true, data: result });
-    } catch (error) {
-      next(error);
-    }
-  };
+  getNotesByLecture = (req: Request, res: Response, next: NextFunction) =>
+    this.getNotesByLectureController.execute(req, res, next);
 
-  getNotesByCourse = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required");
-      const courseId = req.params.courseId as string;
-      const result = await this.getNotesByCourseUseCase.execute({
-        courseId,
-        userId: req.user.userId,
-        userRole: req.user.role,
-      });
-      return res.status(200).json({ success: true, data: result });
-    } catch (error) {
-      next(error);
-    }
-  };
+  getNotesByCourse = (req: Request, res: Response, next: NextFunction) =>
+    this.getNotesByCourseController.execute(req, res, next);
 
-  getNoteDetail = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required");
-      const noteId = req.params.id as string;
-      const result = await this.getNoteDetailUseCase.execute({
-        noteId,
-        userId: req.user.userId,
-        userRole: req.user.role,
-      });
-      return res.status(200).json({ success: true, data: result });
-    } catch (error) {
-      next(error);
-    }
-  };
+  getNoteDetail = (req: Request, res: Response, next: NextFunction) =>
+    this.getNoteDetailController.execute(req, res, next);
 
-  updateNote = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required");
-      const noteId = req.params.id as string;
-      const result = await this.updateNoteUseCase.execute({
-        noteId,
-        userId: req.user.userId,
-        userRole: req.user.role,
-        data: req.body,
-      });
-      return res.status(200).json({
-        success: true,
-        data: result,
-        message: "Note updated successfully",
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  updateNote = (req: Request, res: Response, next: NextFunction) =>
+    this.updateNoteController.execute(req, res, next);
 
-  deleteNote = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) throw new UnauthorizedError("Authentication required");
-      const noteId = req.params.id as string;
-      await this.deleteNoteUseCase.execute({
-        noteId,
-        userId: req.user.userId,
-        userRole: req.user.role,
-      });
-      return res.status(200).json({
-        success: true,
-        message: "Note deleted successfully",
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  deleteNote = (req: Request, res: Response, next: NextFunction) =>
+    this.deleteNoteController.execute(req, res, next);
 
-  adminListNotes = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const result = await this.adminListNotesUseCase.execute(req.query as any);
-      return res.status(200).json({ success: true, data: result });
-    } catch (error) {
-      next(error);
-    }
-  };
+  adminListNotes = (req: Request, res: Response, next: NextFunction) =>
+    this.adminListNotesController.execute(req, res, next);
 }

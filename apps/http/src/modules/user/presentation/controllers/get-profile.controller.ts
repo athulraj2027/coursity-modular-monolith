@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { GetProfile } from "../../application/use-cases/get-profile.usecase";
-import { STATUS_CODES } from "@/app/config/status";
 import { UnauthorizedError } from "@/app/errors";
+import { ApiResponse } from "@/shared/utils/api-response";
 
 export class GetProfileController {
     constructor(private readonly getProfile: GetProfile) { }
@@ -15,10 +15,7 @@ export class GetProfileController {
 
             const user = await this.getProfile.execute(userId);
 
-            res.status(STATUS_CODES.OK).json({
-                message: "User profile fetched successfully",
-                data: { user },
-            });
+            return ApiResponse.success(res, { user }, "User profile fetched successfully");
         } catch (error) {
             next(error);
         }

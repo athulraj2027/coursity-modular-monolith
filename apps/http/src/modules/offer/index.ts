@@ -69,3 +69,4 @@ export * from "./domain/entities/offer.entity";
 export * from "./domain/dtos/offer.dto";
 export * from "./domain/repositories/offer.repository";
 export * from "./infrastructure/seed/default-offers.seed";
+export * from "./presentation/controllers";

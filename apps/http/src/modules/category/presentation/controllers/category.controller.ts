@@ -1,254 +1,93 @@
 import { Request, Response, NextFunction } from "express";
 import { GetCategoriesUseCase } from "../../application/use-cases/get-categories.usecase";
 import { AdminManageCategoriesUseCase } from "../../application/use-cases/admin-manage-categories.usecase";
-import {
-  createCategorySchema,
-  updateCategorySchema,
-  queryCategoriesSchema,
-} from "../validators/category.validator";
-import { ForbiddenError, NotFoundError } from "@/app/errors";
+
+import { GetCategoriesController } from "./get-categories.controller";
+import { GetCategoryTreeController } from "./get-category-tree.controller";
+import { GetCategoryBySlugController } from "./get-category-by-slug.controller";
+import { AdminGetAllCategoriesController } from "./admin-get-all-categories.controller";
+import { AdminGetCategoryTreeController } from "./admin-get-category-tree.controller";
+import { AdminGetMetricsController } from "./admin-get-metrics.controller";
+import { AdminGetCategoryByIdController } from "./admin-get-category-by-id.controller";
+import { AdminCreateCategoryController } from "./admin-create-category.controller";
+import { AdminUpdateCategoryController } from "./admin-update-category.controller";
+import { AdminToggleStatusController } from "./admin-toggle-status.controller";
+import { AdminSoftDeleteCategoryController } from "./admin-soft-delete-category.controller";
+import { AdminRestoreCategoryController } from "./admin-restore-category.controller";
+import { AdminHardDeleteCategoryController } from "./admin-hard-delete-category.controller";
 
 export class CategoryController {
+  private readonly getCategoriesController: GetCategoriesController;
+  private readonly getCategoryTreeController: GetCategoryTreeController;
+  private readonly getCategoryBySlugController: GetCategoryBySlugController;
+  private readonly adminGetAllCategoriesController: AdminGetAllCategoriesController;
+  private readonly adminGetCategoryTreeController: AdminGetCategoryTreeController;
+  private readonly adminGetMetricsController: AdminGetMetricsController;
+  private readonly adminGetCategoryByIdController: AdminGetCategoryByIdController;
+  private readonly adminCreateCategoryController: AdminCreateCategoryController;
+  private readonly adminUpdateCategoryController: AdminUpdateCategoryController;
+  private readonly adminToggleStatusController: AdminToggleStatusController;
+  private readonly adminSoftDeleteCategoryController: AdminSoftDeleteCategoryController;
+  private readonly adminRestoreCategoryController: AdminRestoreCategoryController;
+  private readonly adminHardDeleteCategoryController: AdminHardDeleteCategoryController;
+
   constructor(
     private readonly getCategoriesUseCase: GetCategoriesUseCase,
     private readonly adminManageCategoriesUseCase: AdminManageCategoriesUseCase
-  ) {}
-
-  // ================= PUBLIC CATALOG ENDPOINTS =================
-
-  // GET /api/categories (Public active tree or flat list)
-  getCategories = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const tree = req.query.format === "tree" || req.query.tree === "true";
-      if (tree) {
-        const treeData = await this.getCategoriesUseCase.getActiveTree();
-        return res.status(200).json({
-          success: true,
-          data: treeData,
-        });
-      }
-
-      const flatData = await this.getCategoriesUseCase.getAllActive();
-      return res.status(200).json({
-        success: true,
-        data: flatData,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // GET /api/categories/tree (Public active tree shortcut)
-  getCategoryTree = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const treeData = await this.getCategoriesUseCase.getActiveTree();
-      res.status(200).json({
-        success: true,
-        data: treeData,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // GET /api/categories/slug/:slug (Public get category by slug)
-  getCategoryBySlug = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const slug = Array.isArray(req.params.slug) ? req.params.slug[0] : (req.params.slug as string);
-      const category = await this.getCategoriesUseCase.getBySlug(slug);
-      if (!category) {
-        throw new NotFoundError(`Category with slug '${slug}' was not found.`);
-      }
-
-      res.status(200).json({
-        success: true,
-        data: category,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // ================= ADMIN MANAGEMENT ENDPOINTS =================
-
-  // GET /api/categories/admin/all (Protected - Admin)
-  adminGetAllCategories = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const query = queryCategoriesSchema.parse(req.query);
-      const result = await this.adminManageCategoriesUseCase.getAllCategories(query);
-
-      res.status(200).json({
-        success: true,
-        data: result.items,
-        meta: {
-          total: result.total,
-          page: query.page,
-          limit: query.limit,
-          totalPages: Math.ceil(result.total / query.limit),
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // GET /api/categories/admin/tree (Protected - Admin)
-  adminGetCategoryTree = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const includeInactive = req.query.includeInactive !== "false";
-      const includeDeleted = req.query.includeDeleted === "true";
-      const tree = await this.adminManageCategoriesUseCase.getCategoryTree(
-        includeInactive,
-        includeDeleted
-      );
-
-      res.status(200).json({
-        success: true,
-        data: tree,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // GET /api/categories/admin/metrics (Protected - Admin)
-  adminGetMetrics = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const metrics = await this.adminManageCategoriesUseCase.getMetrics();
-      res.status(200).json({
-        success: true,
-        data: metrics,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // GET /api/categories/admin/:id (Protected - Admin)
-  adminGetCategoryById = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      const category = await this.adminManageCategoriesUseCase.getCategoryById(id);
-
-      res.status(200).json({
-        success: true,
-        data: category,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // POST /api/categories/admin (Protected - Admin)
-  adminCreateCategory = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const validated = createCategorySchema.parse(req.body);
-      const category = await this.adminManageCategoriesUseCase.createCategory(validated as any);
-
-      res.status(201).json({
-        success: true,
-        message: "Category created successfully",
-        data: category,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // PUT /api/categories/admin/:id (Protected - Admin)
-  adminUpdateCategory = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      const validated = updateCategorySchema.parse(req.body);
-      const category = await this.adminManageCategoriesUseCase.updateCategory(id, validated as any);
-
-      res.status(200).json({
-        success: true,
-        message: "Category updated successfully",
-        data: category,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // PATCH /api/categories/admin/:id/status (Protected - Admin)
-  adminToggleStatus = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      const isActive = req.body.isActive === true;
-      const category = await this.adminManageCategoriesUseCase.toggleActive(id, isActive);
-
-      res.status(200).json({
-        success: true,
-        message: `Category ${isActive ? "activated" : "deactivated"} successfully`,
-        data: category,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // DELETE /api/categories/admin/:id (Protected - Admin: Soft Delete)
-  adminSoftDeleteCategory = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      const category = await this.adminManageCategoriesUseCase.softDeleteCategory(id);
-
-      res.status(200).json({
-        success: true,
-        message: "Category moved to trash successfully",
-        data: category,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // POST /api/categories/admin/:id/restore (Protected - Admin: Restore)
-  adminRestoreCategory = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      const category = await this.adminManageCategoriesUseCase.restoreCategory(id);
-
-      res.status(200).json({
-        success: true,
-        message: "Category restored successfully",
-        data: category,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // DELETE /api/categories/admin/:id/permanent (Protected - Admin: Hard Delete)
-  adminHardDeleteCategory = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      this.ensureAdmin(req);
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-      await this.adminManageCategoriesUseCase.hardDeleteCategory(id);
-
-      res.status(200).json({
-        success: true,
-        message: "Category permanently deleted",
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  private ensureAdmin(req: Request) {
-    if (!req.user || req.user.role !== "ADMIN") {
-      throw new ForbiddenError("Admin privileges required to manage categories.");
-    }
+  ) {
+    this.getCategoriesController = new GetCategoriesController(getCategoriesUseCase);
+    this.getCategoryTreeController = new GetCategoryTreeController(getCategoriesUseCase);
+    this.getCategoryBySlugController = new GetCategoryBySlugController(getCategoriesUseCase);
+    this.adminGetAllCategoriesController = new AdminGetAllCategoriesController(adminManageCategoriesUseCase);
+    this.adminGetCategoryTreeController = new AdminGetCategoryTreeController(adminManageCategoriesUseCase);
+    this.adminGetMetricsController = new AdminGetMetricsController(adminManageCategoriesUseCase);
+    this.adminGetCategoryByIdController = new AdminGetCategoryByIdController(adminManageCategoriesUseCase);
+    this.adminCreateCategoryController = new AdminCreateCategoryController(adminManageCategoriesUseCase);
+    this.adminUpdateCategoryController = new AdminUpdateCategoryController(adminManageCategoriesUseCase);
+    this.adminToggleStatusController = new AdminToggleStatusController(adminManageCategoriesUseCase);
+    this.adminSoftDeleteCategoryController = new AdminSoftDeleteCategoryController(adminManageCategoriesUseCase);
+    this.adminRestoreCategoryController = new AdminRestoreCategoryController(adminManageCategoriesUseCase);
+    this.adminHardDeleteCategoryController = new AdminHardDeleteCategoryController(adminManageCategoriesUseCase);
   }
+
+  // Public Catalog
+  getCategories = (req: Request, res: Response, next: NextFunction) =>
+    this.getCategoriesController.execute(req, res, next);
+
+  getCategoryTree = (req: Request, res: Response, next: NextFunction) =>
+    this.getCategoryTreeController.execute(req, res, next);
+
+  getCategoryBySlug = (req: Request, res: Response, next: NextFunction) =>
+    this.getCategoryBySlugController.execute(req, res, next);
+
+  // Admin Management
+  adminGetAllCategories = (req: Request, res: Response, next: NextFunction) =>
+    this.adminGetAllCategoriesController.execute(req, res, next);
+
+  adminGetCategoryTree = (req: Request, res: Response, next: NextFunction) =>
+    this.adminGetCategoryTreeController.execute(req, res, next);
+
+  adminGetMetrics = (req: Request, res: Response, next: NextFunction) =>
+    this.adminGetMetricsController.execute(req, res, next);
+
+  adminGetCategoryById = (req: Request, res: Response, next: NextFunction) =>
+    this.adminGetCategoryByIdController.execute(req, res, next);
+
+  adminCreateCategory = (req: Request, res: Response, next: NextFunction) =>
+    this.adminCreateCategoryController.execute(req, res, next);
+
+  adminUpdateCategory = (req: Request, res: Response, next: NextFunction) =>
+    this.adminUpdateCategoryController.execute(req, res, next);
+
+  adminToggleStatus = (req: Request, res: Response, next: NextFunction) =>
+    this.adminToggleStatusController.execute(req, res, next);
+
+  adminSoftDeleteCategory = (req: Request, res: Response, next: NextFunction) =>
+    this.adminSoftDeleteCategoryController.execute(req, res, next);
+
+  adminRestoreCategory = (req: Request, res: Response, next: NextFunction) =>
+    this.adminRestoreCategoryController.execute(req, res, next);
+
+  adminHardDeleteCategory = (req: Request, res: Response, next: NextFunction) =>
+    this.adminHardDeleteCategoryController.execute(req, res, next);
 }

@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { ForgotPassword } from "../../application/use-cases/forgot-password.usecase";
-import { STATUS_CODES } from "@/app/config/status";
+import { ApiResponse } from "@/shared/utils/api-response";
 
 export class ForgotPasswordController {
     constructor(private readonly forgotPassword: ForgotPassword) { }
@@ -10,10 +10,7 @@ export class ForgotPasswordController {
             const { email, role } = req.body;
             const result = await this.forgotPassword.execute({ email, role });
 
-            res.status(STATUS_CODES.OK).json({
-                message: result.message,
-                data: { email: result.email },
-            });
+            return ApiResponse.success(res, { email: result.email }, result.message);
         } catch (error) {
             next(error);
         }

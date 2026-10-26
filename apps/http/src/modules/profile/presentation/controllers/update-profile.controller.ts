@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { UpdateProfile } from "../../application/use-cases/update-profile.usecase";
-import { STATUS_CODES } from "@/app/config/status";
 import { UnauthorizedError } from "@/app/errors";
+import { ApiResponse } from "@/shared/utils/api-response";
 
 export class UpdateProfileController {
     constructor(private readonly updateProfile: UpdateProfile) { }
@@ -15,10 +15,7 @@ export class UpdateProfileController {
 
             const updatedProfile = await this.updateProfile.execute(userId, req.body);
 
-            res.status(STATUS_CODES.OK).json({
-                message: "Profile updated successfully",
-                data: { profile: updatedProfile },
-            });
+            return ApiResponse.success(res, { profile: updatedProfile }, "Profile updated successfully");
         } catch (error) {
             next(error);
         }

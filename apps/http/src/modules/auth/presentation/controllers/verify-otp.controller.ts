@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
-import { STATUS_CODES } from "@/app/config/status";
 import { VerifySignupOtp } from "../../application/use-cases/verify-signup-otp.usecase";
 import { setAuthCookies } from "@/app/config/cookie";
+import { ApiResponse } from "@/shared/utils/api-response";
 
 export class VerifyOtpController {
     constructor(private readonly verifyOtp: VerifySignupOtp) { }
@@ -19,10 +19,7 @@ export class VerifyOtpController {
                 });
             }
 
-            res.status(STATUS_CODES.CREATED).json({
-                message: "Account verified and created successfully",
-                data: result,
-            });
+            return ApiResponse.created(res, result, "Account verified and created successfully");
         } catch (error) {
             next(error);
         }

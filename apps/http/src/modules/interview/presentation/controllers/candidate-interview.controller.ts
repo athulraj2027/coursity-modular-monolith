@@ -5,6 +5,7 @@ import {
   CreateInterviewSessionSchema,
 } from "../validators/interview.validator";
 import { UnauthorizedError } from "@/app/errors";
+import { ApiResponse } from "@/shared";
 
 export class CandidateInterviewController {
   constructor(private readonly useCases: CandidateInterviewUseCases) {}
@@ -38,7 +39,7 @@ export class CandidateInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const { domain, difficulty, type } = req.query as {
         domain?: string;
@@ -50,7 +51,7 @@ export class CandidateInterviewController {
         difficulty,
         type,
       });
-      res.status(200).json({ success: true, data: templates });
+      return ApiResponse.success(res, templates);
     } catch (error) {
       next(error);
     }
@@ -61,11 +62,11 @@ export class CandidateInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const slug = this.getIdParam(req.params.slug);
       const template = await this.useCases.getTemplateBySlug(slug);
-      res.status(200).json({ success: true, data: template });
+      return ApiResponse.success(res, template);
     } catch (error) {
       next(error);
     }
@@ -76,7 +77,7 @@ export class CandidateInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const validated = CreateInterviewSessionSchema.parse(req.body);
       const userId = this.getUserId(req);
@@ -91,11 +92,11 @@ export class CandidateInterviewController {
         difficulty: validated.difficulty,
       });
 
-      res.status(201).json({
-        success: true,
-        message: "Interview session created successfully",
-        data: session,
-      });
+      return ApiResponse.created(
+        res,
+        session,
+        "Interview session created successfully"
+      );
     } catch (error) {
       next(error);
     }
@@ -106,14 +107,14 @@ export class CandidateInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const userId = this.getUserId(req);
       const userRole = this.getUserRole(req);
 
       const session = await this.useCases.getSession(id, userId, userRole);
-      res.status(200).json({ success: true, data: session });
+      return ApiResponse.success(res, session);
     } catch (error) {
       next(error);
     }
@@ -124,17 +125,17 @@ export class CandidateInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const userId = this.getUserId(req);
 
       const session = await this.useCases.startSession(id, userId);
-      res.status(200).json({
-        success: true,
-        message: "Interview session started",
-        data: session,
-      });
+      return ApiResponse.success(
+        res,
+        session,
+        "Interview session started"
+      );
     } catch (error) {
       next(error);
     }
@@ -145,7 +146,7 @@ export class CandidateInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const userId = this.getUserId(req);
@@ -157,7 +158,7 @@ export class CandidateInterviewController {
         userName
       );
 
-      res.status(200).json({ success: true, data: tokenData });
+      return ApiResponse.success(res, tokenData);
     } catch (error) {
       next(error);
     }
@@ -168,7 +169,7 @@ export class CandidateInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const userId = this.getUserId(req);
@@ -179,7 +180,7 @@ export class CandidateInterviewController {
         userId,
         userRole
       );
-      res.status(200).json({ success: true, data: transcripts });
+      return ApiResponse.success(res, transcripts);
     } catch (error) {
       next(error);
     }
@@ -190,7 +191,7 @@ export class CandidateInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const limit = req.query.limit ? Number(req.query.limit) : 5;
@@ -201,7 +202,7 @@ export class CandidateInterviewController {
         userId,
         limit
       );
-      res.status(200).json({ success: true, data: transcripts });
+      return ApiResponse.success(res, transcripts);
     } catch (error) {
       next(error);
     }
@@ -212,17 +213,17 @@ export class CandidateInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const userId = this.getUserId(req);
 
       const session = await this.useCases.completeSession(id, userId);
-      res.status(200).json({
-        success: true,
-        message: "Interview submitted for evaluation",
-        data: session,
-      });
+      return ApiResponse.success(
+        res,
+        session,
+        "Interview submitted for evaluation"
+      );
     } catch (error) {
       next(error);
     }
@@ -233,18 +234,18 @@ export class CandidateInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const { reason } = req.body || {};
       const userId = this.getUserId(req);
 
       const session = await this.useCases.cancelSession(id, userId, reason);
-      res.status(200).json({
-        success: true,
-        message: "Interview session cancelled",
-        data: session,
-      });
+      return ApiResponse.success(
+        res,
+        session,
+        "Interview session cancelled"
+      );
     } catch (error) {
       next(error);
     }
@@ -255,31 +256,28 @@ export class CandidateInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const userId = this.getUserId(req);
       const userRole = this.getUserRole(req);
 
       const session = await this.useCases.getReport(id, userId, userRole);
-      res.status(200).json({
-        success: true,
-        data: {
-          sessionId: session.id,
-          type: session.type,
-          status: session.status,
-          difficulty: session.difficulty,
-          domain: session.domain,
-          overallScore: session.overallScore,
-          outcome: session.outcome,
-          summaryFeedback: session.summaryFeedback,
-          strengths: session.strengths,
-          improvements: session.improvements,
-          criteriaScores: session.criteriaScores,
-          durationSeconds: session.durationSeconds,
-          startedAt: session.startedAt,
-          endedAt: session.endedAt,
-        },
+      return ApiResponse.success(res, {
+        sessionId: session.id,
+        type: session.type,
+        status: session.status,
+        difficulty: session.difficulty,
+        domain: session.domain,
+        overallScore: session.overallScore,
+        outcome: session.outcome,
+        summaryFeedback: session.summaryFeedback,
+        strengths: session.strengths,
+        improvements: session.improvements,
+        criteriaScores: session.criteriaScores,
+        durationSeconds: session.durationSeconds,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
       });
     } catch (error) {
       next(error);
@@ -291,7 +289,7 @@ export class CandidateInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const id = this.getIdParam(req.params.id);
       const userId = this.getUserId(req);
@@ -302,7 +300,7 @@ export class CandidateInterviewController {
         userId,
         userRole
       );
-      res.status(200).json({ success: true, data: recordingData });
+      return ApiResponse.success(res, recordingData);
     } catch (error) {
       next(error);
     }
@@ -313,7 +311,7 @@ export class CandidateInterviewController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
       const userId = this.getUserId(req);
       const query = CandidateListSessionsQuerySchema.parse(req.query);
@@ -323,15 +321,10 @@ export class CandidateInterviewController {
         ...query,
       });
 
-      res.status(200).json({
-        success: true,
-        data: result.sessions,
-        meta: {
-          total: result.total,
-          page: query.page,
-          limit: query.limit,
-          totalPages: Math.ceil(result.total / query.limit),
-        },
+      return ApiResponse.paginated(res, result.sessions, {
+        total: result.total,
+        page: query.page,
+        limit: query.limit,
       });
     } catch (error) {
       next(error);

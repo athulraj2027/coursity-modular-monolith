@@ -54,3 +54,4 @@ export default lectureRouter;
 export * from "./domain/entities/lecture.entity";
 export * from "./domain/dtos/lecture.dto";
 export * from "./domain/repositories/lecture.repository";
+export * from "./presentation/controllers";

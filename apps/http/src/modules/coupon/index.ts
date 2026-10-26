@@ -52,4 +52,5 @@ export const couponRouter = defaultModule.couponRouter;
 export const couponRepo = defaultModule.couponRepo;
 export const validateCouponUseCase = defaultModule.validateCouponUseCase;
 export default couponRouter;
+export * from "./presentation/controllers";
 

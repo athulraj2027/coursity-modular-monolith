@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { ChangePassword } from "../../application/use-cases/change-password.usecase";
-import { STATUS_CODES } from "@/app/config/status";
 import { UnauthorizedError } from "@/app/errors";
+import { ApiResponse } from "@/shared/utils/api-response";
 
 export class ChangePasswordController {
     constructor(private readonly changePassword: ChangePassword) {}
@@ -22,11 +22,7 @@ export class ChangePasswordController {
                 confirmPassword,
             });
 
-            res.status(STATUS_CODES.OK).json({
-                success: true,
-                message: result.message,
-                data: result,
-            });
+            ApiResponse.success(res, result, result.message);
         } catch (error) {
             next(error);
         }

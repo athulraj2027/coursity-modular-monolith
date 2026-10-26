@@ -1,9 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 import { GoogleAuth } from "../../application/use-cases/google-auth.usecase";
-import { STATUS_CODES } from "@/app/config/status";
 import { env } from "@/app/config/env";
 import type { UserRole } from "@/modules/user/domain/entities/user.entity";
 import { setAuthCookies } from "@/app/config/cookie";
+import { ApiResponse } from "@/shared/utils/api-response";
 
 export class GoogleAuthController {
     constructor(private readonly googleAuth: GoogleAuth) { }
@@ -22,10 +22,7 @@ export class GoogleAuthController {
                 return res.redirect(result.url);
             }
 
-            res.status(STATUS_CODES.OK).json({
-                message: "Google OAuth URL generated",
-                data: result,
-            });
+            return ApiResponse.success(res, result, "Google OAuth URL generated");
         } catch (error) {
             next(error);
         }
@@ -47,10 +44,7 @@ export class GoogleAuthController {
                 refreshToken: result.refreshToken,
             });
 
-            res.status(STATUS_CODES.OK).json({
-                message: "Google authentication successful",
-                data: result,
-            });
+            return ApiResponse.success(res, result, "Google authentication successful");
         } catch (error) {
             next(error);
         }
@@ -88,10 +82,7 @@ export class GoogleAuthController {
                 return res.redirect(redirectUrl.toString());
             }
 
-            res.status(STATUS_CODES.OK).json({
-                message: "Google OAuth callback handled successfully",
-                data: result,
-            });
+            return ApiResponse.success(res, result, "Google OAuth callback handled successfully");
         } catch (error: any) {
             // If browser GET redirect failed, redirect back to frontend signin with error parameter
             if (req.method === "GET" && env.FRONTEND_URL) {

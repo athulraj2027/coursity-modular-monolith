@@ -111,3 +111,4 @@ const defaultModule = createEnrollmentModule();
 export const enrollmentRouter = defaultModule.enrollmentRouter;
 export const enrollmentRepo = defaultModule.enrollmentRepo;
 export default enrollmentRouter;
+export * from "./presentation/controllers";

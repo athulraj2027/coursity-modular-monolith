@@ -1,6 +1,7 @@
 import rateLimit from "express-rate-limit";
 import { Request } from "express";
 import { STATUS_CODES } from "../config/status";
+import { ApiResponse } from "@/shared";
 
 interface RateLimiterOptions {
     windowMs?: number;
@@ -27,10 +28,8 @@ export const createRateLimiter = ({
             ) return true;
             return false;
         },
-        handler: (req, res) => {
-            res.status(STATUS_CODES.TOO_MANY_REQUESTS).json({
-                message,
-            });
+        handler: (_req, res) => {
+            return ApiResponse.error(res, message, STATUS_CODES.TOO_MANY_REQUESTS);
         },
     });
 };

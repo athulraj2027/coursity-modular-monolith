@@ -46,3 +46,4 @@ export * from "./domain/entities/note.entity";
 export * from "./domain/dtos/note.dto";
 export * from "./domain/repositories/note.repository";
 export * from "./domain/errors/note.errors";
+export * from "./presentation/controllers";
