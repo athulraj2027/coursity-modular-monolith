@@ -1,10 +1,25 @@
 import { PrismaClient } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { IAIModelRepository } from "../../domain/repositories/ai-config.repository.interfaces";
 import { AIModelEntity } from "../../domain/entities/ai-config.entities";
 
-export class PrismaAIModelRepository implements IAIModelRepository {
-  constructor(private readonly prisma: PrismaClient = defaultPrisma) {}
+export class PrismaAIModelRepository
+  extends PrismaBaseRepository<
+    AIModelEntity,
+    typeof defaultPrisma.aIModel,
+    Omit<AIModelEntity, "id" | "createdAt" | "updatedAt">,
+    Partial<AIModelEntity>
+  >
+  implements IAIModelRepository
+{
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).aIModel);
+  }
+
+  protected mapToEntity(record: any): AIModelEntity {
+    return record as AIModelEntity;
+  }
 
   async findById(id: string): Promise<AIModelEntity | null> {
     const m = await (this.prisma as any).aIModel.findUnique({

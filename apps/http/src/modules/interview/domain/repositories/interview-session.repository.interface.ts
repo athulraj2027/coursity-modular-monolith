@@ -1,3 +1,4 @@
+import { IBaseRepository } from "@/shared/domain/repositories/base.repository.interface";
 import {
   AdminListSessionsQueryDto,
   AdminOverrideDecisionDto,
@@ -10,7 +11,7 @@ import {
   InterviewStatus,
 } from "../entities/interview.entity";
 
-export interface IInterviewSessionRepository {
+export interface IInterviewSessionRepository extends IBaseRepository<InterviewSessionEntity, string> {
   create(data: {
     userId: string;
     teacherProfileId?: string | null;
@@ -69,4 +70,9 @@ export interface IInterviewSessionRepository {
       feedback?: string;
     }>;
   }): Promise<InterviewSessionEntity>;
+
+  canCandidateStartInterview(userId: string): Promise<{
+    allowed: boolean;
+    reason?: "ALREADY_PASSED" | "MAX_ATTEMPTS";
+  }>;
 }

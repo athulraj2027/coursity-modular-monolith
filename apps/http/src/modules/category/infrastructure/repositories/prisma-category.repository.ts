@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { ICategoryRepository } from "../../domain/repositories/category.repository";
 import {
   CategoryEntity,
@@ -9,8 +10,23 @@ import {
 } from "../../domain/entities/category.entity";
 import { CreateCategoryDTO, UpdateCategoryDTO } from "../../domain/dtos/category.dto";
 
-export class PrismaCategoryRepository implements ICategoryRepository {
-  constructor(private readonly prisma: PrismaClient = defaultPrisma) {}
+export class PrismaCategoryRepository
+  extends PrismaBaseRepository<
+    CategoryEntity,
+    typeof defaultPrisma.category,
+    CreateCategoryDTO,
+    UpdateCategoryDTO,
+    CategoryFilterParams
+  >
+  implements ICategoryRepository
+{
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).category);
+  }
+
+  protected mapToEntity(record: any): CategoryEntity {
+    return record as CategoryEntity;
+  }
 
   async findById(id: string, includeDeleted = false): Promise<CategoryEntity | null> {
     const where: any = { id };
@@ -297,9 +313,7 @@ export class PrismaCategoryRepository implements ICategoryRepository {
   }
 
   async hardDelete(id: string): Promise<boolean> {
-    await (this.prisma as any).category.delete({
-      where: { id },
-    });
+    await this.delete(id);
     return true;
   }
 

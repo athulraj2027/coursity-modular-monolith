@@ -5,4 +5,5 @@ export * from "./get-all-users.usecase";
 export * from "./get-user-by-id.usecase";
 export * from "./block-user.usecase";
 export * from "./approve-teacher.usecase";
+export * from "./get-admin-analytics.usecase";
 

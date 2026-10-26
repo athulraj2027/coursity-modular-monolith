@@ -69,4 +69,5 @@ export function createWalletModule(
 
 const defaultModule = createWalletModule();
 export const walletRouter: Router = defaultModule.walletRouter;
+export const walletRepo = defaultModule.walletRepo;
 export default walletRouter;

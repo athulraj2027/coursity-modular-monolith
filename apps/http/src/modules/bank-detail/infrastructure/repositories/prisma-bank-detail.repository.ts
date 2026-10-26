@@ -1,4 +1,6 @@
 import { PrismaClient } from "@prisma/client";
+import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import {
   IBankDetailRepository,
   PaginatedBankDetailsResult,
@@ -10,8 +12,23 @@ import {
 } from "../../domain/dtos/bank-detail.dto";
 import { BankDetailEntity } from "../../domain/entities/bank-detail.entity";
 
-export class PrismaBankDetailRepository implements IBankDetailRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+export class PrismaBankDetailRepository
+  extends PrismaBaseRepository<
+    BankDetailEntity,
+    typeof defaultPrisma.bankDetail,
+    CreateBankDetailDto,
+    any,
+    AdminBankDetailsQueryDto
+  >
+  implements IBankDetailRepository
+{
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).bankDetail);
+  }
+
+  protected mapToEntity(record: any): BankDetailEntity {
+    return record as BankDetailEntity;
+  }
 
   async create(dto: CreateBankDetailDto): Promise<BankDetailEntity> {
     return this.prisma.$transaction(async (tx: any) => {

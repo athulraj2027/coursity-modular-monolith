@@ -15,29 +15,22 @@ export const createIdempotencyMiddleware = (
     } = options;
 
     return async (req: Request, res: Response, next: NextFunction) => {
-        // Idempotency applies to mutating operations (POST, PUT, PATCH, DELETE)
-        if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") {
-            return next();
-        }
+        if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return next();
 
-        // 1. Extract Idempotency Key from standard or custom headers
         const rawKey = req.headers["idempotency-key"] || req.headers["x-idempotency-key"];
 
         if (!rawKey) {
-            if (required) {
+            if (required)
                 return next(new BadRequestError("Idempotency-Key header is required for this operation."));
-            }
             return next();
         }
 
         const key = (Array.isArray(rawKey) ? rawKey[0] : rawKey).trim();
 
-        if (!key || key.length > 255) {
+        if (!key || key.length > 255)
             return next(new BadRequestError("Invalid Idempotency-Key header format."));
-        }
 
         try {
-            // 2. Compute request fingerprint
             const requestPath = req.originalUrl || req.baseUrl + req.path;
             const fingerprint = service.generateRequestFingerprint(
                 req.method,
@@ -46,7 +39,6 @@ export const createIdempotencyMiddleware = (
                 req.user?.userId
             );
 
-            // 3. Acquire lock or retrieve completed response
             const lockResult = await service.acquireLock({
                 key,
                 method: req.method,
@@ -57,14 +49,12 @@ export const createIdempotencyMiddleware = (
                 lockTimeoutSeconds,
             });
 
-            // 3a. Payload tampering detected
             if (lockResult.mismatch) {
                 throw new UnprocessableEntityError(
                     "Idempotency key was previously used with a different request payload or endpoint."
                 );
             }
 
-            // 3b. Existing record found
             if (!lockResult.acquired) {
                 const existing = lockResult.existingRecord;
 
@@ -82,7 +72,6 @@ export const createIdempotencyMiddleware = (
                 }
             }
 
-            // 4. Hook response output to store result upon execution
             const originalJson = res.json.bind(res);
             let responseCaptured = false;
 
@@ -91,7 +80,6 @@ export const createIdempotencyMiddleware = (
                     responseCaptured = true;
                     const statusCode = res.statusCode || STATUS_CODES.OK;
 
-                    // Commit to Redis & DB for successful and client-error responses
                     if (statusCode >= 200 && statusCode < 500) {
                         service.saveCompletedResponse({
                             key,
@@ -101,10 +89,8 @@ export const createIdempotencyMiddleware = (
                         }).catch((err) => {
                             console.error(`❌ [Idempotency] Failed to save response for ${key}:`, err);
                         });
-                    } else {
-                        // If 5xx server error, mark failed so client can retry
+                    } else
                         service.markFailed(key).catch(() => { });
-                    }
                 }
                 return originalJson(body);
             };

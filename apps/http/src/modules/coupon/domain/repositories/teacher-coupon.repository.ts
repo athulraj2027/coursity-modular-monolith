@@ -1,7 +1,15 @@
+import { IBaseRepository } from "@/shared/domain/repositories/base.repository.interface";
 import { TeacherCouponEntity } from "../entities/teacher-coupon.entity";
 import { CreateTeacherCouponDto, UpdateTeacherCouponDto } from "../dtos/teacher-coupon.dto";
 
-export interface TeacherCouponRepository {
+export interface TeacherCouponRepository
+  extends IBaseRepository<
+    TeacherCouponEntity,
+    string,
+    any,
+    UpdateTeacherCouponDto,
+    any
+  > {
   create(teacherProfileId: string, data: CreateTeacherCouponDto): Promise<TeacherCouponEntity>;
   findById(id: string): Promise<TeacherCouponEntity | null>;
   findByCodeAndTeacher(teacherProfileId: string, code: string): Promise<TeacherCouponEntity | null>;
@@ -31,5 +39,6 @@ export interface TeacherCouponRepository {
   delete(id: string): Promise<void>;
   incrementUsedCount(id: string): Promise<void>;
   getStudentUsageCount(couponId: string, studentId: string): Promise<number>;
+  findCouponWithRedemptions(id: string): Promise<any | null>;
 }
 

@@ -1,10 +1,25 @@
 import { PrismaClient } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { IAICredentialRepository } from "../../domain/repositories/ai-config.repository.interfaces";
 import { AICredentialEntity } from "../../domain/entities/ai-config.entities";
 
-export class PrismaAICredentialRepository implements IAICredentialRepository {
-  constructor(private readonly prisma: PrismaClient = defaultPrisma) {}
+export class PrismaAICredentialRepository
+  extends PrismaBaseRepository<
+    AICredentialEntity,
+    typeof defaultPrisma.aICredential,
+    Omit<AICredentialEntity, "id" | "createdAt" | "updatedAt">,
+    Partial<AICredentialEntity>
+  >
+  implements IAICredentialRepository
+{
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).aICredential);
+  }
+
+  protected mapToEntity(record: any): AICredentialEntity {
+    return record as AICredentialEntity;
+  }
 
   async findById(id: string): Promise<AICredentialEntity | null> {
     const c = await (this.prisma as any).aICredential.findUnique({

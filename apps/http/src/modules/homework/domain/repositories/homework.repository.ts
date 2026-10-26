@@ -1,3 +1,4 @@
+import { IBaseRepository } from "@/shared/domain/repositories/base.repository.interface";
 import { HomeworkEntity, HomeworkSubmissionEntity } from "../entities/homework.entity";
 import {
   CreateHomeworkDTO,
@@ -8,7 +9,14 @@ import {
   PaginatedResult,
 } from "../dtos/homework.dto";
 
-export interface IHomeworkRepository {
+export interface IHomeworkRepository
+  extends IBaseRepository<
+    HomeworkEntity,
+    string,
+    any,
+    UpdateHomeworkDTO,
+    HomeworkFilterParams
+  > {
   findById(id: string, includeDeleted?: boolean): Promise<HomeworkEntity | null>;
   findByLectureId(lectureId: string, studentId?: string, includeDeleted?: boolean): Promise<HomeworkEntity[]>;
   findByCourseId(courseId: string, studentId?: string, includeDeleted?: boolean): Promise<HomeworkEntity[]>;

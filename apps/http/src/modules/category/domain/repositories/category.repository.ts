@@ -1,3 +1,4 @@
+import { IBaseRepository } from "@/shared/domain/repositories/base.repository.interface";
 import {
   CategoryEntity,
   CategoryTreeNode,
@@ -6,7 +7,14 @@ import {
 } from "../entities/category.entity";
 import { CreateCategoryDTO, UpdateCategoryDTO } from "../dtos/category.dto";
 
-export interface ICategoryRepository {
+export interface ICategoryRepository
+  extends IBaseRepository<
+    CategoryEntity,
+    string,
+    CreateCategoryDTO,
+    UpdateCategoryDTO,
+    CategoryFilterParams
+  > {
   findById(id: string, includeDeleted?: boolean): Promise<CategoryEntity | null>;
   findBySlug(slug: string, includeDeleted?: boolean): Promise<CategoryEntity | null>;
   findMany(params?: CategoryFilterParams): Promise<{ items: CategoryEntity[]; total: number }>;

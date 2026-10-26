@@ -8,6 +8,7 @@ import { ISTTService } from "../src/modules/session/domain/ports/stt.port";
 import { ITTSService } from "../src/modules/session/domain/ports/tts.port";
 import { IBackendSyncService } from "../src/modules/session/domain/ports/backend-sync.port";
 import { IAudioStorageService } from "../src/modules/session/domain/ports/audio-storage.port";
+import { IInterviewGraph } from "../src/modules/reasoning/domain/ports/interview-graph.port";
 
 // ==========================================
 // MOCKS
@@ -77,18 +78,38 @@ class MockS3Storage implements IAudioStorageService {
   }
 }
 
+class MockGraph implements IInterviewGraph {
+  async invoke(state: any): Promise<any> {
+    return {
+      ...state,
+      responseText: "Hello Alice Walker! Welcome to your interview. Let's start with our first question.",
+      phase: state.nextAction === "END_INTERVIEW" ? "COMPLETED" : "QUESTION_ACTIVE",
+      evaluation: {
+        overallScore: 88,
+        outcome: "PASSED",
+        summaryFeedback: "Excellent domain knowledge and pedagogical clarity.",
+        criteriaScores: [
+          { criterion: "Technical", score: 90, maxScore: 100 },
+          { criterion: "Communication", score: 86, maxScore: 100 },
+        ],
+      },
+    };
+  }
+}
+
 // ==========================================
 // TEST SUITE
 // ==========================================
 
 describe("Session Module & Coordinator Suite", () => {
   describe("VadService (Voice Activity Detection)", () => {
-    it("should detect speech start on high energy audio chunk", (t, done) => {
+    it("should detect speech start on high energy audio chunk", async () => {
       const vad = new VadService({ silenceThresholdRms: 0.01 });
 
-      vad.on("speech_start", ({ rms }) => {
-        assert.ok(rms > 0.01);
-        done();
+      const speechStartPromise = new Promise<{ rms: number }>((resolve) => {
+        vad.on("speech_start", ({ rms }) => {
+          resolve({ rms });
+        });
       });
 
       const loudChunk = Buffer.alloc(1600);
@@ -96,7 +117,12 @@ describe("Session Module & Coordinator Suite", () => {
         loudChunk.writeInt16LE(15000, i);
       }
 
+      // Require 2 consecutive frames to trigger speech_start
       vad.processAudioChunk(loudChunk);
+      vad.processAudioChunk(loudChunk);
+
+      const event = await speechStartPromise;
+      assert.ok(event.rms > 0.01);
     });
   });
 
@@ -121,12 +147,14 @@ describe("Session Module & Coordinator Suite", () => {
     let mockWs: MockWs;
     let mockSync: MockSyncClient;
     let mockS3: MockS3Storage;
+    let mockGraph: MockGraph;
     let coordinator: InterviewSessionCoordinator;
 
     beforeEach(() => {
       mockWs = new MockWs();
       mockSync = new MockSyncClient();
       mockS3 = new MockS3Storage();
+      mockGraph = new MockGraph();
 
       coordinator = new InterviewSessionCoordinator({
         sessionId: "sess_clean_123",
@@ -143,6 +171,7 @@ describe("Session Module & Coordinator Suite", () => {
         ttsService: new MockTtsProvider(),
         syncService: mockSync,
         storageService: mockS3,
+        graphService: mockGraph,
       });
     });
 

@@ -6,10 +6,6 @@ import { IEmailQueue } from "../contracts/email-queue.abstract";
 
 export const EMAIL_QUEUE_NAME = "email-queue";
 
-/**
- * Creates a dedicated Redis client for BullMQ operations.
- * BullMQ requires maxRetriesPerRequest: null for its blocking command handling.
- */
 export const createBullMQRedisConnection = (): Redis => {
     return new Redis(env.REDIS_URL || "redis://localhost:6379", {
         maxRetriesPerRequest: null,

@@ -1,3 +1,4 @@
+import { IBaseRepository } from "@/shared/domain/repositories/base.repository.interface";
 import {
   AdminListTemplatesQueryDto,
   CreateInterviewTemplateDto,
@@ -8,7 +9,14 @@ import {
   InterviewTemplateVersionEntity,
 } from "../entities/interview.entity";
 
-export interface IInterviewTemplateRepository {
+export interface IInterviewTemplateRepository
+  extends IBaseRepository<
+    InterviewTemplateEntity,
+    string,
+    CreateInterviewTemplateDto,
+    UpdateInterviewTemplateDto,
+    AdminListTemplatesQueryDto
+  > {
   create(dto: CreateInterviewTemplateDto): Promise<InterviewTemplateEntity>;
 
   findById(id: string): Promise<InterviewTemplateEntity | null>;

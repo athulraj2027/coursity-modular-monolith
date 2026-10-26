@@ -1,10 +1,24 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { ProfileRepository } from "../../domain/repositories/profile.repository";
 import { FullUserProfile, UserProfile, TeacherProfile } from "../../domain/entities/profile.entity";
 
-export class PrismaProfileRepository implements ProfileRepository {
-    constructor(private readonly prisma: PrismaClient = defaultPrisma) { }
+export class PrismaProfileRepository
+    extends PrismaBaseRepository<UserProfile, typeof defaultPrisma.profile>
+    implements ProfileRepository
+{
+    constructor(prisma: PrismaClient = defaultPrisma) {
+        super(prisma, (prisma as any).profile);
+    }
+
+    protected mapToEntity(record: any): UserProfile {
+        return record as UserProfile;
+    }
+
+    override async findById(id: string): Promise<UserProfile | null> {
+        return this.getProfileByUserId(id);
+    }
 
     async getFullProfileByUserId(userId: string): Promise<FullUserProfile | null> {
         const user = await this.prisma.user.findUnique({
@@ -191,5 +205,45 @@ export class PrismaProfileRepository implements ProfileRepository {
             where: { id: userId },
             data: { name },
         });
+    }
+
+    async getOrCreateTeacherProfileId(userId: string): Promise<string> {
+        let profile = await this.prisma.profile.findUnique({
+            where: { userId },
+            include: { teacherProfile: true },
+        });
+
+        if (!profile) {
+            profile = await this.prisma.profile.create({
+                data: {
+                    userId,
+                    teacherProfile: {
+                        create: {},
+                    },
+                },
+                include: { teacherProfile: true },
+            });
+        } else if (!profile.teacherProfile) {
+            const createdTeacher = await this.prisma.teacherProfile.create({
+                data: {
+                    profileId: profile.id,
+                },
+            });
+            return createdTeacher.id;
+        }
+
+        if (!profile.teacherProfile) {
+            throw new Error("Unable to locate or initialize instructor profile.");
+        }
+
+        return profile.teacherProfile.id;
+    }
+
+    async getTeacherProfileIdByUserId(userId: string): Promise<string | null> {
+        const teacherProfile = await this.prisma.teacherProfile.findFirst({
+            where: { profile: { userId } },
+            select: { id: true },
+        });
+        return teacherProfile?.id || null;
     }
 }

@@ -1,7 +1,7 @@
 import http from "http";
-import { InMemorySessionRegistry } from "../modules/session/infrastructure/registry/in-memory-session.registry";
+import { ISessionMetricsReader } from "../modules/session/domain/ports/session-registry.port";
 
-export function createHttpHandler(sessionRegistry: InMemorySessionRegistry) {
+export function createHttpHandler(sessionRegistry: ISessionMetricsReader) {
   return (req: http.IncomingMessage, res: http.ServerResponse) => {
     // CORS headers
     res.setHeader("Access-Control-Allow-Origin", "*");

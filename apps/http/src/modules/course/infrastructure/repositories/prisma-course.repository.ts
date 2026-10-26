@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
+import { PaginatedResult } from "@/shared/domain/repositories/base.repository.interface";
 import { ICourseRepository } from "../../domain/repositories/course.repository";
 import {
   CourseEntity,
@@ -8,8 +10,23 @@ import {
 } from "../../domain/entities/course.entity";
 import { CreateCourseDTO, UpdateCourseDTO } from "../../domain/dtos/course.dto";
 
-export class PrismaCourseRepository implements ICourseRepository {
-  constructor(private readonly prisma: PrismaClient = defaultPrisma) {}
+export class PrismaCourseRepository
+  extends PrismaBaseRepository<
+    CourseEntity,
+    any,
+    CreateCourseDTO,
+    UpdateCourseDTO,
+    CourseFilterParams
+  >
+  implements ICourseRepository
+{
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).course);
+  }
+
+  protected mapToEntity(record: any): CourseEntity {
+    return record as CourseEntity;
+  }
 
   private getInclude(includeCurriculum = false) {
     return {
@@ -81,7 +98,7 @@ export class PrismaCourseRepository implements ICourseRepository {
     return course as CourseEntity | null;
   }
 
-  async findMany(params: CourseFilterParams = {}): Promise<{ items: CourseEntity[]; total: number }> {
+  async findMany(params: CourseFilterParams = {}): Promise<PaginatedResult<CourseEntity>> {
     const where: any = {};
 
     // Soft delete
@@ -164,7 +181,15 @@ export class PrismaCourseRepository implements ICourseRepository {
       include: this.getInclude(false),
     });
 
-    return { items: items as CourseEntity[], total };
+    const totalPages = take ? Math.ceil(total / take) : 1;
+
+    return {
+      items: items as CourseEntity[],
+      total,
+      page: params.page,
+      limit: params.limit,
+      totalPages,
+    };
   }
 
   async create(data: CreateCourseDTO): Promise<CourseEntity> {
@@ -367,9 +392,7 @@ export class PrismaCourseRepository implements ICourseRepository {
   }
 
   async hardDelete(id: string): Promise<boolean> {
-    await (this.prisma as any).course.delete({
-      where: { id },
-    });
+    await this.delete(id);
     return true;
   }
 

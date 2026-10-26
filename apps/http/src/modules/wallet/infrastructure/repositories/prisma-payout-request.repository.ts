@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { IPayoutRequestRepository } from "../../domain/repositories/payout-request.repository.interface";
 import { PayoutRequestEntity } from "../../domain/entities/payout-request.entity";
 import {
@@ -8,10 +9,15 @@ import {
 } from "../../domain/dtos/payout-request.dto";
 import { BadRequestError, NotFoundError } from "@/app/errors";
 
-export class PrismaPayoutRequestRepository implements IPayoutRequestRepository {
-  constructor(private readonly prisma: PrismaClient = defaultPrisma) {}
+export class PrismaPayoutRequestRepository
+  extends PrismaBaseRepository<PayoutRequestEntity, typeof defaultPrisma.payoutRequest>
+  implements IPayoutRequestRepository
+{
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).payoutRequest);
+  }
 
-  private mapToEntity(raw: any): PayoutRequestEntity {
+  protected mapToEntity(raw: any): PayoutRequestEntity {
     return {
       id: raw.id,
       walletId: raw.walletId,

@@ -1,4 +1,6 @@
 import { PrismaClient } from "@prisma/client";
+import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { EnrollmentRepository } from "../../domain/repositories/enrollment.repository";
 import {
   CourseEnrollmentEntity,
@@ -7,8 +9,21 @@ import {
 import { LessonProgressEntity } from "../../domain/entities/lesson-progress.entity";
 import { CourseRefundEntity, CourseCertificateEntity } from "../../domain/entities/refund.entity";
 
-export class PrismaEnrollmentRepository implements EnrollmentRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+export class PrismaEnrollmentRepository
+  extends PrismaBaseRepository<CourseEnrollmentEntity, typeof defaultPrisma.courseEnrollment>
+  implements EnrollmentRepository
+{
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).courseEnrollment);
+  }
+
+  protected mapToEntity(record: any): CourseEnrollmentEntity {
+    return this.mapEnrollment(record);
+  }
+
+  override async findById(id: string): Promise<CourseEnrollmentEntity | null> {
+    return this.findEnrollmentById(id);
+  }
 
   private mapEnrollment(record: any): CourseEnrollmentEntity {
     const instructorUser = record.course?.teacherProfile?.profile?.user;
@@ -686,6 +701,81 @@ export class PrismaEnrollmentRepository implements EnrollmentRepository {
       refund,
       certificate,
     };
+  }
+
+  async countConductedClasses(courseId: string): Promise<number> {
+    const now = new Date();
+    return this.prisma.courseLesson.count({
+      where: {
+        module: { courseId },
+        OR: [
+          { liveStatus: "COMPLETED" },
+          { scheduledAt: { lte: now } },
+        ],
+      },
+    });
+  }
+
+  async countTotalCourseLessons(courseId: string): Promise<number> {
+    return this.prisma.courseLesson.count({
+      where: {
+        module: { courseId, isPublished: true },
+        isPublished: true,
+      },
+    });
+  }
+
+  async countCompletedLessons(enrollmentId: string): Promise<number> {
+    return this.prisma.lessonProgress.count({
+      where: {
+        enrollmentId,
+        isCompleted: true,
+      },
+    });
+  }
+
+  async countAttendedLessons(enrollmentId: string): Promise<number> {
+    return this.prisma.lessonProgress.count({
+      where: {
+        enrollmentId,
+        attendedLive: true,
+      },
+    });
+  }
+
+  async findLessonById(lessonId: string): Promise<{ id: string } | null> {
+    return this.prisma.courseLesson.findUnique({
+      where: { id: lessonId },
+      select: { id: true },
+    });
+  }
+
+  async findCourseClassroomData(courseIdOrSlug: string): Promise<any | null> {
+    return this.prisma.course.findFirst({
+      where: {
+        OR: [{ id: courseIdOrSlug }, { slug: courseIdOrSlug }],
+      },
+      include: {
+        category: true,
+        teacherProfile: {
+          include: {
+            profile: {
+              include: { user: true },
+            },
+          },
+        },
+        modules: {
+          where: { isPublished: true },
+          orderBy: { sortOrder: "asc" },
+          include: {
+            lessons: {
+              where: { isPublished: true },
+              orderBy: { sortOrder: "asc" },
+            },
+          },
+        },
+      },
+    });
   }
 }
 

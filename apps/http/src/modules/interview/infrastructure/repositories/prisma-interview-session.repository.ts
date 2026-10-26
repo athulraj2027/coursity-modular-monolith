@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { IInterviewSessionRepository } from "../../domain/repositories/interview-session.repository.interface";
 import {
   InterviewAuditLogEntity,
@@ -12,9 +13,12 @@ import {
 import { CandidateListSessionsQueryDto } from "../../domain/dtos/candidate-interview.dto";
 
 export class PrismaInterviewSessionRepository
+  extends PrismaBaseRepository<InterviewSessionEntity, typeof defaultPrisma.interviewSession>
   implements IInterviewSessionRepository
 {
-  constructor(private readonly prisma: PrismaClient = defaultPrisma) {}
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).interviewSession);
+  }
 
   async create(data: {
     userId: string;
@@ -427,7 +431,7 @@ export class PrismaInterviewSessionRepository
     return this.mapToEntity(result);
   }
 
-  private mapToEntity(raw: any): InterviewSessionEntity {
+  protected mapToEntity(raw: any): InterviewSessionEntity {
     return {
       id: raw.id,
       userId: raw.userId,
@@ -481,5 +485,60 @@ export class PrismaInterviewSessionRepository
       auditLogs: raw.auditLogs ? raw.auditLogs : [],
       user: raw.user || null,
     };
+  }
+
+  async canCandidateStartInterview(userId: string): Promise<{
+    allowed: boolean;
+    reason?: "ALREADY_PASSED" | "MAX_ATTEMPTS";
+  }> {
+    const teacherProfile = await (this.prisma as any).teacherProfile.findFirst({
+      where: {
+        profile: {
+          userId,
+        },
+      },
+      select: {
+        isInterviewPassed: true,
+        interviewAttempts: true,
+      },
+    });
+
+    if (teacherProfile?.isInterviewPassed) {
+      return { allowed: false, reason: "ALREADY_PASSED" };
+    }
+
+    if (teacherProfile && (teacherProfile.interviewAttempts ?? 0) >= 3) {
+      return { allowed: false, reason: "MAX_ATTEMPTS" };
+    }
+
+    const passedSession = await (this.prisma as any).interviewSession.findFirst({
+      where: {
+        userId,
+        outcome: "PASSED",
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (passedSession) {
+      return { allowed: false, reason: "ALREADY_PASSED" };
+    }
+
+    const totalVettingSessions = await (this.prisma as any).interviewSession.count({
+      where: {
+        userId,
+        type: "TEACHER_VETTING",
+        status: {
+          in: ["COMPLETED", "IN_PROGRESS", "INITIALIZING"],
+        },
+      },
+    });
+
+    if (totalVettingSessions >= 3) {
+      return { allowed: false, reason: "MAX_ATTEMPTS" };
+    }
+
+    return { allowed: true };
   }
 }

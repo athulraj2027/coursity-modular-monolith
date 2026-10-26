@@ -1,35 +1,13 @@
 import { SubscriptionInvoice } from "../../domain/entities/subscription.entity";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { SubscriptionRepository } from "../../domain/repositories/subscription.repository";
 
 export class GetInvoicesUseCase {
+  constructor(private readonly subscriptionRepo?: SubscriptionRepository) {}
+
   async execute(teacherProfileId: string): Promise<SubscriptionInvoice[]> {
-    const invoices = await defaultPrisma.subscriptionInvoice.findMany({
-      where: {
-        subscription: {
-          teacherProfileId,
-        },
-      },
-      include: {
-        subscription: {
-          include: {
-            plan: true,
-            teacherProfile: {
-              include: {
-                profile: {
-                  include: {
-                    user: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      take: 50,
-    });
+    const invoices = this.subscriptionRepo
+      ? await this.subscriptionRepo.findInvoicesByTeacher(teacherProfileId)
+      : [];
 
     return invoices.map((inv) => {
       const amount = Number(inv.amount);

@@ -1,9 +1,7 @@
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { ILLMService } from "../../../reasoning/domain/ports/llm.port";
+import { globalSimulatedLLM } from "./simulated-llm.provider";
 import { env } from "../../../../shared/config/env.config";
 import { logger } from "../../../../shared/logger";
-import { EvaluationReportResult } from "../../../../shared/types/common.types";
 
 export class GeminiProvider implements ILLMService {
   private apiKey: string;
@@ -26,9 +24,9 @@ export class GeminiProvider implements ILLMService {
   async generateText(prompt: string, systemPrompt?: string): Promise<string> {
     if (!this.apiKey) {
       logger.warn(
-        "[Provider:LLM] No LLM_API_KEY provided. Using simulated response."
+        "[Provider:Gemini] No LLM_API_KEY provided. Using simulated response."
       );
-      return "Thank you for that response. Let us continue to the next part of our technical evaluation.";
+      return globalSimulatedLLM.generateText(prompt, systemPrompt);
     }
 
     try {
@@ -78,8 +76,8 @@ export class GeminiProvider implements ILLMService {
 
       throw lastError || new Error("All Gemini model candidates failed");
     } catch (error: any) {
-      logger.error("[Provider:Gemini] Text generation failed:", error.message);
-      return "Could you please elaborate further on how you would implement that in practice?";
+      logger.error("[Provider:Gemini] Text generation failed, using fallback:", error.message);
+      return globalSimulatedLLM.generateText(prompt, systemPrompt);
     }
   }
 
@@ -98,9 +96,9 @@ export class GeminiProvider implements ILLMService {
 
     if (!this.apiKey) {
       logger.warn(
-        "[Provider:Gemini] No GEMINI_API_KEY provided. Returning fallback structured object."
+        "[Provider:Gemini] No GEMINI_API_KEY provided. Delegating to simulated structured provider."
       );
-      return this.generateFallbackStructured<T>(prompt);
+      return globalSimulatedLLM.generateStructured<T>(prompt, systemPrompt, schemaDescription);
     }
 
     try {
@@ -166,216 +164,9 @@ export class GeminiProvider implements ILLMService {
       return JSON.parse(cleaned) as T;
     } catch (error: any) {
       logger.warn(
-        `[Provider:Gemini] Structured parse error (${error.message}), attempting fallback parsing`
+        `[Provider:Gemini] Structured parse error (${error.message}), falling back to simulated output.`
       );
-      return this.generateFallbackStructured<T>(prompt);
+      return globalSimulatedLLM.generateStructured<T>(prompt, systemPrompt, schemaDescription);
     }
-  }
-
-  async evaluateInterview(params: {
-    domain: string;
-    difficulty: string;
-    rubric?: any;
-    transcriptHistory: Array<{ role: string; content: string }>;
-  }): Promise<EvaluationReportResult> {
-    const transcriptText = (params.transcriptHistory || [])
-      .map((t) => `[${t.role.toUpperCase()}]: ${t.content}`)
-      .join("\n");
-
-    const prompt = `Please evaluate the following candidate interview transcript for the domain "${params.domain}" at difficulty "${params.difficulty}".
-Candidate Transcript:
-${transcriptText}
-
-Generate a comprehensive evaluation with overallScore (0-100), outcome ("PASSED" | "FAILED" | "NEEDS_HUMAN_REVIEW"), summaryFeedback, strengths list, improvements list, and criteriaScores (for Subject Expertise, Pedagogy/Problem Solving, Communication).`;
-
-    const schemaDescription = `{
-  "overallScore": 85,
-  "outcome": "PASSED",
-  "summaryFeedback": "Detailed summary...",
-  "strengths": ["Clear explanation of core concepts", "Demonstrated pedagogical depth"],
-  "improvements": ["Could provide more concrete classroom examples"],
-  "criteriaScores": [
-    { "criterion": "Subject Expertise", "score": 85, "maxScore": 100, "feedback": "Strong understanding" },
-    { "criterion": "Pedagogy", "score": 80, "maxScore": 100, "feedback": "Solid structure" },
-    { "criterion": "Communication", "score": 90, "maxScore": 100, "feedback": "Articulate and professional" }
-  ]
-}`;
-
-    return this.generateStructured<EvaluationReportResult>(
-      prompt,
-      "You are a Senior Academic & Technical Interview Board Reviewer.",
-      schemaDescription
-    );
-  }
-
-  private generateFallbackStructured<T>(prompt: string): T {
-    const p = prompt.toLowerCase();
-
-    // 1. Question Generation check (must be checked BEFORE planning so prompts with "explanation" aren't confused)
-    if (
-      p.includes("crafting the next interview question") ||
-      p.includes("questiondecision") ||
-      p.includes("previously asked questions") ||
-      p.includes("assigned difficulty level")
-    ) {
-      return {
-        question: "Could you walk me through how you design, test, and maintain robust solutions when addressing core challenges in this domain?",
-        topic: "Core Domain Competencies",
-        difficulty: "INTERMEDIATE",
-        expectedSignals: ["fundamentals", "system design", "modularity", "best practices"],
-        rationale: "Assessing core technical competencies and practical experience.",
-      } as unknown as T;
-    }
-
-    // 2. Evaluation check
-    if (
-      p.includes("overallscore") ||
-      p.includes("criteriascores") ||
-      p.includes("board reviewer") ||
-      p.includes("comprehensive rubric evaluation")
-    ) {
-      return {
-        overallScore: 82,
-        outcome: "PASSED",
-        summaryFeedback:
-          "The candidate demonstrated strong foundational knowledge and clear communication throughout the interview session.",
-        strengths: [
-          "Articulate explanations of core domain principles",
-          "Structured approach to problem solving",
-        ],
-        improvements: [
-          "Include more concrete production metrics or classroom case studies",
-        ],
-        criteriaScores: [
-          {
-            criterion: "Subject Expertise",
-            score: 84,
-            maxScore: 100,
-            weight: 0.4,
-            feedback: "Demonstrated solid technical depth and conceptual accuracy.",
-          },
-          {
-            criterion: "Pedagogy / Problem Solving",
-            score: 80,
-            maxScore: 100,
-            weight: 0.35,
-            feedback: "Logical step-by-step reasoning and systematic explanations.",
-          },
-          {
-            criterion: "Communication & Professionalism",
-            score: 88,
-            maxScore: 100,
-            weight: 0.25,
-            feedback: "Concise, articulate, and engaged professionally.",
-          },
-        ],
-      } as unknown as T;
-    }
-
-    // 3. Planning check
-    if (
-      p.includes("dynamic interview plan") ||
-      p.includes("initialdifficulty") ||
-      p.includes("totalplannedquestions") ||
-      p.includes("topics with weights")
-    ) {
-      return {
-        planId: `plan_${Date.now()}`,
-        domain: "Technical Evaluation",
-        initialDifficulty: "INTERMEDIATE",
-        currentDifficulty: "INTERMEDIATE",
-        totalPlannedQuestions: 5,
-        topics: [
-          {
-            id: "t1",
-            name: "Core Domain Competencies",
-            difficulty: "INTERMEDIATE",
-            weight: 0.4,
-            minQuestions: 2,
-            expectedSignals: ["fundamentals", "conceptual clarity"],
-            covered: false,
-          },
-          {
-            id: "t2",
-            name: "Pedagogy & Problem Solving",
-            difficulty: "INTERMEDIATE",
-            weight: 0.35,
-            minQuestions: 2,
-            expectedSignals: ["differentiation", "student support"],
-            covered: false,
-          },
-          {
-            id: "t3",
-            name: "System Architecture & Best Practices",
-            difficulty: "INTERMEDIATE",
-            weight: 0.25,
-            minQuestions: 1,
-            expectedSignals: ["scalability", "clean code"],
-            covered: false,
-          },
-        ],
-        strategyNotes: "Standard adaptive assessment path.",
-      } as unknown as T;
-    }
-
-    // 4. Evidence Extraction check
-    if (p.includes("technicalclaims") || p.includes("concreteexamples") || p.includes("metrics")) {
-      return {
-        technicalClaims: ["Candidate described core architecture principles"],
-        concreteExamples: ["Cited past experience in software development"],
-        metricsCited: [],
-        missingEvidence: [],
-      } as unknown as T;
-    }
-
-    // 5. Conversation Quality check
-    if (p.includes("isrambling") || p.includes("istooBrief") || p.includes("isofftopic")) {
-      return {
-        isRambling: false,
-        isTooBrief: false,
-        isOffTopic: false,
-        isMisunderstood: false,
-        sentiment: "CONFIDENT",
-        qualityScore: 0.9,
-      } as unknown as T;
-    }
-
-    // 6. Integrity check
-    if (p.includes("anomaly") || p.includes("prompt_injection") || p.includes("integrity")) {
-      return {
-        anomalyDetected: false,
-        severity: "LOW",
-        reason: "Normal candidate speech.",
-      } as unknown as T;
-    }
-
-    // 7. Answer Analysis check
-    if (p.includes("relevance") || p.includes("expected key signals") || p.includes("analyze")) {
-      return {
-        relevance: 0.88,
-        completeness: 0.82,
-        correctness: 0.85,
-        clarity: 0.85,
-        needsFollowUp: false,
-        critique: "Well-reasoned response addressing the primary question.",
-      } as unknown as T;
-    }
-
-    // 8. Follow-up check
-    if (p.includes("follow-up") || p.includes("followup")) {
-      return {
-        shouldFollowUp: false,
-        reason: "The candidate answered the question sufficiently.",
-        question: "Could you walk me through a specific example from your experience?",
-      } as unknown as T;
-    }
-
-    // 9. Default Fallback
-    return {
-      question: "How do you handle edge cases and maintain maintainability in large scale applications?",
-      topic: "Architecture & Problem Solving",
-      difficulty: "INTERMEDIATE",
-      expectedSignals: ["modularity", "clean code", "testing"],
-    } as unknown as T;
   }
 }

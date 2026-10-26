@@ -1,7 +1,15 @@
+import { IBaseRepository } from "@/shared/domain/repositories/base.repository.interface";
 import { NoteEntity } from "../entities/note.entity";
 import { CreateNoteDTO, UpdateNoteDTO, NoteFilterParams, PaginatedNotesResult } from "../dtos/note.dto";
 
-export interface INoteRepository {
+export interface INoteRepository
+  extends IBaseRepository<
+    NoteEntity,
+    string,
+    any,
+    UpdateNoteDTO,
+    NoteFilterParams
+  > {
   findById(id: string, includeDeleted?: boolean): Promise<NoteEntity | null>;
   findByLectureId(lectureId: string, includeDeleted?: boolean): Promise<NoteEntity[]>;
   findByCourseId(courseId: string, includeDeleted?: boolean): Promise<NoteEntity[]>;

@@ -8,7 +8,6 @@ import { VerifyRazorpayPaymentDto } from "../../domain/dtos/subscription.dto";
 import { calculatePlanCheckoutPrice, DEFAULT_GST_PERCENT } from "../../domain/constants/billing.constants";
 import { TeacherSubscription, SubscriptionInvoice } from "../../domain/entities/subscription.entity";
 import { BadRequestError, NotFoundError } from "@/app/errors";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
 
 export class VerifyRazorpayPaymentUseCase {
   constructor(
@@ -102,14 +101,7 @@ export class VerifyRazorpayPaymentUseCase {
     let teacherState = dto.state || null;
 
     try {
-      const teacherProfile = await defaultPrisma.teacherProfile.findUnique({
-        where: { id: dto.teacherProfileId },
-        include: {
-          profile: {
-            include: { user: true },
-          },
-        },
-      });
+      const teacherProfile = await this.subscriptionRepo.findTeacherWithUser(dto.teacherProfileId);
 
       if (teacherProfile?.profile?.user) {
         if (!teacherName || teacherName === "Instructor") {
@@ -154,32 +146,30 @@ export class VerifyRazorpayPaymentUseCase {
 
     // 6. Generate Subscription Invoice with Full Plan & User Metadata
     const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
-    const invoiceRecord = await defaultPrisma.subscriptionInvoice.create({
-      data: {
-        subscriptionId: subscription.id,
-        invoiceNumber,
-        amount: finalAmount,
-        currency: "INR",
-        status: "PAID",
-        paymentMethod: "RAZORPAY",
-        paidAt: now,
-        receiptUrl: `https://dashboard.razorpay.com/app/payments/${dto.paymentId}`,
-        planName: plan.name,
-        billingCycle: selectedCycle,
-        baseAmount: finalBasePrice,
-        taxAmount: finalTaxAmount,
-        taxPercent: DEFAULT_GST_PERCENT,
-        offerId: appliedOfferId,
-        discountAmount: appliedDiscountAmount,
-        userName: teacherName,
-        userEmail: teacherEmail,
-        userPhone: teacherPhone,
-        userState: teacherState,
-        userCountry: teacherCountry,
-        gstin: dto.gstin || null,
-        gatewayOrderId: dto.orderId,
-        gatewayPaymentId: dto.paymentId,
-      },
+    const invoiceRecord = await this.subscriptionRepo.createInvoice({
+      subscriptionId: subscription.id,
+      invoiceNumber,
+      amount: finalAmount,
+      currency: "INR",
+      status: "PAID",
+      paymentMethod: "RAZORPAY",
+      paidAt: now,
+      receiptUrl: `https://dashboard.razorpay.com/app/payments/${dto.paymentId}`,
+      planName: plan.name,
+      billingCycle: selectedCycle,
+      baseAmount: finalBasePrice,
+      taxAmount: finalTaxAmount,
+      taxPercent: DEFAULT_GST_PERCENT,
+      offerId: appliedOfferId,
+      discountAmount: appliedDiscountAmount,
+      userName: teacherName,
+      userEmail: teacherEmail,
+      userPhone: teacherPhone,
+      userState: teacherState,
+      userCountry: teacherCountry,
+      gstin: dto.gstin || null,
+      gatewayOrderId: dto.orderId,
+      gatewayPaymentId: dto.paymentId,
     });
 
     // 7. Record Offer Redemption in audit table if an offer was applied

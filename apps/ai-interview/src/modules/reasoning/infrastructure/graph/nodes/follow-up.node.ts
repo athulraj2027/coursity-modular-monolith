@@ -1,10 +1,6 @@
 import { InterviewGraphStateType } from "../state-annotations";
-import { FollowUpAgent } from "../../../domain/agents/follow-up.agent";
-import { GeminiProvider } from "../../../../session/infrastructure/providers/gemini.provider";
+import { globalAgentContainer } from "../../di/agent-container";
 import { logger } from "../../../../../shared/logger";
-
-const gemini = new GeminiProvider();
-const followUpAgent = new FollowUpAgent(gemini);
 
 export async function followUpNode(
   state: InterviewGraphStateType
@@ -21,6 +17,8 @@ export async function followUpNode(
     needsFollowUp: true,
     critique: "Needs concrete implementation detail.",
   };
+
+  const followUpAgent = await globalAgentContainer.getFollowUpAgent();
 
   const decision = await followUpAgent.generateFollowUp({
     domain: state.domain,

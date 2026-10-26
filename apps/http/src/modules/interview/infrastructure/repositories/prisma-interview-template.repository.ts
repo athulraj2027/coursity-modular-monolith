@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { IInterviewTemplateRepository } from "../../domain/repositories/interview-template.repository.interface";
 import {
   AdminListTemplatesQueryDto,
@@ -12,9 +13,18 @@ import {
 } from "../../domain/entities/interview.entity";
 
 export class PrismaInterviewTemplateRepository
+  extends PrismaBaseRepository<
+    InterviewTemplateEntity,
+    typeof defaultPrisma.interviewTemplate,
+    CreateInterviewTemplateDto,
+    UpdateInterviewTemplateDto,
+    AdminListTemplatesQueryDto
+  >
   implements IInterviewTemplateRepository
 {
-  constructor(private readonly prisma: PrismaClient = defaultPrisma) {}
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).interviewTemplate);
+  }
 
   async create(dto: CreateInterviewTemplateDto): Promise<InterviewTemplateEntity> {
     const slug =
@@ -247,7 +257,7 @@ export class PrismaInterviewTemplateRepository
     }));
   }
 
-  private mapToEntity(raw: any): InterviewTemplateEntity {
+  protected mapToEntity(raw: any): InterviewTemplateEntity {
     return {
       id: raw.id,
       title: raw.title,

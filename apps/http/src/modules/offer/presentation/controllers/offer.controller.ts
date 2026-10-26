@@ -7,7 +7,7 @@ import { AdminListOffersUseCase } from "../../application/use-cases/admin-list-o
 import { AdminToggleOfferUseCase } from "../../application/use-cases/admin-toggle-offer.usecase";
 import { AdminDeleteOfferUseCase } from "../../application/use-cases/admin-delete-offer.usecase";
 import { AdminGetOfferAnalyticsUseCase } from "../../application/use-cases/admin-get-offer-analytics.usecase";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { profileRepository } from "@/modules/profile";
 
 export class OfferController {
   constructor(
@@ -23,11 +23,7 @@ export class OfferController {
 
   private async getTeacherProfileId(userId?: string): Promise<string | null> {
     if (!userId) return null;
-    const profile = await defaultPrisma.profile.findUnique({
-      where: { userId },
-      include: { teacherProfile: true },
-    });
-    return profile?.teacherProfile?.id || null;
+    return await profileRepository.getTeacherProfileIdByUserId(userId);
   }
 
   /**

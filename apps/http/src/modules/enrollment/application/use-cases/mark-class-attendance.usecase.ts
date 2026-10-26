@@ -1,7 +1,6 @@
 import { EnrollmentRepository } from "../../domain/repositories/enrollment.repository";
 import { MarkClassAttendanceDto } from "../../domain/dtos/enrollment.dto";
 import { LessonProgressEntity } from "../../domain/entities/lesson-progress.entity";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
 import { BadRequestError, NotFoundError } from "@/app/errors";
 
 export class MarkClassAttendanceUseCase {
@@ -21,9 +20,7 @@ export class MarkClassAttendanceUseCase {
       throw new BadRequestError("Enrollment is no longer active.");
     }
 
-    const lesson = await defaultPrisma.courseLesson.findUnique({
-      where: { id: dto.lessonId },
-    });
+    const lesson = await this.enrollmentRepo.findLessonById(dto.lessonId);
     if (!lesson) {
       throw new NotFoundError("Class session not found.");
     }
@@ -37,12 +34,7 @@ export class MarkClassAttendanceUseCase {
     });
 
     // Recalculate attended classes count
-    const attendedCount = await defaultPrisma.lessonProgress.count({
-      where: {
-        enrollmentId: dto.enrollmentId,
-        attendedLive: true,
-      },
-    });
+    const attendedCount = await this.enrollmentRepo.countAttendedLessons(dto.enrollmentId);
 
     await this.enrollmentRepo.updateEnrollment(dto.enrollmentId, {
       attendedClassesCount: attendedCount,

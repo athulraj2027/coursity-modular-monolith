@@ -1,21 +1,25 @@
 import http from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import jwt from "jsonwebtoken";
-import { env } from "../../../../shared/config/env.config";
 import { logger } from "../../../../shared/logger";
-import { InterviewSessionCoordinator } from "../../application/coordinator/interview-session.coordinator";
-import { InMemorySessionRegistry } from "../../infrastructure/registry/in-memory-session.registry";
+import { IInterviewSession } from "../../domain/ports/interview-session.port";
+import { ISessionRegistry } from "../../domain/ports/session-registry.port";
 import { ISTTService } from "../../domain/ports/stt.port";
 import { ITTSService } from "../../domain/ports/tts.port";
 import { IBackendSyncService } from "../../domain/ports/backend-sync.port";
 import { IAudioStorageService } from "../../domain/ports/audio-storage.port";
+import { IRealtimeAuthenticator } from "../../domain/ports/realtime-authenticator.port";
+import { JwtRealtimeAuthenticator } from "../../infrastructure/auth/jwt-realtime.authenticator";
+import { ISessionCoordinatorFactory } from "../../domain/ports/session-coordinator-factory.port";
+import { DefaultSessionCoordinatorFactory } from "../../application/coordinator/default-session-coordinator.factory";
 
 export interface GatewayDependencies {
   sttService: ISTTService;
   ttsService: ITTSService;
   syncService: IBackendSyncService;
   storageService: IAudioStorageService;
-  sessionRegistry: InMemorySessionRegistry;
+  sessionRegistry: ISessionRegistry;
+  authenticator?: IRealtimeAuthenticator;
+  coordinatorFactory?: ISessionCoordinatorFactory;
 }
 
 export function setupSessionGateway(
@@ -23,6 +27,8 @@ export function setupSessionGateway(
   deps: GatewayDependencies
 ): WebSocketServer {
   const wss = new WebSocketServer({ server, path: "/interview" });
+  const authenticator = deps.authenticator || new JwtRealtimeAuthenticator();
+  const coordinatorFactory = deps.coordinatorFactory || new DefaultSessionCoordinatorFactory();
 
   function sendJson(ws: WebSocket, msg: any) {
     if (ws.readyState === WebSocket.OPEN) {
@@ -33,7 +39,7 @@ export function setupSessionGateway(
   wss.on("connection", (ws: WebSocket, req) => {
     logger.info(`[Gateway] Inbound WebSocket connection from ${req.socket.remoteAddress}`);
 
-    let currentCoordinator: InterviewSessionCoordinator | null = null;
+    let currentCoordinator: IInterviewSession | null = null;
     let isAuthenticated = false;
     const pendingBinaryChunks: Buffer[] = [];
 
@@ -43,69 +49,13 @@ export function setupSessionGateway(
 
     const authenticateAndStart = async (token: string, sessionId: string) => {
       try {
-        const candidateSecrets = [
-          env.JWT_SECRET,
-          process.env.JWT_SECRET,
-          process.env.LIVEKIT_API_SECRET,
-          "your_jwt_secret",
-          "super_secret_interview_realtime_token_key",
-          env.INTERNAL_SERVICE_SECRET,
-        ].filter(Boolean) as string[];
-
-        let decoded: any = null;
-        let lastVerifyError: Error | null = null;
-        for (const secret of candidateSecrets) {
-          try {
-            decoded = jwt.verify(token, secret) as any;
-            break;
-          } catch (e: any) {
-            lastVerifyError = e;
-          }
-        }
-
-        if (!decoded) {
-          if (env.NODE_ENV === "development") {
-            try {
-              decoded = jwt.decode(token) as any;
-            } catch {}
-          }
-        }
-
-        if (!decoded) {
-          throw lastVerifyError || new Error("Token verification failed");
-        }
-
-        if (decoded.sessionId && decoded.sessionId !== sessionId) {
-          throw new Error("Token sessionId mismatch");
-        }
-
-        const userId = decoded.sub || decoded.userId || "usr_anonymous";
-        const candidateName = decoded.name || "Candidate";
-
-        logger.success(
-          `[Gateway] Authenticated session ${sessionId} for candidate "${candidateName}"`
-        );
+        const auth = await authenticator.authenticate(token, sessionId);
 
         await deps.syncService.initializeSession(sessionId, `ws-room-${sessionId}`);
 
-        currentCoordinator = new InterviewSessionCoordinator({
+        currentCoordinator = coordinatorFactory.createCoordinator({
           sessionId,
-          candidate: {
-            userId,
-            name: candidateName,
-            email: decoded.email,
-            bio: decoded.bio,
-            experienceYears: decoded.experienceYears,
-            expertise: decoded.expertise,
-            qualifications: decoded.qualifications,
-            resumeHighlights: decoded.resumeHighlights,
-          },
-          domain: decoded.domain || "Technical Evaluation",
-          difficulty: decoded.difficulty || "INTERMEDIATE",
-          systemPrompt: decoded.systemPrompt,
-          totalQuestions: decoded.totalQuestions || 5,
-          topics: decoded.topics,
-          voiceId: decoded.voiceId,
+          auth,
           ws,
           sttService: deps.sttService,
           ttsService: deps.ttsService,
@@ -130,7 +80,7 @@ export function setupSessionGateway(
         sendJson(ws, {
           type: "AUTH_SUCCESS",
           phase: "INITIALIZING",
-          meta: { sessionId, userId, candidateName },
+          meta: { sessionId, userId: auth.userId, candidateName: auth.candidateName },
         });
       } catch (err: any) {
         logger.error("[Gateway] Authentication failed:", err.message);

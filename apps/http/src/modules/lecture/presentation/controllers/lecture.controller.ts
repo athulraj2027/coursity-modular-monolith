@@ -9,7 +9,7 @@ import { AdminGetLectureDetailUseCase } from "../../application/use-cases/admin-
 import { StudentGetLecturesUseCase } from "../../application/use-cases/student-get-lectures.usecase";
 import { StudentGetLectureDetailUseCase } from "../../application/use-cases/student-get-lecture-detail.usecase";
 import { BadRequestError, UnauthorizedError } from "@/app/errors";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { profileRepository } from "@/modules/profile";
 
 export class LectureController {
   constructor(
@@ -25,26 +25,11 @@ export class LectureController {
   ) {}
 
   private async getTeacherProfileId(userId: string): Promise<string> {
-    const profile = await defaultPrisma.profile.findUnique({
-      where: { userId },
-      include: { teacherProfile: true },
-    });
-
-    if (!profile?.teacherProfile) {
-      const createdTeacher = await defaultPrisma.teacherProfile.create({
-        data: {
-          profile: {
-            connectOrCreate: {
-              where: { userId },
-              create: { userId },
-            },
-          },
-        },
-      });
-      return createdTeacher.id;
+    try {
+      return await profileRepository.getOrCreateTeacherProfileId(userId);
+    } catch {
+      throw new BadRequestError("Unable to locate or initialize instructor profile.");
     }
-
-    return profile.teacherProfile.id;
   }
 
   // ================= 1. TEACHER LECTURE HANDLERS =================

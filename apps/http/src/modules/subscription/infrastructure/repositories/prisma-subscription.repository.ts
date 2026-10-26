@@ -1,5 +1,6 @@
 import { PrismaClient, BillingCycle, SubscriptionStatus } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { SubscriptionRepository } from "../../domain/repositories/subscription.repository";
 import {
   TeacherSubscription,
@@ -13,8 +14,23 @@ import {
   AdminSubscriptionMetrics,
 } from "../../domain/dtos/subscription.dto";
 
-export class PrismaSubscriptionRepository implements SubscriptionRepository {
-  constructor(private readonly prisma: PrismaClient = defaultPrisma) {}
+export class PrismaSubscriptionRepository
+  extends PrismaBaseRepository<
+    TeacherSubscription,
+    typeof defaultPrisma.teacherSubscription,
+    CreateSubscriptionDto,
+    any,
+    AdminSubscriptionFilterDto
+  >
+  implements SubscriptionRepository
+{
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).teacherSubscription);
+  }
+
+  protected mapToEntity(raw: any): TeacherSubscription {
+    return this.mapToSubscriptionEntity(raw);
+  }
 
   async findById(id: string): Promise<TeacherSubscription | null> {
     const record = await this.prisma.teacherSubscription.findUnique({
@@ -773,5 +789,71 @@ export class PrismaSubscriptionRepository implements SubscriptionRepository {
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,
     };
+  }
+
+  async createInvoice(data: any): Promise<any> {
+    return this.prisma.subscriptionInvoice.create({ data });
+  }
+
+  async findInvoiceById(invoiceId: string): Promise<any | null> {
+    return this.prisma.subscriptionInvoice.findUnique({
+      where: { id: invoiceId },
+      include: {
+        subscription: {
+          include: {
+            teacherProfile: {
+              include: {
+                profile: {
+                  include: {
+                    user: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  async findInvoicesByTeacher(teacherProfileId: string): Promise<any[]> {
+    return this.prisma.subscriptionInvoice.findMany({
+      where: {
+        subscription: {
+          teacherProfileId,
+        },
+      },
+      include: {
+        subscription: {
+          include: {
+            plan: true,
+            teacherProfile: {
+              include: {
+                profile: {
+                  include: {
+                    user: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 50,
+    });
+  }
+
+  async findTeacherWithUser(teacherProfileId: string): Promise<any | null> {
+    return this.prisma.teacherProfile.findUnique({
+      where: { id: teacherProfileId },
+      include: {
+        profile: {
+          include: { user: true },
+        },
+      },
+    });
   }
 }

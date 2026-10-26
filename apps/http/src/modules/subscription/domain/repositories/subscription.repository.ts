@@ -1,3 +1,4 @@
+import { IBaseRepository } from "@/shared/domain/repositories/base.repository.interface";
 import {
   TeacherSubscription,
   TeacherPlanUsage,
@@ -11,7 +12,14 @@ import {
   AdminSubscriptionMetrics,
 } from "../dtos/subscription.dto";
 
-export interface SubscriptionRepository {
+export interface SubscriptionRepository
+  extends IBaseRepository<
+    TeacherSubscription,
+    string,
+    CreateSubscriptionDto,
+    any,
+    AdminSubscriptionFilterDto
+  > {
   findById(id: string): Promise<TeacherSubscription | null>;
   findActiveByTeacherId(teacherProfileId: string): Promise<TeacherSubscription | null>;
   create(data: CreateSubscriptionDto): Promise<TeacherSubscription>;
@@ -57,4 +65,10 @@ export interface SubscriptionRepository {
     status: "PAID" | "PENDING" | "FAILED" | "REFUNDED",
     receiptUrl?: string
   ): Promise<any>;
+
+  // Invoices & Billing
+  createInvoice(data: any): Promise<any>;
+  findInvoiceById(invoiceId: string): Promise<any | null>;
+  findInvoicesByTeacher(teacherProfileId: string): Promise<any[]>;
+  findTeacherWithUser(teacherProfileId: string): Promise<any | null>;
 }

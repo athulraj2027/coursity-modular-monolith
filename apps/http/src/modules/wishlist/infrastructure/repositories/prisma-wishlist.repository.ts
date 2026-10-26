@@ -1,10 +1,34 @@
 import { PrismaClient, Prisma } from "@prisma/client";
+import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { IWishlistRepository } from "../../domain/repositories/wishlist.repository.interface";
 import { WishlistEntity, WishlistItemEntity } from "../../domain/entities/wishlist.entity";
 import { GetUserWishlistDTO, PaginatedWishlistResultDTO } from "../../domain/dtos/wishlist.dto";
 
-export class PrismaWishlistRepository implements IWishlistRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+export class PrismaWishlistRepository
+  extends PrismaBaseRepository<WishlistEntity, typeof defaultPrisma.wishlist>
+  implements IWishlistRepository
+{
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).wishlist);
+  }
+
+  protected mapToEntity(record: any): WishlistEntity {
+    return {
+      id: record.id,
+      userId: record.userId,
+      items: Array.isArray(record.items)
+        ? record.items.map((i: any) => ({
+            id: i.id,
+            wishlistId: i.wishlistId,
+            courseId: i.courseId,
+            createdAt: i.createdAt,
+          }))
+        : [],
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+    };
+  }
 
   private mapCourseSnapshot(c: any) {
     if (!c) return undefined;

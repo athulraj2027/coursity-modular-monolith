@@ -8,24 +8,17 @@ import { IEmailService } from "./contracts/email-service.abstract";
 import { IEmailTransport } from "./contracts/email-transport.abstract";
 import { IEmailQueue } from "./contracts/email-queue.abstract";
 
-// 1. Instantiate Transport, Queue, and Worker
 const emailTransport: IEmailTransport = new NodemailerTransport();
 const emailQueue: IEmailQueue = new EmailQueue();
 const emailWorker = new EmailWorker(emailTransport);
-
-// 2. Instantiate Use Cases
 const queueEmailUseCase = new QueueEmailUseCase(emailQueue);
-
-// 3. Instantiate Shared Singleton Email Service implementing IEmailService abstract class
 export const emailService: IEmailService = new EmailService(queueEmailUseCase);
 
-// 4. Worker Lifecycle Control
 export const startEmailWorker = (): void => {
-    if (emailConfig.enableInProcessWorker) {
+    if (emailConfig.enableInProcessWorker)
         emailWorker.start();
-    } else {
+    else
         console.log("ℹ️ [Email Worker] In-process worker is disabled via config (ENABLE_IN_PROCESS_WORKER=false)");
-    }
 };
 
 export const closeEmailWorker = async (): Promise<void> => {
@@ -33,7 +26,6 @@ export const closeEmailWorker = async (): Promise<void> => {
     await emailQueue.close();
 };
 
-// Public Domain / Infrastructure Exports
 export * from "./contracts/email-service.abstract";
 export * from "./contracts/email-transport.abstract";
 export * from "./contracts/email-queue.abstract";

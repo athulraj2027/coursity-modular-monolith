@@ -1,10 +1,11 @@
+import { IBaseRepository } from "@/shared/domain/repositories/base.repository.interface";
 import { PayoutRequestEntity } from "../entities/payout-request.entity";
 import {
   ListPayoutsQueryDto,
   AdminProcessPayoutDto,
 } from "../dtos/payout-request.dto";
 
-export interface IPayoutRequestRepository {
+export interface IPayoutRequestRepository extends IBaseRepository<PayoutRequestEntity, string> {
   /**
    * Create a new withdrawal payout request and atomically lock the wallet funds
    */

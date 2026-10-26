@@ -1,28 +1,23 @@
 import { ITTSService } from "../../domain/ports/tts.port";
 import { env } from "../../../../shared/config/env.config";
 import { logger } from "../../../../shared/logger";
-import { DeepgramTTSProvider } from "./deepgram-tts.provider";
 
 export class ElevenLabsTTSProvider implements ITTSService {
   private apiKey: string;
   private defaultVoiceId: string;
-  private fallbackProvider: DeepgramTTSProvider;
 
   constructor(apiKey?: string, defaultVoiceId?: string) {
     this.apiKey = apiKey || env.TTS_API_KEY;
     this.defaultVoiceId =
       defaultVoiceId || env.TTS_VOICE_ID || "21m00Tcm4TlvDq8ikWAM";
-    this.fallbackProvider = new DeepgramTTSProvider();
   }
 
   async synthesizeSpeech(text: string, voiceId?: string): Promise<Buffer> {
     const primaryVoiceId = voiceId || this.defaultVoiceId || "Xb7hH8MSUJpSbSDYk0k2";
 
     if (!this.apiKey) {
-      logger.warn(
-        "[Provider:ElevenLabs] No TTS_API_KEY provided. Falling back to Deepgram Aura TTS."
-      );
-      return this.fallbackProvider.synthesizeSpeech(text);
+      logger.warn("[Provider:ElevenLabs] No TTS_API_KEY provided.");
+      return Buffer.alloc(0);
     }
 
     const trySynthesize = async (targetVoice: string): Promise<Response> => {
@@ -60,17 +55,14 @@ export class ElevenLabsTTSProvider implements ITTSService {
 
       if (!response.ok) {
         const errText = await response.text();
-        logger.warn(
-          `[Provider:ElevenLabs] ElevenLabs returned status ${response.status} (${errText.slice(0, 100)}). Seamlessly falling back to Deepgram Aura TTS...`
-        );
-        return this.fallbackProvider.synthesizeSpeech(text);
+        throw new Error(`ElevenLabs returned status ${response.status} (${errText.slice(0, 100)})`);
       }
 
       const arrayBuffer = await response.arrayBuffer();
       return Buffer.from(arrayBuffer);
     } catch (error: any) {
-      logger.error("[Provider:ElevenLabs] Speech synthesis failed, falling back to Deepgram Aura TTS:", error.message);
-      return this.fallbackProvider.synthesizeSpeech(text);
+      logger.error("[Provider:ElevenLabs] Speech synthesis failed:", error.message);
+      throw error;
     }
   }
 }

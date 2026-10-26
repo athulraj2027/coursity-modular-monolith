@@ -1,4 +1,6 @@
-export class AudioRecorderService {
+import { IAudioRecorderService } from "../../domain/ports/audio-recorder.port";
+
+export class AudioRecorderService implements IAudioRecorderService {
   private chunks: Buffer[] = [];
   private totalByteLength: number = 0;
   private readonly sampleRate: number;

@@ -1,6 +1,5 @@
 import { EnrollmentRepository } from "../../domain/repositories/enrollment.repository";
 import { CourseClassroomResponse } from "../../domain/dtos/enrollment.dto";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
 import { ForbiddenError, NotFoundError } from "@/app/errors";
 
 export class GetCourseClassroomUseCase {
@@ -8,31 +7,7 @@ export class GetCourseClassroomUseCase {
 
   async execute(studentId: string, courseIdOrSlug: string): Promise<CourseClassroomResponse> {
     // 1. Resolve course by ID or Slug
-    const course = await defaultPrisma.course.findFirst({
-      where: {
-        OR: [{ id: courseIdOrSlug }, { slug: courseIdOrSlug }],
-      },
-      include: {
-        category: true,
-        teacherProfile: {
-          include: {
-            profile: {
-              include: { user: true },
-            },
-          },
-        },
-        modules: {
-          where: { isPublished: true },
-          orderBy: { sortOrder: "asc" },
-          include: {
-            lessons: {
-              where: { isPublished: true },
-              orderBy: { sortOrder: "asc" },
-            },
-          },
-        },
-      },
-    });
+    const course = await this.enrollmentRepo.findCourseClassroomData(courseIdOrSlug);
 
     if (!course) {
       throw new NotFoundError("Course not found.");
@@ -58,8 +33,8 @@ export class GetCourseClassroomUseCase {
     let attendedClassesCount = 0;
     let classesConductedCount = 0;
 
-    const modules = course.modules.map((mod) => {
-      const lessons = mod.lessons.map((les) => {
+    const modules = ((course.modules as any[]) || []).map((mod: any) => {
+      const lessons = ((mod.lessons as any[]) || []).map((les: any) => {
         totalLessons++;
         const prog = progressMap.get(les.id);
         const isCompleted = prog?.isCompleted || false;

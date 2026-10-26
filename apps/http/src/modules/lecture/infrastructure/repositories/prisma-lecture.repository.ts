@@ -1,4 +1,6 @@
 import { PrismaClient, Prisma } from "@prisma/client";
+import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import { ILectureRepository } from "../../domain/repositories/lecture.repository";
 import { LectureEntity, LiveClassStatus } from "../../domain/entities/lecture.entity";
 import {
@@ -8,10 +10,21 @@ import {
   PaginatedLecturesResult,
 } from "../../domain/dtos/lecture.dto";
 
-export class PrismaLectureRepository implements ILectureRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+export class PrismaLectureRepository
+  extends PrismaBaseRepository<
+    LectureEntity,
+    typeof defaultPrisma.courseLesson,
+    any,
+    UpdateLectureDTO,
+    LectureFilterParams
+  >
+  implements ILectureRepository
+{
+  constructor(prisma: PrismaClient = defaultPrisma) {
+    super(prisma, (prisma as any).courseLesson);
+  }
 
-  private mapToEntity(record: any, studentId?: string): LectureEntity {
+  protected mapToEntity(record: any, studentId?: string): LectureEntity {
     const course = record.module?.course;
     const teacherUser = course?.teacherProfile?.profile?.user;
     const progress = studentId && record.lessonProgress && record.lessonProgress.length > 0
@@ -528,5 +541,49 @@ export class PrismaLectureRepository implements ILectureRepository {
       },
     });
     return true;
+  }
+
+  async findStudentLessonAccess(
+    studentId: string,
+    courseId: string,
+    lessonId: string
+  ): Promise<{
+    hasActiveEnrollment: boolean;
+    attendedLive: boolean;
+    isCompleted: boolean;
+  }> {
+    const enrollment = await this.prisma.courseEnrollment.findFirst({
+      where: {
+        studentId,
+        courseId,
+        status: "ACTIVE",
+      },
+      select: { id: true },
+    });
+
+    if (!enrollment) {
+      return {
+        hasActiveEnrollment: false,
+        attendedLive: false,
+        isCompleted: false,
+      };
+    }
+
+    const progress = await this.prisma.lessonProgress.findFirst({
+      where: {
+        enrollmentId: enrollment.id,
+        lessonId,
+      },
+      select: {
+        attendedLive: true,
+        isCompleted: true,
+      },
+    });
+
+    return {
+      hasActiveEnrollment: true,
+      attendedLive: progress?.attendedLive ?? false,
+      isCompleted: progress?.isCompleted ?? false,
+    };
   }
 }

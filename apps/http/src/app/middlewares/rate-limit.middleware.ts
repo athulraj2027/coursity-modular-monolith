@@ -18,16 +18,13 @@ export const createRateLimiter = ({
         max: process.env.NODE_ENV === "development" ? Math.max(max, 1000) : max,
         skip: (req: Request) => {
             const path = req.originalUrl || req.baseUrl + req.path || req.url || "";
-            // Bypass rate limiting for internal microservice calls, health checks, and internal service secret callers
             if (
                 path.startsWith("/internal") ||
                 path.startsWith("/health") ||
                 path.startsWith("/uploads") ||
                 Boolean(req.headers["x-internal-secret"]) ||
                 Boolean(req.headers["authorization"]?.includes("coursity_internal"))
-            ) {
-                return true;
-            }
+            ) return true;
             return false;
         },
         handler: (req, res) => {

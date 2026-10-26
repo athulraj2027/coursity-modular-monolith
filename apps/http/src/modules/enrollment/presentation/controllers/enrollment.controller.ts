@@ -15,8 +15,8 @@ import { TeacherGetEnrollmentsUseCase } from "../../application/use-cases/teache
 import { TeacherGetEnrollmentDetailUseCase } from "../../application/use-cases/teacher-get-enrollment-detail.usecase";
 import { AdminGetEnrollmentsUseCase } from "../../application/use-cases/admin-get-enrollments.usecase";
 import { AdminGetEnrollmentDetailUseCase } from "../../application/use-cases/admin-get-enrollment-detail.usecase";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
 import { ForbiddenError, UnauthorizedError } from "@/app/errors";
+import { profileRepository } from "@/modules/profile";
 
 export class EnrollmentController {
   constructor(
@@ -48,14 +48,11 @@ export class EnrollmentController {
   }
 
   private async getTeacherProfileId(userId: string): Promise<string> {
-    const profile = await defaultPrisma.teacherProfile.findFirst({
-      where: { profile: { userId } },
-      select: { id: true },
-    });
-    if (!profile) {
+    const profileId = await profileRepository.getTeacherProfileIdByUserId(userId);
+    if (!profileId) {
       throw new ForbiddenError("Teacher profile required.");
     }
-    return profile.id;
+    return profileId;
   }
 
   enrollFree = async (req: Request, res: Response, next: NextFunction) => {

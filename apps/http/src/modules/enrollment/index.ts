@@ -1,6 +1,9 @@
 import defaultPrisma from "@/infrastructure/database/prisma.client";
 import { PrismaEnrollmentRepository } from "./infrastructure/repositories/prisma-enrollment.repository";
 import { couponRepo, validateCouponUseCase } from "@/modules/coupon";
+import { courseRepo } from "@/modules/course";
+import { walletRepo } from "@/modules/wallet";
+import { userRepo } from "@/modules/user";
 import paymentGateway from "@/infrastructure/payment";
 import emailService from "@/infrastructure/email";
 
@@ -27,18 +30,46 @@ import { createEnrollmentRouter } from "./presentation/routes/enrollment.routes"
 export function createEnrollmentModule() {
   const enrollmentRepo = new PrismaEnrollmentRepository(defaultPrisma);
 
-  const enrollFreeUseCase = new EnrollFreeCourseUseCase(enrollmentRepo);
-  const createOrderUseCase = new CreateCourseCheckoutOrderUseCase(validateCouponUseCase, paymentGateway);
-  const verifyPaymentUseCase = new VerifyCoursePaymentUseCase(enrollmentRepo, couponRepo, paymentGateway, emailService);
-  const payWithWalletUseCase = new PayWithWalletUseCase(enrollmentRepo, couponRepo, emailService);
+  const enrollFreeUseCase = new EnrollFreeCourseUseCase(enrollmentRepo, courseRepo);
+  const createOrderUseCase = new CreateCourseCheckoutOrderUseCase(
+    validateCouponUseCase,
+    paymentGateway,
+    courseRepo,
+    enrollmentRepo,
+    walletRepo
+  );
+  const verifyPaymentUseCase = new VerifyCoursePaymentUseCase(
+    enrollmentRepo,
+    couponRepo,
+    courseRepo,
+    userRepo,
+    walletRepo,
+    paymentGateway,
+    emailService
+  );
+  const payWithWalletUseCase = new PayWithWalletUseCase(
+    enrollmentRepo,
+    couponRepo,
+    courseRepo,
+    userRepo,
+    walletRepo,
+    emailService
+  );
   const getStudentEnrollmentsUseCase = new GetStudentEnrollmentsUseCase(enrollmentRepo);
   const getClassroomUseCase = new GetCourseClassroomUseCase(enrollmentRepo);
   const markAttendanceUseCase = new MarkClassAttendanceUseCase(enrollmentRepo);
   const updateProgressUseCase = new UpdateLessonProgressUseCase(enrollmentRepo);
-  const requestRefundUseCase = new RequestCourseRefundUseCase(enrollmentRepo, paymentGateway, emailService);
-  const claimCertificateUseCase = new ClaimCertificateUseCase(enrollmentRepo);
+  const requestRefundUseCase = new RequestCourseRefundUseCase(
+    enrollmentRepo,
+    courseRepo,
+    userRepo,
+    walletRepo,
+    paymentGateway,
+    emailService
+  );
+  const claimCertificateUseCase = new ClaimCertificateUseCase(enrollmentRepo, userRepo);
   const getCertificateUseCase = new GetCertificateUseCase(enrollmentRepo);
-  const teacherGetStudentsUseCase = new TeacherGetCourseStudentsUseCase(enrollmentRepo);
+  const teacherGetStudentsUseCase = new TeacherGetCourseStudentsUseCase(enrollmentRepo, courseRepo);
   const adminGetEnrollmentsUseCase = new AdminGetEnrollmentsUseCase(enrollmentRepo);
   const adminGetEnrollmentDetailUseCase = new AdminGetEnrollmentDetailUseCase(enrollmentRepo);
   const teacherGetEnrollmentsUseCase = new TeacherGetEnrollmentsUseCase(enrollmentRepo);
@@ -80,4 +111,3 @@ const defaultModule = createEnrollmentModule();
 export const enrollmentRouter = defaultModule.enrollmentRouter;
 export const enrollmentRepo = defaultModule.enrollmentRepo;
 export default enrollmentRouter;
-

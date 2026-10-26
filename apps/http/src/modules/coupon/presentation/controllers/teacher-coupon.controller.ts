@@ -6,8 +6,9 @@ import { DeleteTeacherCouponUseCase } from "../../application/use-cases/delete-t
 import { ValidateCouponUseCase } from "../../application/use-cases/validate-coupon.usecase";
 import { AdminGetCouponsUseCase } from "../../application/use-cases/admin-get-coupons.usecase";
 import { AdminToggleCouponStatusUseCase } from "../../application/use-cases/admin-toggle-coupon-status.usecase";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { TeacherCouponRepository } from "../../domain/repositories/teacher-coupon.repository";
 import { ForbiddenError, UnauthorizedError } from "@/app/errors";
+import { profileRepository } from "@/modules/profile";
 
 export class TeacherCouponController {
   constructor(
@@ -17,7 +18,8 @@ export class TeacherCouponController {
     private readonly deleteCouponUseCase: DeleteTeacherCouponUseCase,
     private readonly validateCouponUseCase: ValidateCouponUseCase,
     private readonly adminGetCouponsUseCase?: AdminGetCouponsUseCase,
-    private readonly adminToggleCouponUseCase?: AdminToggleCouponStatusUseCase
+    private readonly adminToggleCouponUseCase?: AdminToggleCouponStatusUseCase,
+    private readonly couponRepo?: TeacherCouponRepository
   ) {}
 
 
@@ -30,14 +32,11 @@ export class TeacherCouponController {
   }
 
   private async getTeacherProfileId(userId: string): Promise<string> {
-    const profile = await defaultPrisma.teacherProfile.findFirst({
-      where: { profile: { userId } },
-      select: { id: true },
-    });
-    if (!profile) {
+    const profileId = await profileRepository.getTeacherProfileIdByUserId(userId);
+    if (!profileId) {
       throw new ForbiddenError("Teacher profile required.");
     }
-    return profile.id;
+    return profileId;
   }
 
   create = async (req: Request, res: Response, next: NextFunction) => {
@@ -77,35 +76,7 @@ export class TeacherCouponController {
     try {
       const userId = this.getUserId(req);
       const couponId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const coupon = await defaultPrisma.teacherCoupon.findUnique({
-        where: { id: couponId },
-        include: {
-          course: { select: { id: true, title: true, slug: true, price: true, thumbnail: true } },
-          teacherProfile: {
-            include: {
-              profile: {
-                include: { user: true },
-              },
-            },
-          },
-          enrollments: {
-            include: {
-              student: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                  profile: { select: { avatar: true } },
-                },
-              },
-              course: {
-                select: { title: true, slug: true },
-              },
-            },
-            orderBy: { createdAt: "desc" },
-          },
-        },
-      });
+      const coupon = await this.couponRepo?.findCouponWithRedemptions(couponId);
 
       if (!coupon) {
         return res.status(404).json({ success: false, message: "Coupon not found." });
@@ -120,7 +91,7 @@ export class TeacherCouponController {
         }
       }
 
-      const mappedRedemptions = coupon.enrollments.map((e) => ({
+      const mappedRedemptions = (coupon.enrollments || []).map((e: any) => ({
         id: e.id,
         studentId: e.studentId,
         studentName: e.student?.name || "Student",
@@ -134,7 +105,7 @@ export class TeacherCouponController {
         status: e.status,
       }));
 
-      const totalDiscountGiven = mappedRedemptions.reduce((sum, r) => sum + r.discountAmount, 0);
+      const totalDiscountGiven = mappedRedemptions.reduce((sum: number, r: any) => sum + r.discountAmount, 0);
 
       const data = {
         id: coupon.id,
@@ -273,11 +244,11 @@ export class TeacherCouponController {
   adminDeleteCoupon = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const couponId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const coupon = await defaultPrisma.teacherCoupon.findUnique({ where: { id: couponId } });
+      const coupon = await this.couponRepo?.findById(couponId);
       if (!coupon) {
         return res.status(404).json({ success: false, message: "Coupon not found" });
       }
-      await defaultPrisma.teacherCoupon.delete({ where: { id: couponId } });
+      await this.couponRepo?.delete(couponId);
       return res.status(200).json({
         success: true,
         message: "Coupon permanently deleted by Admin.",
