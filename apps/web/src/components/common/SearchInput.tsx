@@ -38,22 +38,27 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   const [localQuery, setLocalQuery] = useState(value)
   const debouncedQuery = useDebounce(localQuery, debounceDelay)
   const isFirstMount = useRef(true)
+  const lastEmittedQuery = useRef(value)
+  const onDebounceRef = useRef(onDebounce)
+  onDebounceRef.current = onDebounce
 
   // Sync external controlled value updates (e.g., when parent resets filters)
   useEffect(() => {
     setLocalQuery(value)
+    lastEmittedQuery.current = value
   }, [value])
 
-  // Emit debounced value to parent when typing settles
+  // Emit debounced value to parent ONLY when typing settles and the debounced query changed
   useEffect(() => {
     if (isFirstMount.current) {
       isFirstMount.current = false
       return
     }
-    if (onDebounce) {
-      onDebounce(debouncedQuery)
+    if (debouncedQuery !== lastEmittedQuery.current) {
+      lastEmittedQuery.current = debouncedQuery
+      onDebounceRef.current?.(debouncedQuery)
     }
-  }, [debouncedQuery, onDebounce])
+  }, [debouncedQuery])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
@@ -65,11 +70,12 @@ export const SearchInput: React.FC<SearchInputProps> = ({
 
   const handleClear = () => {
     setLocalQuery("")
+    lastEmittedQuery.current = ""
     if (onChange) {
       onChange("")
     }
-    if (onDebounce) {
-      onDebounce("")
+    if (onDebounceRef.current) {
+      onDebounceRef.current("")
     }
   }
 

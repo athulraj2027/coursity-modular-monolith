@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   FileText,
   Presentation,
@@ -10,7 +9,6 @@ import {
   ExternalLink,
   Trash2,
   RefreshCw,
-  Eye,
   User,
   BookOpen,
   Video,
@@ -30,8 +28,6 @@ import type { Note } from "../types/note.types";
 import { useDebounce } from "@/hooks/use-debounce";
 
 export const AdminNotesPage: React.FC = () => {
-  const navigate = useNavigate();
-
   // Search, Filters & Pagination
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -319,7 +315,10 @@ export const AdminNotesPage: React.FC = () => {
           pageSize,
           totalItems: totalCount,
           onPageChange: setCurrentPage,
-          onPageSizeChange: setPageSize,
+          onPageSizeChange: (newSize) => {
+            setPageSize(newSize);
+            setCurrentPage(1);
+          },
         }}
       />
 
