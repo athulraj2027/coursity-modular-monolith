@@ -1,7 +1,7 @@
-import { IEmailQueue } from "../contracts/email-queue.abstract";
+import { IEmailQueue } from "../../domain/contracts/email-queue.interface";
 import { EnqueueEmailInputDTO, EnqueueEmailOutputDTO } from "../dtos/send-email.dto";
-import { EmailJobData } from "../entities/email.entity";
-import { EmailQueueError } from "../errors/email.error";
+import { EmailJobData } from "../../domain/entities/email.entity";
+import { EmailQueueError } from "../../domain/errors/email.error";
 
 export class QueueEmailUseCase {
     constructor(private readonly emailQueue: IEmailQueue) { }
@@ -28,3 +28,4 @@ export class QueueEmailUseCase {
         }
     }
 }
+

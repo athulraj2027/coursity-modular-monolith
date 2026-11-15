@@ -1,10 +1,10 @@
 import nodemailer, { Transporter } from "nodemailer";
-import { EmailTransport } from "../contracts/email-transport.abstract";
-import { EmailPayload, EmailSendResult } from "../entities/email.entity";
+import { IEmailTransport, EmailTransport } from "../../domain/contracts/email-transport.interface";
+import { EmailPayload, EmailSendResult } from "../../domain/entities/email.entity";
 import { emailConfig } from "../config/email.config";
-import { EmailSendError } from "../errors/email.error";
+import { EmailSendError } from "../../domain/errors/email.error";
 
-export class NodemailerTransport extends EmailTransport {
+export class NodemailerTransport extends EmailTransport implements IEmailTransport {
     private transporter: Transporter | null = null;
 
     constructor() {
@@ -85,3 +85,4 @@ export class NodemailerTransport extends EmailTransport {
         }
     }
 }
+

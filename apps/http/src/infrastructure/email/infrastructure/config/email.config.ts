@@ -33,3 +33,4 @@ export const emailConfig: EmailConfig = {
     isConfigured,
     enableInProcessWorker: env.ENABLE_IN_PROCESS_WORKER ?? true,
 };
+

@@ -1,4 +1,4 @@
-import { EmailPayload, EmailTemplateType } from "../entities/email.entity";
+import { EmailPayload, EmailTemplateType } from "../../domain/entities/email.entity";
 
 export interface EnqueueEmailInputDTO {
     templateType: EmailTemplateType;
@@ -13,3 +13,4 @@ export interface EnqueueEmailOutputDTO {
     enqueued: boolean;
     timestamp: string;
 }
+

@@ -1,8 +1,8 @@
 import { Queue } from "bullmq";
 import Redis from "ioredis";
 import { env } from "@/app/config/env";
-import { EmailJobData } from "../entities/email.entity";
-import { IEmailQueue } from "../contracts/email-queue.abstract";
+import { EmailJobData } from "../../domain/entities/email.entity";
+import { IEmailQueue, EmailQueueContract } from "../../domain/contracts/email-queue.interface";
 
 export const EMAIL_QUEUE_NAME = "email-queue";
 
@@ -20,7 +20,7 @@ export const createBullMQRedisConnection = (): Redis => {
     });
 };
 
-export class EmailQueue extends IEmailQueue {
+export class EmailQueue extends EmailQueueContract implements IEmailQueue {
     private queue: Queue<EmailJobData> | null = null;
     private connection: Redis | null = null;
 
@@ -84,3 +84,4 @@ export class EmailQueue extends IEmailQueue {
         return this.getQueue();
     }
 }
+

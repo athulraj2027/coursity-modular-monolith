@@ -1,8 +1,8 @@
 import { Worker, Job } from "bullmq";
 import Redis from "ioredis";
 import { EMAIL_QUEUE_NAME, createBullMQRedisConnection } from "./email.queue";
-import { EmailJobData } from "../entities/email.entity";
-import { IEmailTransport } from "../contracts/email-transport.abstract";
+import { EmailJobData } from "../../domain/entities/email.entity";
+import { IEmailTransport } from "../../domain/contracts/email-transport.interface";
 
 export class EmailWorker {
     private worker: Worker<EmailJobData> | null = null;
@@ -80,3 +80,4 @@ export class EmailWorker {
         return this.isRunning;
     }
 }
+

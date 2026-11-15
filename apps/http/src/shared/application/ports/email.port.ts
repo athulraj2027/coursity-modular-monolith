@@ -1,4 +1,4 @@
-import { EmailPayload } from "@/infrastructure/email/entities/email.entity";
+import { EmailPayload } from "@/infrastructure/email/domain/entities/email.entity";
 
 export interface IAuthEmailNotifier {
   sendSignupOtp(email: string, otp: string, name?: string): Promise<void>;

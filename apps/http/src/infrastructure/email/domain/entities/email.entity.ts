@@ -37,3 +37,4 @@ export interface EmailSendResult {
     error?: string;
     timestamp: string;
 }
+

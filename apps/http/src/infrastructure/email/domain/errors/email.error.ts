@@ -13,3 +13,4 @@ export class EmailQueueError extends AppError {
         this.name = "EmailQueueError";
     }
 }
+
