@@ -26,8 +26,6 @@ import { ThemeToggle } from "@/components/common/ThemeToggle"
 import { LogOut, User, Shield } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-import { TeacherVerificationMenu } from "./TeacherVerificationMenu"
-
 export interface AppSidebarProps {
   role?: "student" | "teacher" | "admin"
   user?: {
@@ -44,14 +42,14 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       role === "admin"
         ? "Root Admin"
         : role === "teacher"
-        ? "Ada Lovelace"
-        : "Alex Turing",
+          ? "Ada Lovelace"
+          : "Alex Turing",
     email:
       role === "admin"
         ? "admin@coursity.io"
         : role === "teacher"
-        ? "ada@coursity.io"
-        : "alex@example.com",
+          ? "ada@coursity.io"
+          : "alex@example.com",
   },
 }) => {
   const location = useLocation()
@@ -84,8 +82,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         role === "admin"
           ? "/admin/signin"
           : role === "teacher"
-          ? "/teachers/signin"
-          : "/signin"
+            ? "/teachers/signin"
+            : "/signin"
       navigate(target, { replace: true })
     }
   }
@@ -94,8 +92,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
     role === "admin"
       ? ADMIN_SIDEBAR_GROUPS
       : role === "teacher"
-      ? TEACHER_SIDEBAR_GROUPS
-      : STUDENT_SIDEBAR_GROUPS
+        ? TEACHER_SIDEBAR_GROUPS
+        : STUDENT_SIDEBAR_GROUPS
 
   const navGroups: SidebarNavGroup[] = rawNavGroups
     .map((group) => ({
@@ -132,8 +130,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                   {role === "teacher"
                     ? "Teacher Studio"
                     : role === "admin"
-                    ? "Admin Console"
-                    : "Student Hub"}
+                      ? "Admin Console"
+                      : "Student Hub"}
                 </span>
               </div>
             )}
@@ -191,12 +189,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           </SidebarGroup>
         ))}
 
-        {/* Teacher Verification Status Menu */}
-        {role === "teacher" && (
-          <div className="mt-auto pt-2">
-            <TeacherVerificationMenu isCollapsed={isCollapsed} />
-          </div>
-        )}
       </SidebarContent>
 
       {/* 3. Footer: Profile & Theme Options */}
@@ -207,8 +199,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               role === "teacher"
                 ? "/teachers/profile"
                 : role === "admin"
-                ? "/admin/profile"
-                : "/students/profile"
+                  ? "/admin/profile"
+                  : "/students/profile"
             }
             className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-85 transition-opacity"
           >

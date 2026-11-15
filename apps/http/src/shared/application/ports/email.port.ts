@@ -50,18 +50,13 @@ export interface ICustomEmailNotifier {
   sendCustomEmail(payload: EmailPayload): Promise<void>;
 }
 
-/**
- * Aggregated port contract implementing segregated role interfaces.
- * Preserves backward compatibility while enabling Interface Segregation.
- */
 export abstract class IEmailService
   implements
-    IAuthEmailNotifier,
-    ITeacherStatusEmailNotifier,
-    ICourseModerationEmailNotifier,
-    ISubscriptionEmailNotifier,
-    ICustomEmailNotifier
-{
+  IAuthEmailNotifier,
+  ITeacherStatusEmailNotifier,
+  ICourseModerationEmailNotifier,
+  ISubscriptionEmailNotifier,
+  ICustomEmailNotifier {
   abstract sendSignupOtp(email: string, otp: string, name?: string): Promise<void>;
   abstract sendPasswordResetOtp(email: string, otp: string, name?: string): Promise<void>;
   abstract sendWelcomeEmail(email: string, name: string): Promise<void>;

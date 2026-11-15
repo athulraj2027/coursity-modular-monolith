@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import Razorpay from "razorpay";
 import {
-    IPaymentGateway,
+    PaymentGateway,
     CreatePaymentOrderInput,
     PaymentOrderResult,
     VerifySignatureInput,
@@ -9,7 +9,7 @@ import {
 } from "../contracts/payment-gateway.abstract";
 import { env } from "@/app/config/env";
 
-export class RazorpayPaymentService extends IPaymentGateway {
+export class RazorpayPaymentService extends PaymentGateway {
     private readonly instance: Razorpay | null = null;
     private readonly keyId: string;
     private readonly keySecret: string;

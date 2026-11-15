@@ -9,8 +9,9 @@ import {
 import { RedisOtpRepository } from "./infrastructure/repositories/redis-otp.repository";
 import { RedisTokenRepository } from "./infrastructure/repositories/redis-token.repository";
 import { GoogleOAuthService } from "./infrastructure/oauth/google-oauth.service";
-import { OAuthService } from "./domain/services/oauth.service";
+import { IOAuthService } from "./domain/services/oauth.service";
 import { emailService } from "@/infrastructure/email";
+import { env } from "@/app/config/env";
 
 // Use Cases
 import { SignupUser } from "./application/use-cases/signup.user.usecase";
@@ -47,7 +48,11 @@ export const passwordService: PasswordService = new BcryptPasswordService();
 const otpRepository = new RedisOtpRepository();
 export const tokenRepository = new RedisTokenRepository();
 export const tokenService: TokenService = new JwtTokenService();
-export const oauthService: OAuthService = new GoogleOAuthService();
+export const oauthService: IOAuthService = new GoogleOAuthService({
+    clientId: env.GOOGLE_CLIENT_ID || "",
+    clientSecret: env.GOOGLE_CLIENT_SECRET || "",
+    redirectUri: env.GOOGLE_REDIRECT_URI || "http://localhost:3000/api/auth/google/callback",
+});
 
 // 2. Use Cases
 const signupUser = new SignupUser(userRepository, passwordService, otpRepository, emailService);
@@ -98,6 +103,8 @@ const authRoutes = new AuthRoutes(
 
 export * from "./application/dtos";
 export * from "./presentation/validators";
+export * from "./domain/entities/oauth-user-profile.entity";
+export * from "./domain/services/oauth.service.interface";
 export * from "./domain/services/oauth.service";
 export { PasswordService, TokenService, BcryptPasswordService, JwtTokenService } from "@/infrastructure/security";
 export const authRouter = authRoutes.router;

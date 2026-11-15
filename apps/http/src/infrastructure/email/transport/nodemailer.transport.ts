@@ -1,10 +1,10 @@
 import nodemailer, { Transporter } from "nodemailer";
-import { IEmailTransport } from "../contracts/email-transport.abstract";
+import { EmailTransport } from "../contracts/email-transport.abstract";
 import { EmailPayload, EmailSendResult } from "../entities/email.entity";
 import { emailConfig } from "../config/email.config";
 import { EmailSendError } from "../errors/email.error";
 
-export class NodemailerTransport extends IEmailTransport {
+export class NodemailerTransport extends EmailTransport {
     private transporter: Transporter | null = null;
 
     constructor() {

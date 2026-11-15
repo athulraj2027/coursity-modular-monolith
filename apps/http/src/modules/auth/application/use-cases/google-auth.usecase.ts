@@ -1,6 +1,7 @@
 import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
 import type { UserRole } from "@/modules/user/domain/entities/user.entity";
-import { OAuthService, OAuthUserProfile } from "../../domain/services/oauth.service";
+import { IOAuthService } from "../../domain/services/oauth.service.interface";
+import { OAuthUserProfile } from "../../domain/entities/oauth-user-profile.entity";
 import { TokenService } from "@/infrastructure/security";
 import { TokenRepository } from "../../domain/repositories/token.repository";
 import { BadRequestError, ForbiddenError } from "@/app/errors";
@@ -8,7 +9,7 @@ import { GoogleAuthOutputDTO, GoogleAuthUrlOutputDTO, GoogleLoginInputDTO } from
 
 export class GoogleAuth {
     constructor(
-        private readonly oauthService: OAuthService,
+        private readonly oauthService: IOAuthService,
         private readonly userRepository: UserRepository,
         private readonly tokenService: TokenService,
         private readonly tokenRepository: TokenRepository

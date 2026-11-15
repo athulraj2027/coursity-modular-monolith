@@ -1,9 +1,6 @@
 import { Response } from "express";
 import { STATUS_CODES, StatusCode } from "@/app/config/status";
 
-/**
- * Standard pagination metadata structure for list endpoints.
- */
 export interface PaginationMeta {
   page: number;
   limit: number;
@@ -13,9 +10,6 @@ export interface PaginationMeta {
   hasPrevPage?: boolean;
 }
 
-/**
- * Standard API response envelope contract.
- */
 export interface ApiResponsePayload<T = unknown> {
   success: boolean;
   message: string;
@@ -26,13 +20,8 @@ export interface ApiResponsePayload<T = unknown> {
   timestamp: string;
 }
 
-/**
- * Helper class for creating consistent, strongly-typed HTTP responses across Express controllers and middlewares.
- */
 export class ApiResponse {
-  /**
-   * Helper to compute standard pagination metadata.
-   */
+
   public static computePagination(
     total: number,
     page: number = 1,
@@ -52,9 +41,6 @@ export class ApiResponse {
     };
   }
 
-  /**
-   * Builds a standardized success payload object without sending an HTTP response.
-   */
   public static buildSuccess<T = unknown>(
     data?: T,
     message: string = "Success",
@@ -79,9 +65,6 @@ export class ApiResponse {
     return payload;
   }
 
-  /**
-   * Builds a standardized error payload object without sending an HTTP response.
-   */
   public static buildError(
     message: string = "An error occurred",
     error?: string,
@@ -101,12 +84,6 @@ export class ApiResponse {
     return payload;
   }
 
-  /**
-   * Return a 200 OK (or custom 2xx) success response.
-   *
-   * Usage:
-   *   return ApiResponse.success(res, data, "User profile retrieved successfully");
-   */
   public static success<T = unknown>(
     res: Response,
     data?: T,
@@ -118,12 +95,6 @@ export class ApiResponse {
     return res.status(statusCode).json(this.buildSuccess(data, message, meta, extra));
   }
 
-  /**
-   * Return a 201 Created response.
-   *
-   * Usage:
-   *   return ApiResponse.created(res, newUser, "User registered successfully");
-   */
   public static created<T = unknown>(
     res: Response,
     data?: T,
@@ -135,22 +106,10 @@ export class ApiResponse {
       .json(this.buildSuccess(data, message, meta));
   }
 
-  /**
-   * Return a 204 No Content response.
-   *
-   * Usage:
-   *   return ApiResponse.noContent(res);
-   */
   public static noContent(res: Response): Response {
     return res.status(STATUS_CODES.NO_CONTENT).send();
   }
 
-  /**
-   * Return a 200 OK paginated response with calculated pagination metadata.
-   *
-   * Usage:
-   *   return ApiResponse.paginated(res, courses, { total, page, limit });
-   */
   public static paginated<T = unknown>(
     res: Response,
     items: T[],
@@ -181,12 +140,6 @@ export class ApiResponse {
     return res.status(STATUS_CODES.OK).json(this.buildSuccess(items, message, meta));
   }
 
-  /**
-   * Return a standardized error response.
-   *
-   * Usage:
-   *   return ApiResponse.error(res, "Invalid credentials", 401, "UnauthorizedError");
-   */
   public static error(
     res: Response,
     message: string = "Something went wrong",

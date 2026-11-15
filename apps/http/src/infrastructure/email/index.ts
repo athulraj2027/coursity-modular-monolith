@@ -5,10 +5,10 @@ import { QueueEmailUseCase } from "./use-cases/queue-email.usecase";
 import { EmailService } from "./services/email.service.impl";
 import { emailConfig } from "./config/email.config";
 import { IEmailService } from "./contracts/email-service.abstract";
-import { IEmailTransport } from "./contracts/email-transport.abstract";
+import { EmailTransport } from "./contracts/email-transport.abstract";
 import { IEmailQueue } from "./contracts/email-queue.abstract";
 
-const emailTransport: IEmailTransport = new NodemailerTransport();
+const emailTransport: EmailTransport = new NodemailerTransport();
 const emailQueue: IEmailQueue = new EmailQueue();
 const emailWorker = new EmailWorker(emailTransport);
 const queueEmailUseCase = new QueueEmailUseCase(emailQueue);
