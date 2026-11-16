@@ -1,46 +1,40 @@
-import { IBankDetailRepository } from "../../domain/repositories/bank-detail.repository.interface";
+import { IUserBankDetailRepository } from "../../domain/repositories/bank-detail.repository.interface";
 import { CreateBankDetailDto } from "../../domain/dtos/bank-detail.dto";
 import { BankDetailEntity } from "../../domain/entities/bank-detail.entity";
-import { BadRequestError } from "@/app/errors";
+import { BankDetailValidationPolicy } from "../../domain/policies/bank-detail-validation.policy";
 
 export class CreateBankDetailUseCase {
-  constructor(private readonly bankDetailRepo: IBankDetailRepository) {}
+  constructor(private readonly bankDetailRepo: IUserBankDetailRepository) {}
 
-  async execute(dto: CreateBankDetailDto): Promise<BankDetailEntity> {
-    if (!dto.userId) {
-      throw new BadRequestError("User ID is required");
-    }
+  async execute(
+    userIdOrDto: string | CreateBankDetailDto,
+    data?: Partial<CreateBankDetailDto>
+  ): Promise<BankDetailEntity> {
+    const dto: CreateBankDetailDto =
+      typeof userIdOrDto === "string"
+        ? ({ ...data, userId: userIdOrDto } as CreateBankDetailDto)
+        : userIdOrDto;
 
-    if (dto.methodType === "BANK_ACCOUNT") {
-      if (!dto.accountHolderName || !dto.accountHolderName.trim()) {
-        throw new BadRequestError("Account holder name is required");
-      }
-      if (!dto.accountNumber || !dto.accountNumber.trim()) {
-        throw new BadRequestError("Account number is required");
-      }
-      if (!dto.ifscCode || !dto.ifscCode.trim()) {
-        throw new BadRequestError("IFSC Code is required");
-      }
-      if (!dto.bankName || !dto.bankName.trim()) {
-        throw new BadRequestError("Bank name is required");
-      }
-    } else if (dto.methodType === "UPI") {
-      if (!dto.upiId || !dto.upiId.trim()) {
-        throw new BadRequestError("UPI ID is required");
-      }
-      if (!dto.accountHolderName || !dto.accountHolderName.trim()) {
-        throw new BadRequestError("Account holder name is required");
-      }
-    }
+    // 1. Domain Validation Policy
+    BankDetailValidationPolicy.validate(dto);
 
-    // Check if this is the user's first account; if so, make it primary
+    // 2. Primary Account Logic: First account is automatically primary unless explicitly specified
     const existingCount = await this.bankDetailRepo.countByUserId(dto.userId);
     const isPrimary = existingCount === 0 || dto.isPrimary === true;
 
+    // 3. Persist normalized bank detail
     return this.bankDetailRepo.create({
       ...dto,
+      methodType: dto.methodType || "BANK_ACCOUNT",
+      accountHolderName: dto.accountHolderName.trim(),
+      accountNumber: dto.accountNumber ? BankDetailValidationPolicy.normalizeAccountNumber(dto.accountNumber) : "",
+      ifscCode: dto.ifscCode ? BankDetailValidationPolicy.normalizeIfsc(dto.ifscCode) : "",
+      bankName: dto.bankName ? dto.bankName.trim() : "",
+      branchName: dto.branchName ? dto.branchName.trim() : undefined,
+      accountType: dto.accountType || "SAVINGS",
+      upiId: dto.upiId ? BankDetailValidationPolicy.normalizeUpi(dto.upiId) : undefined,
       isPrimary,
-      ifscCode: dto.ifscCode ? dto.ifscCode.toUpperCase().trim() : "",
+      verificationStatus: dto.verificationStatus || "PENDING",
     });
   }
 }

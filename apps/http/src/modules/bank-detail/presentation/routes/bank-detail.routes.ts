@@ -63,7 +63,7 @@ export const createBankDetailRouter = (
   router.post("", validate(createBankDetailSchema), controller.createBankDetail);
   router.patch("/:id/primary", controller.setPrimary);
   router.delete("/:id", controller.deleteBankDetail);
-  router.get("/:id", controller.adminGetById);
+  router.get("/:id", controller.getById);
 
   return router;
 };

@@ -3,10 +3,13 @@ import defaultPrisma from "@/infrastructure/database/prisma.client";
 import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
 import {
   IBankDetailRepository,
+  IUserBankDetailRepository,
+  IAdminBankDetailRepository,
   PaginatedBankDetailsResult,
 } from "../../domain/repositories/bank-detail.repository.interface";
 import {
   CreateBankDetailDto,
+  UpdateBankDetailDto,
   AdminBankDetailsQueryDto,
   UpdateBankVerificationDto,
 } from "../../domain/dtos/bank-detail.dto";
@@ -17,17 +20,22 @@ export class PrismaBankDetailRepository
     BankDetailEntity,
     typeof defaultPrisma.bankDetail,
     CreateBankDetailDto,
-    any,
+    UpdateBankDetailDto,
     AdminBankDetailsQueryDto
   >
-  implements IBankDetailRepository
+  implements IBankDetailRepository, IUserBankDetailRepository, IAdminBankDetailRepository
 {
   constructor(prisma: PrismaClient = defaultPrisma) {
     super(prisma, (prisma as any).bankDetail);
   }
 
   protected mapToEntity(record: any): BankDetailEntity {
-    return record as BankDetailEntity;
+    if (!record) return record;
+    return {
+      ...record,
+      payoutAccountId: record.razorpayFundAccountId,
+      payoutContactId: record.razorpayContactId,
+    } as BankDetailEntity;
   }
 
   async create(dto: CreateBankDetailDto): Promise<BankDetailEntity> {
@@ -52,8 +60,8 @@ export class PrismaBankDetailRepository
           accountType: dto.accountType || "SAVINGS",
           upiId: dto.upiId ? dto.upiId.trim() : null,
           isPrimary: dto.isPrimary ?? true,
-          verificationStatus: "VERIFIED", // Verified by default or ready for verification
-          verifiedAt: new Date(),
+          verificationStatus: dto.verificationStatus || "VERIFIED",
+          verifiedAt: dto.verificationStatus === "VERIFIED" || !dto.verificationStatus ? new Date() : null,
         },
         include: {
           user: {
@@ -67,7 +75,7 @@ export class PrismaBankDetailRepository
         },
       });
 
-      return created as BankDetailEntity;
+      return this.mapToEntity(created);
     });
   }
 
@@ -86,7 +94,7 @@ export class PrismaBankDetailRepository
       },
     });
 
-    return record as BankDetailEntity | null;
+    return record ? this.mapToEntity(record) : null;
   }
 
   async findByUserId(userId: string): Promise<BankDetailEntity[]> {
@@ -105,7 +113,7 @@ export class PrismaBankDetailRepository
       },
     });
 
-    return records as BankDetailEntity[];
+    return records.map((r: any) => this.mapToEntity(r));
   }
 
   async countByUserId(userId: string): Promise<number> {
@@ -138,11 +146,31 @@ export class PrismaBankDetailRepository
         },
       });
 
-      return updated as BankDetailEntity;
+      return this.mapToEntity(updated);
     });
   }
 
-  async delete(id: string, userId: string): Promise<boolean> {
+  /**
+   * LSP-compliant delete implementation. Supports single id (IBaseRepository)
+   * or optional userId scoping.
+   */
+  async delete(id: string, userId?: string): Promise<boolean> {
+    if (userId) {
+      return this.deleteForUser(id, userId);
+    }
+
+    try {
+      await (this.prisma as any).bankDetail.delete({ where: { id } });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Explicit user-scoped delete operation with primary account promotion
+   */
+  async deleteForUser(id: string, userId: string): Promise<boolean> {
     return this.prisma.$transaction(async (tx: any) => {
       const target = await tx.bankDetail.findUnique({ where: { id } });
       if (!target || target.userId !== userId) return false;
@@ -222,7 +250,7 @@ export class PrismaBankDetailRepository
     const totalPages = Math.ceil(total / limit) || 1;
 
     return {
-      items: items as BankDetailEntity[],
+      items: items.map((i: any) => this.mapToEntity(i)),
       total,
       page,
       limit,
@@ -250,6 +278,6 @@ export class PrismaBankDetailRepository
       },
     });
 
-    return updated as BankDetailEntity;
+    return this.mapToEntity(updated);
   }
 }
