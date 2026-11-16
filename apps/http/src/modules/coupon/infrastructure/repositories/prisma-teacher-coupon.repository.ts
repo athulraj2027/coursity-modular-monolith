@@ -1,41 +1,57 @@
 import { PrismaClient } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
 import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
-import { TeacherCouponRepository } from "../../domain/repositories/teacher-coupon.repository";
-import { TeacherCouponEntity } from "../../domain/entities/teacher-coupon.entity";
+import {
+  TeacherCouponRepository,
+  ICouponValidationRepository,
+  ITeacherCouponRepository,
+  IAdminCouponRepository,
+  AdminCouponFilterParams,
+  AdminCouponsListResult,
+} from "../../domain/repositories/teacher-coupon.repository";
+import {
+  TeacherCouponEntity,
+  CouponDetailsWithRedemptions,
+} from "../../domain/entities/teacher-coupon.entity";
 import { CreateTeacherCouponDto, UpdateTeacherCouponDto } from "../../domain/dtos/teacher-coupon.dto";
 
 export class PrismaTeacherCouponRepository
   extends PrismaBaseRepository<
     TeacherCouponEntity,
     typeof defaultPrisma.teacherCoupon,
-    any,
+    CreateTeacherCouponDto,
     UpdateTeacherCouponDto,
-    any
+    AdminCouponFilterParams
   >
-  implements TeacherCouponRepository
+  implements
+    TeacherCouponRepository,
+    ICouponValidationRepository,
+    ITeacherCouponRepository,
+    IAdminCouponRepository
 {
   constructor(prisma: PrismaClient = defaultPrisma) {
     super(prisma, (prisma as any).teacherCoupon);
   }
 
   protected mapToEntity(record: any): TeacherCouponEntity {
+    if (!record) return record;
+
     const instructorUser = record.teacherProfile?.profile?.user;
-    return {
+    return new TeacherCouponEntity({
       id: record.id,
       code: record.code,
-      description: record.description,
+      description: record.description ?? null,
       discountType: record.discountType,
       discountValue: Number(record.discountValue),
       maxDiscountAmount: record.maxDiscountAmount ? Number(record.maxDiscountAmount) : null,
       minOrderAmount: record.minOrderAmount ? Number(record.minOrderAmount) : null,
       teacherProfileId: record.teacherProfileId,
-      courseId: record.courseId,
-      maxUses: record.maxUses,
-      usedCount: record.usedCount,
-      maxUsesPerStudent: record.maxUsesPerStudent,
+      courseId: record.courseId ?? null,
+      maxUses: record.maxUses ?? null,
+      usedCount: record.usedCount ?? 0,
+      maxUsesPerStudent: record.maxUsesPerStudent ?? 1,
       validFrom: record.validFrom,
-      expiresAt: record.expiresAt,
+      expiresAt: record.expiresAt ?? null,
       isActive: record.isActive,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
@@ -43,29 +59,42 @@ export class PrismaTeacherCouponRepository
       instructorName: instructorUser?.name || null,
       instructorEmail: instructorUser?.email || null,
       instructorAvatar: record.teacherProfile?.profile?.avatar || null,
-      totalDiscountGiven: record.enrollments?.reduce(
-        (sum: number, e: any) => sum + (Number(e.discountAmount) || 0),
-        0
-      ) || 0,
-    };
+      totalDiscountGiven:
+        record.enrollments?.reduce(
+          (sum: number, e: any) => sum + (Number(e.discountAmount) || 0),
+          0
+        ) || 0,
+    });
   }
 
-  async create(teacherProfileId: string, data: CreateTeacherCouponDto): Promise<TeacherCouponEntity> {
-    const record = await this.prisma.teacherCoupon.create({
+  override async create(
+    teacherProfileIdOrData: any,
+    data?: CreateTeacherCouponDto
+  ): Promise<TeacherCouponEntity> {
+    const teacherProfileId =
+      typeof teacherProfileIdOrData === "string"
+        ? teacherProfileIdOrData
+        : teacherProfileIdOrData.teacherProfileId;
+    const couponData: CreateTeacherCouponDto =
+      typeof teacherProfileIdOrData === "string"
+        ? data!
+        : teacherProfileIdOrData;
+
+    const record = await (this.prisma as any).teacherCoupon.create({
       data: {
-        code: data.code.trim().toUpperCase(),
-        description: data.description,
-        discountType: data.discountType,
-        discountValue: data.discountValue,
-        maxDiscountAmount: data.maxDiscountAmount,
-        minOrderAmount: data.minOrderAmount,
-        courseId: data.courseId || null,
+        code: couponData.code.trim().toUpperCase(),
+        description: couponData.description,
+        discountType: couponData.discountType,
+        discountValue: couponData.discountValue,
+        maxDiscountAmount: couponData.maxDiscountAmount,
+        minOrderAmount: couponData.minOrderAmount,
+        courseId: couponData.courseId || null,
         teacherProfileId,
-        maxUses: data.maxUses,
-        maxUsesPerStudent: data.maxUsesPerStudent || 1,
-        validFrom: data.validFrom || new Date(),
-        expiresAt: data.expiresAt || null,
-        isActive: data.isActive !== undefined ? data.isActive : true,
+        maxUses: couponData.maxUses,
+        maxUsesPerStudent: couponData.maxUsesPerStudent || 1,
+        validFrom: couponData.validFrom || new Date(),
+        expiresAt: couponData.expiresAt || null,
+        isActive: couponData.isActive !== undefined ? couponData.isActive : true,
       },
       include: {
         course: { select: { title: true } },
@@ -82,7 +111,7 @@ export class PrismaTeacherCouponRepository
   }
 
   async findById(id: string): Promise<TeacherCouponEntity | null> {
-    const record = await this.prisma.teacherCoupon.findUnique({
+    const record = await (this.prisma as any).teacherCoupon.findUnique({
       where: { id },
       include: {
         course: { select: { title: true } },
@@ -102,7 +131,7 @@ export class PrismaTeacherCouponRepository
   }
 
   async findByCodeAndTeacher(teacherProfileId: string, code: string): Promise<TeacherCouponEntity | null> {
-    const record = await this.prisma.teacherCoupon.findFirst({
+    const record = await (this.prisma as any).teacherCoupon.findFirst({
       where: {
         teacherProfileId,
         code: code.trim().toUpperCase(),
@@ -122,7 +151,7 @@ export class PrismaTeacherCouponRepository
   }
 
   async findByCode(code: string): Promise<TeacherCouponEntity | null> {
-    const record = await this.prisma.teacherCoupon.findFirst({
+    const record = await (this.prisma as any).teacherCoupon.findFirst({
       where: {
         code: code.trim().toUpperCase(),
       },
@@ -148,7 +177,7 @@ export class PrismaTeacherCouponRepository
     if (options?.courseId) where.courseId = options.courseId;
     if (options?.isActive !== undefined) where.isActive = options.isActive;
 
-    const records = await this.prisma.teacherCoupon.findMany({
+    const records = await (this.prisma as any).teacherCoupon.findMany({
       where,
       orderBy: { createdAt: "desc" },
       include: {
@@ -168,26 +197,10 @@ export class PrismaTeacherCouponRepository
     return records.map(this.mapToEntity.bind(this));
   }
 
-  async listAllCoupons(filters?: {
-    search?: string;
-    isActive?: boolean;
-    discountType?: "PERCENTAGE" | "FLAT";
-    teacherProfileId?: string;
-    courseId?: string;
-    page?: number;
-    limit?: number;
-    sortBy?: string;
-    sortOrder?: "asc" | "desc";
-  }): Promise<{
-    items: TeacherCouponEntity[];
-    total: number;
-    metrics: {
-      totalCoupons: number;
-      activeCoupons: number;
-      totalRedemptions: number;
-      totalDiscountGiven: number;
-    };
-  }> {
+  /**
+   * Optimized admin listing using database-level aggregations instead of in-memory full table scanning.
+   */
+  async listAllCoupons(filters?: AdminCouponFilterParams): Promise<AdminCouponsListResult> {
     const page = filters?.page || 1;
     const limit = filters?.limit || 10;
     const skip = (page - 1) * limit;
@@ -231,49 +244,46 @@ export class PrismaTeacherCouponRepository
     const sortOrder = filters?.sortOrder || "desc";
     const orderBy: any = { [sortField]: sortOrder };
 
-    const [records, total, allCouponsForMetrics, allEnrollmentsWithCoupon] = await Promise.all([
-      this.prisma.teacherCoupon.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy,
-        include: {
-          course: { select: { title: true } },
-          teacherProfile: {
-            include: {
-              profile: {
-                include: { user: true },
+    const [records, total, totalCoupons, activeCoupons, redemptionsAgg, discountAgg] =
+      await Promise.all([
+        (this.prisma as any).teacherCoupon.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy,
+          include: {
+            course: { select: { title: true } },
+            teacherProfile: {
+              include: {
+                profile: {
+                  include: { user: true },
+                },
               },
             },
+            enrollments: {
+              select: { discountAmount: true },
+            },
           },
-          enrollments: {
-            select: { discountAmount: true },
+        }),
+        (this.prisma as any).teacherCoupon.count({ where }),
+        (this.prisma as any).teacherCoupon.count(),
+        (this.prisma as any).teacherCoupon.count({ where: { isActive: true } }),
+        (this.prisma as any).teacherCoupon.aggregate({
+          _sum: { usedCount: true },
+        }),
+        (this.prisma as any).courseEnrollment.aggregate({
+          where: {
+            teacherCouponId: { not: null },
+            status: { not: "REFUNDED" },
           },
-        },
-      }),
-      this.prisma.teacherCoupon.count({ where }),
-      this.prisma.teacherCoupon.findMany({
-        select: {
-          id: true,
-          isActive: true,
-          usedCount: true,
-        },
-      }),
-      this.prisma.courseEnrollment.aggregate({
-        where: {
-          teacherCouponId: { not: null },
-          status: { not: "REFUNDED" },
-        },
-        _sum: {
-          discountAmount: true,
-        },
-      }),
-    ]);
+          _sum: {
+            discountAmount: true,
+          },
+        }),
+      ]);
 
-    const totalCoupons = allCouponsForMetrics.length;
-    const activeCoupons = allCouponsForMetrics.filter((c) => c.isActive).length;
-    const totalRedemptions = allCouponsForMetrics.reduce((sum, c) => sum + c.usedCount, 0);
-    const totalDiscountGiven = Number(allEnrollmentsWithCoupon._sum.discountAmount || 0);
+    const totalRedemptions = Number(redemptionsAgg?._sum?.usedCount || 0);
+    const totalDiscountGiven = Number(discountAgg?._sum?.discountAmount || 0);
 
     return {
       items: records.map(this.mapToEntity.bind(this)),
@@ -288,7 +298,7 @@ export class PrismaTeacherCouponRepository
   }
 
   async update(id: string, data: UpdateTeacherCouponDto): Promise<TeacherCouponEntity> {
-    const record = await this.prisma.teacherCoupon.update({
+    const record = await (this.prisma as any).teacherCoupon.update({
       where: { id },
       data: {
         ...(data.description !== undefined && { description: data.description }),
@@ -320,19 +330,20 @@ export class PrismaTeacherCouponRepository
     return this.mapToEntity(record);
   }
 
-  async delete(id: string): Promise<void> {
-    await this.prisma.teacherCoupon.delete({ where: { id } });
+  override async delete(id: string): Promise<boolean> {
+    await (this.prisma as any).teacherCoupon.delete({ where: { id } });
+    return true;
   }
 
   async incrementUsedCount(id: string): Promise<void> {
-    await this.prisma.teacherCoupon.update({
+    await (this.prisma as any).teacherCoupon.update({
       where: { id },
       data: { usedCount: { increment: 1 } },
     });
   }
 
   async getStudentUsageCount(couponId: string, studentId: string): Promise<number> {
-    return this.prisma.courseEnrollment.count({
+    return (this.prisma as any).courseEnrollment.count({
       where: {
         teacherCouponId: couponId,
         studentId,
@@ -341,8 +352,8 @@ export class PrismaTeacherCouponRepository
     });
   }
 
-  async findCouponWithRedemptions(id: string): Promise<any | null> {
-    return this.prisma.teacherCoupon.findUnique({
+  async findCouponWithRedemptions(id: string): Promise<CouponDetailsWithRedemptions | null> {
+    const record = await (this.prisma as any).teacherCoupon.findUnique({
       where: { id },
       include: {
         course: { select: { id: true, title: true, slug: true, price: true, thumbnail: true } },
@@ -371,6 +382,30 @@ export class PrismaTeacherCouponRepository
         },
       },
     });
+
+    if (!record) return null;
+
+    const baseEntity = this.mapToEntity(record);
+    const mappedRedemptions = (record.enrollments || []).map((e: any) => ({
+      id: e.id,
+      studentId: e.studentId,
+      studentName: e.student?.name || "Student",
+      studentEmail: e.student?.email || "",
+      studentAvatar: e.student?.profile?.avatar || null,
+      courseTitle: e.course?.title || record.course?.title || "Course",
+      discountAmount: Number(e.discountAmount),
+      finalAmount: Number(e.finalAmount),
+      paymentMethod: e.paymentMethod,
+      enrolledAt: e.enrolledAt || e.createdAt,
+      status: e.status,
+    }));
+
+    return {
+      ...baseEntity,
+      courseSlug: record.course?.slug || null,
+      coursePrice: record.course?.price ? Number(record.course.price) : null,
+      courseThumbnail: record.course?.thumbnail || null,
+      redemptions: mappedRedemptions,
+    };
   }
 }
-

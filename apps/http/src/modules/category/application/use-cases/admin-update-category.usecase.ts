@@ -6,7 +6,7 @@ import { CategoryHierarchyPolicy } from "../../domain/policies/category-hierarch
 import { BadRequestError, NotFoundError } from "@/app/errors";
 
 export class AdminUpdateCategoryUseCase {
-  constructor(private readonly categoryRepository: ICategoryAdminRepository) {}
+  constructor(private readonly categoryRepository: ICategoryAdminRepository) { }
 
   async execute(id: string, dto: UpdateCategoryDTO): Promise<CategoryEntity> {
     const existing = await this.categoryRepository.findById(id, true);

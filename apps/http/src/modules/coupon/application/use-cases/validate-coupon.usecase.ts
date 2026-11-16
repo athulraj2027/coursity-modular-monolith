@@ -1,11 +1,13 @@
-import { TeacherCouponRepository } from "../../domain/repositories/teacher-coupon.repository";
+import { ICouponValidationRepository } from "../../domain/repositories/teacher-coupon.repository";
 import { ICourseRepository } from "@/modules/course/domain/repositories/course.repository";
 import { ValidateCouponDto, CouponValidationResult } from "../../domain/dtos/teacher-coupon.dto";
+import { CouponValidationPolicy } from "../../domain/policies/coupon-validation.policy";
+import { CouponDiscountPolicy } from "../../domain/policies/coupon-discount.policy";
 import { BadRequestError, NotFoundError } from "@/app/errors";
 
 export class ValidateCouponUseCase {
   constructor(
-    private readonly couponRepo: TeacherCouponRepository,
+    private readonly couponRepo: ICouponValidationRepository,
     private readonly courseRepo?: ICourseRepository
   ) {}
 
@@ -23,8 +25,9 @@ export class ValidateCouponUseCase {
     }
 
     const originalPrice = Number(course.price);
+    const normalizedCode = CouponValidationPolicy.normalizeCode(dto.code);
 
-    const coupon = await this.couponRepo.findByCode(dto.code);
+    const coupon = await this.couponRepo.findByCode(normalizedCode);
     if (!coupon) {
       return {
         isValid: false,
@@ -35,111 +38,40 @@ export class ValidateCouponUseCase {
       };
     }
 
-    // Check if coupon belongs to the course's teacher
-    if (coupon.teacherProfileId !== course.teacherProfileId) {
+    // Get student redemptions count if studentId provided
+    const studentUses = dto.studentId
+      ? await this.couponRepo.getStudentUsageCount(coupon.id, dto.studentId)
+      : 0;
+
+    // Evaluate eligibility using pure domain validation policy
+    const eligibility = CouponValidationPolicy.checkRedemptionEligibility(
+      coupon,
+      {
+        id: course.id,
+        teacherProfileId: course.teacherProfileId,
+        price: originalPrice,
+        pricingType: course.pricingType,
+      },
+      studentUses
+    );
+
+    if (!eligibility.isEligible) {
       return {
         isValid: false,
         discountAmount: 0,
         originalPrice,
         finalPrice: originalPrice,
-        message: "This coupon is not valid for this instructor's courses.",
+        message: eligibility.reason,
       };
     }
 
-    // Check if scoped to a specific course
-    if (coupon.courseId && coupon.courseId !== course.id) {
-      return {
-        isValid: false,
-        discountAmount: 0,
-        originalPrice,
-        finalPrice: originalPrice,
-        message: "This coupon is only valid for a specific live course.",
-      };
-    }
-
-    // Check active status
-    if (!coupon.isActive) {
-      return {
-        isValid: false,
-        discountAmount: 0,
-        originalPrice,
-        finalPrice: originalPrice,
-        message: "This coupon is no longer active.",
-      };
-    }
-
-    // Check validity dates
-    const now = new Date();
-    if (coupon.validFrom && now < coupon.validFrom) {
-      return {
-        isValid: false,
-        discountAmount: 0,
-        originalPrice,
-        finalPrice: originalPrice,
-        message: "This coupon has not started yet.",
-      };
-    }
-
-    if (coupon.expiresAt && now > coupon.expiresAt) {
-      return {
-        isValid: false,
-        discountAmount: 0,
-        originalPrice,
-        finalPrice: originalPrice,
-        message: "This coupon has expired.",
-      };
-    }
-
-    // Check min order amount
-    if (coupon.minOrderAmount && originalPrice < coupon.minOrderAmount) {
-      return {
-        isValid: false,
-        discountAmount: 0,
-        originalPrice,
-        finalPrice: originalPrice,
-        message: `Course price must be at least ₹${coupon.minOrderAmount} to use this coupon.`,
-      };
-    }
-
-    // Check max total uses
-    if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
-      return {
-        isValid: false,
-        discountAmount: 0,
-        originalPrice,
-        finalPrice: originalPrice,
-        message: "This coupon has reached its maximum redemption limit.",
-      };
-    }
-
-    // Check per-student usage
-    if (dto.studentId) {
-      const studentUses = await this.couponRepo.getStudentUsageCount(coupon.id, dto.studentId);
-      if (studentUses >= coupon.maxUsesPerStudent) {
-        return {
-          isValid: false,
-          discountAmount: 0,
-          originalPrice,
-          finalPrice: originalPrice,
-          message: "You have already used this coupon for an active enrollment.",
-        };
-      }
-    }
-
-    // Calculate discount amount
-    let discountAmount = 0;
-    if (coupon.discountType === "PERCENTAGE") {
-      discountAmount = (originalPrice * coupon.discountValue) / 100;
-      if (coupon.maxDiscountAmount && discountAmount > coupon.maxDiscountAmount) {
-        discountAmount = coupon.maxDiscountAmount;
-      }
-    } else {
-      discountAmount = coupon.discountValue;
-    }
-
-    // Ensure discount does not exceed original price
-    discountAmount = Math.min(discountAmount, originalPrice);
-    const finalPrice = Math.max(0, originalPrice - discountAmount);
+    // Calculate discount using pure domain discount policy
+    const { discountAmount, finalPrice } = CouponDiscountPolicy.calculateDiscount({
+      originalPrice,
+      discountType: coupon.discountType,
+      discountValue: coupon.discountValue,
+      maxDiscountAmount: coupon.maxDiscountAmount,
+    });
 
     return {
       isValid: true,
@@ -147,9 +79,9 @@ export class ValidateCouponUseCase {
       code: coupon.code,
       discountType: coupon.discountType,
       discountValue: coupon.discountValue,
-      discountAmount: Number(discountAmount.toFixed(2)),
+      discountAmount,
       originalPrice,
-      finalPrice: Number(finalPrice.toFixed(2)),
+      finalPrice,
       message: `Coupon '${coupon.code}' applied successfully! Saved ₹${discountAmount.toFixed(2)}.`,
     };
   }
