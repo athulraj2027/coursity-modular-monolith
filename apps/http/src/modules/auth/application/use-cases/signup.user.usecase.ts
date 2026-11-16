@@ -1,19 +1,25 @@
 import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
-import { PasswordService } from "@/infrastructure/security";
+import { IPasswordHasher } from "@/infrastructure/security";
 import { ConflictError, BadRequestError } from "@/app/errors";
 import { SignupUserInputDTO, SignupUserOutputDTO } from "../dtos/signup.dto";
-import { OtpRepository } from "../../domain/repositories/redis-otp.repository";
+import { ISignupOtpRepository } from "../../domain/repositories/otp.repository.interface";
 import { IEmailService } from "@/infrastructure/email";
+import { IOtpGenerator } from "../../domain/services/otp-generator.service.interface";
+import { CryptoOtpGeneratorService } from "../../infrastructure/services/crypto-otp-generator.service";
+import { OtpCooldownPolicy } from "../../domain/policies/otp-cooldown.policy";
 
 export class SignupUser {
-    private readonly RESEND_COOLDOWN_MS = 1 * 60 * 1000; // 1 minute (60 seconds)
+    private readonly otpGenerator: IOtpGenerator;
 
     constructor(
         private readonly repository: UserRepository,
-        private readonly passwordService: PasswordService,
-        private readonly otpRepository: OtpRepository,
-        private readonly emailService?: IEmailService
-    ) { }
+        private readonly passwordService: IPasswordHasher,
+        private readonly otpRepository: ISignupOtpRepository,
+        private readonly emailService?: IEmailService,
+        otpGenerator?: IOtpGenerator
+    ) {
+        this.otpGenerator = otpGenerator || new CryptoOtpGeneratorService();
+    }
 
     async execute(input: SignupUserInputDTO): Promise<SignupUserOutputDTO> {
         const email = input.email.toLowerCase().trim();
@@ -35,24 +41,19 @@ export class SignupUser {
             throw new ConflictError("An account with this email already exists");
         }
 
-        // 2. Check if an OTP was already sent to this email recently
+        // 2. Check cooldown from previous OTP request via OtpCooldownPolicy
         const existingOtp = await this.otpRepository.getSignupOtp(email);
         if (existingOtp) {
-            const timeElapsed = Date.now() - (existingOtp.createdAt || 0);
-
-            if (timeElapsed < this.RESEND_COOLDOWN_MS) {
-                const remainingMinutes = Math.ceil((this.RESEND_COOLDOWN_MS - timeElapsed) / (60 * 1000));
-                throw new BadRequestError(
-                    `An OTP has already been sent. Please wait ${remainingMinutes} minute${remainingMinutes > 1 ? "s" : ""} before requesting a new one.`
-                );
-            }
+            OtpCooldownPolicy.assertCooldownElapsed(existingOtp.createdAt, undefined, "a new one");
         }
 
         // 3. Hash password
         const hashedPassword = await this.passwordService.hash(input.password);
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-        // 4. Store user data + OTP + timestamp in Redis
+        // 4. Generate cryptographically secure OTP
+        const otp = this.otpGenerator.generate(6);
+
+        // 5. Store user data + OTP + timestamp in OTP repository
         await this.otpRepository.saveSignupOtp(email, otp, {
             name: input.name.trim(),
             email,
@@ -60,7 +61,7 @@ export class SignupUser {
             role: input.role || "STUDENT",
         });
 
-        // 5. Asynchronously dispatch OTP email via queue
+        // 6. Asynchronously dispatch OTP email via queue
         if (this.emailService) {
             await this.emailService.sendSignupOtp(email, otp, input.name.trim()).catch((err) => {
                 console.error(`⚠️ Failed to enqueue signup OTP email for ${email}:`, err?.message || err);

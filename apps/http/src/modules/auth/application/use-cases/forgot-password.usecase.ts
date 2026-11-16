@@ -1,17 +1,24 @@
 import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
-import { OtpRepository } from "../../domain/repositories/redis-otp.repository";
+import { IPasswordResetOtpRepository } from "../../domain/repositories/otp.repository.interface";
 import { BadRequestError } from "@/app/errors";
 import { ForgotPasswordInputDTO, ForgotPasswordOutputDTO } from "../dtos/forgot-password.dto";
 import { IEmailService } from "@/infrastructure/email";
+import { IOtpGenerator } from "../../domain/services/otp-generator.service.interface";
+import { CryptoOtpGeneratorService } from "../../infrastructure/services/crypto-otp-generator.service";
+import { OtpCooldownPolicy } from "../../domain/policies/otp-cooldown.policy";
+import { PortalAccessPolicy } from "../../domain/policies/portal-access.policy";
 
 export class ForgotPassword {
-    private readonly RESEND_COOLDOWN_MS = 1 * 60 * 1000; // 1 minute
+    private readonly otpGenerator: IOtpGenerator;
 
     constructor(
         private readonly userRepository: UserRepository,
-        private readonly otpRepository: OtpRepository,
-        private readonly emailService?: IEmailService
-    ) { }
+        private readonly otpRepository: IPasswordResetOtpRepository,
+        private readonly emailService?: IEmailService,
+        otpGenerator?: IOtpGenerator
+    ) {
+        this.otpGenerator = otpGenerator || new CryptoOtpGeneratorService();
+    }
 
     async execute(input: ForgotPasswordInputDTO): Promise<ForgotPasswordOutputDTO> {
         const email = input.email.toLowerCase().trim();
@@ -19,40 +26,28 @@ export class ForgotPassword {
         // 1. Check if user exists
         const user = await this.userRepository.findByEmail(email);
 
-        // Security best practice: If user doesn't exist, we can return generic message
-        // However, if user is OAuth-only, we should inform them to sign in with Google
-        if (user && user.authProvider === "GOOGLE" && !user.password) {
-            throw new BadRequestError("This account uses Google Sign-In. Please sign in with Google.");
+        // Security best practice: If user is OAuth-only, inform them to sign in with OAuth provider
+        if (user && user.authProvider && user.authProvider !== "LOCAL" && !user.password) {
+            const providerName = user.authProvider === "GOOGLE" ? "Google" : user.authProvider;
+            throw new BadRequestError(`This account uses ${providerName} Sign-In. Please sign in with ${providerName}.`);
         }
 
-        // Enforce role consistency if a specific portal role was requested
-        if (user && input.role && user.role !== input.role) {
-            if (user.role === "ADMIN") {
-                throw new BadRequestError("This account is registered as an Administrator. Please use the Admin portal.");
-            } else if (user.role === "TEACHER") {
-                throw new BadRequestError("This account is registered as a Teacher. Please use the Teacher portal to reset your password.");
-            } else if (user.role === "STUDENT") {
-                throw new BadRequestError("This account is registered as a Student. Please use the Student portal to reset your password.");
-            }
+        // Enforce role consistency via PortalAccessPolicy (OCP)
+        if (user) {
+            PortalAccessPolicy.assertPortalRoleAccess(user.role, input.role, "reset-password");
         }
 
         if (user) {
-            // 2. Check cooldown from previous OTP request
+            // 2. Check cooldown from previous OTP request via OtpCooldownPolicy
             const existingOtp = await this.otpRepository.getResetPasswordOtp(email);
             if (existingOtp) {
-                const timeElapsed = Date.now() - (existingOtp.createdAt || 0);
-                if (timeElapsed < this.RESEND_COOLDOWN_MS) {
-                    const remainingMinutes = Math.ceil((this.RESEND_COOLDOWN_MS - timeElapsed) / (60 * 1000));
-                    throw new BadRequestError(
-                        `Please wait ${remainingMinutes} minute${remainingMinutes > 1 ? "s" : ""} before requesting a new password reset OTP.`
-                    );
-                }
+                OtpCooldownPolicy.assertCooldownElapsed(existingOtp.createdAt, undefined, "a new password reset OTP");
             }
 
-            // 3. Generate 6-digit OTP
-            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            // 3. Generate cryptographically secure 6-digit OTP
+            const otp = this.otpGenerator.generate(6);
 
-            // 4. Save to Redis with 10 minute TTL
+            // 4. Save to repository with 10 minute TTL
             await this.otpRepository.saveResetPasswordOtp(email, otp, 600);
 
             // 5. Asynchronously dispatch password reset OTP email via queue

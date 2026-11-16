@@ -1,26 +1,22 @@
-import { OtpRepository } from "@/modules/auth/domain/repositories/redis-otp.repository";
+import { ISignupOtpRepository } from "../../domain/repositories/otp.repository.interface";
 import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
-import { TokenService } from "@/infrastructure/security";
-import { TokenRepository } from "../../domain/repositories/token.repository";
+import { ITokenGenerator } from "@/infrastructure/security";
+import { ISaveRefreshTokenRepository } from "../../domain/repositories/token.repository";
 import { BadRequestError, ConflictError } from "@/app/errors";
-
-export interface VerifySignupOtpInput {
-    email: string;
-    otp: string;
-}
+import { VerifySignupOtpInput } from "../dtos/verify-otp.dto";
 
 export class VerifySignupOtp {
     constructor(
-        private readonly otpRepository: OtpRepository,
+        private readonly otpRepository: ISignupOtpRepository,
         private readonly userRepository: UserRepository,
-        private readonly tokenService: TokenService,
-        private readonly tokenRepository: TokenRepository
+        private readonly tokenService: ITokenGenerator,
+        private readonly tokenRepository: ISaveRefreshTokenRepository
     ) { }
 
     async execute(input: VerifySignupOtpInput) {
         const email = input.email.toLowerCase().trim();
 
-        // 1. Fetch cached OTP & user data from Redis
+        // 1. Fetch cached OTP & user data from repository
         const stored = await this.otpRepository.getSignupOtp(email);
         if (!stored) {
             throw new BadRequestError("OTP has expired or is invalid");
@@ -46,7 +42,7 @@ export class VerifySignupOtp {
             authProvider: "LOCAL",
         });
 
-        // 5. Invalidate the OTP in Redis
+        // 5. Invalidate the OTP in repository
         await this.otpRepository.deleteSignupOtp(email);
 
         // 6. Generate Access & Refresh tokens for automatic sign-in
@@ -56,7 +52,7 @@ export class VerifySignupOtp {
             role: user.role,
         });
 
-        // 7. Save Refresh Token in Redis session storage
+        // 7. Save Refresh Token in session storage
         await this.tokenRepository.saveRefreshToken(user.id, tokens.refreshToken);
 
         return {

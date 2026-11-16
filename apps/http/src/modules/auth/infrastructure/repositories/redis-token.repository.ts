@@ -1,8 +1,8 @@
 import Redis from "ioredis";
-import { TokenRepository } from "../../domain/repositories/token.repository";
+import { ITokenRepository } from "../../domain/repositories/token.repository";
 import redisClient from "@/infrastructure/redis/redis.client";
 
-export class RedisTokenRepository implements TokenRepository {
+export class RedisTokenRepository implements ITokenRepository {
     private readonly prefix = "auth:refresh_token:";
     private readonly defaultTTL = 7 * 24 * 60 * 60; // 7 days in seconds
 

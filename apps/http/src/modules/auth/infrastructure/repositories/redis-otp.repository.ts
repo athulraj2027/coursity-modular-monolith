@@ -1,8 +1,13 @@
 import Redis from "ioredis";
-import { OtpRepository, StoredOtpData, StoredResetPasswordOtpData, TempSignupUser } from '../../domain/repositories/redis-otp.repository';
+import {
+    IOtpRepository,
+    StoredOtpData,
+    StoredResetPasswordOtpData,
+    TempSignupUser,
+} from "../../domain/repositories/otp.repository.interface";
 import redisClient from "@/infrastructure/redis/redis.client";
 
-export class RedisOtpRepository implements OtpRepository {
+export class RedisOtpRepository implements IOtpRepository {
     private readonly signupPrefix = "otp:signup:";
     private readonly resetPasswordPrefix = "otp:reset-password:";
     private readonly defaultTTL = 300; // 5 minutes
