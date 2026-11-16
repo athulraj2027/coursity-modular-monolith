@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { GetPresignedUrl } from "../../use-cases/get-presigned-url.usecase";
+import { GetPresignedUrl } from "../../application/use-cases/get-presigned-url.usecase";
 import { UnauthorizedError } from "@/app/errors";
 import { ApiResponse } from "@/shared";
 

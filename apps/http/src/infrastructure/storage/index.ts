@@ -1,11 +1,11 @@
-import { S3StorageService } from "./services/s3-storage.service";
-import { GetPresignedUrl } from "./use-cases/get-presigned-url.usecase";
-import { DeleteFile } from "./use-cases/delete-file.usecase";
+import { S3StorageService } from "./infrastructure/services/s3-storage.service";
+import { GetPresignedUrl } from "./application/use-cases/get-presigned-url.usecase";
+import { DeleteFile } from "./application/use-cases/delete-file.usecase";
 import { UploadController } from "./presentation/controllers/upload.controller";
 import { UploadRoutes } from "./presentation/routes/upload.routes";
-import { IStorageService } from "./contracts/storage-service.abstract";
+import { IStorageService, StorageService } from "./domain/contracts/storage-service.interface";
 
-// 1. Instantiate Storage Service Singleton implementing IStorageService abstract class
+// 1. Instantiate Storage Service Singleton
 const storageService: IStorageService = new S3StorageService();
 
 // 2. Application Use Cases
@@ -28,14 +28,24 @@ export {
     UploadController,
     UploadRoutes,
     S3StorageService,
+    IStorageService,
+    StorageService,
 };
 
-export * from "./contracts/storage-service.abstract";
-export * from "./entities/storage.entity";
-export * from "./errors/storage.error";
-export * from "./config/s3.config";
-export * from "./use-cases/get-presigned-url.usecase";
-export * from "./use-cases/delete-file.usecase";
+// Domain layer
+export * from "./domain/contracts/storage-service.interface";
+export * from "./domain/entities/storage.entity";
+export * from "./domain/errors/storage.error";
+
+// Application layer
+export * from "./application/use-cases/get-presigned-url.usecase";
+export * from "./application/use-cases/delete-file.usecase";
+
+// Infrastructure layer
+export * from "./infrastructure/config/s3.config";
+export * from "./infrastructure/services/s3-storage.service";
+
+// Presentation layer
 export * from "./presentation/controllers";
 export * from "./presentation/routes/upload.routes";
 export * from "./presentation/validators/upload.validator";

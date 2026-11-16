@@ -81,3 +81,4 @@ export interface StoredFileInfo {
     folder: StorageFolder;
     userId: string;
 }
+

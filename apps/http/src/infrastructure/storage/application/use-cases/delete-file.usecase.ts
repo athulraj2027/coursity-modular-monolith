@@ -1,6 +1,6 @@
-import { IStorageService } from "../contracts/storage-service.abstract";
-import { DeleteFileInputDTO } from "../entities/storage.entity";
-import { StorageUnauthorizedError } from "../errors/storage.error";
+import { IStorageService } from "../../domain/contracts/storage-service.interface";
+import { DeleteFileInputDTO } from "../../domain/entities/storage.entity";
+import { StorageUnauthorizedError } from "../../domain/errors/storage.error";
 import { BadRequestError } from "@/app/errors";
 
 export class DeleteFile {
@@ -56,3 +56,4 @@ export class DeleteFile {
         };
     }
 }
+

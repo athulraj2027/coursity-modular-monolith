@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { IStorageService } from "../contracts/storage-service.abstract";
+import { IStorageService } from "../../domain/contracts/storage-service.interface";
 import {
     PresignedUrlRequestDTO,
     PresignedUrlResponseDTO,
     StorageFolder,
     STORAGE_FOLDERS,
     ALL_ALLOWED_MIME_TYPES,
-} from "../entities/storage.entity";
-import { InvalidFileTypeError, FileSizeExceededError } from "../errors/storage.error";
+} from "../../domain/entities/storage.entity";
+import { InvalidFileTypeError, FileSizeExceededError } from "../../domain/errors/storage.error";
 import { BadRequestError } from "@/app/errors";
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
@@ -58,3 +58,4 @@ export class GetPresignedUrl {
         });
     }
 }
+

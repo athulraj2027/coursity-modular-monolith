@@ -2,28 +2,42 @@ import path from "path";
 import fs from "fs";
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { IStorageService } from "../contracts/storage-service.abstract";
-import { PresignedUrlResponseDTO } from "../entities/storage.entity";
-import { StorageError } from "../errors/storage.error";
-import { createS3Client } from "../config/s3.config";
-import { env } from "@/app/config/env";
+import {
+    IStorageService,
+    StorageService,
+    PresignedPutUrlInput,
+    UploadBufferInput,
+} from "../../domain/contracts/storage-service.interface";
+import { PresignedUrlResponseDTO } from "../../domain/entities/storage.entity";
+import { StorageError } from "../../domain/errors/storage.error";
+import { createS3Client, getStorageConfig, StorageConfig } from "../config/s3.config";
 
-export class S3StorageService extends IStorageService {
+export class S3StorageService extends StorageService implements IStorageService {
     private readonly s3Client: S3Client | null;
     private readonly bucketName: string;
     private readonly region: string;
     private readonly cloudFrontUrl?: string;
+    private readonly endpoint?: string;
     private readonly backendBaseUrl: string;
     private readonly uploadsDir: string;
 
-    constructor(s3ClientOverride?: S3Client | null) {
+    constructor(
+        s3ClientOverride?: S3Client | null,
+        configOverride?: Partial<StorageConfig>
+    ) {
         super();
-        this.s3Client = s3ClientOverride !== undefined ? s3ClientOverride : createS3Client();
-        this.bucketName = env.AWS_S3_BUCKET_NAME || "";
-        this.region = env.AWS_REGION || "us-east-1";
-        this.cloudFrontUrl = env.AWS_CLOUDFRONT_URL ? env.AWS_CLOUDFRONT_URL.replace(/^https?:\/\//, "").replace(/\/$/, "") : undefined;
-        this.backendBaseUrl = process.env.API_URL || `http://localhost:${env.PORT}`;
-        this.uploadsDir = path.join(process.cwd(), "uploads");
+        const config = getStorageConfig(configOverride);
+        this.s3Client = s3ClientOverride !== undefined ? s3ClientOverride : createS3Client(config);
+        this.bucketName = config.bucketName || "";
+        this.region = config.region || "us-east-1";
+        this.cloudFrontUrl = config.cloudFrontUrl
+            ? config.cloudFrontUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")
+            : undefined;
+        this.endpoint = config.endpoint;
+        this.backendBaseUrl = config.backendBaseUrl || "http://localhost:3000";
+        this.uploadsDir = path.isAbsolute(config.uploadsDir || "uploads")
+            ? (config.uploadsDir || "uploads")
+            : path.join(process.cwd(), config.uploadsDir || "uploads");
 
         if (!fs.existsSync(this.uploadsDir)) {
             try {
@@ -42,8 +56,8 @@ export class S3StorageService extends IStorageService {
                 return `https://${this.cloudFrontUrl}/${cleanKey}`;
             }
 
-            if (env.AWS_S3_ENDPOINT && env.AWS_S3_ENDPOINT.includes("localhost")) {
-                return `${env.AWS_S3_ENDPOINT}/${this.bucketName}/${cleanKey}`;
+            if (this.endpoint && this.endpoint.includes("localhost")) {
+                return `${this.endpoint}/${this.bucketName}/${cleanKey}`;
             }
 
             return `https://${this.bucketName}.s3.${this.region}.amazonaws.com/${cleanKey}`;
@@ -53,12 +67,7 @@ export class S3StorageService extends IStorageService {
         return `${this.backendBaseUrl}/uploads/${cleanKey}`;
     }
 
-    async getPresignedPutUrl(input: {
-        key: string;
-        contentType: string;
-        fileSize?: number;
-        expiresIn?: number;
-    }): Promise<PresignedUrlResponseDTO> {
+    async getPresignedPutUrl(input: PresignedPutUrlInput): Promise<PresignedUrlResponseDTO> {
         const expiresIn = input.expiresIn || 300; // 5 minutes default
         const cleanKey = input.key.startsWith("/") ? input.key.substring(1) : input.key;
 
@@ -130,11 +139,7 @@ export class S3StorageService extends IStorageService {
         return true;
     }
 
-    async uploadBuffer(input: {
-        key: string;
-        buffer: Buffer;
-        contentType: string;
-    }): Promise<string> {
+    async uploadBuffer(input: UploadBufferInput): Promise<string> {
         const cleanKey = input.key.startsWith("/") ? input.key.substring(1) : input.key;
 
         if (this.s3Client && this.bucketName) {
@@ -165,3 +170,4 @@ export class S3StorageService extends IStorageService {
         return this.getPublicUrl(cleanKey);
     }
 }
+

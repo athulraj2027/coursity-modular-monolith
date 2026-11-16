@@ -27,3 +27,4 @@ export class StorageUnauthorizedError extends ForbiddenError {
         this.name = "StorageUnauthorizedError";
     }
 }
+

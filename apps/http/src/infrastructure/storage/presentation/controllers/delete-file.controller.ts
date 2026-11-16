@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { DeleteFile } from "../../use-cases/delete-file.usecase";
+import { DeleteFile } from "../../application/use-cases/delete-file.usecase";
 import { UnauthorizedError } from "@/app/errors";
 import { ApiResponse } from "@/shared";
 

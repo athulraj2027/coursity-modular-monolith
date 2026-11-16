@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { GetPresignedUrl } from "../../use-cases/get-presigned-url.usecase";
-import { DeleteFile } from "../../use-cases/delete-file.usecase";
+import { GetPresignedUrl } from "../../application/use-cases/get-presigned-url.usecase";
+import { DeleteFile } from "../../application/use-cases/delete-file.usecase";
 
 import { GetPresignedUrlController } from "./get-presigned-url.controller";
 import { HandleLocalUploadController } from "./handle-local-upload.controller";
