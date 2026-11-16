@@ -106,6 +106,17 @@ export * from "./presentation/validators";
 export * from "./domain/entities/oauth-user-profile.entity";
 export * from "./domain/services/oauth.service.interface";
 export * from "./domain/services/oauth.service";
-export { PasswordService, TokenService, BcryptPasswordService, JwtTokenService } from "@/infrastructure/security";
+export {
+    IPasswordService,
+    ITokenService,
+    IPasswordHasher,
+    IPasswordComparer,
+    ITokenGenerator,
+    ITokenVerifier,
+    PasswordService,
+    TokenService,
+    BcryptPasswordService,
+    JwtTokenService,
+} from "@/infrastructure/security";
 export const authRouter = authRoutes.router;
 export default authRouter;

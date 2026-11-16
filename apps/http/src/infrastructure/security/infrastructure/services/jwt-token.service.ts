@@ -1,20 +1,26 @@
 import jwt, { SignOptions } from "jsonwebtoken";
-import { AuthTokens, TokenPayload, TokenService } from "../contracts/token.service.abstract";
-import { env } from "@/app/config/env";
+import {
+    AuthTokens,
+    ITokenService,
+    TokenPayload,
+    TokenService,
+} from "../../domain/contracts/token-service.interface";
+import { getJwtConfig, JwtConfig } from "../config/jwt.config";
 import { UnauthorizedError } from "@/app/errors";
 
-export class JwtTokenService extends TokenService {
+export class JwtTokenService extends TokenService implements ITokenService {
     private readonly secret: string;
     private readonly refreshSecret: string;
     private readonly accessExpiresIn: string;
     private readonly refreshExpiresIn: string;
 
-    constructor() {
+    constructor(config?: Partial<JwtConfig>) {
         super();
-        this.secret = env.JWT_SECRET;
-        this.refreshSecret = env.JWT_REFRESH_SECRET || env.JWT_SECRET;
-        this.accessExpiresIn = env.JWT_ACCESS_EXPIRES_IN || "15m";
-        this.refreshExpiresIn = env.JWT_REFRESH_EXPIRES_IN || "7d";
+        const resolvedConfig = getJwtConfig(config);
+        this.secret = resolvedConfig.secret;
+        this.refreshSecret = resolvedConfig.refreshSecret;
+        this.accessExpiresIn = resolvedConfig.accessExpiresIn;
+        this.refreshExpiresIn = resolvedConfig.refreshExpiresIn;
     }
 
     generateAccessToken(payload: TokenPayload): string {
@@ -46,7 +52,7 @@ export class JwtTokenService extends TokenService {
                 email: decoded.email,
                 role: decoded.role,
             };
-        } catch (error) {
+        } catch {
             throw new UnauthorizedError("Invalid or expired access token");
         }
     }
@@ -59,8 +65,9 @@ export class JwtTokenService extends TokenService {
                 email: decoded.email,
                 role: decoded.role,
             };
-        } catch (error) {
+        } catch {
             throw new UnauthorizedError("Invalid or expired refresh token");
         }
     }
 }
+
