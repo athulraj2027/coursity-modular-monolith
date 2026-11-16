@@ -1,4 +1,4 @@
-import { IPaymentGateway, PaymentOrderResult } from "@/infrastructure/payment/contracts/payment-gateway.abstract";
+import { IPaymentGateway, PaymentOrderResult } from "@/infrastructure/payment";
 import { CreateTopUpOrderDto } from "../../domain/dtos/wallet.dto";
 import { BadRequestError } from "@/app/errors";
 

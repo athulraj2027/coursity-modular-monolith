@@ -1,6 +1,6 @@
 import { Router } from "express";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
-import { RazorpayPaymentService } from "@/infrastructure/payment/services/razorpay-payment.service";
+import { RazorpayPaymentService } from "@/infrastructure/payment";
 import { PrismaWalletRepository } from "./infrastructure/repositories/prisma-wallet.repository";
 import { PrismaPayoutRequestRepository } from "./infrastructure/repositories/prisma-payout-request.repository";
 import { GetOrCreateWalletUseCase } from "./application/use-cases/get-or-create-wallet.usecase";

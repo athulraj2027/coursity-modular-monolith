@@ -67,12 +67,15 @@ export interface IPaymentRefundGateway {
   refundPayment(input: RefundPaymentInput): Promise<RefundPaymentResult>;
 }
 
-export abstract class PaymentGateway
-  implements
-  IPaymentOrderGateway,
-  IPaymentVerificationGateway,
-  IPaymentDetailsGateway,
-  IPaymentRefundGateway {
+export interface IPaymentGateway
+  extends IPaymentOrderGateway,
+    IPaymentVerificationGateway,
+    IPaymentDetailsGateway,
+    IPaymentRefundGateway {
+  isConfigured(): boolean;
+}
+
+export abstract class PaymentGateway implements IPaymentGateway {
   abstract createOrder(input: CreatePaymentOrderInput): Promise<PaymentOrderResult>;
   abstract verifyPaymentSignature(input: VerifySignatureInput): boolean;
   abstract verifyWebhookSignature(body: string | Buffer, signature: string): boolean;
@@ -80,3 +83,6 @@ export abstract class PaymentGateway
   abstract refundPayment(input: RefundPaymentInput): Promise<RefundPaymentResult>;
   abstract isConfigured(): boolean;
 }
+
+// Backward-compatibility alias
+export { PaymentGateway as IPaymentGatewayBase };

@@ -1,27 +1,42 @@
 import crypto from "node:crypto";
 import Razorpay from "razorpay";
 import {
+    IPaymentGateway,
     PaymentGateway,
     CreatePaymentOrderInput,
     PaymentOrderResult,
     VerifySignatureInput,
     PaymentDetails,
-} from "../contracts/payment-gateway.abstract";
-import { env } from "@/app/config/env";
+    RefundPaymentInput,
+    RefundPaymentResult,
+} from "../../domain/contracts/payment-gateway.interface";
+import { PaymentConfig, paymentConfig as defaultPaymentConfig } from "../config/payment.config";
 
-export class RazorpayPaymentService extends PaymentGateway {
+export class RazorpayPaymentService extends PaymentGateway implements IPaymentGateway {
     private readonly instance: Razorpay | null = null;
     private readonly keyId: string;
     private readonly keySecret: string;
     private readonly webhookSecret: string;
 
-    constructor() {
+    constructor(
+        config?: Partial<PaymentConfig>,
+        customInstance?: Razorpay | null
+    ) {
         super();
-        this.keyId = env.RAZORPAY_KEY_ID || "";
-        this.keySecret = env.RAZORPAY_KEY_SECRET || "";
-        this.webhookSecret = env.RAZORPAY_WEBHOOK_SECRET || "";
+        this.keyId = config?.keyId ?? defaultPaymentConfig.keyId;
+        this.keySecret = config?.keySecret ?? defaultPaymentConfig.keySecret;
+        this.webhookSecret = config?.webhookSecret ?? defaultPaymentConfig.webhookSecret;
 
-        if (this.keyId && this.keySecret && !this.keyId.includes("dummy") && !this.keyId.includes("placeholder")) {
+        if (customInstance !== undefined) {
+            this.instance = customInstance;
+        } else if (
+            this.keyId &&
+            this.keySecret &&
+            !this.keyId.includes("dummy") &&
+            !this.keyId.includes("placeholder") &&
+            !this.keyId.includes("mock") &&
+            !this.keyId.includes("sandbox")
+        ) {
             this.instance = new Razorpay({
                 key_id: this.keyId,
                 key_secret: this.keySecret,
@@ -90,10 +105,14 @@ export class RazorpayPaymentService extends PaymentGateway {
                 .update(`${input.orderId}|${input.paymentId}`)
                 .digest("hex");
 
-            return crypto.timingSafeEqual(
-                Buffer.from(expectedSignature, "utf8"),
-                Buffer.from(input.signature, "utf8")
-            );
+            const expectedBuffer = Buffer.from(expectedSignature, "utf8");
+            const signatureBuffer = Buffer.from(input.signature, "utf8");
+
+            if (expectedBuffer.length !== signatureBuffer.length) {
+                return false;
+            }
+
+            return crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
         } catch (err) {
             console.error("❌ [Razorpay] Signature verification error:", err);
             return false;
@@ -111,10 +130,14 @@ export class RazorpayPaymentService extends PaymentGateway {
                 .update(body)
                 .digest("hex");
 
-            return crypto.timingSafeEqual(
-                Buffer.from(expectedSignature, "utf8"),
-                Buffer.from(signature, "utf8")
-            );
+            const expectedBuffer = Buffer.from(expectedSignature, "utf8");
+            const signatureBuffer = Buffer.from(signature, "utf8");
+
+            if (expectedBuffer.length !== signatureBuffer.length) {
+                return false;
+            }
+
+            return crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
         } catch (err) {
             console.error("❌ [Razorpay Webhook] Signature verification error:", err);
             return false;
@@ -153,21 +176,7 @@ export class RazorpayPaymentService extends PaymentGateway {
         }
     }
 
-    async refundPayment(input: {
-        paymentId: string;
-        amount?: number;
-        currency?: string;
-        notes?: Record<string, string>;
-    }): Promise<{
-        refundId: string;
-        paymentId: string;
-        amount: number;
-        currency: string;
-        status: string;
-        receipt?: string;
-        notes?: Record<string, string>;
-        createdAt: number;
-    }> {
+    async refundPayment(input: RefundPaymentInput): Promise<RefundPaymentResult> {
         if (this.instance && !input.paymentId.startsWith("pay_mock_")) {
             try {
                 const refundPayload: any = {

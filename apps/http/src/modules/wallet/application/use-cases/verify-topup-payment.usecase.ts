@@ -1,4 +1,4 @@
-import { IPaymentGateway } from "@/infrastructure/payment/contracts/payment-gateway.abstract";
+import { IPaymentGateway } from "@/infrastructure/payment";
 import { IWalletRepository } from "../../domain/repositories/wallet.repository.interface";
 import { VerifyTopUpPaymentDto } from "../../domain/dtos/wallet.dto";
 import { WalletEntity } from "../../domain/entities/wallet.entity";

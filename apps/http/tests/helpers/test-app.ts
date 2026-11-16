@@ -28,7 +28,7 @@ import { requireRoles } from "../../src/app/middlewares/role.middleware";
 import errorMiddleware from "../../src/app/middlewares/err.middleware";
 import notFoundMiddleware from "../../src/app/middlewares/not-found.middleware";
 import { createIdempotencyMiddleware } from "../../src/app/middlewares/idempotency.middleware";
-import { IdempotencyService, InMemoryIdempotencyService } from "../../src/infrastructure/idempotency/idempotency.service";
+import { IdempotencyService, InMemoryIdempotencyService } from "../../src/infrastructure/idempotency";
 import {
     User,
     UserRepository,
