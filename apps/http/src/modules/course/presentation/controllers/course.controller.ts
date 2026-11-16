@@ -2,6 +2,10 @@ import { Request, Response, NextFunction } from "express";
 import { GetCoursesUseCase } from "../../application/use-cases/get-courses.usecase";
 import { TeacherCourseUseCase } from "../../application/use-cases/teacher-course.usecase";
 import { AdminManageCoursesUseCase } from "../../application/use-cases/admin-manage-courses.usecase";
+import {
+  ITeacherProfileResolver,
+  defaultTeacherProfileResolver,
+} from "../../domain/services/teacher-profile-resolver.service";
 
 import { GetPublicCoursesController } from "./get-public-courses.controller";
 import { GetFeaturedCoursesController } from "./get-featured-courses.controller";
@@ -35,6 +39,13 @@ import { AdminUnfreezeCourseController } from "./admin-unfreeze-course.controlle
 import { AdminSoftDeleteCourseController } from "./admin-soft-delete-course.controller";
 import { AdminRestoreCourseController } from "./admin-restore-course.controller";
 import { AdminHardDeleteCourseController } from "./admin-hard-delete-course.controller";
+
+export interface CourseControllerDependencies {
+  getCoursesUseCase: GetCoursesUseCase;
+  teacherCourseUseCase: TeacherCourseUseCase;
+  adminManageCoursesUseCase: AdminManageCoursesUseCase;
+  profileResolver?: ITeacherProfileResolver;
+}
 
 export class CourseController {
   private readonly getPublicCoursesController: GetPublicCoursesController;
@@ -71,42 +82,65 @@ export class CourseController {
   private readonly adminHardDeleteCourseController: AdminHardDeleteCourseController;
 
   constructor(
-    getCoursesUseCase: GetCoursesUseCase,
-    teacherCourseUseCase: TeacherCourseUseCase,
-    adminManageCoursesUseCase: AdminManageCoursesUseCase
+    getCoursesUseCaseOrDeps: GetCoursesUseCase | CourseControllerDependencies,
+    teacherCourseUseCase?: TeacherCourseUseCase,
+    adminManageCoursesUseCase?: AdminManageCoursesUseCase,
+    profileResolver: ITeacherProfileResolver = defaultTeacherProfileResolver
   ) {
-    this.getPublicCoursesController = new GetPublicCoursesController(getCoursesUseCase);
-    this.getFeaturedCoursesController = new GetFeaturedCoursesController(getCoursesUseCase);
-    this.getTrendingCoursesController = new GetTrendingCoursesController(getCoursesUseCase);
-    this.getCourseBySlugController = new GetCourseBySlugController(getCoursesUseCase);
+    let getCoursesUC: GetCoursesUseCase;
+    let teacherCourseUC: TeacherCourseUseCase;
+    let adminManageUC: AdminManageCoursesUseCase;
+    let resolver: ITeacherProfileResolver = profileResolver;
 
-    this.getTeacherCoursesController = new GetTeacherCoursesController(teacherCourseUseCase);
-    this.getTeacherMetricsController = new GetTeacherMetricsController(teacherCourseUseCase);
-    this.getTeacherCourseByIdController = new GetTeacherCourseByIdController(teacherCourseUseCase);
-    this.createCourseController = new CreateCourseController(teacherCourseUseCase);
-    this.updateCourseController = new UpdateCourseController(teacherCourseUseCase);
-    this.deleteCourseController = new DeleteCourseController(teacherCourseUseCase);
+    if (
+      typeof getCoursesUseCaseOrDeps === "object" &&
+      "getCoursesUseCase" in getCoursesUseCaseOrDeps &&
+      "teacherCourseUseCase" in getCoursesUseCaseOrDeps
+    ) {
+      getCoursesUC = getCoursesUseCaseOrDeps.getCoursesUseCase;
+      teacherCourseUC = getCoursesUseCaseOrDeps.teacherCourseUseCase;
+      adminManageUC = getCoursesUseCaseOrDeps.adminManageCoursesUseCase;
+      if (getCoursesUseCaseOrDeps.profileResolver) {
+        resolver = getCoursesUseCaseOrDeps.profileResolver;
+      }
+    } else {
+      getCoursesUC = getCoursesUseCaseOrDeps as GetCoursesUseCase;
+      teacherCourseUC = teacherCourseUseCase!;
+      adminManageUC = adminManageCoursesUseCase!;
+    }
 
-    this.createModuleController = new CreateModuleController(teacherCourseUseCase);
-    this.updateModuleController = new UpdateModuleController(teacherCourseUseCase);
-    this.deleteModuleController = new DeleteModuleController(teacherCourseUseCase);
-    this.reorderModulesController = new ReorderModulesController(teacherCourseUseCase);
-    this.createLessonController = new CreateLessonController(teacherCourseUseCase);
-    this.updateLessonController = new UpdateLessonController(teacherCourseUseCase);
-    this.deleteLessonController = new DeleteLessonController(teacherCourseUseCase);
-    this.reorderLessonsController = new ReorderLessonsController(teacherCourseUseCase);
+    this.getPublicCoursesController = new GetPublicCoursesController(getCoursesUC);
+    this.getFeaturedCoursesController = new GetFeaturedCoursesController(getCoursesUC);
+    this.getTrendingCoursesController = new GetTrendingCoursesController(getCoursesUC);
+    this.getCourseBySlugController = new GetCourseBySlugController(getCoursesUC);
 
-    this.adminGetAllCoursesController = new AdminGetAllCoursesController(adminManageCoursesUseCase);
-    this.adminGetMetricsController = new AdminGetCourseMetricsController(adminManageCoursesUseCase);
-    this.adminGetCourseByIdController = new AdminGetCourseByIdController(adminManageCoursesUseCase);
-    this.adminToggleFeaturedController = new AdminToggleFeaturedController(adminManageCoursesUseCase);
-    this.adminToggleTrendingController = new AdminToggleTrendingController(adminManageCoursesUseCase);
-    this.adminDelistCourseController = new AdminDelistCourseController(adminManageCoursesUseCase);
-    this.adminFreezeCourseController = new AdminFreezeCourseController(adminManageCoursesUseCase);
-    this.adminUnfreezeCourseController = new AdminUnfreezeCourseController(adminManageCoursesUseCase);
-    this.adminSoftDeleteCourseController = new AdminSoftDeleteCourseController(adminManageCoursesUseCase);
-    this.adminRestoreCourseController = new AdminRestoreCourseController(adminManageCoursesUseCase);
-    this.adminHardDeleteCourseController = new AdminHardDeleteCourseController(adminManageCoursesUseCase);
+    this.getTeacherCoursesController = new GetTeacherCoursesController(teacherCourseUC, resolver);
+    this.getTeacherMetricsController = new GetTeacherMetricsController(teacherCourseUC, resolver);
+    this.getTeacherCourseByIdController = new GetTeacherCourseByIdController(teacherCourseUC, resolver);
+    this.createCourseController = new CreateCourseController(teacherCourseUC, resolver);
+    this.updateCourseController = new UpdateCourseController(teacherCourseUC, resolver);
+    this.deleteCourseController = new DeleteCourseController(teacherCourseUC, resolver);
+
+    this.createModuleController = new CreateModuleController(teacherCourseUC, resolver);
+    this.updateModuleController = new UpdateModuleController(teacherCourseUC, resolver);
+    this.deleteModuleController = new DeleteModuleController(teacherCourseUC, resolver);
+    this.reorderModulesController = new ReorderModulesController(teacherCourseUC, resolver);
+    this.createLessonController = new CreateLessonController(teacherCourseUC, resolver);
+    this.updateLessonController = new UpdateLessonController(teacherCourseUC, resolver);
+    this.deleteLessonController = new DeleteLessonController(teacherCourseUC, resolver);
+    this.reorderLessonsController = new ReorderLessonsController(teacherCourseUC, resolver);
+
+    this.adminGetAllCoursesController = new AdminGetAllCoursesController(adminManageUC);
+    this.adminGetMetricsController = new AdminGetCourseMetricsController(adminManageUC);
+    this.adminGetCourseByIdController = new AdminGetCourseByIdController(adminManageUC);
+    this.adminToggleFeaturedController = new AdminToggleFeaturedController(adminManageUC);
+    this.adminToggleTrendingController = new AdminToggleTrendingController(adminManageUC);
+    this.adminDelistCourseController = new AdminDelistCourseController(adminManageUC);
+    this.adminFreezeCourseController = new AdminFreezeCourseController(adminManageUC);
+    this.adminUnfreezeCourseController = new AdminUnfreezeCourseController(adminManageUC);
+    this.adminSoftDeleteCourseController = new AdminSoftDeleteCourseController(adminManageUC);
+    this.adminRestoreCourseController = new AdminRestoreCourseController(adminManageUC);
+    this.adminHardDeleteCourseController = new AdminHardDeleteCourseController(adminManageUC);
   }
 
   // 1. PUBLIC DISCOVERY ENDPOINTS

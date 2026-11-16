@@ -2,6 +2,7 @@ import { Router } from "express";
 import { CourseController } from "../controllers/course.controller";
 import authMiddleware from "@/app/middlewares/auth.middleware";
 import { isBlockedMiddleware } from "@/app/middlewares/is-blocked.middleware";
+import { requireRoles } from "@/app/middlewares/role.middleware";
 
 export class CourseRoutes {
   public router: Router;
@@ -23,6 +24,7 @@ export class CourseRoutes {
       "/teacher",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("TEACHER"),
       this.courseController.getTeacherCourses
     );
 
@@ -30,6 +32,7 @@ export class CourseRoutes {
       "/teacher/mine",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("TEACHER"),
       this.courseController.getTeacherCourses
     );
 
@@ -37,6 +40,7 @@ export class CourseRoutes {
       "/teacher/metrics",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("TEACHER"),
       this.courseController.getTeacherMetrics
     );
 
@@ -44,6 +48,7 @@ export class CourseRoutes {
       "/teacher/:id",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("TEACHER"),
       this.courseController.getTeacherCourseById
     );
 
@@ -51,6 +56,7 @@ export class CourseRoutes {
       "/teacher",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("TEACHER"),
       this.courseController.createCourse
     );
 
@@ -58,6 +64,7 @@ export class CourseRoutes {
       "/",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("TEACHER"),
       this.courseController.createCourse
     );
 
@@ -65,6 +72,7 @@ export class CourseRoutes {
       "/teacher/:id",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("TEACHER"),
       this.courseController.updateCourse
     );
 
@@ -72,6 +80,7 @@ export class CourseRoutes {
       "/teacher/:id",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("TEACHER"),
       this.courseController.deleteCourse
     );
 
@@ -80,6 +89,7 @@ export class CourseRoutes {
       "/teacher/:id/modules",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("TEACHER"),
       this.courseController.createModule
     );
 
@@ -87,6 +97,7 @@ export class CourseRoutes {
       "/teacher/modules/:moduleId",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("TEACHER"),
       this.courseController.updateModule
     );
 
@@ -94,6 +105,7 @@ export class CourseRoutes {
       "/teacher/modules/:moduleId",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("TEACHER"),
       this.courseController.deleteModule
     );
 
@@ -101,6 +113,7 @@ export class CourseRoutes {
       "/teacher/:id/modules/reorder",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("TEACHER"),
       this.courseController.reorderModules
     );
 
@@ -109,6 +122,7 @@ export class CourseRoutes {
       "/teacher/modules/:moduleId/lessons",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("TEACHER"),
       this.courseController.createLesson
     );
 
@@ -116,6 +130,7 @@ export class CourseRoutes {
       "/teacher/lessons/:lessonId",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("TEACHER"),
       this.courseController.updateLesson
     );
 
@@ -123,6 +138,7 @@ export class CourseRoutes {
       "/teacher/lessons/:lessonId",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("TEACHER"),
       this.courseController.deleteLesson
     );
 
@@ -130,6 +146,7 @@ export class CourseRoutes {
       "/teacher/modules/:moduleId/lessons/reorder",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("TEACHER"),
       this.courseController.reorderLessons
     );
 
@@ -138,6 +155,7 @@ export class CourseRoutes {
       "/admin",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("ADMIN", "SUPERADMIN"),
       this.courseController.adminGetAllCourses
     );
 
@@ -145,6 +163,7 @@ export class CourseRoutes {
       "/admin/all",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("ADMIN", "SUPERADMIN"),
       this.courseController.adminGetAllCourses
     );
 
@@ -152,6 +171,7 @@ export class CourseRoutes {
       "/admin/metrics",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("ADMIN", "SUPERADMIN"),
       this.courseController.adminGetMetrics
     );
 
@@ -159,6 +179,7 @@ export class CourseRoutes {
       "/admin/:id",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("ADMIN", "SUPERADMIN"),
       this.courseController.adminGetCourseById
     );
 
@@ -166,6 +187,7 @@ export class CourseRoutes {
       "/admin/:id/featured",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("ADMIN", "SUPERADMIN"),
       this.courseController.adminToggleFeatured
     );
 
@@ -173,6 +195,7 @@ export class CourseRoutes {
       "/admin/:id/trending",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("ADMIN", "SUPERADMIN"),
       this.courseController.adminToggleTrending
     );
 
@@ -180,6 +203,7 @@ export class CourseRoutes {
       "/admin/:id/delist",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("ADMIN", "SUPERADMIN"),
       this.courseController.adminDelistCourse
     );
 
@@ -187,6 +211,7 @@ export class CourseRoutes {
       "/admin/:id/freeze",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("ADMIN", "SUPERADMIN"),
       this.courseController.adminFreezeCourse
     );
 
@@ -194,6 +219,7 @@ export class CourseRoutes {
       "/admin/:id/unfreeze",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("ADMIN", "SUPERADMIN"),
       this.courseController.adminUnfreezeCourse
     );
 
@@ -201,6 +227,7 @@ export class CourseRoutes {
       "/admin/:id",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("ADMIN", "SUPERADMIN"),
       this.courseController.adminSoftDeleteCourse
     );
 
@@ -208,6 +235,7 @@ export class CourseRoutes {
       "/admin/:id/restore",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("ADMIN", "SUPERADMIN"),
       this.courseController.adminRestoreCourse
     );
 
@@ -215,6 +243,7 @@ export class CourseRoutes {
       "/admin/:id/permanent",
       authMiddleware,
       isBlockedMiddleware,
+      requireRoles("ADMIN", "SUPERADMIN"),
       this.courseController.adminHardDeleteCourse
     );
   }

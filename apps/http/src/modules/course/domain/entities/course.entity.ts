@@ -16,16 +16,21 @@ export interface CourseLessonEntity {
   moduleId: string;
   title: string;
   description: string | null;
-  lessonType: LessonType;
+  lessonType?: LessonType;
   durationSeconds: number;
   sortOrder: number;
-  isFreePreview: boolean;
+  isFreePreview?: boolean;
   isPublished: boolean;
-  videoUrl: string | null;
-  videoProvider: VideoProvider | null;
-  videoThumbnail: string | null;
-  articleBody: string | null;
-  attachments: LessonAttachment[] | any;
+  videoUrl?: string | null;
+  videoProvider?: VideoProvider | null;
+  videoThumbnail?: string | null;
+  articleBody?: string | null;
+  attachments?: LessonAttachment[];
+  scheduledAt?: Date | null;
+  liveStatus?: string;
+  isLiveNow?: boolean;
+  isDeleted?: boolean;
+  deletedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -128,3 +133,44 @@ export interface CourseMetrics {
   paidCourses: number;
 }
 
+/**
+ * Domain invariants and state helper functions
+ */
+export function isCoursePubliclyVisible(course: CourseEntity | null | undefined): boolean {
+  if (!course) return false;
+  if (course.isDeleted) return false;
+  if (course.isFrozen || course.status === "FROZEN") return false;
+  return course.status === "PUBLISHED";
+}
+
+export function isCourseEditableByTeacher(course: CourseEntity | null | undefined, teacherProfileId: string): {
+  allowed: boolean;
+  reason?: string;
+} {
+  if (!course) {
+    return { allowed: false, reason: "Course not found" };
+  }
+  if (course.teacherProfileId !== teacherProfileId) {
+    return { allowed: false, reason: "You do not have permission to manage this course." };
+  }
+  if (course.isFrozen || course.status === "FROZEN") {
+    return {
+      allowed: false,
+      reason: "This course has been frozen by administration and cannot be modified. It is in read-only mode.",
+    };
+  }
+  return { allowed: true };
+}
+
+export function canCourseBeDelisted(course: CourseEntity): { canDelist: boolean; reason?: string } {
+  if (course.startingDate) {
+    const startTime = new Date(course.startingDate).getTime();
+    if (startTime <= Date.now()) {
+      return {
+        canDelist: false,
+        reason: "Cannot delist a course that has already started. Started courses must be frozen instead.",
+      };
+    }
+  }
+  return { canDelist: true };
+}

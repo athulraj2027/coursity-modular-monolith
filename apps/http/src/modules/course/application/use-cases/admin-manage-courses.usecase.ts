@@ -3,18 +3,19 @@ import {
   CourseEntity,
   CourseFilterParams,
   CourseMetrics,
+  canCourseBeDelisted,
 } from "../../domain/entities/course.entity";
 import {
   AdminDelistCourseDTO,
   AdminFreezeCourseDTO,
 } from "../../domain/dtos/course.dto";
-import { IEmailService } from "@/infrastructure/email";
+import { ICourseNotificationService } from "../../domain/ports/course-notification.port";
 import { BadRequestError, NotFoundError } from "@/app/errors";
 
 export class AdminManageCoursesUseCase {
   constructor(
     private readonly courseRepository: ICourseRepository,
-    private readonly emailService?: IEmailService
+    private readonly notificationService?: ICourseNotificationService | any
   ) {}
 
   async getAllCourses(params: CourseFilterParams = {}): Promise<{ items: CourseEntity[]; total: number }> {
@@ -59,34 +60,29 @@ export class AdminManageCoursesUseCase {
       throw new BadRequestError("A delist message/reason must be provided to inform the instructor.");
     }
 
-    // Check if course has already started: Delist is ONLY allowed if course has NOT started yet
-    if (course.startingDate) {
-      const startTime = new Date(course.startingDate).getTime();
-      if (startTime <= Date.now()) {
-        throw new BadRequestError(
-          "Cannot delist a course that has already started. Started courses must be frozen instead."
-        );
-      }
+    const delistCheck = canCourseBeDelisted(course);
+    if (!delistCheck.canDelist) {
+      throw new BadRequestError(delistCheck.reason || "Course cannot be delisted.");
     }
 
     const delisted = await this.courseRepository.softDelete(courseId, dto.reason.trim());
 
-    // Disptach email notification to the instructor
+    // Dispatch notification to the instructor
     const teacherEmail = course.teacherProfile?.profile?.user?.email;
     const teacherName = course.teacherProfile?.profile?.user?.name || "Instructor";
 
-    if (this.emailService && teacherEmail) {
-      await this.emailService
-        .sendCourseDelistedNotification(
+    if (this.notificationService && teacherEmail) {
+      try {
+        await this.notificationService.sendCourseDelistedNotification(
           teacherEmail,
           teacherName,
           course.title,
           dto.reason.trim(),
           course.slug
-        )
-        .catch((err) => {
-          console.error("⚠️ Failed to dispatch course delisted email:", err?.message || err);
-        });
+        );
+      } catch (err: any) {
+        // Non-blocking notification dispatch
+      }
     }
 
     return delisted;
@@ -104,22 +100,22 @@ export class AdminManageCoursesUseCase {
 
     const frozen = await this.courseRepository.freeze(courseId, dto.reason.trim());
 
-    // Dispatch email notification to the instructor
+    // Dispatch notification to the instructor
     const teacherEmail = course.teacherProfile?.profile?.user?.email;
     const teacherName = course.teacherProfile?.profile?.user?.name || "Instructor";
 
-    if (this.emailService && teacherEmail) {
-      await this.emailService
-        .sendCourseFrozenNotification(
+    if (this.notificationService && teacherEmail) {
+      try {
+        await this.notificationService.sendCourseFrozenNotification(
           teacherEmail,
           teacherName,
           course.title,
           dto.reason.trim(),
           course.slug
-        )
-        .catch((err) => {
-          console.error("⚠️ Failed to dispatch course frozen email:", err?.message || err);
-        });
+        );
+      } catch (err: any) {
+        // Non-blocking notification dispatch
+      }
     }
 
     return frozen;

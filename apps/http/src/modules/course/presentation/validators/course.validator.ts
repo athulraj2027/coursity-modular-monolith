@@ -26,6 +26,7 @@ export const initialLessonSchema = z.object({
   videoThumbnail: z.string().url().optional().nullable().or(z.literal("")),
   articleBody: z.string().max(50000).optional().nullable(),
   attachments: z.array(lessonAttachmentSchema).default([]),
+  scheduledAt: z.string().optional().nullable(),
 });
 
 export const initialModuleSchema = z.object({
@@ -77,7 +78,10 @@ export const createCourseSchema = z.object({
   modules: z.array(initialModuleSchema).optional().default([]),
 });
 
-export const updateCourseSchema = z.object({
+/**
+ * Teacher safe update schema: Prevents teachers from self-promoting courses via isFeatured / isTrending.
+ */
+export const teacherUpdateCourseSchema = z.object({
   title: z.string().min(3).max(200).optional(),
   slug: z
     .string()
@@ -102,6 +106,9 @@ export const updateCourseSchema = z.object({
   categoryId: z.string().uuid().optional(),
   subcategoryId: z.string().uuid().optional().nullable(),
   status: courseStatusSchema.optional(),
+});
+
+export const updateCourseSchema = teacherUpdateCourseSchema.extend({
   isFeatured: z.boolean().optional(),
   isTrending: z.boolean().optional(),
   sortOrder: z.number().int().min(0).optional(),
@@ -129,6 +136,7 @@ export const createLessonSchema = z.object({
   videoThumbnail: z.string().url().optional().nullable().or(z.literal("")),
   articleBody: z.string().max(50000).optional().nullable(),
   attachments: z.array(lessonAttachmentSchema).default([]),
+  scheduledAt: z.string().optional().nullable(),
 });
 
 export const updateLessonSchema = createLessonSchema.partial();
@@ -191,6 +199,7 @@ export const queryCoursesSchema = z.object({
 
 export type CreateCourseInput = z.infer<typeof createCourseSchema>;
 export type UpdateCourseInput = z.infer<typeof updateCourseSchema>;
+export type TeacherUpdateCourseInput = z.infer<typeof teacherUpdateCourseSchema>;
 export type CreateModuleInput = z.infer<typeof createModuleSchema>;
 export type UpdateModuleInput = z.infer<typeof updateModuleSchema>;
 export type CreateLessonInput = z.infer<typeof createLessonSchema>;
