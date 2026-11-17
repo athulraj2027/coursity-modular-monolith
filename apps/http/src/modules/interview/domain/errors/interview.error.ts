@@ -65,4 +65,11 @@ export class MaxInterviewAttemptsReachedError extends InterviewError {
   }
 }
 
+export class InterviewValidationError extends InterviewError {
+  constructor(message: string = "Invalid interview data provided") {
+    super(message, 400, "INTERVIEW_VALIDATION_ERROR");
+    this.name = "InterviewValidationError";
+  }
+}
+
 

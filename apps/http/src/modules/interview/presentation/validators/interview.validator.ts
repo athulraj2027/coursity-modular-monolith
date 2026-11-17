@@ -218,3 +218,24 @@ export const InternalUpdateMetadataSchema = z.object({
 export const InternalAbandonSessionSchema = z.object({
   reason: z.string().max(1000).optional(),
 });
+
+export const CandidateGetTemplatesQuerySchema = z.object({
+  domain: z.string().optional(),
+  difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]).optional(),
+  type: z
+    .enum([
+      "TEACHER_VETTING",
+      "TECHNICAL_ASSESSMENT",
+      "MOCK_INTERVIEW",
+      "PEDAGOGY_EVALUATION",
+    ])
+    .optional(),
+});
+
+export const CandidateCancelSessionSchema = z.object({
+  reason: z.string().max(1000).optional(),
+});
+
+export const CandidateGetLatestTranscriptsQuerySchema = z.object({
+  limit: z.coerce.number().min(1).max(50).default(5),
+});

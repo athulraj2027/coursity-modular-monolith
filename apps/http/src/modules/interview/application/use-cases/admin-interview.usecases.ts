@@ -23,6 +23,7 @@ import {
   InterviewTemplateVersionEntity,
   InterviewTranscriptEntity,
 } from "../../domain/entities/interview.entity";
+import { InterviewEvaluationPolicy } from "../../domain/policies";
 
 export class AdminInterviewUseCases {
   constructor(
@@ -73,6 +74,10 @@ export class AdminInterviewUseCases {
     const previousOutcome = session.outcome;
     const previousScore = session.overallScore;
 
+    if (dto.overallScore !== undefined) {
+      InterviewEvaluationPolicy.validateScoreBounds(dto.overallScore, "Overall score");
+    }
+
     const updated = await this.sessionRepo.updateSession(dto.sessionId, {
       outcome: dto.outcome,
       overallScore:
@@ -97,6 +102,10 @@ export class AdminInterviewUseCases {
   ): Promise<InterviewSessionEntity> {
     const session = await this.sessionRepo.findById(dto.sessionId);
     if (!session) throw new InterviewNotFoundError();
+
+    if (dto.overallScore !== undefined) {
+      InterviewEvaluationPolicy.validateScoreBounds(dto.overallScore, "Overall score");
+    }
 
     const updated = await this.sessionRepo.saveEvaluation({
       sessionId: dto.sessionId,

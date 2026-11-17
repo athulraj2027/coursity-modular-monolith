@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import { CandidateInterviewUseCases } from "../../application/use-cases/candidate-interview.usecases";
 import {
+  CandidateCancelSessionSchema,
+  CandidateGetLatestTranscriptsQuerySchema,
+  CandidateGetTemplatesQuerySchema,
   CandidateListSessionsQuerySchema,
   CreateInterviewSessionSchema,
 } from "../validators/interview.validator";
@@ -41,15 +44,11 @@ export class CandidateInterviewController {
     next: NextFunction
   ) => {
     try {
-      const { domain, difficulty, type } = req.query as {
-        domain?: string;
-        difficulty?: string;
-        type?: string;
-      };
+      const validated = CandidateGetTemplatesQuerySchema.parse(req.query);
       const templates = await this.useCases.getActiveTemplates({
-        domain,
-        difficulty,
-        type,
+        domain: validated.domain,
+        difficulty: validated.difficulty,
+        type: validated.type,
       });
       return ApiResponse.success(res, templates);
     } catch (error) {
@@ -194,13 +193,13 @@ export class CandidateInterviewController {
   ) => {
     try {
       const id = this.getIdParam(req.params.id);
-      const limit = req.query.limit ? Number(req.query.limit) : 5;
+      const validated = CandidateGetLatestTranscriptsQuerySchema.parse(req.query);
       const userId = this.getUserId(req);
 
       const transcripts = await this.useCases.getLatestTranscripts(
         id,
         userId,
-        limit
+        validated.limit
       );
       return ApiResponse.success(res, transcripts);
     } catch (error) {
@@ -237,10 +236,10 @@ export class CandidateInterviewController {
   ) => {
     try {
       const id = this.getIdParam(req.params.id);
-      const { reason } = req.body || {};
+      const validated = CandidateCancelSessionSchema.parse(req.body);
       const userId = this.getUserId(req);
 
-      const session = await this.useCases.cancelSession(id, userId, reason);
+      const session = await this.useCases.cancelSession(id, userId, validated.reason);
       return ApiResponse.success(
         res,
         session,

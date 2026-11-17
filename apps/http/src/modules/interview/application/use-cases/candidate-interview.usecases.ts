@@ -1,15 +1,13 @@
 import {
   InterviewAccessDeniedError,
   InterviewNotFoundError,
-  InvalidInterviewStateError,
   TemplateNotFoundError,
   InterviewAlreadyPassedError,
-  MaxInterviewAttemptsReachedError,
 } from "../../domain/errors/interview.error";
 import { IInterviewSessionRepository } from "../../domain/repositories/interview-session.repository.interface";
 import { IInterviewTemplateRepository } from "../../domain/repositories/interview-template.repository.interface";
 import { IInterviewTranscriptRepository } from "../../domain/repositories/interview-transcript.repository.interface";
-import { RealtimeTokenService } from "../../infrastructure/services/realtime-token.service";
+import { IRealtimeTokenService } from "../../domain/services/realtime-token.service.interface";
 import {
   CandidateListSessionsQueryDto,
   CreateInterviewSessionDto,
@@ -20,13 +18,18 @@ import {
   InterviewTemplateEntity,
   InterviewTranscriptEntity,
 } from "../../domain/entities/interview.entity";
+import {
+  InterviewVettingPolicy,
+  InterviewLifecyclePolicy,
+  InterviewEvaluationPolicy,
+} from "../../domain/policies";
 
 export class CandidateInterviewUseCases {
   constructor(
     private readonly sessionRepo: IInterviewSessionRepository,
     private readonly templateRepo: IInterviewTemplateRepository,
     private readonly transcriptRepo: IInterviewTranscriptRepository,
-    private readonly tokenService: RealtimeTokenService
+    private readonly tokenService: IRealtimeTokenService
   ) {}
 
   async getActiveTemplates(query?: {
@@ -48,37 +51,7 @@ export class CandidateInterviewUseCases {
   async createSession(
     dto: CreateInterviewSessionDto
   ): Promise<InterviewSessionEntity> {
-    if (dto.userRole === "STUDENT" || dto.userRole === "student") {
-      throw new InterviewAccessDeniedError(
-        "Students cannot initiate arbitrary AI interviews. Course-specific AI assessments are only accessible when released by your course instructor."
-      );
-    }
-
-    const existing = await this.sessionRepo.findByUserId({
-      userId: dto.userId,
-      page: 1,
-      limit: 20,
-    });
-    const alreadyPassed = existing.sessions.some((s) => s.outcome === "PASSED");
-    if (alreadyPassed) {
-      throw new InterviewAlreadyPassedError(
-        "Candidate has already passed the interview assessment. Starting a new interview is not permitted."
-      );
-    }
-
     let type = dto.type || "TEACHER_VETTING";
-
-    if (type === "TEACHER_VETTING") {
-      const vettingAttempts = existing.sessions.filter(
-        (s) => s.type === "TEACHER_VETTING" && s.status !== "CANCELLED"
-      ).length;
-      if (vettingAttempts >= 3) {
-        throw new MaxInterviewAttemptsReachedError(
-          "Maximum interview attempts (3 of 3) reached. Starting a new interview is not permitted. Please contact admissions support."
-        );
-      }
-    }
-
     let difficulty = dto.difficulty || "INTERMEDIATE";
     let domain = dto.domain || "General";
     let templateId = dto.templateId;
@@ -92,6 +65,19 @@ export class CandidateInterviewUseCases {
       difficulty = template.difficulty;
       domain = template.domain;
     }
+
+    const existing = await this.sessionRepo.findByUserId({
+      userId: dto.userId,
+      page: 1,
+      limit: 20,
+    });
+
+    // Domain Policy Vetting Validation
+    InterviewVettingPolicy.validateCanInitiate({
+      userRole: dto.userRole,
+      existingSessions: existing.sessions,
+      type,
+    });
 
     const session = await this.sessionRepo.create({
       userId: dto.userId,
@@ -143,18 +129,15 @@ export class CandidateInterviewUseCases {
       page: 1,
       limit: 20,
     });
-    const alreadyPassed = existing.sessions.some((s) => s.outcome === "PASSED" && s.id !== sessionId);
-    if (alreadyPassed) {
+
+    if (InterviewVettingPolicy.hasPassedVetting(existing.sessions, sessionId)) {
       throw new InterviewAlreadyPassedError(
         "Candidate has already passed the interview assessment. Starting a new interview is not permitted."
       );
     }
 
-    if (session.status !== "INITIALIZING" && session.status !== "IN_PROGRESS") {
-      throw new InvalidInterviewStateError(
-        `Cannot start interview from state ${session.status}`
-      );
-    }
+    // Domain Policy Lifecycle Guard
+    InterviewLifecyclePolicy.assertCanStart(session.status);
 
     const updated = await this.sessionRepo.updateStatus(sessionId, "IN_PROGRESS", {
       startedAt: session.startedAt || new Date(),
@@ -181,14 +164,8 @@ export class CandidateInterviewUseCases {
     if (!session) throw new InterviewNotFoundError();
     if (session.userId !== userId) throw new InterviewAccessDeniedError();
 
-    if (
-      session.status !== "INITIALIZING" &&
-      session.status !== "IN_PROGRESS"
-    ) {
-      throw new InvalidInterviewStateError(
-        `Realtime token can only be issued for active sessions (current status: ${session.status})`
-      );
-    }
+    // Domain Policy Lifecycle Guard
+    InterviewLifecyclePolicy.assertCanIssueRealtimeToken(session.status);
 
     return this.tokenService.generateToken({
       sessionId,
@@ -232,16 +209,15 @@ export class CandidateInterviewUseCases {
     if (!session) throw new InterviewNotFoundError();
     if (session.userId !== userId) throw new InterviewAccessDeniedError();
 
-    if (session.status !== "IN_PROGRESS" && session.status !== "INITIALIZING") {
-      throw new InvalidInterviewStateError(
-        `Cannot complete session with status ${session.status}`
-      );
-    }
+    // Domain Policy Lifecycle Guard
+    InterviewLifecyclePolicy.assertCanComplete(session.status);
 
     const endedAt = new Date();
-    const durationSeconds = session.startedAt
-      ? Math.round((endedAt.getTime() - new Date(session.startedAt).getTime()) / 1000)
-      : session.durationSeconds || 0;
+    const durationSeconds = InterviewEvaluationPolicy.calculateDurationSeconds(
+      session.startedAt,
+      endedAt,
+      session.durationSeconds || 0
+    );
 
     const updated = await this.sessionRepo.updateStatus(sessionId, "EVALUATING", {
       endedAt,
@@ -269,9 +245,8 @@ export class CandidateInterviewUseCases {
     if (!session) throw new InterviewNotFoundError();
     if (session.userId !== userId) throw new InterviewAccessDeniedError();
 
-    if (session.status === "COMPLETED" || session.status === "EVALUATED") {
-      throw new InvalidInterviewStateError("Cannot cancel a completed interview");
-    }
+    // Domain Policy Lifecycle Guard
+    InterviewLifecyclePolicy.assertCanCancel(session.status);
 
     const updated = await this.sessionRepo.updateStatus(sessionId, "CANCELLED");
 
