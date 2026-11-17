@@ -1,26 +1,31 @@
-import { IOfferRepository } from "../../domain/repositories/offer.repository";
-import { PlanRepository } from "@/modules/plan/domain/repositories/plan.repository";
+import {
+  IOfferQueryRepository,
+  IPlanLookupRepository,
+} from "../../domain/repositories/offer.repository";
 import { GetPlanOfferInputDto, PlanOfferResultDto } from "../../domain/dtos/offer.dto";
 import {
   calculatePlanCheckoutPrice,
-  calculateDiscountedCheckoutPrice,
   DEFAULT_GST_PERCENT,
 } from "@/modules/subscription/domain/constants/billing.constants";
-import { NotFoundError } from "@/app/errors";
+import { OfferNotFoundError } from "../../domain/errors/offer.errors";
+import {
+  OfferDiscountPolicy,
+  OfferEligibilityPolicy,
+} from "../../domain/policies";
 
 export class GetPlanOfferUseCase {
   constructor(
-    private readonly offerRepo: IOfferRepository,
-    private readonly planRepo: PlanRepository
+    private readonly offerRepo: IOfferQueryRepository,
+    private readonly planRepo: IPlanLookupRepository
   ) {}
 
   async execute(dto: GetPlanOfferInputDto): Promise<PlanOfferResultDto> {
     const plan = await this.planRepo.findById(dto.planId);
     if (!plan) {
-      throw new NotFoundError(`Plan with ID '${dto.planId}' not found.`);
+      throw new OfferNotFoundError(`Plan with ID '${dto.planId}' not found.`);
     }
 
-    const selectedCycle = dto.billingCycle || plan.billingCycle || "MONTHLY";
+    const selectedCycle = (dto.billingCycle || plan.billingCycle || "MONTHLY") as any;
     const standardPricing = calculatePlanCheckoutPrice(
       Number(plan.price),
       selectedCycle,
@@ -56,51 +61,57 @@ export class GetPlanOfferUseCase {
 
     // Filter and score eligible candidates
     let bestOffer = null;
-    let bestDiscounted = null;
+    let bestDiscountAmount = 0;
 
     for (const offer of candidates) {
-      // Check minimum order requirement
-      if (offer.minOrderAmount !== null && offer.minOrderAmount !== undefined) {
-        if (standardPricing.basePrice < offer.minOrderAmount) {
-          continue;
-        }
+      // 1. Check minimum order requirement
+      if (!OfferDiscountPolicy.meetsMinimumOrder(standardPricing.basePrice, offer.minOrderAmount)) {
+        continue;
       }
 
-      // Check teacher profile limits if teacher profile provided
+      // 2. Check global quota
+      if (!OfferEligibilityPolicy.hasGlobalCapacity(offer.maxRedemptions, offer.usedRedemptions)) {
+        continue;
+      }
+
+      // 3. Check teacher profile limits if teacher profile provided
       if (dto.teacherProfileId) {
         const redemptionCount = await this.offerRepo.findRedemptionCountByUser(
           offer.id,
           dto.teacherProfileId
         );
-        if (redemptionCount >= offer.maxRedemptionsPerUser) {
+        if (!OfferEligibilityPolicy.hasUserCapacity(offer.maxRedemptionsPerUser, redemptionCount)) {
           continue;
         }
 
         if (offer.eligibility === "NEW_TEACHERS_ONLY") {
-          const hasSubscribed = await this.offerRepo.hasUserSubscribedBefore(
-            dto.teacherProfileId
-          );
-          if (hasSubscribed) {
+          const hasSubscribed = await this.offerRepo.hasUserSubscribedBefore(dto.teacherProfileId);
+          if (!OfferEligibilityPolicy.isTeacherEligible(offer.eligibility, hasSubscribed)) {
             continue;
           }
         }
       }
 
-      const discounted = calculateDiscountedCheckoutPrice(
-        standardPricing.basePrice,
-        offer.discountType,
-        Number(offer.discountValue),
-        offer.maxDiscountAmount ? Number(offer.maxDiscountAmount) : null,
-        DEFAULT_GST_PERCENT
-      );
+      // 4. Calculate discount
+      const discount = OfferDiscountPolicy.calculateDiscount({
+        basePrice: standardPricing.basePrice,
+        discountType: offer.discountType,
+        discountValue: Number(offer.discountValue),
+        maxDiscountAmount: offer.maxDiscountAmount ? Number(offer.maxDiscountAmount) : null,
+      });
 
-      if (!bestDiscounted || discounted.savings > bestDiscounted.savings) {
-        bestDiscounted = discounted;
+      if (discount > bestDiscountAmount) {
+        bestDiscountAmount = discount;
         bestOffer = offer;
       }
     }
 
-    if (bestOffer && bestDiscounted && bestDiscounted.savings > 0) {
+    if (bestOffer && bestDiscountAmount > 0) {
+      const discountedBasePrice = Math.max(0, standardPricing.basePrice - bestDiscountAmount);
+      const taxAmount = Math.round(((discountedBasePrice * DEFAULT_GST_PERCENT) / 100) * 100) / 100;
+      const totalAmount = Math.round((discountedBasePrice + taxAmount) * 100) / 100;
+      const savings = Math.round((standardPricing.totalAmount - totalAmount) * 100) / 100;
+
       return {
         hasOffer: true,
         offerId: bestOffer.id,
@@ -108,14 +119,14 @@ export class GetPlanOfferUseCase {
         badgeText: bestOffer.badgeText,
         discountType: bestOffer.discountType,
         discountValue: Number(bestOffer.discountValue),
-        rawBasePrice: bestDiscounted.rawBasePrice,
-        discountAmount: bestDiscounted.discountAmount,
-        discountedBasePrice: bestDiscounted.discountedBasePrice,
-        gstPercent: bestDiscounted.gstPercent,
-        taxAmount: bestDiscounted.taxAmount,
-        totalAmount: bestDiscounted.totalAmount,
-        savings: bestDiscounted.savings,
-        message: `Default offer '${bestOffer.title}' applied! You save ₹${bestDiscounted.savings.toLocaleString()}.`,
+        rawBasePrice: standardPricing.basePrice,
+        discountAmount: bestDiscountAmount,
+        discountedBasePrice,
+        gstPercent: DEFAULT_GST_PERCENT,
+        taxAmount,
+        totalAmount,
+        savings,
+        message: `Default offer '${bestOffer.title}' applied! You save ₹${savings.toLocaleString()}.`,
       };
     }
 

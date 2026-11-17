@@ -16,6 +16,22 @@ import { AdminUpdateOfferController } from "./admin-update-offer.controller";
 import { AdminToggleOfferController } from "./admin-toggle-offer.controller";
 import { AdminDeleteOfferController } from "./admin-delete-offer.controller";
 import { AdminGetOfferAnalyticsController } from "./admin-get-offer-analytics.controller";
+import {
+  ITeacherProfileResolver,
+  defaultTeacherProfileResolver,
+} from "@/modules/course/domain/services/teacher-profile-resolver.service";
+
+export interface OfferControllerDependencies {
+  getPlanOfferUseCase: GetPlanOfferUseCase;
+  getActiveOffersUseCase: GetActiveOffersUseCase;
+  adminCreateOfferUseCase: AdminCreateOfferUseCase;
+  adminUpdateOfferUseCase: AdminUpdateOfferUseCase;
+  adminListOffersUseCase: AdminListOffersUseCase;
+  adminToggleOfferUseCase: AdminToggleOfferUseCase;
+  adminDeleteOfferUseCase: AdminDeleteOfferUseCase;
+  adminGetOfferAnalyticsUseCase: AdminGetOfferAnalyticsUseCase;
+  profileResolver?: ITeacherProfileResolver;
+}
 
 export class OfferController {
   private readonly getPlanOfferController: GetPlanOfferController;
@@ -28,23 +44,37 @@ export class OfferController {
   private readonly adminGetOfferAnalyticsController: AdminGetOfferAnalyticsController;
 
   constructor(
-    private readonly getPlanOfferUseCase: GetPlanOfferUseCase,
-    private readonly getActiveOffersUseCase: GetActiveOffersUseCase,
-    private readonly adminCreateOfferUseCase: AdminCreateOfferUseCase,
-    private readonly adminUpdateOfferUseCase: AdminUpdateOfferUseCase,
-    private readonly adminListOffersUseCase: AdminListOffersUseCase,
-    private readonly adminToggleOfferUseCase: AdminToggleOfferUseCase,
-    private readonly adminDeleteOfferUseCase: AdminDeleteOfferUseCase,
-    private readonly adminGetOfferAnalyticsUseCase: AdminGetOfferAnalyticsUseCase
+    depsOrFirstUseCase: OfferControllerDependencies | GetPlanOfferUseCase,
+    getActiveOffersUseCase?: GetActiveOffersUseCase,
+    adminCreateOfferUseCase?: AdminCreateOfferUseCase,
+    adminUpdateOfferUseCase?: AdminUpdateOfferUseCase,
+    adminListOffersUseCase?: AdminListOffersUseCase,
+    adminToggleOfferUseCase?: AdminToggleOfferUseCase,
+    adminDeleteOfferUseCase?: AdminDeleteOfferUseCase,
+    adminGetOfferAnalyticsUseCase?: AdminGetOfferAnalyticsUseCase,
+    profileResolver: ITeacherProfileResolver = defaultTeacherProfileResolver
   ) {
-    this.getPlanOfferController = new GetPlanOfferController(getPlanOfferUseCase);
-    this.getActiveOffersController = new GetActiveOffersController(getActiveOffersUseCase);
-    this.adminListOffersController = new AdminListOffersController(adminListOffersUseCase);
-    this.adminCreateOfferController = new AdminCreateOfferController(adminCreateOfferUseCase);
-    this.adminUpdateOfferController = new AdminUpdateOfferController(adminUpdateOfferUseCase);
-    this.adminToggleOfferController = new AdminToggleOfferController(adminToggleOfferUseCase);
-    this.adminDeleteOfferController = new AdminDeleteOfferController(adminDeleteOfferUseCase);
-    this.adminGetOfferAnalyticsController = new AdminGetOfferAnalyticsController(adminGetOfferAnalyticsUseCase);
+    if ("getPlanOfferUseCase" in depsOrFirstUseCase) {
+      const deps = depsOrFirstUseCase as OfferControllerDependencies;
+      const resolver = deps.profileResolver || defaultTeacherProfileResolver;
+      this.getPlanOfferController = new GetPlanOfferController(deps.getPlanOfferUseCase, resolver);
+      this.getActiveOffersController = new GetActiveOffersController(deps.getActiveOffersUseCase);
+      this.adminListOffersController = new AdminListOffersController(deps.adminListOffersUseCase);
+      this.adminCreateOfferController = new AdminCreateOfferController(deps.adminCreateOfferUseCase);
+      this.adminUpdateOfferController = new AdminUpdateOfferController(deps.adminUpdateOfferUseCase);
+      this.adminToggleOfferController = new AdminToggleOfferController(deps.adminToggleOfferUseCase);
+      this.adminDeleteOfferController = new AdminDeleteOfferController(deps.adminDeleteOfferUseCase);
+      this.adminGetOfferAnalyticsController = new AdminGetOfferAnalyticsController(deps.adminGetOfferAnalyticsUseCase);
+    } else {
+      this.getPlanOfferController = new GetPlanOfferController(depsOrFirstUseCase, profileResolver);
+      this.getActiveOffersController = new GetActiveOffersController(getActiveOffersUseCase!);
+      this.adminListOffersController = new AdminListOffersController(adminListOffersUseCase!);
+      this.adminCreateOfferController = new AdminCreateOfferController(adminCreateOfferUseCase!);
+      this.adminUpdateOfferController = new AdminUpdateOfferController(adminUpdateOfferUseCase!);
+      this.adminToggleOfferController = new AdminToggleOfferController(adminToggleOfferUseCase!);
+      this.adminDeleteOfferController = new AdminDeleteOfferController(adminDeleteOfferUseCase!);
+      this.adminGetOfferAnalyticsController = new AdminGetOfferAnalyticsController(adminGetOfferAnalyticsUseCase!);
+    }
   }
 
   getPlanOffer = (req: Request, res: Response, next: NextFunction) =>
