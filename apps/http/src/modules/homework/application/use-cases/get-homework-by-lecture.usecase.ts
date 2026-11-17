@@ -1,6 +1,12 @@
-import { IHomeworkRepository } from "../../domain/repositories/homework.repository";
+import {
+  IHomeworkQueryRepository,
+  IHomeworkContextRepository,
+} from "../../domain/repositories/homework.repository";
 import { HomeworkEntity } from "../../domain/entities/homework.entity";
-import { HomeworkNotFoundError, HomeworkAccessDeniedError } from "../../domain/errors/homework.errors";
+import {
+  HomeworkNotFoundError,
+  HomeworkAccessDeniedError,
+} from "../../domain/errors/homework.errors";
 
 export interface GetHomeworkByLectureInput {
   lectureId: string;
@@ -8,8 +14,11 @@ export interface GetHomeworkByLectureInput {
   userRole: string;
 }
 
+export type GetHomeworkByLectureRepository = IHomeworkQueryRepository &
+  IHomeworkContextRepository;
+
 export class GetHomeworkByLectureUseCase {
-  constructor(private readonly homeworkRepo: IHomeworkRepository) {}
+  constructor(private readonly homeworkRepo: GetHomeworkByLectureRepository) {}
 
   async execute(input: GetHomeworkByLectureInput): Promise<HomeworkEntity[]> {
     const { lectureId, userId, userRole } = input;
@@ -22,12 +31,19 @@ export class GetHomeworkByLectureUseCase {
 
     // 2. Authorization guard
     let studentIdToEnrich: string | undefined = undefined;
+    let isPrivileged = false;
 
     if (userRole === "ADMIN" || userRole === "SUPERADMIN") {
-      // Admins have global access
+      isPrivileged = true;
     } else if (userRole === "TEACHER") {
       const teacherProfileId = await this.homeworkRepo.getTeacherProfileIdByUserId(userId);
-      if (teacherProfileId !== lectureInfo.teacherProfileId) {
+      const isCourseInstructor = Boolean(
+        teacherProfileId && teacherProfileId === lectureInfo.teacherProfileId
+      );
+
+      if (isCourseInstructor) {
+        isPrivileged = true;
+      } else {
         const isEnrolled = await this.homeworkRepo.isStudentEnrolled(userId, lectureInfo.courseId);
         if (!isEnrolled) {
           throw new HomeworkAccessDeniedError("You do not have access to homework for this lecture");
@@ -44,7 +60,6 @@ export class GetHomeworkByLectureUseCase {
       throw new HomeworkAccessDeniedError("Unauthorized to view homework");
     }
 
-    const isPrivileged = userRole === "ADMIN" || userRole === "SUPERADMIN" || userRole === "TEACHER";
     return this.homeworkRepo.findByLectureId(lectureId, studentIdToEnrich, isPrivileged);
   }
 }

@@ -1,11 +1,15 @@
-import { IHomeworkRepository } from "../../domain/repositories/homework.repository";
+import {
+  IHomeworkManagementRepository,
+  IHomeworkQueryRepository,
+  IHomeworkContextRepository,
+} from "../../domain/repositories/homework.repository";
 import { CreateHomeworkDTO } from "../../domain/dtos/homework.dto";
 import { HomeworkEntity } from "../../domain/entities/homework.entity";
 import {
-  HomeworkValidationError,
   HomeworkAccessDeniedError,
   HomeworkNotFoundError,
 } from "../../domain/errors/homework.errors";
+import { HomeworkValidationPolicy } from "../../domain/policies/homework-validation.policy";
 
 export interface CreateHomeworkInput {
   userId: string;
@@ -13,39 +17,26 @@ export interface CreateHomeworkInput {
   data: CreateHomeworkDTO;
 }
 
+export type CreateHomeworkRepository = IHomeworkManagementRepository &
+  IHomeworkQueryRepository &
+  IHomeworkContextRepository;
+
 export class CreateHomeworkUseCase {
-  constructor(private readonly homeworkRepo: IHomeworkRepository) {}
+  constructor(private readonly homeworkRepo: CreateHomeworkRepository) {}
 
   async execute(input: CreateHomeworkInput): Promise<HomeworkEntity> {
     const { userId, userRole, data } = input;
 
-    if (!data.title || !data.title.trim()) {
-      throw new HomeworkValidationError("Homework title is required");
-    }
+    // 1. Domain Validation Policy
+    HomeworkValidationPolicy.validateCreation(data);
 
-    if (!data.lectureId) {
-      throw new HomeworkValidationError("Lecture ID is required to associate homework");
-    }
-
-    // Must provide at least one task payload (text content, external link, attachment, or description)
-    if (
-      !data.description?.trim() &&
-      !data.taskContent?.trim() &&
-      !data.taskUrl?.trim() &&
-      !data.attachmentUrl?.trim()
-    ) {
-      throw new HomeworkValidationError(
-        "Please provide instructions, text task, external link, or an attachment file for this homework"
-      );
-    }
-
-    // 1. Verify lecture exists and fetch course & teacherProfile info
+    // 2. Verify lecture exists and fetch course & teacherProfile info
     const lectureInfo = await this.homeworkRepo.findLectureWithCourse(data.lectureId);
     if (!lectureInfo) {
       throw new HomeworkNotFoundError("Associated lecture not found");
     }
 
-    // 2. Resolve teacher profile ID
+    // 3. Resolve teacher profile ID & verify ownership
     let teacherProfileId = lectureInfo.teacherProfileId;
 
     if (userRole === "TEACHER") {
@@ -58,14 +49,9 @@ export class CreateHomeworkUseCase {
       throw new HomeworkAccessDeniedError("Only instructors and administrators can create homework");
     }
 
-    // Parse dueDate if provided
-    let parsedDueDate: Date | null = null;
-    if (data.dueDate) {
-      const d = new Date(data.dueDate);
-      if (!isNaN(d.getTime())) {
-        parsedDueDate = d;
-      }
-    }
+    // 4. Parse dueDate and normalize maxScore using domain policy
+    const parsedDueDate = HomeworkValidationPolicy.parseDueDate(data.dueDate);
+    const normalizedMaxScore = HomeworkValidationPolicy.normalizeMaxScore(data.maxScore, 100);
 
     return this.homeworkRepo.create(lectureInfo.courseId, teacherProfileId, {
       ...data,
@@ -74,7 +60,7 @@ export class CreateHomeworkUseCase {
       taskContent: data.taskContent ? data.taskContent.trim() : null,
       taskUrl: data.taskUrl ? data.taskUrl.trim() : null,
       dueDate: parsedDueDate,
-      maxScore: typeof data.maxScore === "number" ? Math.max(0, data.maxScore) : 100,
+      maxScore: normalizedMaxScore,
     });
   }
 }

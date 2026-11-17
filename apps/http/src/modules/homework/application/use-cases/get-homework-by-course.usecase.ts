@@ -1,4 +1,7 @@
-import { IHomeworkRepository } from "../../domain/repositories/homework.repository";
+import {
+  IHomeworkQueryRepository,
+  IHomeworkContextRepository,
+} from "../../domain/repositories/homework.repository";
 import { HomeworkEntity } from "../../domain/entities/homework.entity";
 import { HomeworkAccessDeniedError } from "../../domain/errors/homework.errors";
 
@@ -8,24 +11,37 @@ export interface GetHomeworkByCourseInput {
   userRole: string;
 }
 
+export type GetHomeworkByCourseRepository = IHomeworkQueryRepository &
+  IHomeworkContextRepository;
+
 export class GetHomeworkByCourseUseCase {
-  constructor(private readonly homeworkRepo: IHomeworkRepository) {}
+  constructor(private readonly homeworkRepo: GetHomeworkByCourseRepository) {}
 
   async execute(input: GetHomeworkByCourseInput): Promise<HomeworkEntity[]> {
     const { courseId, userId, userRole } = input;
 
     let studentIdToEnrich: string | undefined = undefined;
+    let isPrivileged = false;
 
     if (userRole === "ADMIN" || userRole === "SUPERADMIN") {
-      // Admin access
+      isPrivileged = true;
     } else if (userRole === "TEACHER") {
       const teacherProfileId = await this.homeworkRepo.getTeacherProfileIdByUserId(userId);
-      // Teacher can access if teaching or enrolled
-      const isEnrolled = await this.homeworkRepo.isStudentEnrolled(userId, courseId);
-      if (!teacherProfileId && !isEnrolled) {
-        throw new HomeworkAccessDeniedError("You do not have access to homework for this course");
-      }
-      if (isEnrolled && !teacherProfileId) {
+      const courseTeacherProfileId = await this.homeworkRepo.getCourseTeacherProfileId(courseId);
+
+      // Check if this teacher is the instructor of this specific course
+      const isCourseInstructor = Boolean(
+        teacherProfileId && courseTeacherProfileId && teacherProfileId === courseTeacherProfileId
+      );
+
+      if (isCourseInstructor) {
+        isPrivileged = true;
+      } else {
+        // Not the instructor of this course; check if enrolled as a student
+        const isEnrolled = await this.homeworkRepo.isStudentEnrolled(userId, courseId);
+        if (!isEnrolled) {
+          throw new HomeworkAccessDeniedError("You do not have access to homework for this course");
+        }
         studentIdToEnrich = userId;
       }
     } else if (userRole === "STUDENT") {
@@ -38,7 +54,6 @@ export class GetHomeworkByCourseUseCase {
       throw new HomeworkAccessDeniedError("Unauthorized to view course homework");
     }
 
-    const isPrivileged = userRole === "ADMIN" || userRole === "SUPERADMIN" || userRole === "TEACHER";
     return this.homeworkRepo.findByCourseId(courseId, studentIdToEnrich, isPrivileged);
   }
 }

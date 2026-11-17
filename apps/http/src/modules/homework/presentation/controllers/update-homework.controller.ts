@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { UpdateHomeworkUseCase } from "../../application/use-cases/update-homework.usecase";
+import { updateHomeworkBodySchema } from "../schemas/homework.schema";
 import { UnauthorizedError } from "@/app/errors";
 import { ApiResponse } from "@/shared";
 
@@ -10,11 +11,13 @@ export class UpdateHomeworkController {
     try {
       if (!req.user) throw new UnauthorizedError("Authentication required");
       const homeworkId = req.params.id as string;
+      const validatedBody = updateHomeworkBodySchema.parse(req.body);
+
       const result = await this.updateHomeworkUseCase.execute({
         homeworkId,
         userId: req.user.userId,
         userRole: req.user.role,
-        data: req.body,
+        data: validatedBody,
       });
       return ApiResponse.success(res, result, "Homework updated successfully");
     } catch (error) {

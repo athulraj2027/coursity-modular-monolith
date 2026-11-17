@@ -23,6 +23,20 @@ import { GetHomeworkSubmissionsController } from "./get-homework-submissions.con
 import { ReviewSubmissionController } from "./review-submission.controller";
 import { AdminListHomeworkController } from "./admin-list-homework.controller";
 
+export interface HomeworkControllerDependencies {
+  createHomeworkUseCase: CreateHomeworkUseCase;
+  getHomeworkByLectureUseCase: GetHomeworkByLectureUseCase;
+  getHomeworkByCourseUseCase: GetHomeworkByCourseUseCase;
+  getHomeworkDetailUseCase: GetHomeworkDetailUseCase;
+  updateHomeworkUseCase: UpdateHomeworkUseCase;
+  deleteHomeworkUseCase: DeleteHomeworkUseCase;
+  submitHomeworkUseCase: SubmitHomeworkUseCase;
+  getMySubmissionUseCase: GetMySubmissionUseCase;
+  getHomeworkSubmissionsUseCase: GetHomeworkSubmissionsUseCase;
+  reviewSubmissionUseCase: ReviewSubmissionUseCase;
+  adminListHomeworkUseCase: AdminListHomeworkUseCase;
+}
+
 export class HomeworkController {
   private readonly createHomeworkController: CreateHomeworkController;
   private readonly getHomeworkByLectureController: GetHomeworkByLectureController;
@@ -37,29 +51,44 @@ export class HomeworkController {
   private readonly adminListHomeworkController: AdminListHomeworkController;
 
   constructor(
-    createHomeworkUseCase: CreateHomeworkUseCase,
-    getHomeworkByLectureUseCase: GetHomeworkByLectureUseCase,
-    getHomeworkByCourseUseCase: GetHomeworkByCourseUseCase,
-    getHomeworkDetailUseCase: GetHomeworkDetailUseCase,
-    updateHomeworkUseCase: UpdateHomeworkUseCase,
-    deleteHomeworkUseCase: DeleteHomeworkUseCase,
-    submitHomeworkUseCase: SubmitHomeworkUseCase,
-    getMySubmissionUseCase: GetMySubmissionUseCase,
-    getHomeworkSubmissionsUseCase: GetHomeworkSubmissionsUseCase,
-    reviewSubmissionUseCase: ReviewSubmissionUseCase,
-    adminListHomeworkUseCase: AdminListHomeworkUseCase
+    depsOrFirstUseCase: HomeworkControllerDependencies | CreateHomeworkUseCase,
+    getHomeworkByLectureUseCase?: GetHomeworkByLectureUseCase,
+    getHomeworkByCourseUseCase?: GetHomeworkByCourseUseCase,
+    getHomeworkDetailUseCase?: GetHomeworkDetailUseCase,
+    updateHomeworkUseCase?: UpdateHomeworkUseCase,
+    deleteHomeworkUseCase?: DeleteHomeworkUseCase,
+    submitHomeworkUseCase?: SubmitHomeworkUseCase,
+    getMySubmissionUseCase?: GetMySubmissionUseCase,
+    getHomeworkSubmissionsUseCase?: GetHomeworkSubmissionsUseCase,
+    reviewSubmissionUseCase?: ReviewSubmissionUseCase,
+    adminListHomeworkUseCase?: AdminListHomeworkUseCase
   ) {
-    this.createHomeworkController = new CreateHomeworkController(createHomeworkUseCase);
-    this.getHomeworkByLectureController = new GetHomeworkByLectureController(getHomeworkByLectureUseCase);
-    this.getHomeworkByCourseController = new GetHomeworkByCourseController(getHomeworkByCourseUseCase);
-    this.getHomeworkDetailController = new GetHomeworkDetailController(getHomeworkDetailUseCase);
-    this.updateHomeworkController = new UpdateHomeworkController(updateHomeworkUseCase);
-    this.deleteHomeworkController = new DeleteHomeworkController(deleteHomeworkUseCase);
-    this.submitHomeworkController = new SubmitHomeworkController(submitHomeworkUseCase);
-    this.getMySubmissionController = new GetMySubmissionController(getMySubmissionUseCase);
-    this.getHomeworkSubmissionsController = new GetHomeworkSubmissionsController(getHomeworkSubmissionsUseCase);
-    this.reviewSubmissionController = new ReviewSubmissionController(reviewSubmissionUseCase);
-    this.adminListHomeworkController = new AdminListHomeworkController(adminListHomeworkUseCase);
+    if ("createHomeworkUseCase" in depsOrFirstUseCase) {
+      const deps = depsOrFirstUseCase as HomeworkControllerDependencies;
+      this.createHomeworkController = new CreateHomeworkController(deps.createHomeworkUseCase);
+      this.getHomeworkByLectureController = new GetHomeworkByLectureController(deps.getHomeworkByLectureUseCase);
+      this.getHomeworkByCourseController = new GetHomeworkByCourseController(deps.getHomeworkByCourseUseCase);
+      this.getHomeworkDetailController = new GetHomeworkDetailController(deps.getHomeworkDetailUseCase);
+      this.updateHomeworkController = new UpdateHomeworkController(deps.updateHomeworkUseCase);
+      this.deleteHomeworkController = new DeleteHomeworkController(deps.deleteHomeworkUseCase);
+      this.submitHomeworkController = new SubmitHomeworkController(deps.submitHomeworkUseCase);
+      this.getMySubmissionController = new GetMySubmissionController(deps.getMySubmissionUseCase);
+      this.getHomeworkSubmissionsController = new GetHomeworkSubmissionsController(deps.getHomeworkSubmissionsUseCase);
+      this.reviewSubmissionController = new ReviewSubmissionController(deps.reviewSubmissionUseCase);
+      this.adminListHomeworkController = new AdminListHomeworkController(deps.adminListHomeworkUseCase);
+    } else {
+      this.createHomeworkController = new CreateHomeworkController(depsOrFirstUseCase);
+      this.getHomeworkByLectureController = new GetHomeworkByLectureController(getHomeworkByLectureUseCase!);
+      this.getHomeworkByCourseController = new GetHomeworkByCourseController(getHomeworkByCourseUseCase!);
+      this.getHomeworkDetailController = new GetHomeworkDetailController(getHomeworkDetailUseCase!);
+      this.updateHomeworkController = new UpdateHomeworkController(updateHomeworkUseCase!);
+      this.deleteHomeworkController = new DeleteHomeworkController(deleteHomeworkUseCase!);
+      this.submitHomeworkController = new SubmitHomeworkController(submitHomeworkUseCase!);
+      this.getMySubmissionController = new GetMySubmissionController(getMySubmissionUseCase!);
+      this.getHomeworkSubmissionsController = new GetHomeworkSubmissionsController(getHomeworkSubmissionsUseCase!);
+      this.reviewSubmissionController = new ReviewSubmissionController(reviewSubmissionUseCase!);
+      this.adminListHomeworkController = new AdminListHomeworkController(adminListHomeworkUseCase!);
+    }
   }
 
   createHomework = (req: Request, res: Response, next: NextFunction) =>

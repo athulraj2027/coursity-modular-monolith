@@ -1,5 +1,12 @@
-import { IHomeworkRepository } from "../../domain/repositories/homework.repository";
-import { HomeworkNotFoundError, HomeworkAccessDeniedError } from "../../domain/errors/homework.errors";
+import {
+  IHomeworkQueryRepository,
+  IHomeworkManagementRepository,
+  IHomeworkContextRepository,
+} from "../../domain/repositories/homework.repository";
+import {
+  HomeworkNotFoundError,
+  HomeworkAccessDeniedError,
+} from "../../domain/errors/homework.errors";
 
 export interface DeleteHomeworkInput {
   homeworkId: string;
@@ -7,8 +14,12 @@ export interface DeleteHomeworkInput {
   userRole: string;
 }
 
+export type DeleteHomeworkRepository = IHomeworkQueryRepository &
+  IHomeworkManagementRepository &
+  IHomeworkContextRepository;
+
 export class DeleteHomeworkUseCase {
-  constructor(private readonly homeworkRepo: IHomeworkRepository) {}
+  constructor(private readonly homeworkRepo: DeleteHomeworkRepository) {}
 
   async execute(input: DeleteHomeworkInput): Promise<boolean> {
     const { homeworkId, userId, userRole } = input;
