@@ -1,15 +1,31 @@
-import { INoteRepository } from "../../domain/repositories/note.repository";
+import {
+  INoteQueryRepository,
+  ITeacherNoteRepository,
+  IStudentNoteAccessRepository,
+} from "../../domain/repositories/note.repository";
 import { NoteEntity } from "../../domain/entities/note.entity";
-import { NoteNotFoundError, NoteAccessDeniedError } from "../../domain/errors/note.errors";
+import {
+  NoteNotFoundError,
+  NoteAccessDeniedError,
+} from "../../domain/errors/note.errors";
+import { ITeacherProfileResolver } from "@/modules/course/domain/services/teacher-profile-resolver.service";
+
+export type NotesByLectureRepository = INoteQueryRepository &
+  ITeacherNoteRepository &
+  IStudentNoteAccessRepository;
 
 export interface GetNotesByLectureInput {
   lectureId: string;
   userId: string;
   userRole: string;
+  teacherProfileId?: string | null;
 }
 
 export class GetNotesByLectureUseCase {
-  constructor(private readonly noteRepo: INoteRepository) {}
+  constructor(
+    private readonly noteRepo: NotesByLectureRepository,
+    private readonly profileResolver?: ITeacherProfileResolver
+  ) {}
 
   async execute(input: GetNotesByLectureInput): Promise<NoteEntity[]> {
     const { lectureId, userId, userRole } = input;
@@ -24,7 +40,15 @@ export class GetNotesByLectureUseCase {
     if (userRole === "ADMIN" || userRole === "SUPERADMIN") {
       // Admins have full read access
     } else if (userRole === "TEACHER") {
-      const teacherProfileId = await this.noteRepo.getTeacherProfileIdByUserId(userId);
+      let teacherProfileId = input.teacherProfileId;
+      if (teacherProfileId === undefined) {
+        if (this.profileResolver) {
+          teacherProfileId = await this.profileResolver.getTeacherProfileIdByUserId(userId);
+        } else if (typeof (this.noteRepo as any).getTeacherProfileIdByUserId === "function") {
+          teacherProfileId = await (this.noteRepo as any).getTeacherProfileIdByUserId(userId);
+        }
+      }
+
       if (teacherProfileId !== lectureInfo.teacherProfileId) {
         // If teacher is not the author, check if they are enrolled as a student or deny
         const isEnrolled = await this.noteRepo.isStudentEnrolled(userId, lectureInfo.courseId);

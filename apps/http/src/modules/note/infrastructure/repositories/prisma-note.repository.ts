@@ -1,7 +1,7 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import defaultPrisma from "@/infrastructure/database/prisma.client";
 import { PrismaBaseRepository } from "@/shared/infrastructure/repositories/prisma-base.repository";
-import { INoteRepository } from "../../domain/repositories/note.repository";
+import { INoteRepository, LectureCourseContext } from "../../domain/repositories/note.repository";
 import { NoteEntity } from "../../domain/entities/note.entity";
 import {
   CreateNoteDTO,
@@ -304,13 +304,7 @@ export class PrismaNoteRepository
     });
   }
 
-  async findLectureWithCourse(lectureId: string): Promise<{
-    id: string;
-    title: string;
-    courseId: string;
-    courseTitle: string;
-    teacherProfileId: string;
-  } | null> {
+  async findLectureWithCourse(lectureId: string): Promise<LectureCourseContext | null> {
     const lecture = await this.prisma.courseLesson.findFirst({
       where: { id: lectureId, isDeleted: false },
       include: {
