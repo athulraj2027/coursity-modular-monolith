@@ -33,6 +33,31 @@ import { AdminGetEnrollmentDetailController } from "./admin-get-enrollment-detai
 import { TeacherListEnrollmentsController } from "./teacher-list-enrollments.controller";
 import { TeacherGetEnrollmentDetailController } from "./teacher-get-enrollment-detail.controller";
 
+import {
+  ITeacherProfileResolver,
+  defaultTeacherProfileResolver,
+} from "@/modules/course/domain/services/teacher-profile-resolver.service";
+
+export interface EnrollmentControllerDependencies {
+  enrollFreeUseCase: EnrollFreeCourseUseCase;
+  createOrderUseCase: CreateCourseCheckoutOrderUseCase;
+  verifyPaymentUseCase: VerifyCoursePaymentUseCase;
+  payWithWalletUseCase: PayWithWalletUseCase;
+  getStudentEnrollmentsUseCase: GetStudentEnrollmentsUseCase;
+  getClassroomUseCase: GetCourseClassroomUseCase;
+  markAttendanceUseCase: MarkClassAttendanceUseCase;
+  updateProgressUseCase: UpdateLessonProgressUseCase;
+  requestRefundUseCase: RequestCourseRefundUseCase;
+  claimCertificateUseCase: ClaimCertificateUseCase;
+  getCertificateUseCase: GetCertificateUseCase;
+  teacherGetStudentsUseCase: TeacherGetCourseStudentsUseCase;
+  adminGetEnrollmentsUseCase?: AdminGetEnrollmentsUseCase;
+  adminGetEnrollmentDetailUseCase?: AdminGetEnrollmentDetailUseCase;
+  teacherGetEnrollmentsUseCase?: TeacherGetEnrollmentsUseCase;
+  teacherGetEnrollmentDetailUseCase?: TeacherGetEnrollmentDetailUseCase;
+  teacherProfileResolver?: ITeacherProfileResolver;
+}
+
 export class EnrollmentController {
   private readonly enrollFreeController: EnrollFreeController;
   private readonly createOrderController: CreateCourseOrderController;
@@ -52,39 +77,70 @@ export class EnrollmentController {
   private readonly teacherGetEnrollmentDetailController: TeacherGetEnrollmentDetailController;
 
   constructor(
-    enrollFreeUseCase: EnrollFreeCourseUseCase,
-    createOrderUseCase: CreateCourseCheckoutOrderUseCase,
-    verifyPaymentUseCase: VerifyCoursePaymentUseCase,
-    payWithWalletUseCase: PayWithWalletUseCase,
-    getStudentEnrollmentsUseCase: GetStudentEnrollmentsUseCase,
-    getClassroomUseCase: GetCourseClassroomUseCase,
-    markAttendanceUseCase: MarkClassAttendanceUseCase,
-    updateProgressUseCase: UpdateLessonProgressUseCase,
-    requestRefundUseCase: RequestCourseRefundUseCase,
-    claimCertificateUseCase: ClaimCertificateUseCase,
-    getCertificateUseCase: GetCertificateUseCase,
-    teacherGetStudentsUseCase: TeacherGetCourseStudentsUseCase,
+    depsOrEnrollFree: EnrollFreeCourseUseCase | EnrollmentControllerDependencies,
+    createOrderUseCase?: CreateCourseCheckoutOrderUseCase,
+    verifyPaymentUseCase?: VerifyCoursePaymentUseCase,
+    payWithWalletUseCase?: PayWithWalletUseCase,
+    getStudentEnrollmentsUseCase?: GetStudentEnrollmentsUseCase,
+    getClassroomUseCase?: GetCourseClassroomUseCase,
+    markAttendanceUseCase?: MarkClassAttendanceUseCase,
+    updateProgressUseCase?: UpdateLessonProgressUseCase,
+    requestRefundUseCase?: RequestCourseRefundUseCase,
+    claimCertificateUseCase?: ClaimCertificateUseCase,
+    getCertificateUseCase?: GetCertificateUseCase,
+    teacherGetStudentsUseCase?: TeacherGetCourseStudentsUseCase,
     adminGetEnrollmentsUseCase?: AdminGetEnrollmentsUseCase,
     adminGetEnrollmentDetailUseCase?: AdminGetEnrollmentDetailUseCase,
     teacherGetEnrollmentsUseCase?: TeacherGetEnrollmentsUseCase,
     teacherGetEnrollmentDetailUseCase?: TeacherGetEnrollmentDetailUseCase
   ) {
-    this.enrollFreeController = new EnrollFreeController(enrollFreeUseCase);
-    this.createOrderController = new CreateCourseOrderController(createOrderUseCase);
-    this.verifyPaymentController = new VerifyCoursePaymentController(verifyPaymentUseCase);
-    this.payWithWalletController = new PayWithWalletController(payWithWalletUseCase);
-    this.getStudentEnrollmentsController = new GetMyEnrollmentsController(getStudentEnrollmentsUseCase);
-    this.getClassroomController = new GetClassroomController(getClassroomUseCase);
-    this.markAttendanceController = new MarkAttendanceController(markAttendanceUseCase);
-    this.updateProgressController = new UpdateProgressController(updateProgressUseCase);
-    this.requestRefundController = new RequestRefundController(requestRefundUseCase);
-    this.claimCertificateController = new ClaimCertificateController(claimCertificateUseCase);
-    this.getCertificateController = new GetCertificateController(getCertificateUseCase);
-    this.teacherGetStudentsController = new TeacherGetCourseStudentsController(teacherGetStudentsUseCase);
-    this.adminGetEnrollmentsController = new AdminListEnrollmentsController(adminGetEnrollmentsUseCase);
-    this.adminGetEnrollmentDetailController = new AdminGetEnrollmentDetailController(adminGetEnrollmentDetailUseCase);
-    this.teacherGetEnrollmentsController = new TeacherListEnrollmentsController(teacherGetEnrollmentsUseCase);
-    this.teacherGetEnrollmentDetailController = new TeacherGetEnrollmentDetailController(teacherGetEnrollmentDetailUseCase);
+    let deps: EnrollmentControllerDependencies;
+
+    if (
+      typeof depsOrEnrollFree === "object" &&
+      "enrollFreeUseCase" in depsOrEnrollFree &&
+      "createOrderUseCase" in depsOrEnrollFree
+    ) {
+      deps = depsOrEnrollFree as EnrollmentControllerDependencies;
+    } else {
+      deps = {
+        enrollFreeUseCase: depsOrEnrollFree as EnrollFreeCourseUseCase,
+        createOrderUseCase: createOrderUseCase!,
+        verifyPaymentUseCase: verifyPaymentUseCase!,
+        payWithWalletUseCase: payWithWalletUseCase!,
+        getStudentEnrollmentsUseCase: getStudentEnrollmentsUseCase!,
+        getClassroomUseCase: getClassroomUseCase!,
+        markAttendanceUseCase: markAttendanceUseCase!,
+        updateProgressUseCase: updateProgressUseCase!,
+        requestRefundUseCase: requestRefundUseCase!,
+        claimCertificateUseCase: claimCertificateUseCase!,
+        getCertificateUseCase: getCertificateUseCase!,
+        teacherGetStudentsUseCase: teacherGetStudentsUseCase!,
+        adminGetEnrollmentsUseCase,
+        adminGetEnrollmentDetailUseCase,
+        teacherGetEnrollmentsUseCase,
+        teacherGetEnrollmentDetailUseCase,
+      };
+    }
+
+    const resolver = deps.teacherProfileResolver || defaultTeacherProfileResolver;
+
+    this.enrollFreeController = new EnrollFreeController(deps.enrollFreeUseCase);
+    this.createOrderController = new CreateCourseOrderController(deps.createOrderUseCase);
+    this.verifyPaymentController = new VerifyCoursePaymentController(deps.verifyPaymentUseCase);
+    this.payWithWalletController = new PayWithWalletController(deps.payWithWalletUseCase);
+    this.getStudentEnrollmentsController = new GetMyEnrollmentsController(deps.getStudentEnrollmentsUseCase);
+    this.getClassroomController = new GetClassroomController(deps.getClassroomUseCase);
+    this.markAttendanceController = new MarkAttendanceController(deps.markAttendanceUseCase);
+    this.updateProgressController = new UpdateProgressController(deps.updateProgressUseCase);
+    this.requestRefundController = new RequestRefundController(deps.requestRefundUseCase);
+    this.claimCertificateController = new ClaimCertificateController(deps.claimCertificateUseCase);
+    this.getCertificateController = new GetCertificateController(deps.getCertificateUseCase);
+    this.teacherGetStudentsController = new TeacherGetCourseStudentsController(deps.teacherGetStudentsUseCase, resolver);
+    this.adminGetEnrollmentsController = new AdminListEnrollmentsController(deps.adminGetEnrollmentsUseCase);
+    this.adminGetEnrollmentDetailController = new AdminGetEnrollmentDetailController(deps.adminGetEnrollmentDetailUseCase);
+    this.teacherGetEnrollmentsController = new TeacherListEnrollmentsController(deps.teacherGetEnrollmentsUseCase);
+    this.teacherGetEnrollmentDetailController = new TeacherGetEnrollmentDetailController(deps.teacherGetEnrollmentDetailUseCase);
   }
 
   enrollFree = (req: Request, res: Response, next: NextFunction) =>

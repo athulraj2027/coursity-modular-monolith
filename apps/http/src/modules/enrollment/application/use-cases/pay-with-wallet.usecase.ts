@@ -1,6 +1,8 @@
-import { EnrollmentRepository } from "../../domain/repositories/enrollment.repository";
+import { IStudentEnrollmentRepository } from "../../domain/repositories/enrollment.repository";
 import { PayWithWalletDto } from "../../domain/dtos/enrollment.dto";
 import { CourseEnrollmentEntity } from "../../domain/entities/enrollment.entity";
+import { CourseRefundPolicy } from "../../domain/policies/course-refund.policy";
+import { TeacherRoyaltyPolicy } from "../../domain/policies/teacher-royalty.policy";
 import { TeacherCouponRepository } from "@/modules/coupon/domain/repositories/teacher-coupon.repository";
 import { ICourseRepository } from "@/modules/course/domain/repositories/course.repository";
 import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
@@ -10,7 +12,7 @@ import { BadRequestError, ConflictError, NotFoundError } from "@/app/errors";
 
 export class PayWithWalletUseCase {
   constructor(
-    private readonly enrollmentRepo: EnrollmentRepository,
+    private readonly enrollmentRepo: IStudentEnrollmentRepository,
     private readonly couponRepo: TeacherCouponRepository,
     private readonly courseRepo: ICourseRepository,
     private readonly userRepo: UserRepository,
@@ -85,12 +87,9 @@ export class PayWithWalletUseCase {
       });
     }
 
-    // Calculate 20-Day Refund Window
+    // Calculate 20-Day Refund Window using Domain Policy
     const now = new Date();
-    const effectiveStart = course.startingDate && new Date(course.startingDate) > now
-      ? new Date(course.startingDate)
-      : now;
-    const refundEligibleUntil = new Date(effectiveStart.getTime() + 20 * 24 * 60 * 60 * 1000);
+    const refundEligibleUntil = CourseRefundPolicy.calculateRefundEligibleUntil(course.startingDate, now);
     const invoiceNumber = `INV-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     // Create Enrollment
@@ -108,10 +107,10 @@ export class PayWithWalletUseCase {
       refundEligibleUntil,
     });
 
-    // Credit Teacher Royalty Earnings (85%)
+    // Credit Teacher Royalty Earnings using TeacherRoyaltyPolicy
     const teacherUserId = course.teacherProfile?.profile?.userId || course.teacherProfile?.profile?.user?.id;
     if (teacherUserId) {
-      const teacherEarnings = Number((finalAmount * 0.85).toFixed(2));
+      const teacherEarnings = TeacherRoyaltyPolicy.calculateRoyalty(finalAmount);
       if (teacherEarnings > 0) {
         await this.walletRepo.credit({
           userId: teacherUserId,
@@ -143,7 +142,7 @@ export class PayWithWalletUseCase {
           `,
           text: `Your enrollment in ${course.title} is confirmed via Wallet. Amount: ₹${finalAmount.toFixed(2)}.`,
         })
-        .catch((err) => console.warn("⚠️ Failed to dispatch enrollment email:", err));
+        .catch(() => {});
     }
 
     return enrollment;

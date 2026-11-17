@@ -1,11 +1,17 @@
 import defaultPrisma from "@/infrastructure/database/prisma.client";
 import { PrismaEnrollmentRepository } from "./infrastructure/repositories/prisma-enrollment.repository";
-import { couponRepo, validateCouponUseCase } from "@/modules/coupon";
-import { courseRepo } from "@/modules/course";
-import { walletRepo } from "@/modules/wallet";
-import { userRepo } from "@/modules/user";
-import paymentGateway from "@/infrastructure/payment";
-import emailService from "@/infrastructure/email";
+import { couponRepo as defaultCouponRepo, validateCouponUseCase as defaultValidateCouponUseCase } from "@/modules/coupon";
+import { courseRepo as defaultCourseRepo } from "@/modules/course";
+import { walletRepo as defaultWalletRepo } from "@/modules/wallet";
+import { userRepo as defaultUserRepo } from "@/modules/user";
+import defaultPaymentGateway from "@/infrastructure/payment";
+import defaultEmailService from "@/infrastructure/email";
+import {
+  ITeacherProfileResolver,
+  defaultTeacherProfileResolver,
+} from "@/modules/course/domain/services/teacher-profile-resolver.service";
+import { IEnrollmentRepository } from "./domain/repositories/enrollment.repository";
+import { ICourseRepository } from "@/modules/course/domain/repositories/course.repository";
 
 import { EnrollFreeCourseUseCase } from "./application/use-cases/enroll-free-course.usecase";
 import { CreateCourseCheckoutOrderUseCase } from "./application/use-cases/create-course-order.usecase";
@@ -27,8 +33,28 @@ import { AdminGetEnrollmentDetailUseCase } from "./application/use-cases/admin-g
 import { EnrollmentController } from "./presentation/controllers/enrollment.controller";
 import { createEnrollmentRouter } from "./presentation/routes/enrollment.routes";
 
-export function createEnrollmentModule() {
-  const enrollmentRepo = new PrismaEnrollmentRepository(defaultPrisma);
+export interface CreateEnrollmentModuleDependencies {
+  enrollmentRepo?: IEnrollmentRepository;
+  courseRepo?: ICourseRepository;
+  couponRepo?: any;
+  validateCouponUseCase?: any;
+  userRepo?: any;
+  walletRepo?: any;
+  paymentGateway?: any;
+  emailService?: any;
+  teacherProfileResolver?: ITeacherProfileResolver;
+}
+
+export function createEnrollmentModule(deps: CreateEnrollmentModuleDependencies = {}) {
+  const enrollmentRepo = deps.enrollmentRepo || new PrismaEnrollmentRepository(defaultPrisma);
+  const courseRepo = deps.courseRepo || defaultCourseRepo;
+  const couponRepo = deps.couponRepo || defaultCouponRepo;
+  const validateCouponUseCase = deps.validateCouponUseCase || defaultValidateCouponUseCase;
+  const userRepo = deps.userRepo || defaultUserRepo;
+  const walletRepo = deps.walletRepo || defaultWalletRepo;
+  const paymentGateway = deps.paymentGateway || defaultPaymentGateway;
+  const emailService = deps.emailService || defaultEmailService;
+  const profileResolver = deps.teacherProfileResolver || defaultTeacherProfileResolver;
 
   const enrollFreeUseCase = new EnrollFreeCourseUseCase(enrollmentRepo, courseRepo);
   const createOrderUseCase = new CreateCourseCheckoutOrderUseCase(
@@ -75,7 +101,7 @@ export function createEnrollmentModule() {
   const teacherGetEnrollmentsUseCase = new TeacherGetEnrollmentsUseCase(enrollmentRepo);
   const teacherGetEnrollmentDetailUseCase = new TeacherGetEnrollmentDetailUseCase(enrollmentRepo);
 
-  const enrollmentController = new EnrollmentController(
+  const enrollmentController = new EnrollmentController({
     enrollFreeUseCase,
     createOrderUseCase,
     verifyPaymentUseCase,
@@ -91,8 +117,9 @@ export function createEnrollmentModule() {
     adminGetEnrollmentsUseCase,
     adminGetEnrollmentDetailUseCase,
     teacherGetEnrollmentsUseCase,
-    teacherGetEnrollmentDetailUseCase
-  );
+    teacherGetEnrollmentDetailUseCase,
+    teacherProfileResolver: profileResolver,
+  });
 
   const enrollmentRouter = createEnrollmentRouter(enrollmentController);
 
@@ -100,6 +127,18 @@ export function createEnrollmentModule() {
     enrollmentRepo,
     enrollmentController,
     enrollmentRouter,
+    enrollFreeUseCase,
+    createOrderUseCase,
+    verifyPaymentUseCase,
+    payWithWalletUseCase,
+    getStudentEnrollmentsUseCase,
+    getClassroomUseCase,
+    markAttendanceUseCase,
+    updateProgressUseCase,
+    requestRefundUseCase,
+    claimCertificateUseCase,
+    getCertificateUseCase,
+    teacherGetStudentsUseCase,
     adminGetEnrollmentsUseCase,
     adminGetEnrollmentDetailUseCase,
     teacherGetEnrollmentsUseCase,
@@ -110,5 +149,34 @@ export function createEnrollmentModule() {
 const defaultModule = createEnrollmentModule();
 export const enrollmentRouter = defaultModule.enrollmentRouter;
 export const enrollmentRepo = defaultModule.enrollmentRepo;
-export default enrollmentRouter;
+
+export * from "./domain/entities/enrollment.entity";
+export * from "./domain/entities/lesson-progress.entity";
+export * from "./domain/entities/refund.entity";
+export * from "./domain/dtos/enrollment.dto";
+export * from "./domain/policies/course-refund.policy";
+export * from "./domain/policies/teacher-royalty.policy";
+export * from "./domain/policies/course-certificate.policy";
+export * from "./domain/repositories/enrollment.repository";
+export * from "./infrastructure/repositories/prisma-enrollment.repository";
+export * from "./application/use-cases/enroll-free-course.usecase";
+export * from "./application/use-cases/create-course-order.usecase";
+export * from "./application/use-cases/verify-course-payment.usecase";
+export * from "./application/use-cases/pay-with-wallet.usecase";
+export * from "./application/use-cases/get-student-enrollments.usecase";
+export * from "./application/use-cases/get-course-classroom.usecase";
+export * from "./application/use-cases/mark-class-attendance.usecase";
+export * from "./application/use-cases/update-lesson-progress.usecase";
+export * from "./application/use-cases/request-course-refund.usecase";
+export * from "./application/use-cases/claim-certificate.usecase";
+export * from "./application/use-cases/get-certificate.usecase";
+export * from "./application/use-cases/teacher-get-course-students.usecase";
+export * from "./application/use-cases/teacher-get-enrollments.usecase";
+export * from "./application/use-cases/teacher-get-enrollment-detail.usecase";
+export * from "./application/use-cases/admin-get-enrollments.usecase";
+export * from "./application/use-cases/admin-get-enrollment-detail.usecase";
 export * from "./presentation/controllers";
+export * from "./presentation/schemas/enrollment.schema";
+export * from "./presentation/routes/enrollment.routes";
+
+export default enrollmentRouter;

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { UpdateLessonProgressUseCase } from "../../application/use-cases/update-lesson-progress.usecase";
+import { updateLessonProgressSchema } from "../schemas/enrollment.schema";
 import { UnauthorizedError } from "@/app/errors";
 import { ApiResponse } from "@/shared";
 
@@ -14,11 +15,14 @@ export class UpdateProgressController {
       const enrollmentId = Array.isArray(req.params.enrollmentId)
         ? req.params.enrollmentId[0]
         : req.params.enrollmentId;
+
+      const validated = updateLessonProgressSchema.parse(req.body);
+
       const result = await this.updateProgressUseCase.execute(studentId, {
         enrollmentId,
-        ...req.body,
+        ...validated,
       });
-      return ApiResponse.success(res, result, "Learning progress updated.");
+      return ApiResponse.success(res, result, "Progress updated.");
     } catch (error) {
       next(error);
     }

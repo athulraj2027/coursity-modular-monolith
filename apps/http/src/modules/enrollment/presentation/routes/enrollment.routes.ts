@@ -11,12 +11,14 @@ export function createEnrollmentRouter(controller: EnrollmentController): Router
   router.get(
     "/admin/all",
     authMiddleware,
+    isBlockedMiddleware,
     requireRoles("ADMIN", "SUPERADMIN"),
     controller.adminListEnrollments
   );
   router.get(
     "/admin/:id",
     authMiddleware,
+    isBlockedMiddleware,
     requireRoles("ADMIN", "SUPERADMIN"),
     controller.adminGetEnrollmentDetail
   );
@@ -42,26 +44,28 @@ export function createEnrollmentRouter(controller: EnrollmentController): Router
   // 6. Completion Certificate Claiming
   router.post("/:enrollmentId/claim-certificate", authMiddleware, isBlockedMiddleware, controller.claimCertificate);
 
-  // 7. Teacher Enrolled Student Roster & Telemetry Workspace
+  // 7. Teacher Enrolled Student Roster & Telemetry Workspace (Role Protected)
   router.get(
     "/teacher/course/:courseId/students",
     authMiddleware,
     isBlockedMiddleware,
+    requireRoles("TEACHER"),
     controller.getTeacherCourseStudents
   );
   router.get(
     "/teacher/all",
     authMiddleware,
     isBlockedMiddleware,
+    requireRoles("TEACHER"),
     controller.teacherListEnrollments
   );
   router.get(
     "/teacher/:id",
     authMiddleware,
     isBlockedMiddleware,
+    requireRoles("TEACHER"),
     controller.teacherGetEnrollmentDetail
   );
 
   return router;
 }
-
