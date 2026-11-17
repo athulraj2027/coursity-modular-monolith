@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { AdminGetLecturesUseCase } from "../../application/use-cases/admin-get-lectures.usecase";
+import { lectureQueryObjectSchema } from "../schemas/lecture.schema";
 import { ApiResponse } from "@/shared";
 
 export class AdminGetLecturesController {
@@ -7,7 +8,8 @@ export class AdminGetLecturesController {
 
   execute = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const result = await this.adminGetLecturesUseCase.execute(req.query as any);
+      const validatedQuery = lectureQueryObjectSchema.parse(req.query);
+      const result = await this.adminGetLecturesUseCase.execute(validatedQuery as any);
       return ApiResponse.success(res, result);
     } catch (error) {
       next(error);

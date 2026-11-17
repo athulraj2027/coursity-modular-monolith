@@ -1,14 +1,22 @@
-import { ILectureRepository } from "../../domain/repositories/lecture.repository";
+import {
+  ILectureQueryRepository,
+  IStudentLectureRepository,
+} from "../../domain/repositories/lecture.repository";
 import { LectureEntity } from "../../domain/entities/lecture.entity";
-import { NotFoundError, ForbiddenError } from "@/app/errors";
+import {
+  LectureAccessDeniedError,
+  LectureNotFoundError,
+} from "../../domain/errors/lecture.errors";
+
+export type StudentGetLectureDetailRepository = ILectureQueryRepository & IStudentLectureRepository;
 
 export class StudentGetLectureDetailUseCase {
-  constructor(private readonly lectureRepo: ILectureRepository) {}
+  constructor(private readonly lectureRepo: StudentGetLectureDetailRepository) {}
 
   async execute(studentId: string, lectureId: string): Promise<LectureEntity> {
     const lecture = await this.lectureRepo.findById(lectureId);
     if (!lecture || lecture.isDeleted || !lecture.isPublished) {
-      throw new NotFoundError("Lecture not found or unavailable.");
+      throw new LectureNotFoundError("Lecture not found or unavailable.");
     }
 
     // Verify student has active enrollment in parent course
@@ -20,7 +28,7 @@ export class StudentGetLectureDetailUseCase {
       );
 
       if (!access.hasActiveEnrollment) {
-        throw new ForbiddenError("You must be actively enrolled in this course to access this lecture.");
+        throw new LectureAccessDeniedError("You must be actively enrolled in this course to access this lecture.");
       }
 
       return {

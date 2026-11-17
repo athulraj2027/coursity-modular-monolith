@@ -1,10 +1,22 @@
-import { ILectureRepository } from "../../domain/repositories/lecture.repository";
+import {
+  ILectureQueryRepository,
+  ITeacherLectureRepository,
+} from "../../domain/repositories/lecture.repository";
 import { UpdateLectureDTO } from "../../domain/dtos/lecture.dto";
 import { LectureEntity } from "../../domain/entities/lecture.entity";
-import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "@/app/errors";
+import {
+  LectureAccessDeniedError,
+  LectureNotFoundError,
+} from "../../domain/errors/lecture.errors";
+import {
+  LectureSchedulePolicy,
+  LectureValidationPolicy,
+} from "../../domain/policies";
+
+export type TeacherUpdateLectureRepository = ILectureQueryRepository & ITeacherLectureRepository;
 
 export class TeacherUpdateLectureUseCase {
-  constructor(private readonly lectureRepo: ILectureRepository) {}
+  constructor(private readonly lectureRepo: TeacherUpdateLectureRepository) {}
 
   async execute(
     teacherProfileId: string,
@@ -13,84 +25,46 @@ export class TeacherUpdateLectureUseCase {
   ): Promise<LectureEntity> {
     const lecture = await this.lectureRepo.findById(lectureId);
     if (!lecture) {
-      throw new NotFoundError("Lecture not found.");
+      throw new LectureNotFoundError("Lecture not found.");
     }
 
     if (lecture.teacherId !== teacherProfileId) {
-      throw new ForbiddenError("You do not have permission to modify this lecture.");
+      throw new LectureAccessDeniedError("You do not have permission to modify this lecture.");
     }
 
-    if (dto.title !== undefined && !dto.title.trim()) {
-      throw new BadRequestError("Lecture name cannot be empty.");
-    }
+    // 1. Domain Validation Policy
+    LectureValidationPolicy.validateUpdate(dto);
 
     const newScheduledAt = dto.scheduledAt !== undefined ? dto.scheduledAt : lecture.scheduledAt;
-    const newDurationSeconds =
-      dto.durationSeconds !== undefined && dto.durationSeconds > 0
-        ? dto.durationSeconds
-        : lecture.durationSeconds || 3600;
+    const newDurationSeconds = LectureValidationPolicy.normalizeDuration(
+      dto.durationSeconds,
+      lecture.durationSeconds || 3600
+    );
 
     let scheduledDate: Date | null = null;
 
     if (newScheduledAt) {
-      scheduledDate = new Date(newScheduledAt);
-      if (isNaN(scheduledDate.getTime())) {
-        throw new BadRequestError("Invalid start time date format.");
-      }
+      // 2. Domain Scheduling Policy
+      scheduledDate = LectureSchedulePolicy.validateScheduledTime({
+        scheduledAt: newScheduledAt,
+        courseStartingDate: dto.scheduledAt !== undefined ? lecture.courseStartingDate : null,
+        isUpdating: true,
+      });
 
-      // Validate against course start date if scheduledAt is being updated
-      if (dto.scheduledAt !== undefined && lecture.courseStartingDate) {
-        const courseStartDate = new Date(lecture.courseStartingDate);
-        const isDateOnly =
-          courseStartDate.getUTCHours() === 0 &&
-          courseStartDate.getUTCMinutes() === 0 &&
-          courseStartDate.getUTCSeconds() === 0;
+      if (scheduledDate) {
+        const endTime = LectureSchedulePolicy.calculateEndTime(scheduledDate, newDurationSeconds);
 
-        const minAllowedTime = isDateOnly
-          ? courseStartDate.getTime() - 12 * 60 * 60 * 1000
-          : courseStartDate.getTime();
-
-        if (scheduledDate.getTime() < minAllowedTime) {
-          const formattedCourseStart = courseStartDate.toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          });
-          throw new BadRequestError(
-            `Lecture start time cannot be earlier than the course start date (${formattedCourseStart}).`
-          );
-        }
-      }
-
-      // Allow 5 minutes leeway for clock drift if updating start time
-      if (dto.scheduledAt !== undefined && scheduledDate.getTime() < Date.now() - 5 * 60 * 1000) {
-        throw new BadRequestError("Lecture start time cannot be in the past.");
-      }
-
-      const endTime = new Date(scheduledDate.getTime() + newDurationSeconds * 1000);
-
-      // Check for overlapping/conflicting lectures (excluding current lectureId)
-      const conflicting = await this.lectureRepo.findConflictingLecture(
-        teacherProfileId,
-        scheduledDate,
-        endTime,
-        lectureId
-      );
-
-      if (conflicting) {
-        const conflictStart = conflicting.scheduledAt
-          ? new Date(conflicting.scheduledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-          : "TBD";
-        const conflictEnd = conflicting.scheduledAt
-          ? new Date(new Date(conflicting.scheduledAt).getTime() + conflicting.durationSeconds * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-          : "TBD";
-        const conflictDate = conflicting.scheduledAt
-          ? new Date(conflicting.scheduledAt).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })
-          : "";
-
-        throw new ConflictError(
-          `Schedule conflict: You already have another lecture "${conflicting.title}" scheduled on ${conflictDate} from ${conflictStart} to ${conflictEnd} (${Math.round(conflicting.durationSeconds / 60)} mins). Live lectures cannot overlap.`
+        // 3. Conflict detection (excluding current lecture)
+        const conflicting = await this.lectureRepo.findConflictingLecture(
+          teacherProfileId,
+          scheduledDate,
+          endTime,
+          lectureId
         );
+
+        if (conflicting) {
+          throw LectureSchedulePolicy.buildConflictError(conflicting);
+        }
       }
     }
 
@@ -98,8 +72,8 @@ export class TeacherUpdateLectureUseCase {
       ...dto,
       title: dto.title !== undefined ? dto.title.trim() : undefined,
       description: dto.description !== undefined ? (dto.description?.trim() || null) : undefined,
-      scheduledAt: dto.scheduledAt !== undefined ? scheduledDate : undefined,
-      durationSeconds: dto.durationSeconds !== undefined ? newDurationSeconds : undefined,
+      scheduledAt: scheduledDate,
+      durationSeconds: newDurationSeconds,
     });
   }
 }
