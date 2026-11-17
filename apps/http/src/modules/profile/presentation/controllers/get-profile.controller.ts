@@ -6,7 +6,7 @@ import { ApiResponse } from "@/shared/utils/api-response";
 export class GetProfileController {
     constructor(private readonly getProfile: GetProfile) { }
 
-    execute = async (req: Request, res: Response, next: NextFunction) => {
+    execute = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const userId = req.user?.userId;
             if (!userId) {
@@ -15,7 +15,7 @@ export class GetProfileController {
 
             const profile = await this.getProfile.execute(userId);
 
-            return ApiResponse.success(res, { profile }, "User profile fetched successfully");
+            ApiResponse.success(res, { profile }, "User profile fetched successfully");
         } catch (error) {
             next(error);
         }

@@ -6,7 +6,7 @@ import { ApiResponse } from "@/shared/utils/api-response";
 export class SubmitTeacherVerificationController {
     constructor(private readonly submitTeacherVerification: SubmitTeacherVerification) { }
 
-    execute = async (req: Request, res: Response, next: NextFunction) => {
+    execute = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const userId = req.user?.userId;
             if (!userId) {
@@ -15,7 +15,7 @@ export class SubmitTeacherVerificationController {
 
             const result = await this.submitTeacherVerification.execute(userId);
 
-            return ApiResponse.success(res, { profile: result.profile }, result.message);
+            ApiResponse.success(res, { profile: result.profile }, result.message);
         } catch (error) {
             next(error);
         }

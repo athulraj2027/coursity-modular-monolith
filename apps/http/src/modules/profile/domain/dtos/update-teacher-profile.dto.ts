@@ -7,7 +7,7 @@ export interface UpdateTeacherProfileDTO {
     phone?: string | null;
     country?: string | null;
     expertise?: string[];
-    qualifications?: QualificationItem[] | string | null;
+    qualifications?: QualificationItem[] | string[] | string | null;
     experienceYears?: number | null;
     resume?: string | null;
     credentials?: string[];

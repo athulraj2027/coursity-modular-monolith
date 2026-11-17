@@ -1,79 +1,33 @@
-import { NotFoundError, BadRequestError } from "@/app/errors";
-import { ProfileRepository } from "../../domain/repositories/profile.repository";
+import { IProfileQueryRepository, ITeacherProfileMutationRepository } from "../../domain/repositories/profile.repository";
 import { FullUserProfile } from "../../domain/entities/profile.entity";
 import { IEmailService } from "@/infrastructure/email";
+import { ProfileNotFoundError } from "../../domain/errors/profile.errors";
+import { TeacherVerificationPolicy } from "../../domain/policies";
 
-export const MAX_SUBMISSION_ATTEMPTS = 5;
+export const MAX_SUBMISSION_ATTEMPTS = TeacherVerificationPolicy.MAX_SUBMISSION_ATTEMPTS;
 
 export class SubmitTeacherVerification {
     constructor(
-        private readonly profileRepository: ProfileRepository,
+        private readonly profileRepository: IProfileQueryRepository & ITeacherProfileMutationRepository,
         private readonly emailService?: IEmailService
     ) { }
 
     async execute(userId: string): Promise<{ profile: FullUserProfile; message: string }> {
         const existingProfile = await this.profileRepository.getFullProfileByUserId(userId);
         if (!existingProfile) {
-            throw new NotFoundError("Teacher profile not found");
+            throw new ProfileNotFoundError("Teacher profile not found");
         }
 
-        if (existingProfile.role !== "TEACHER") {
-            throw new BadRequestError("Only instructor accounts can submit for verification");
-        }
-
-        const currentStatus =
-            existingProfile.teacherProfile?.approvalStatus ||
-            (existingProfile.teacherProfile?.isApproved ? "VERIFIED" : "PENDING");
-
-        if (currentStatus !== "PENDING" && currentStatus !== "REDO") {
-            if (currentStatus === "IN_PROGRESS") {
-                throw new BadRequestError("Your application is already actively under review (In Progress).");
-            }
-            if (currentStatus === "VERIFIED") {
-                throw new BadRequestError("Your instructor account is already verified and approved.");
-            }
-            throw new BadRequestError(
-                `Application cannot be submitted while in status ${currentStatus}. Please contact support.`
-            );
-        }
-
-        const currentAttempts = existingProfile.teacherProfile?.submissionCount ?? 0;
-        if (currentAttempts >= MAX_SUBMISSION_ATTEMPTS) {
-            throw new BadRequestError(
-                `You have reached the maximum verification submission limit (${MAX_SUBMISSION_ATTEMPTS} attempts). You cannot apply again. Please contact an administrator to re-evaluate your application.`
-            );
-        }
-
-        // Validate basic profile completeness before submitting
-        const qualifications = existingProfile.teacherProfile?.qualifications;
-        const hasQualifications = Array.isArray(qualifications)
-            ? qualifications.length > 0
-            : typeof qualifications === "string"
-            ? Boolean(qualifications.trim())
-            : Boolean(qualifications);
-        const hasBio = Boolean(existingProfile.profile?.bio?.trim());
-        const hasExpertise =
-            Array.isArray(existingProfile.teacherProfile?.expertise) &&
-            existingProfile.teacherProfile.expertise.length > 0;
-
-        if (!hasQualifications && !hasBio) {
-            throw new BadRequestError(
-                "Please provide your qualifications or a brief biography before submitting your application for verification."
-            );
-        }
-
-        if (!hasExpertise) {
-            throw new BadRequestError(
-                "Please select at least one domain of expertise before submitting your application for verification."
-            );
-        }
+        // Domain Policy: check eligibility, status, attempts, completeness
+        TeacherVerificationPolicy.assertEligibility(existingProfile);
 
         const profileId = existingProfile.profile?.id;
         if (!profileId) {
-            throw new NotFoundError("Profile record not found");
+            throw new ProfileNotFoundError("Profile record not found");
         }
 
-        const nextAttempts = currentAttempts + 1;
+        const currentAttempts = existingProfile.teacherProfile?.submissionCount ?? 0;
+        const nextAttempts = TeacherVerificationPolicy.calculateNextAttemptCount(currentAttempts);
 
         await this.profileRepository.upsertTeacherProfile(profileId, {
             isApproved: false,
@@ -84,7 +38,7 @@ export class SubmitTeacherVerification {
 
         const updated = await this.profileRepository.getFullProfileByUserId(userId);
         if (!updated) {
-            throw new NotFoundError("Updated profile not found");
+            throw new ProfileNotFoundError("Updated profile not found");
         }
 
         // Asynchronously send "under review" email confirmation via queue
@@ -98,7 +52,7 @@ export class SubmitTeacherVerification {
 
         return {
             profile: updated,
-            message: `Application submitted for verification successfully (Submission ${nextAttempts}/${MAX_SUBMISSION_ATTEMPTS}).`,
+            message: `Application submitted for verification successfully (Submission ${nextAttempts}/${TeacherVerificationPolicy.MAX_SUBMISSION_ATTEMPTS}).`,
         };
     }
 }

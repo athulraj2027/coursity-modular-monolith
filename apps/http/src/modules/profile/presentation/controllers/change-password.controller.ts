@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { ChangePassword } from "../../application/use-cases/change-password.usecase";
 import { UnauthorizedError } from "@/app/errors";
 import { ApiResponse } from "@/shared/utils/api-response";
+import { changePasswordSchema } from "../schemas/change-password.schema";
 
 export class ChangePasswordController {
     constructor(private readonly changePassword: ChangePassword) {}
@@ -13,13 +14,13 @@ export class ChangePasswordController {
                 throw new UnauthorizedError("Authentication required to change password");
             }
 
-            const { currentPassword, newPassword, confirmPassword } = req.body;
+            const validatedData = changePasswordSchema.parse(req.body);
 
             const result = await this.changePassword.execute({
                 userId,
-                currentPassword,
-                newPassword,
-                confirmPassword,
+                currentPassword: validatedData.currentPassword,
+                newPassword: validatedData.newPassword,
+                confirmPassword: validatedData.confirmPassword,
             });
 
             ApiResponse.success(res, result, result.message);

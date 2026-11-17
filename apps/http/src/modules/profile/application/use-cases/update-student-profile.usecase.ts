@@ -1,16 +1,23 @@
-import { NotFoundError } from "@/app/errors";
-import { ProfileRepository } from "../../domain/repositories/profile.repository";
+import { IProfileQueryRepository, IProfileMutationRepository } from "../../domain/repositories/profile.repository";
 import { FullUserProfile } from "../../domain/entities/profile.entity";
 import { UpdateStudentProfileDTO } from "../../domain/dtos/update-student-profile.dto";
+import { ProfileNotFoundError } from "../../domain/errors/profile.errors";
+import { ProfileValidationPolicy } from "../../domain/policies";
 
 export class UpdateStudentProfile {
-    constructor(private readonly profileRepository: ProfileRepository) { }
+    constructor(
+        private readonly profileRepository: IProfileQueryRepository & IProfileMutationRepository
+    ) { }
 
     async execute(userId: string, data: UpdateStudentProfileDTO): Promise<FullUserProfile> {
         const existingProfile = await this.profileRepository.getFullProfileByUserId(userId);
         if (!existingProfile) {
-            throw new NotFoundError("User profile not found");
+            throw new ProfileNotFoundError("User profile not found");
         }
+
+        // Domain validation policy
+        ProfileValidationPolicy.validateName(data.name);
+        ProfileValidationPolicy.validateBio(data.bio);
 
         if (data.name !== undefined && data.name.trim() !== "") {
             await this.profileRepository.updateUserName(userId, data.name.trim());
@@ -25,7 +32,7 @@ export class UpdateStudentProfile {
 
         const updatedProfile = await this.profileRepository.getFullProfileByUserId(userId);
         if (!updatedProfile) {
-            throw new NotFoundError("Updated student profile not found");
+            throw new ProfileNotFoundError("Updated student profile not found");
         }
 
         return updatedProfile;
