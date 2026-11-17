@@ -1,17 +1,29 @@
 import { Request, Response, NextFunction } from "express";
+import { AdminDeletePlanUseCase } from "../../application/use-cases/admin-delete-plan.usecase";
 import { AdminManagePlansUseCase } from "../../application/use-cases/admin-manage-plans.usecase";
 import { UnauthorizedError, ForbiddenError } from "@/app/errors";
 import { ApiResponse } from "@/shared/utils/api-response";
 
 export class AdminDeletePlanController {
-  constructor(private readonly adminManagePlansUseCase: AdminManagePlansUseCase) {}
+  private readonly adminDeletePlanUseCase: AdminDeletePlanUseCase;
+
+  constructor(useCaseOrFacade: AdminDeletePlanUseCase | AdminManagePlansUseCase) {
+    if ("execute" in useCaseOrFacade && typeof useCaseOrFacade.execute === "function") {
+      this.adminDeletePlanUseCase = useCaseOrFacade as AdminDeletePlanUseCase;
+    } else {
+      const facade = useCaseOrFacade as AdminManagePlansUseCase;
+      this.adminDeletePlanUseCase = {
+        execute: async (id: string) => facade.deletePlan(id),
+      } as any;
+    }
+  }
 
   execute = async (req: Request, res: Response, next: NextFunction) => {
     try {
       this.assertAdmin(req);
       const id = req.params.id as string;
-      await this.adminManagePlansUseCase.deletePlan(id);
-      return ApiResponse.success(res, undefined, "Subscription plan deactivated/deleted successfully");
+      await this.adminDeletePlanUseCase.execute(id);
+      return ApiResponse.success(res, { success: true }, "Subscription plan deleted successfully");
     } catch (error) {
       next(error);
     }
