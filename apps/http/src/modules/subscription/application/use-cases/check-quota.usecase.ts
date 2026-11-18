@@ -1,8 +1,8 @@
-import { SubscriptionRepository } from "../../domain/repositories/subscription.repository";
+import { IQuotaEvaluationRepository } from "../../domain/repositories/subscription.repository";
 import { QuotaEvaluationResult } from "../../domain/entities/subscription.entity";
 
 export class CheckQuotaUseCase {
-  constructor(private readonly subscriptionRepo: SubscriptionRepository) {}
+  constructor(private readonly subscriptionRepo: IQuotaEvaluationRepository) {}
 
   async execute(
     teacherProfileId: string,

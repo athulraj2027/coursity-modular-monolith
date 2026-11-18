@@ -1,4 +1,4 @@
-import { SubscriptionRepository } from "../../domain/repositories/subscription.repository";
+import { IAdminSubscriptionRepository } from "../../domain/repositories/subscription.repository";
 import {
   AdminSubscriptionFilterDto,
   AdminSubscriptionListItem,
@@ -6,7 +6,7 @@ import {
 } from "../../domain/dtos/subscription.dto";
 
 export class AdminGetSubscriptionsUseCase {
-  constructor(private readonly subscriptionRepo: SubscriptionRepository) {}
+  constructor(private readonly subscriptionRepo: IAdminSubscriptionRepository) {}
 
   async execute(filter: AdminSubscriptionFilterDto): Promise<{
     items: AdminSubscriptionListItem[];
