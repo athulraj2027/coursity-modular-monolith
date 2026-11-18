@@ -1,4 +1,3 @@
-import { IBaseRepository } from "@/shared/domain/repositories/base.repository.interface";
 import { LectureEntity } from "../entities/lecture.entity";
 import {
   CreateLectureDTO,
@@ -7,27 +6,33 @@ import {
   PaginatedLecturesResult,
 } from "../dtos/lecture.dto";
 
-export interface ILectureRepository
-  extends IBaseRepository<
-    LectureEntity,
-    string,
-    any,
-    UpdateLectureDTO,
-    LectureFilterParams
-  > {
+export interface CourseDefaultModuleContext {
+  id: string;
+  teacherProfileId: string;
+  defaultModuleId: string;
+  startingDate: Date | null;
+  title: string;
+}
+
+export interface StudentLessonAccessContext {
+  hasActiveEnrollment: boolean;
+  attendedLive: boolean;
+  isCompleted: boolean;
+}
+
+/**
+ * Segregated query repository for reading single lecture entities
+ */
+export interface ILectureQueryRepository {
   findById(id: string, includeDeleted?: boolean): Promise<LectureEntity | null>;
-  
+}
+
+/**
+ * Segregated repository for teacher lecture management, scheduling, and conflict detection
+ */
+export interface ITeacherLectureRepository {
   findManyTeacherLectures(
     teacherProfileId: string,
-    params: LectureFilterParams
-  ): Promise<PaginatedLecturesResult<LectureEntity>>;
-
-  findManyAdminLectures(
-    params: LectureFilterParams
-  ): Promise<PaginatedLecturesResult<LectureEntity>>;
-
-  findManyStudentLectures(
-    studentId: string,
     params: LectureFilterParams
   ): Promise<PaginatedLecturesResult<LectureEntity>>;
 
@@ -53,21 +58,39 @@ export interface ILectureRepository
 
   findCourseWithDefaultModule(
     courseId: string
-  ): Promise<{
-    id: string;
-    teacherProfileId: string;
-    defaultModuleId: string;
-    startingDate: Date | null;
-    title: string;
-  } | null>;
+  ): Promise<CourseDefaultModuleContext | null>;
+}
+
+/**
+ * Segregated repository for administrative lecture oversight
+ */
+export interface IAdminLectureRepository {
+  findManyAdminLectures(
+    params: LectureFilterParams
+  ): Promise<PaginatedLecturesResult<LectureEntity>>;
+}
+
+/**
+ * Segregated repository for student lecture queries and progress checks
+ */
+export interface IStudentLectureRepository {
+  findManyStudentLectures(
+    studentId: string,
+    params: LectureFilterParams
+  ): Promise<PaginatedLecturesResult<LectureEntity>>;
 
   findStudentLessonAccess(
     studentId: string,
     courseId: string,
     lessonId: string
-  ): Promise<{
-    hasActiveEnrollment: boolean;
-    attendedLive: boolean;
-    isCompleted: boolean;
-  }>;
+  ): Promise<StudentLessonAccessContext>;
 }
+
+/**
+ * Unified Lecture Repository Interface (ISP Aggregator)
+ */
+export interface ILectureRepository
+  extends ILectureQueryRepository,
+    ITeacherLectureRepository,
+    IAdminLectureRepository,
+    IStudentLectureRepository {}

@@ -1,5 +1,19 @@
+import { RequestHandler } from "express";
+import defaultPrisma from "@/infrastructure/database/prisma.client";
+import { emailService as defaultEmailService, IEmailService } from "@/infrastructure/email";
+import { BcryptPasswordService, IPasswordService } from "@/infrastructure/security";
+import { PrismaUserRepository } from "@/modules/user/infrastructure/repositories/prisma-user.repository";
+
 // Repositories & Services
 import { PrismaProfileRepository } from "./infrastructure/repositories/prisma-profile.repository";
+import {
+    IProfileRepository,
+    IProfileQueryRepository,
+    IProfileMutationRepository,
+    ITeacherProfileMutationRepository,
+    IUserPasswordRepository,
+    ProfileRepository,
+} from "./domain/repositories/profile.repository";
 
 // Use Cases
 import { GetProfile } from "./application/use-cases/get-profile.usecase";
@@ -17,69 +31,112 @@ import { UpdateTeacherProfileController } from "./presentation/controllers/updat
 import { SubmitTeacherVerificationController } from "./presentation/controllers/submit-teacher-verification.controller";
 import { ChangePasswordController } from "./presentation/controllers/change-password.controller";
 
-// Middlewares & Routes
+// Routes
 import { ProfileRoutes } from "./presentation/routes/profile.routes";
 
-// 1. Repositories
-export const profileRepository = new PrismaProfileRepository();
+export interface ProfileModuleDependencies {
+    profileRepository?: IProfileRepository;
+    userRepository?: IUserPasswordRepository;
+    passwordService?: IPasswordService;
+    emailService?: IEmailService;
+    authMiddleware?: RequestHandler;
+    isBlockedMiddleware?: RequestHandler;
+}
 
-import { emailService } from "@/infrastructure/email";
-import { BcryptPasswordService } from "@/infrastructure/security";
-import defaultPrisma from "@/infrastructure/database/prisma.client";
-import { PrismaUserRepository } from "@/modules/user/infrastructure/repositories/prisma-user.repository";
+/**
+ * Factory function to create fully configured Profile Module instances with dependency injection.
+ */
+export function createProfileModule(deps: ProfileModuleDependencies = {}) {
+    const profileRepo = deps.profileRepository ?? new PrismaProfileRepository(defaultPrisma);
+    const userRepo = deps.userRepository ?? new PrismaUserRepository(defaultPrisma);
+    const pwdService = deps.passwordService ?? new BcryptPasswordService();
+    const mailService = deps.emailService ?? defaultEmailService;
 
-const passwordService = new BcryptPasswordService();
-const userRepository = new PrismaUserRepository(defaultPrisma);
+    const getProfile = new GetProfile(profileRepo);
+    const updateProfile = new UpdateProfile(profileRepo);
+    const updateStudentProfile = new UpdateStudentProfile(profileRepo);
+    const updateTeacherProfile = new UpdateTeacherProfile(profileRepo);
+    const submitTeacherVerification = new SubmitTeacherVerification(profileRepo, mailService);
+    const changePassword = new ChangePassword(userRepo, pwdService, mailService);
 
-// 2. Use Cases
-const getProfile = new GetProfile(profileRepository);
-const updateProfile = new UpdateProfile(profileRepository);
-const updateStudentProfile = new UpdateStudentProfile(profileRepository);
-const updateTeacherProfile = new UpdateTeacherProfile(profileRepository);
-const submitTeacherVerification = new SubmitTeacherVerification(profileRepository, emailService);
-const changePassword = new ChangePassword(userRepository, passwordService, emailService);
+    const getProfileController = new GetProfileController(getProfile);
+    const updateProfileController = new UpdateProfileController(updateProfile);
+    const updateStudentProfileController = new UpdateStudentProfileController(updateStudentProfile);
+    const updateTeacherProfileController = new UpdateTeacherProfileController(updateTeacherProfile);
+    const submitTeacherVerificationController = new SubmitTeacherVerificationController(submitTeacherVerification);
+    const changePasswordController = new ChangePasswordController(changePassword);
 
-// 3. Controllers
-const getProfileController = new GetProfileController(getProfile);
-const updateProfileController = new UpdateProfileController(updateProfile);
-const updateStudentProfileController = new UpdateStudentProfileController(updateStudentProfile);
-const updateTeacherProfileController = new UpdateTeacherProfileController(updateTeacherProfile);
-const submitTeacherVerificationController = new SubmitTeacherVerificationController(submitTeacherVerification);
-const changePasswordController = new ChangePasswordController(changePassword);
+    const profileRoutes = new ProfileRoutes(
+        getProfileController,
+        updateProfileController,
+        updateStudentProfileController,
+        updateTeacherProfileController,
+        submitTeacherVerificationController,
+        changePasswordController,
+        deps.authMiddleware,
+        deps.isBlockedMiddleware
+    );
 
-// 4. Routes
-const profileRoutes = new ProfileRoutes(
-    getProfileController,
-    updateProfileController,
-    updateStudentProfileController,
-    updateTeacherProfileController,
-    submitTeacherVerificationController,
-    changePasswordController
-);
+    return {
+        repository: profileRepo,
+        useCases: {
+            getProfile,
+            updateProfile,
+            updateStudentProfile,
+            updateTeacherProfile,
+            submitTeacherVerification,
+            changePassword,
+        },
+        controllers: {
+            getProfileController,
+            updateProfileController,
+            updateStudentProfileController,
+            updateTeacherProfileController,
+            submitTeacherVerificationController,
+            changePasswordController,
+        },
+        routes: profileRoutes,
+        router: profileRoutes.router,
+    };
+}
 
-// Exports
+// Default module instance for backwards compatibility
+const defaultModule = createProfileModule();
+
+export const profileRepository = defaultModule.repository;
+export const profileRouter = defaultModule.router;
+
+// Domain & Contract Exports
 export * from "./domain/entities/profile.entity";
 export * from "./domain/dtos/update-profile.dto";
 export * from "./domain/dtos/update-student-profile.dto";
 export * from "./domain/dtos/update-teacher-profile.dto";
 export * from "./domain/dtos/change-password.dto";
+export * from "./domain/errors";
+export * from "./domain/policies";
 export * from "./domain/repositories/profile.repository";
+
+// Infrastructure Exports
 export * from "./infrastructure/repositories/prisma-profile.repository";
+
+// Application Exports
 export * from "./application/use-cases/get-profile.usecase";
 export * from "./application/use-cases/update-profile.usecase";
 export * from "./application/use-cases/update-student-profile.usecase";
 export * from "./application/use-cases/update-teacher-profile.usecase";
 export * from "./application/use-cases/submit-teacher-verification.usecase";
 export * from "./application/use-cases/change-password.usecase";
+
+// Presentation Exports
 export * from "./presentation/controllers/get-profile.controller";
 export * from "./presentation/controllers/update-profile.controller";
 export * from "./presentation/controllers/update-student-profile.controller";
 export * from "./presentation/controllers/update-teacher-profile.controller";
 export * from "./presentation/controllers/submit-teacher-verification.controller";
 export * from "./presentation/controllers/change-password.controller";
+export * from "./presentation/schemas";
 export * from "./presentation/validators/profile.validator";
 export * from "./presentation/validators/change-password.validator";
 export * from "./presentation/routes/profile.routes";
 
-export const profileRouter = profileRoutes.router;
 export default profileRouter;

@@ -8,9 +8,11 @@ import {
   CourseLessonEntity,
   CourseFilterParams,
   CourseMetrics,
+  isCourseEditableByTeacher,
 } from "../../domain/entities/course.entity";
 import {
   CreateCourseDTO,
+  TeacherUpdateCourseDTO,
   UpdateCourseDTO,
   CreateModuleDTO,
   UpdateModuleDTO,
@@ -25,6 +27,21 @@ export class TeacherCourseUseCase {
     private readonly courseRepository: ICourseRepository,
     private readonly curriculumRepository: ICurriculumRepository
   ) {}
+
+  private async assertCourseEditable(
+    teacherProfileId: string,
+    courseId: string
+  ): Promise<CourseEntity> {
+    const course = await this.courseRepository.findById(courseId, true);
+    if (!course) {
+      throw new NotFoundError(`Course with ID '${courseId}' was not found.`);
+    }
+    const check = isCourseEditableByTeacher(course, teacherProfileId);
+    if (!check.allowed) {
+      throw new ForbiddenError(check.reason || "Permission denied.");
+    }
+    return course;
+  }
 
   async getTeacherCourses(
     teacherProfileId: string,
@@ -66,59 +83,36 @@ export class TeacherCourseUseCase {
   async updateCourse(
     teacherProfileId: string,
     courseId: string,
-    dto: UpdateCourseDTO
+    dto: TeacherUpdateCourseDTO | UpdateCourseDTO
   ): Promise<CourseEntity> {
-    const course = await this.courseRepository.findById(courseId, true);
-    if (!course) {
-      throw new NotFoundError(`Course with ID '${courseId}' was not found.`);
-    }
-    if (course.teacherProfileId !== teacherProfileId) {
-      throw new ForbiddenError("You do not have permission to modify this course.");
-    }
-    if (course.isFrozen || course.status === "FROZEN") {
-      throw new ForbiddenError("This course has been frozen by administration and cannot be modified. It is in read-only mode.");
-    }
+    const course = await this.assertCourseEditable(teacherProfileId, courseId);
+
+    // Prevent privilege escalation on admin-controlled flags if passed
+    const safeDto: UpdateCourseDTO = { ...dto };
+    delete safeDto.isFeatured;
+    delete safeDto.isTrending;
+    delete safeDto.sortOrder;
 
     // Slug conflict validation
-    if (dto.slug && dto.slug !== course.slug) {
-      const existing = await this.courseRepository.findBySlug(dto.slug, true);
+    if (safeDto.slug && safeDto.slug !== course.slug) {
+      const existing = await this.courseRepository.findBySlug(safeDto.slug, true);
       if (existing && existing.id !== courseId) {
-        throw new BadRequestError(`A course with slug '${dto.slug}' already exists.`);
+        throw new BadRequestError(`A course with slug '${safeDto.slug}' already exists.`);
       }
     }
 
-    return this.courseRepository.update(courseId, dto);
+    return this.courseRepository.update(courseId, safeDto);
   }
 
   async deleteCourse(teacherProfileId: string, courseId: string): Promise<CourseEntity> {
-    const course = await this.courseRepository.findById(courseId, true);
-    if (!course) {
-      throw new NotFoundError(`Course with ID '${courseId}' was not found.`);
-    }
-    if (course.teacherProfileId !== teacherProfileId) {
-      throw new ForbiddenError("You do not have permission to delete this course.");
-    }
-    if (course.isFrozen || course.status === "FROZEN") {
-      throw new ForbiddenError("This course has been frozen by administration and cannot be deleted.");
-    }
-
+    await this.assertCourseEditable(teacherProfileId, courseId);
     return this.courseRepository.softDelete(courseId);
   }
 
   // ================= MODULE OPERATIONS =================
 
   async createModule(teacherProfileId: string, dto: CreateModuleDTO): Promise<CourseModuleEntity> {
-    const course = await this.courseRepository.findById(dto.courseId, false);
-    if (!course) {
-      throw new NotFoundError(`Course with ID '${dto.courseId}' was not found.`);
-    }
-    if (course.teacherProfileId !== teacherProfileId) {
-      throw new ForbiddenError("You do not have permission to add modules to this course.");
-    }
-    if (course.isFrozen || course.status === "FROZEN") {
-      throw new ForbiddenError("This course has been frozen by administration. Curriculum modifications are locked.");
-    }
-
+    await this.assertCourseEditable(teacherProfileId, dto.courseId);
     return this.curriculumRepository.createModule(dto);
   }
 
@@ -131,14 +125,7 @@ export class TeacherCourseUseCase {
     if (!module) {
       throw new NotFoundError(`Module with ID '${moduleId}' was not found.`);
     }
-    const course = await this.courseRepository.findById(module.courseId, false);
-    if (!course || course.teacherProfileId !== teacherProfileId) {
-      throw new ForbiddenError("You do not have permission to modify this module.");
-    }
-    if (course.isFrozen || course.status === "FROZEN") {
-      throw new ForbiddenError("This course has been frozen by administration. Curriculum modifications are locked.");
-    }
-
+    await this.assertCourseEditable(teacherProfileId, module.courseId);
     return this.curriculumRepository.updateModule(moduleId, dto);
   }
 
@@ -147,14 +134,7 @@ export class TeacherCourseUseCase {
     if (!module) {
       throw new NotFoundError(`Module with ID '${moduleId}' was not found.`);
     }
-    const course = await this.courseRepository.findById(module.courseId, false);
-    if (!course || course.teacherProfileId !== teacherProfileId) {
-      throw new ForbiddenError("You do not have permission to delete this module.");
-    }
-    if (course.isFrozen || course.status === "FROZEN") {
-      throw new ForbiddenError("This course has been frozen by administration. Curriculum modifications are locked.");
-    }
-
+    await this.assertCourseEditable(teacherProfileId, module.courseId);
     return this.curriculumRepository.deleteModule(moduleId);
   }
 
@@ -163,17 +143,7 @@ export class TeacherCourseUseCase {
     courseId: string,
     items: ReorderItemDTO[]
   ): Promise<void> {
-    const course = await this.courseRepository.findById(courseId, false);
-    if (!course) {
-      throw new NotFoundError(`Course with ID '${courseId}' was not found.`);
-    }
-    if (course.teacherProfileId !== teacherProfileId) {
-      throw new ForbiddenError("You do not have permission to reorder modules in this course.");
-    }
-    if (course.isFrozen || course.status === "FROZEN") {
-      throw new ForbiddenError("This course has been frozen by administration. Curriculum modifications are locked.");
-    }
-
+    await this.assertCourseEditable(teacherProfileId, courseId);
     await this.curriculumRepository.reorderModules(courseId, items);
   }
 
@@ -184,14 +154,7 @@ export class TeacherCourseUseCase {
     if (!module) {
       throw new NotFoundError(`Module with ID '${dto.moduleId}' was not found.`);
     }
-    const course = await this.courseRepository.findById(module.courseId, false);
-    if (!course || course.teacherProfileId !== teacherProfileId) {
-      throw new ForbiddenError("You do not have permission to add lessons to this course.");
-    }
-    if (course.isFrozen || course.status === "FROZEN") {
-      throw new ForbiddenError("This course has been frozen by administration. Curriculum modifications are locked.");
-    }
-
+    await this.assertCourseEditable(teacherProfileId, module.courseId);
     return this.curriculumRepository.createLesson(dto);
   }
 
@@ -208,14 +171,7 @@ export class TeacherCourseUseCase {
     if (!module) {
       throw new NotFoundError("Parent module not found.");
     }
-    const course = await this.courseRepository.findById(module.courseId, false);
-    if (!course || course.teacherProfileId !== teacherProfileId) {
-      throw new ForbiddenError("You do not have permission to modify this lesson.");
-    }
-    if (course.isFrozen || course.status === "FROZEN") {
-      throw new ForbiddenError("This course has been frozen by administration. Curriculum modifications are locked.");
-    }
-
+    await this.assertCourseEditable(teacherProfileId, module.courseId);
     return this.curriculumRepository.updateLesson(lessonId, dto);
   }
 
@@ -228,14 +184,7 @@ export class TeacherCourseUseCase {
     if (!module) {
       throw new NotFoundError("Parent module not found.");
     }
-    const course = await this.courseRepository.findById(module.courseId, false);
-    if (!course || course.teacherProfileId !== teacherProfileId) {
-      throw new ForbiddenError("You do not have permission to delete this lesson.");
-    }
-    if (course.isFrozen || course.status === "FROZEN") {
-      throw new ForbiddenError("This course has been frozen by administration. Curriculum modifications are locked.");
-    }
-
+    await this.assertCourseEditable(teacherProfileId, module.courseId);
     return this.curriculumRepository.deleteLesson(lessonId);
   }
 
@@ -248,14 +197,7 @@ export class TeacherCourseUseCase {
     if (!module) {
       throw new NotFoundError(`Module with ID '${moduleId}' was not found.`);
     }
-    const course = await this.courseRepository.findById(module.courseId, false);
-    if (!course || course.teacherProfileId !== teacherProfileId) {
-      throw new ForbiddenError("You do not have permission to reorder lessons in this course.");
-    }
-    if (course.isFrozen || course.status === "FROZEN") {
-      throw new ForbiddenError("This course has been frozen by administration. Curriculum modifications are locked.");
-    }
-
+    await this.assertCourseEditable(teacherProfileId, module.courseId);
     await this.curriculumRepository.reorderLessons(moduleId, items);
   }
 }

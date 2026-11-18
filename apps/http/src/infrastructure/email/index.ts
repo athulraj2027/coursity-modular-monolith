@@ -1,12 +1,12 @@
-import { NodemailerTransport } from "./transport/nodemailer.transport";
-import { EmailQueue } from "./queue/email.queue";
-import { EmailWorker } from "./queue/email.worker";
-import { QueueEmailUseCase } from "./use-cases/queue-email.usecase";
-import { EmailService } from "./services/email.service.impl";
-import { emailConfig } from "./config/email.config";
-import { IEmailService } from "./contracts/email-service.abstract";
-import { IEmailTransport } from "./contracts/email-transport.abstract";
-import { IEmailQueue } from "./contracts/email-queue.abstract";
+import { NodemailerTransport } from "./infrastructure/transport/nodemailer.transport";
+import { EmailQueue } from "./infrastructure/queue/email.queue";
+import { EmailWorker } from "./infrastructure/queue/email.worker";
+import { QueueEmailUseCase } from "./application/use-cases/queue-email.usecase";
+import { EmailService } from "./application/services/email.service.impl";
+import { emailConfig } from "./infrastructure/config/email.config";
+import { IEmailService } from "./domain/contracts/email-service.interface";
+import { IEmailTransport } from "./domain/contracts/email-transport.interface";
+import { IEmailQueue } from "./domain/contracts/email-queue.interface";
 
 const emailTransport: IEmailTransport = new NodemailerTransport();
 const emailQueue: IEmailQueue = new EmailQueue();
@@ -26,26 +26,33 @@ export const closeEmailWorker = async (): Promise<void> => {
     await emailQueue.close();
 };
 
-export * from "./contracts/email-service.abstract";
-export * from "./contracts/email-transport.abstract";
-export * from "./contracts/email-queue.abstract";
-export * from "./entities/email.entity";
-export * from "./errors/email.error";
-export * from "./dtos/send-email.dto";
-export * from "./config/email.config";
-export * from "./transport/nodemailer.transport";
-export * from "./queue/email.queue";
-export * from "./queue/email.worker";
-export * from "./services/email.service.impl";
-export * from "./use-cases/queue-email.usecase";
-export * from "./templates/base.template";
-export * from "./templates/signup-otp.template";
-export * from "./templates/reset-password-otp.template";
-export * from "./templates/password-changed.template";
-export * from "./templates/teacher-status.template";
-export * from "./templates/welcome.template";
-export * from "./templates/course-moderation.template";
-export * from "./templates/subscription-purchased.template";
+// 1. Domain Exports
+export * from "./domain/entities/email.entity";
+export * from "./domain/contracts/email-transport.interface";
+export * from "./domain/contracts/email-queue.interface";
+export * from "./domain/contracts/email-service.interface";
+export * from "./domain/errors/email.error";
+
+// 2. Application Exports
+export * from "./application/dtos/send-email.dto";
+export * from "./application/use-cases/queue-email.usecase";
+export * from "./application/services/email.service.impl";
+
+// 3. Infrastructure Exports
+export * from "./infrastructure/config/email.config";
+export * from "./infrastructure/transport/nodemailer.transport";
+export * from "./infrastructure/queue/email.queue";
+export * from "./infrastructure/queue/email.worker";
+
+// 4. Presentation Exports (Templates)
+export * from "./presentation/templates/base.template";
+export * from "./presentation/templates/signup-otp.template";
+export * from "./presentation/templates/reset-password-otp.template";
+export * from "./presentation/templates/password-changed.template";
+export * from "./presentation/templates/teacher-status.template";
+export * from "./presentation/templates/welcome.template";
+export * from "./presentation/templates/course-moderation.template";
+export * from "./presentation/templates/subscription-purchased.template";
 
 export { emailTransport, emailQueue, emailWorker };
 export default emailService;

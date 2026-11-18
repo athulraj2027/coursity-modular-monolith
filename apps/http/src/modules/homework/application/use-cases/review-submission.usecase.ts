@@ -1,11 +1,16 @@
-import { IHomeworkRepository } from "../../domain/repositories/homework.repository";
+import {
+  IHomeworkQueryRepository,
+  IHomeworkSubmissionRepository,
+  IHomeworkReviewRepository,
+  IHomeworkContextRepository,
+} from "../../domain/repositories/homework.repository";
 import { ReviewSubmissionDTO } from "../../domain/dtos/homework.dto";
 import { HomeworkSubmissionEntity } from "../../domain/entities/homework.entity";
 import {
   SubmissionNotFoundError,
   HomeworkAccessDeniedError,
-  HomeworkValidationError,
 } from "../../domain/errors/homework.errors";
+import { HomeworkGradingPolicy } from "../../domain/policies/homework-grading.policy";
 
 export interface ReviewSubmissionInput {
   submissionId: string;
@@ -14,8 +19,13 @@ export interface ReviewSubmissionInput {
   data: ReviewSubmissionDTO;
 }
 
+export type ReviewSubmissionRepository = IHomeworkQueryRepository &
+  IHomeworkSubmissionRepository &
+  IHomeworkReviewRepository &
+  IHomeworkContextRepository;
+
 export class ReviewSubmissionUseCase {
-  constructor(private readonly homeworkRepo: IHomeworkRepository) {}
+  constructor(private readonly homeworkRepo: ReviewSubmissionRepository) {}
 
   async execute(input: ReviewSubmissionInput): Promise<HomeworkSubmissionEntity> {
     const { submissionId, userId, userRole, data } = input;
@@ -43,24 +53,9 @@ export class ReviewSubmissionUseCase {
       throw new HomeworkAccessDeniedError("Only teachers and administrators can review homework submissions");
     }
 
-    // 3. Validation
-    if (data.verificationStatus !== "VERIFIED" && data.verificationStatus !== "REDO") {
-      throw new HomeworkValidationError("Verification status must be either 'VERIFIED' or 'REDO'");
-    }
+    // 3. Domain policy validation & sanitization
+    const sanitizedData = HomeworkGradingPolicy.sanitizeReviewData(data, homework.maxScore);
 
-    if (data.score !== undefined && data.score !== null) {
-      if (typeof data.score !== "number" || isNaN(data.score) || data.score < 0) {
-        throw new HomeworkValidationError("Score must be a positive number");
-      }
-      if (homework.maxScore && data.score > homework.maxScore) {
-        throw new HomeworkValidationError(`Score cannot exceed maximum score (${homework.maxScore})`);
-      }
-    }
-
-    return this.homeworkRepo.reviewSubmission(submissionId, teacherProfileId, {
-      verificationStatus: data.verificationStatus,
-      feedback: data.feedback ? data.feedback.trim() : null,
-      score: data.score !== undefined ? data.score : null,
-    });
+    return this.homeworkRepo.reviewSubmission(submissionId, teacherProfileId, sanitizedData);
   }
 }

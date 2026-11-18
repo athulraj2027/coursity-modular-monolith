@@ -1,11 +1,14 @@
 import { NextFunction, Request, Response } from "express";
 import { STATUS_CODES } from "@/app/config/status";
 import { BadRequestError, ConflictError, UnprocessableEntityError } from "@/app/errors";
-import { IdempotencyService, idempotencyService as defaultService } from "@/infrastructure/idempotency/idempotency.service";
-import { IdempotencyOptions } from "@/infrastructure/idempotency/idempotency.types";
+import {
+    IIdempotencyService,
+    idempotencyService as defaultService,
+    IdempotencyOptions,
+} from "@/infrastructure/idempotency";
 
 export const createIdempotencyMiddleware = (
-    service: IdempotencyService = defaultService,
+    service: IIdempotencyService = defaultService,
     options: IdempotencyOptions = {}
 ) => {
     const {

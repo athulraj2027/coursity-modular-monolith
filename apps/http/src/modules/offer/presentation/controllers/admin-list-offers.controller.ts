@@ -1,36 +1,29 @@
 import { Request, Response, NextFunction } from "express";
 import { AdminListOffersUseCase } from "../../application/use-cases/admin-list-offers.usecase";
 import { ApiResponse } from "@/shared";
+import { listOffersQueryObjectSchema } from "../schemas/offer.schema";
 
 export class AdminListOffersController {
   constructor(private readonly adminListOffersUseCase: AdminListOffersUseCase) {}
 
   execute = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const {
-        page,
-        limit,
-        search,
-        status,
-        discountType,
-        sortBy,
-        sortOrder,
-      } = req.query as any;
+      const validatedQuery = listOffersQueryObjectSchema.parse(req.query);
 
-      const currentPage = page ? parseInt(page, 10) : 1;
-      const currentLimit = limit ? parseInt(limit, 10) : 10;
+      const currentPage = validatedQuery.page;
+      const currentLimit = validatedQuery.limit;
 
       const result = await this.adminListOffersUseCase.execute({
         page: currentPage,
         limit: currentLimit,
-        search,
-        status,
-        discountType,
-        sortBy,
-        sortOrder,
+        search: validatedQuery.search,
+        status: validatedQuery.status as any,
+        discountType: validatedQuery.discountType as any,
+        sortBy: validatedQuery.sortBy,
+        sortOrder: validatedQuery.sortOrder,
       });
 
-      const totalPages = Math.ceil(result.total / currentLimit);
+      const totalPages = Math.ceil(result.total / currentLimit) || 1;
 
       return ApiResponse.success(res, {
         items: result.offers,

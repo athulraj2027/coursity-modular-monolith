@@ -1,4 +1,8 @@
-import { IHomeworkRepository } from "../../domain/repositories/homework.repository";
+import {
+  IHomeworkQueryRepository,
+  IHomeworkSubmissionRepository,
+  IHomeworkContextRepository,
+} from "../../domain/repositories/homework.repository";
 import { SubmitHomeworkDTO } from "../../domain/dtos/homework.dto";
 import { HomeworkSubmissionEntity } from "../../domain/entities/homework.entity";
 import {
@@ -6,6 +10,7 @@ import {
   HomeworkAccessDeniedError,
   HomeworkValidationError,
 } from "../../domain/errors/homework.errors";
+import { HomeworkSubmissionPolicy } from "../../domain/policies/homework-submission.policy";
 
 export interface SubmitHomeworkInput {
   homeworkId: string;
@@ -14,13 +19,17 @@ export interface SubmitHomeworkInput {
   data: SubmitHomeworkDTO;
 }
 
+export type SubmitHomeworkRepository = IHomeworkQueryRepository &
+  IHomeworkSubmissionRepository &
+  IHomeworkContextRepository;
+
 export class SubmitHomeworkUseCase {
-  constructor(private readonly homeworkRepo: IHomeworkRepository) {}
+  constructor(private readonly homeworkRepo: SubmitHomeworkRepository) {}
 
   async execute(input: SubmitHomeworkInput): Promise<HomeworkSubmissionEntity> {
     const { homeworkId, studentId, userRole, data } = input;
 
-    // 1. Verify homework exists
+    // 1. Verify homework exists and is published
     const homework = await this.homeworkRepo.findById(homeworkId, false);
     if (!homework || homework.isDeleted || !homework.isPublished) {
       throw new HomeworkNotFoundError("Homework assignment not found or is unavailable");
@@ -32,25 +41,18 @@ export class SubmitHomeworkUseCase {
       throw new HomeworkAccessDeniedError("You must be enrolled in this course to submit homework");
     }
 
-    // 3. Validate that student provided at least one form of response
-    const hasText = Boolean(data.submissionText && data.submissionText.trim().length > 0);
-    const hasUrl = Boolean(data.submissionUrl && data.submissionUrl.trim().length > 0);
-    const hasFile = Boolean(data.fileUrl && data.fileUrl.trim().length > 0);
+    // 3. Domain policy validation for payload
+    HomeworkSubmissionPolicy.validateSubmissionPayload(data);
 
-    if (!hasText && !hasUrl && !hasFile) {
-      throw new HomeworkValidationError(
-        "Please provide a written response, a link (GitHub / Figma / Colab), or upload a submission file"
-      );
+    // 4. Check existing submission to enforce state machine rules (no overwrite of VERIFIED)
+    const existing = await this.homeworkRepo.findSubmission(homeworkId, studentId);
+    const resubmitCheck = HomeworkSubmissionPolicy.canResubmit(existing);
+    if (!resubmitCheck.allowed) {
+      throw new HomeworkValidationError(resubmitCheck.reason);
     }
 
-    // 4. Calculate if late
-    let isLate = false;
-    if (homework.dueDate) {
-      const now = new Date();
-      if (now.getTime() > new Date(homework.dueDate).getTime()) {
-        isLate = true;
-      }
-    }
+    // 5. Calculate if late via domain policy
+    const isLate = HomeworkSubmissionPolicy.isLate(homework.dueDate);
 
     return this.homeworkRepo.createOrUpdateSubmission(
       homeworkId,

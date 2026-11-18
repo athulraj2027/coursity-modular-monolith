@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { VerifyCoursePaymentUseCase } from "../../application/use-cases/verify-course-payment.usecase";
+import { verifyCoursePaymentSchema } from "../schemas/enrollment.schema";
 import { UnauthorizedError } from "@/app/errors";
 import { ApiResponse } from "@/shared";
 
@@ -11,7 +12,8 @@ export class VerifyCoursePaymentController {
       const studentId = req.user?.userId;
       if (!studentId) throw new UnauthorizedError("Authentication required.");
 
-      const result = await this.verifyPaymentUseCase.execute(studentId, req.body);
+      const validated = verifyCoursePaymentSchema.parse(req.body);
+      const result = await this.verifyPaymentUseCase.execute(studentId, validated);
       return ApiResponse.created(res, result, "Payment verified and course enrollment confirmed.");
     } catch (error) {
       next(error);

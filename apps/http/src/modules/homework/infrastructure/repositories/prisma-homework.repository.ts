@@ -628,4 +628,13 @@ export class PrismaHomeworkRepository
 
     return profile?.teacherProfile?.id || null;
   }
+
+  async getCourseTeacherProfileId(courseId: string): Promise<string | null> {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      select: { teacherProfileId: true },
+    });
+
+    return course?.teacherProfileId || null;
+  }
 }

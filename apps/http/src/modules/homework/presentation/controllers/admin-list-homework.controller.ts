@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { AdminListHomeworkUseCase } from "../../application/use-cases/admin-list-homework.usecase";
+import { homeworkQueryObjectSchema } from "../schemas/homework.schema";
 import { ApiResponse } from "@/shared";
 
 export class AdminListHomeworkController {
@@ -7,20 +8,16 @@ export class AdminListHomeworkController {
 
   execute = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
-      const search = req.query.search as string | undefined;
-      const courseId = req.query.courseId as string | undefined;
-      const lectureId = req.query.lectureId as string | undefined;
-      const teacherProfileId = req.query.teacherProfileId as string | undefined;
+      const validatedQuery = homeworkQueryObjectSchema.parse(req.query);
 
       const result = await this.adminListHomeworkUseCase.execute({
-        page,
-        limit,
-        search,
-        courseId,
-        lectureId,
-        teacherProfileId,
+        page: validatedQuery.page ?? 1,
+        limit: validatedQuery.limit ?? 10,
+        search: validatedQuery.search,
+        courseId: validatedQuery.courseId,
+        lectureId: validatedQuery.lectureId,
+        teacherProfileId: validatedQuery.teacherProfileId,
+        sort: validatedQuery.sort,
       });
 
       return ApiResponse.success(res, result);

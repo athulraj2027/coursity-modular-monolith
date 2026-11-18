@@ -1,9 +1,9 @@
-import { TeacherCouponRepository } from "../../domain/repositories/teacher-coupon.repository";
+import { IAdminCouponRepository } from "../../domain/repositories/teacher-coupon.repository";
 import { TeacherCouponEntity } from "../../domain/entities/teacher-coupon.entity";
 import { NotFoundError } from "@/app/errors";
 
 export class AdminToggleCouponStatusUseCase {
-  constructor(private readonly couponRepo: TeacherCouponRepository) {}
+  constructor(private readonly couponRepo: IAdminCouponRepository) {}
 
   async execute(couponId: string, isActive?: boolean): Promise<TeacherCouponEntity> {
     const coupon = await this.couponRepo.findById(couponId);

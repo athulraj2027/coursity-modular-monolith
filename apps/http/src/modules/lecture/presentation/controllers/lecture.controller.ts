@@ -18,6 +18,23 @@ import { AdminGetLecturesController } from "./admin-get-lectures.controller";
 import { AdminGetLectureDetailController } from "./admin-get-lecture-detail.controller";
 import { StudentGetLecturesController } from "./student-get-lectures.controller";
 import { StudentGetLectureDetailController } from "./student-get-lecture-detail.controller";
+import {
+  ITeacherProfileResolver,
+  defaultTeacherProfileResolver,
+} from "@/modules/course/domain/services/teacher-profile-resolver.service";
+
+export interface LectureControllerDependencies {
+  teacherGetLecturesUseCase: TeacherGetLecturesUseCase;
+  teacherGetLectureDetailUseCase: TeacherGetLectureDetailUseCase;
+  teacherCreateLectureUseCase: TeacherCreateLectureUseCase;
+  teacherUpdateLectureUseCase: TeacherUpdateLectureUseCase;
+  teacherDeleteLectureUseCase: TeacherDeleteLectureUseCase;
+  adminGetLecturesUseCase: AdminGetLecturesUseCase;
+  adminGetLectureDetailUseCase: AdminGetLectureDetailUseCase;
+  studentGetLecturesUseCase: StudentGetLecturesUseCase;
+  studentGetLectureDetailUseCase: StudentGetLectureDetailUseCase;
+  profileResolver?: ITeacherProfileResolver;
+}
 
 export class LectureController {
   private readonly teacherGetLecturesController: TeacherGetLecturesController;
@@ -31,25 +48,40 @@ export class LectureController {
   private readonly studentGetLectureDetailController: StudentGetLectureDetailController;
 
   constructor(
-    teacherGetLecturesUseCase: TeacherGetLecturesUseCase,
-    teacherGetLectureDetailUseCase: TeacherGetLectureDetailUseCase,
-    teacherCreateLectureUseCase: TeacherCreateLectureUseCase,
-    teacherUpdateLectureUseCase: TeacherUpdateLectureUseCase,
-    teacherDeleteLectureUseCase: TeacherDeleteLectureUseCase,
-    adminGetLecturesUseCase: AdminGetLecturesUseCase,
-    adminGetLectureDetailUseCase: AdminGetLectureDetailUseCase,
-    studentGetLecturesUseCase: StudentGetLecturesUseCase,
-    studentGetLectureDetailUseCase: StudentGetLectureDetailUseCase
+    depsOrFirstUseCase: LectureControllerDependencies | TeacherGetLecturesUseCase,
+    teacherGetLectureDetailUseCase?: TeacherGetLectureDetailUseCase,
+    teacherCreateLectureUseCase?: TeacherCreateLectureUseCase,
+    teacherUpdateLectureUseCase?: TeacherUpdateLectureUseCase,
+    teacherDeleteLectureUseCase?: TeacherDeleteLectureUseCase,
+    adminGetLecturesUseCase?: AdminGetLecturesUseCase,
+    adminGetLectureDetailUseCase?: AdminGetLectureDetailUseCase,
+    studentGetLecturesUseCase?: StudentGetLecturesUseCase,
+    studentGetLectureDetailUseCase?: StudentGetLectureDetailUseCase,
+    profileResolver: ITeacherProfileResolver = defaultTeacherProfileResolver
   ) {
-    this.teacherGetLecturesController = new TeacherGetLecturesController(teacherGetLecturesUseCase);
-    this.teacherGetLectureDetailController = new TeacherGetLectureDetailController(teacherGetLectureDetailUseCase);
-    this.teacherCreateLectureController = new TeacherCreateLectureController(teacherCreateLectureUseCase);
-    this.teacherUpdateLectureController = new TeacherUpdateLectureController(teacherUpdateLectureUseCase);
-    this.teacherDeleteLectureController = new TeacherDeleteLectureController(teacherDeleteLectureUseCase);
-    this.adminGetLecturesController = new AdminGetLecturesController(adminGetLecturesUseCase);
-    this.adminGetLectureDetailController = new AdminGetLectureDetailController(adminGetLectureDetailUseCase);
-    this.studentGetLecturesController = new StudentGetLecturesController(studentGetLecturesUseCase);
-    this.studentGetLectureDetailController = new StudentGetLectureDetailController(studentGetLectureDetailUseCase);
+    if ("teacherGetLecturesUseCase" in depsOrFirstUseCase) {
+      const deps = depsOrFirstUseCase as LectureControllerDependencies;
+      const resolver = deps.profileResolver || defaultTeacherProfileResolver;
+      this.teacherGetLecturesController = new TeacherGetLecturesController(deps.teacherGetLecturesUseCase, resolver);
+      this.teacherGetLectureDetailController = new TeacherGetLectureDetailController(deps.teacherGetLectureDetailUseCase, resolver);
+      this.teacherCreateLectureController = new TeacherCreateLectureController(deps.teacherCreateLectureUseCase, resolver);
+      this.teacherUpdateLectureController = new TeacherUpdateLectureController(deps.teacherUpdateLectureUseCase, resolver);
+      this.teacherDeleteLectureController = new TeacherDeleteLectureController(deps.teacherDeleteLectureUseCase, resolver);
+      this.adminGetLecturesController = new AdminGetLecturesController(deps.adminGetLecturesUseCase);
+      this.adminGetLectureDetailController = new AdminGetLectureDetailController(deps.adminGetLectureDetailUseCase);
+      this.studentGetLecturesController = new StudentGetLecturesController(deps.studentGetLecturesUseCase);
+      this.studentGetLectureDetailController = new StudentGetLectureDetailController(deps.studentGetLectureDetailUseCase);
+    } else {
+      this.teacherGetLecturesController = new TeacherGetLecturesController(depsOrFirstUseCase, profileResolver);
+      this.teacherGetLectureDetailController = new TeacherGetLectureDetailController(teacherGetLectureDetailUseCase!, profileResolver);
+      this.teacherCreateLectureController = new TeacherCreateLectureController(teacherCreateLectureUseCase!, profileResolver);
+      this.teacherUpdateLectureController = new TeacherUpdateLectureController(teacherUpdateLectureUseCase!, profileResolver);
+      this.teacherDeleteLectureController = new TeacherDeleteLectureController(teacherDeleteLectureUseCase!, profileResolver);
+      this.adminGetLecturesController = new AdminGetLecturesController(adminGetLecturesUseCase!);
+      this.adminGetLectureDetailController = new AdminGetLectureDetailController(adminGetLectureDetailUseCase!);
+      this.studentGetLecturesController = new StudentGetLecturesController(studentGetLecturesUseCase!);
+      this.studentGetLectureDetailController = new StudentGetLectureDetailController(studentGetLectureDetailUseCase!);
+    }
   }
 
   // Teacher handlers

@@ -1,6 +1,13 @@
-import { IHomeworkRepository } from "../../domain/repositories/homework.repository";
+import {
+  IHomeworkQueryRepository,
+  IHomeworkSubmissionRepository,
+  IHomeworkContextRepository,
+} from "../../domain/repositories/homework.repository";
 import { HomeworkEntity } from "../../domain/entities/homework.entity";
-import { HomeworkNotFoundError, HomeworkAccessDeniedError } from "../../domain/errors/homework.errors";
+import {
+  HomeworkNotFoundError,
+  HomeworkAccessDeniedError,
+} from "../../domain/errors/homework.errors";
 
 export interface GetHomeworkDetailInput {
   homeworkId: string;
@@ -8,8 +15,12 @@ export interface GetHomeworkDetailInput {
   userRole: string;
 }
 
+export type GetHomeworkDetailRepository = IHomeworkQueryRepository &
+  IHomeworkSubmissionRepository &
+  IHomeworkContextRepository;
+
 export class GetHomeworkDetailUseCase {
-  constructor(private readonly homeworkRepo: IHomeworkRepository) {}
+  constructor(private readonly homeworkRepo: GetHomeworkDetailRepository) {}
 
   async execute(input: GetHomeworkDetailInput): Promise<HomeworkEntity> {
     const { homeworkId, userId, userRole } = input;
@@ -29,7 +40,7 @@ export class GetHomeworkDetailUseCase {
       if (teacherProfileId === homework.teacherProfileId) {
         return homework;
       }
-      // If not the teacher, check enrollment
+      // If not the instructor of this assignment, check student enrollment
       const isEnrolled = await this.homeworkRepo.isStudentEnrolled(userId, homework.courseId);
       if (!isEnrolled) {
         throw new HomeworkAccessDeniedError("You do not have access to this homework assignment");

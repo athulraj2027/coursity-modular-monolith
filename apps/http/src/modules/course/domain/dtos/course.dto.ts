@@ -19,6 +19,7 @@ export interface InitialLessonDTO {
   videoThumbnail?: string | null;
   articleBody?: string | null;
   attachments?: LessonAttachment[];
+  scheduledAt?: Date | string | null;
 }
 
 export interface InitialModuleDTO {
@@ -77,6 +78,31 @@ export interface UpdateCourseDTO {
   sortOrder?: number;
 }
 
+/**
+ * Teacher-safe update DTO that prevents privilege escalation on administrative flags.
+ */
+export interface TeacherUpdateCourseDTO {
+  title?: string;
+  slug?: string | null;
+  subtitle?: string | null;
+  description?: string | null;
+  thumbnail?: string | null;
+  promoVideoUrl?: string | null;
+  startingDate?: Date | string | null;
+  level?: CourseLevel;
+  language?: string;
+  pricingType?: CoursePricingType;
+  price?: number;
+  currency?: string;
+  learningOutcomes?: string[];
+  requirements?: string[];
+  targetAudience?: string[];
+  tags?: string[];
+  categoryId?: string;
+  subcategoryId?: string | null;
+  status?: CourseStatus;
+}
+
 export interface CreateModuleDTO {
   courseId: string;
   title: string;
@@ -106,6 +132,7 @@ export interface CreateLessonDTO {
   videoThumbnail?: string | null;
   articleBody?: string | null;
   attachments?: LessonAttachment[];
+  scheduledAt?: Date | string | null;
 }
 
 export interface UpdateLessonDTO {
@@ -121,6 +148,7 @@ export interface UpdateLessonDTO {
   videoThumbnail?: string | null;
   articleBody?: string | null;
   attachments?: LessonAttachment[];
+  scheduledAt?: Date | string | null;
 }
 
 export interface ReorderItemDTO {
@@ -136,3 +164,10 @@ export interface AdminFreezeCourseDTO {
   reason: string;
 }
 
+export interface CourseStatusUpdateExtras {
+  rejectionReason?: string | null;
+  isApproved?: boolean;
+  publishedAt?: Date | null;
+  delistReason?: string | null;
+  freezeReason?: string | null;
+}

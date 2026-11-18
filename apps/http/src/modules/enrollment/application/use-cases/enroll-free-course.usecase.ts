@@ -1,11 +1,12 @@
-import { EnrollmentRepository } from "../../domain/repositories/enrollment.repository";
+import { IStudentEnrollmentRepository } from "../../domain/repositories/enrollment.repository";
 import { CourseEnrollmentEntity } from "../../domain/entities/enrollment.entity";
+import { CourseRefundPolicy } from "../../domain/policies/course-refund.policy";
 import { ICourseRepository } from "@/modules/course/domain/repositories/course.repository";
 import { BadRequestError, ConflictError, NotFoundError } from "@/app/errors";
 
 export class EnrollFreeCourseUseCase {
   constructor(
-    private readonly enrollmentRepo: EnrollmentRepository,
+    private readonly enrollmentRepo: IStudentEnrollmentRepository,
     private readonly courseRepo: ICourseRepository
   ) {}
 
@@ -38,12 +39,8 @@ export class EnrollFreeCourseUseCase {
     }
 
     const now = new Date();
-    const effectiveStart = course.startingDate && new Date(course.startingDate) > now
-      ? new Date(course.startingDate)
-      : now;
-    
-    // 20-day refund window from effective course start
-    const refundEligibleUntil = new Date(effectiveStart.getTime() + 20 * 24 * 60 * 60 * 1000);
+    // 20-day refund window from effective course start using Domain Policy
+    const refundEligibleUntil = CourseRefundPolicy.calculateRefundEligibleUntil(course.startingDate, now);
     const invoiceNumber = `INV-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     return this.enrollmentRepo.createEnrollment({

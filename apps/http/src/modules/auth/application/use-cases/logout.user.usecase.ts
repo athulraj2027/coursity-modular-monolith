@@ -1,11 +1,11 @@
-import { TokenRepository } from "../../domain/repositories/token.repository";
-import { TokenService } from "@/infrastructure/security";
+import { IDeleteRefreshTokenRepository } from "../../domain/repositories/token.repository";
+import { ITokenVerifier } from "@/infrastructure/security";
 import { LogoutInputDTO, LogoutOutputDTO } from "../dtos/logout.dto";
 
 export class LogoutUser {
     constructor(
-        private readonly tokenRepository: TokenRepository,
-        private readonly tokenService: TokenService
+        private readonly tokenRepository: IDeleteRefreshTokenRepository,
+        private readonly tokenService: ITokenVerifier
     ) { }
 
     async execute(input: LogoutInputDTO): Promise<LogoutOutputDTO> {
@@ -15,7 +15,7 @@ export class LogoutUser {
             try {
                 const payload = this.tokenService.verifyRefreshToken(input.refreshToken);
                 userId = payload.userId;
-            } catch (e) {
+            } catch {
                 // If token is invalid or expired, proceed gracefully
             }
         }

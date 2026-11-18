@@ -14,6 +14,21 @@ import { GetNoteDetailController } from "./get-note-detail.controller";
 import { UpdateNoteController } from "./update-note.controller";
 import { DeleteNoteController } from "./delete-note.controller";
 import { AdminListNotesController } from "./admin-list-notes.controller";
+import {
+  ITeacherProfileResolver,
+  defaultTeacherProfileResolver,
+} from "@/modules/course/domain/services/teacher-profile-resolver.service";
+
+export interface NoteControllerDependencies {
+  createNoteUseCase: CreateNoteUseCase;
+  getNotesByLectureUseCase: GetNotesByLectureUseCase;
+  getNotesByCourseUseCase: GetNotesByCourseUseCase;
+  getNoteDetailUseCase: GetNoteDetailUseCase;
+  updateNoteUseCase: UpdateNoteUseCase;
+  deleteNoteUseCase: DeleteNoteUseCase;
+  adminListNotesUseCase: AdminListNotesUseCase;
+  profileResolver?: ITeacherProfileResolver;
+}
 
 export class NoteController {
   private readonly createNoteController: CreateNoteController;
@@ -25,21 +40,34 @@ export class NoteController {
   private readonly adminListNotesController: AdminListNotesController;
 
   constructor(
-    private readonly createNoteUseCase: CreateNoteUseCase,
-    private readonly getNotesByLectureUseCase: GetNotesByLectureUseCase,
-    private readonly getNotesByCourseUseCase: GetNotesByCourseUseCase,
-    private readonly getNoteDetailUseCase: GetNoteDetailUseCase,
-    private readonly updateNoteUseCase: UpdateNoteUseCase,
-    private readonly deleteNoteUseCase: DeleteNoteUseCase,
-    private readonly adminListNotesUseCase: AdminListNotesUseCase
+    depsOrFirstUseCase: NoteControllerDependencies | CreateNoteUseCase,
+    getNotesByLectureUseCase?: GetNotesByLectureUseCase,
+    getNotesByCourseUseCase?: GetNotesByCourseUseCase,
+    getNoteDetailUseCase?: GetNoteDetailUseCase,
+    updateNoteUseCase?: UpdateNoteUseCase,
+    deleteNoteUseCase?: DeleteNoteUseCase,
+    adminListNotesUseCase?: AdminListNotesUseCase,
+    profileResolver: ITeacherProfileResolver = defaultTeacherProfileResolver
   ) {
-    this.createNoteController = new CreateNoteController(createNoteUseCase);
-    this.getNotesByLectureController = new GetNotesByLectureController(getNotesByLectureUseCase);
-    this.getNotesByCourseController = new GetNotesByCourseController(getNotesByCourseUseCase);
-    this.getNoteDetailController = new GetNoteDetailController(getNoteDetailUseCase);
-    this.updateNoteController = new UpdateNoteController(updateNoteUseCase);
-    this.deleteNoteController = new DeleteNoteController(deleteNoteUseCase);
-    this.adminListNotesController = new AdminListNotesController(adminListNotesUseCase);
+    if ("createNoteUseCase" in depsOrFirstUseCase) {
+      const deps = depsOrFirstUseCase as NoteControllerDependencies;
+      const resolver = deps.profileResolver || defaultTeacherProfileResolver;
+      this.createNoteController = new CreateNoteController(deps.createNoteUseCase, resolver);
+      this.getNotesByLectureController = new GetNotesByLectureController(deps.getNotesByLectureUseCase, resolver);
+      this.getNotesByCourseController = new GetNotesByCourseController(deps.getNotesByCourseUseCase, resolver);
+      this.getNoteDetailController = new GetNoteDetailController(deps.getNoteDetailUseCase, resolver);
+      this.updateNoteController = new UpdateNoteController(deps.updateNoteUseCase, resolver);
+      this.deleteNoteController = new DeleteNoteController(deps.deleteNoteUseCase, resolver);
+      this.adminListNotesController = new AdminListNotesController(deps.adminListNotesUseCase);
+    } else {
+      this.createNoteController = new CreateNoteController(depsOrFirstUseCase, profileResolver);
+      this.getNotesByLectureController = new GetNotesByLectureController(getNotesByLectureUseCase!, profileResolver);
+      this.getNotesByCourseController = new GetNotesByCourseController(getNotesByCourseUseCase!, profileResolver);
+      this.getNoteDetailController = new GetNoteDetailController(getNoteDetailUseCase!, profileResolver);
+      this.updateNoteController = new UpdateNoteController(updateNoteUseCase!, profileResolver);
+      this.deleteNoteController = new DeleteNoteController(deleteNoteUseCase!, profileResolver);
+      this.adminListNotesController = new AdminListNotesController(adminListNotesUseCase!);
+    }
   }
 
   createNote = (req: Request, res: Response, next: NextFunction) =>

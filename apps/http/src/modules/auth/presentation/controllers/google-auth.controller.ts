@@ -5,8 +5,19 @@ import type { UserRole } from "@/modules/user/domain/entities/user.entity";
 import { setAuthCookies } from "@/app/config/cookie";
 import { ApiResponse } from "@/shared/utils/api-response";
 
+export interface GoogleAuthControllerConfig {
+    frontendUrl?: string;
+}
+
 export class GoogleAuthController {
-    constructor(private readonly googleAuth: GoogleAuth) { }
+    private readonly frontendUrl?: string;
+
+    constructor(
+        private readonly googleAuth: GoogleAuth,
+        config: GoogleAuthControllerConfig = { frontendUrl: env.FRONTEND_URL }
+    ) {
+        this.frontendUrl = config.frontendUrl;
+    }
 
     getAuthUrl = async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -77,17 +88,17 @@ export class GoogleAuthController {
             });
 
             // If GET request from browser redirect, redirect to frontend
-            if (req.method === "GET" && env.FRONTEND_URL) {
-                const redirectUrl = new URL(`${env.FRONTEND_URL}/auth/callback`);
+            if (req.method === "GET" && this.frontendUrl) {
+                const redirectUrl = new URL(`${this.frontendUrl}/auth/callback`);
                 return res.redirect(redirectUrl.toString());
             }
 
             return ApiResponse.success(res, result, "Google OAuth callback handled successfully");
         } catch (error: any) {
             // If browser GET redirect failed, redirect back to frontend signin with error parameter
-            if (req.method === "GET" && env.FRONTEND_URL) {
+            if (req.method === "GET" && this.frontendUrl) {
                 const errorMessage = error?.message || "Google authentication failed";
-                const redirectUrl = new URL(`${env.FRONTEND_URL}/signin`);
+                const redirectUrl = new URL(`${this.frontendUrl}/signin`);
                 redirectUrl.searchParams.set("error", errorMessage);
                 return res.redirect(redirectUrl.toString());
             }

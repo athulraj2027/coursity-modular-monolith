@@ -9,7 +9,8 @@ export class AdminGetAllCoursesController {
 
   execute = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      if (!req.user || req.user.role !== "ADMIN") {
+      const role = (req.user?.role || "").toUpperCase();
+      if (!req.user || (role !== "ADMIN" && role !== "SUPERADMIN")) {
         throw new ForbiddenError("Admin privileges required to manage course records.");
       }
       const query = queryCoursesSchema.parse(req.query);

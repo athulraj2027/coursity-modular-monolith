@@ -6,4 +6,4 @@ export * from "./get-user-by-id.controller";
 export * from "./block-user.controller";
 export * from "./approve-teacher.controller";
 export * from "./get-admin-analytics.controller";
-
+export * from "./delete-user.controller";

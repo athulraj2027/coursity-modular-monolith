@@ -1,11 +1,15 @@
-import { IHomeworkRepository } from "../../domain/repositories/homework.repository";
+import {
+  IHomeworkQueryRepository,
+  IHomeworkManagementRepository,
+  IHomeworkContextRepository,
+} from "../../domain/repositories/homework.repository";
 import { UpdateHomeworkDTO } from "../../domain/dtos/homework.dto";
 import { HomeworkEntity } from "../../domain/entities/homework.entity";
 import {
   HomeworkNotFoundError,
   HomeworkAccessDeniedError,
-  HomeworkValidationError,
 } from "../../domain/errors/homework.errors";
+import { HomeworkValidationPolicy } from "../../domain/policies/homework-validation.policy";
 
 export interface UpdateHomeworkInput {
   homeworkId: string;
@@ -14,8 +18,12 @@ export interface UpdateHomeworkInput {
   data: UpdateHomeworkDTO;
 }
 
+export type UpdateHomeworkRepository = IHomeworkQueryRepository &
+  IHomeworkManagementRepository &
+  IHomeworkContextRepository;
+
 export class UpdateHomeworkUseCase {
-  constructor(private readonly homeworkRepo: IHomeworkRepository) {}
+  constructor(private readonly homeworkRepo: UpdateHomeworkRepository) {}
 
   async execute(input: UpdateHomeworkInput): Promise<HomeworkEntity> {
     const { homeworkId, userId, userRole, data } = input;
@@ -35,20 +43,12 @@ export class UpdateHomeworkUseCase {
       throw new HomeworkAccessDeniedError("Only teachers and administrators can modify homework");
     }
 
-    if (data.title !== undefined && (!data.title || !data.title.trim())) {
-      throw new HomeworkValidationError("Homework title cannot be empty");
-    }
+    // Domain validation
+    HomeworkValidationPolicy.validateUpdate(data);
 
     let parsedDueDate: Date | null | undefined = undefined;
     if (data.dueDate !== undefined) {
-      if (data.dueDate === null) {
-        parsedDueDate = null;
-      } else {
-        const d = new Date(data.dueDate);
-        if (!isNaN(d.getTime())) {
-          parsedDueDate = d;
-        }
-      }
+      parsedDueDate = HomeworkValidationPolicy.parseDueDate(data.dueDate);
     }
 
     return this.homeworkRepo.update(homeworkId, {
@@ -58,7 +58,7 @@ export class UpdateHomeworkUseCase {
       taskContent: data.taskContent !== undefined ? (data.taskContent ? data.taskContent.trim() : null) : undefined,
       taskUrl: data.taskUrl !== undefined ? (data.taskUrl ? data.taskUrl.trim() : null) : undefined,
       dueDate: parsedDueDate,
-      maxScore: data.maxScore !== undefined ? Math.max(0, data.maxScore) : undefined,
+      maxScore: data.maxScore !== undefined ? HomeworkValidationPolicy.normalizeMaxScore(data.maxScore) : undefined,
     });
   }
 }

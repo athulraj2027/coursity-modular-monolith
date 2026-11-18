@@ -1,8 +1,13 @@
-import { PlanRepository } from "../../domain/repositories/plan.repository";
+import {
+  IPlanQueryRepository,
+  IFeatureQueryRepository,
+} from "../../domain/repositories/plan.repository";
 import { Plan, Feature } from "../../domain/entities/plan.entity";
 
+export type GetPlansRepository = IPlanQueryRepository & IFeatureQueryRepository;
+
 export class GetPlansUseCase {
-  constructor(private readonly planRepo: PlanRepository) {}
+  constructor(private readonly planRepo: GetPlansRepository) {}
 
   async execute(includeInactive = false): Promise<{ plans: Plan[]; features: Feature[] }> {
     const [plans, features] = await Promise.all([

@@ -1,12 +1,22 @@
-import { SubscriptionRepository } from "../../domain/repositories/subscription.repository";
+import {
+  ISubscriptionRepository,
+  IAdminSubscriptionRepository,
+  IInvoiceRepository,
+} from "../../domain/repositories/subscription.repository";
 import { IPaymentGateway } from "@/infrastructure/payment";
 import { IEmailService } from "@/infrastructure/email";
 import { AdminRefundSubscriptionDto } from "../../domain/dtos/subscription.dto";
-import { BadRequestError, NotFoundError } from "@/app/errors";
+import {
+  SubscriptionNotFoundError,
+  SubscriptionInvoiceNotFoundError,
+  SubscriptionRefundError,
+} from "../../domain/errors/subscription.errors";
 
 export class AdminRefundSubscriptionUseCase {
   constructor(
-    private readonly subscriptionRepo: SubscriptionRepository,
+    private readonly subscriptionRepo: ISubscriptionRepository &
+      IAdminSubscriptionRepository &
+      IInvoiceRepository,
     private readonly paymentGateway: IPaymentGateway,
     private readonly emailService: IEmailService
   ) {}
@@ -22,28 +32,31 @@ export class AdminRefundSubscriptionUseCase {
     // 1. Fetch Subscription & Invoice
     const subscription = await this.subscriptionRepo.findById(dto.subscriptionId);
     if (!subscription) {
-      throw new NotFoundError(`Subscription with ID '${dto.subscriptionId}' not found.`);
+      throw new SubscriptionNotFoundError(`Subscription with ID '${dto.subscriptionId}' not found.`);
     }
 
     const invoice = await this.subscriptionRepo.findInvoiceById(dto.invoiceId);
-
     if (!invoice) {
-      throw new NotFoundError(`Invoice with ID '${dto.invoiceId}' not found.`);
+      throw new SubscriptionInvoiceNotFoundError(`Invoice with ID '${dto.invoiceId}' not found.`);
     }
 
     if (invoice.subscriptionId !== dto.subscriptionId) {
-      throw new BadRequestError(`Invoice '${dto.invoiceId}' does not belong to subscription '${dto.subscriptionId}'.`);
+      throw new SubscriptionRefundError(
+        `Invoice '${dto.invoiceId}' does not belong to subscription '${dto.subscriptionId}'.`
+      );
     }
 
     if (invoice.status === "REFUNDED") {
-      throw new BadRequestError(`Invoice '${invoice.invoiceNumber}' has already been refunded.`);
+      throw new SubscriptionRefundError(`Invoice '${invoice.invoiceNumber}' has already been refunded.`);
     }
 
     const maxAmount = Number(invoice.amount);
     const refundAmount = dto.amount ? Number(dto.amount) : maxAmount;
 
     if (refundAmount <= 0 || refundAmount > maxAmount) {
-      throw new BadRequestError(`Refund amount must be between ₹1 and the original paid amount (₹${maxAmount}).`);
+      throw new SubscriptionRefundError(
+        `Refund amount must be between ₹1 and the original paid amount (₹${maxAmount}).`
+      );
     }
 
     // 2. Identify Payment ID (from invoice gatewayPaymentId or subscription externalSubscriptionId)

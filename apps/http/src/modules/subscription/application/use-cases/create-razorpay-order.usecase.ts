@@ -1,27 +1,27 @@
-import { PlanRepository } from "@/modules/plan/domain/repositories/plan.repository";
-import { SubscriptionRepository } from "../../domain/repositories/subscription.repository";
+import { IPlanRepository } from "@/modules/plan/domain/repositories/plan.repository";
+import { ISubscriptionRepository } from "../../domain/repositories/subscription.repository";
 import { IPaymentGateway } from "@/infrastructure/payment";
 import { GetPlanOfferUseCase } from "@/modules/offer/application/use-cases/get-plan-offer.usecase";
 import { CreateRazorpayOrderDto, RazorpayOrderResponseDto } from "../../domain/dtos/subscription.dto";
-import { calculatePlanCheckoutPrice, DEFAULT_GST_PERCENT } from "../../domain/constants/billing.constants";
-import { BadRequestError, NotFoundError } from "@/app/errors";
+import {
+  SubscriptionBillingPolicy,
+  SubscriptionPlanPolicy,
+  DEFAULT_GST_PERCENT,
+} from "../../domain/policies";
+import { SubscriptionNotFoundError } from "../../domain/errors/subscription.errors";
 
 export class CreateRazorpayOrderUseCase {
   constructor(
-    private readonly planRepo: PlanRepository,
+    private readonly planRepo: IPlanRepository,
     private readonly paymentGateway: IPaymentGateway,
     private readonly getPlanOfferUseCase?: GetPlanOfferUseCase,
-    private readonly subscriptionRepo?: SubscriptionRepository
+    private readonly subscriptionRepo?: ISubscriptionRepository
   ) {}
 
   async execute(dto: CreateRazorpayOrderDto): Promise<RazorpayOrderResponseDto> {
     const plan = await this.planRepo.findById(dto.planId);
     if (!plan) {
-      throw new NotFoundError(`Plan with ID '${dto.planId}' does not exist.`);
-    }
-
-    if (!plan.isActive) {
-      throw new BadRequestError(`Plan '${plan.name}' is not currently available for subscriptions.`);
+      throw new SubscriptionNotFoundError(`Plan with ID '${dto.planId}' does not exist.`);
     }
 
     // Guard against downgrading or ordering already active plan
@@ -32,16 +32,9 @@ export class CreateRazorpayOrderUseCase {
         currentPlan = (await this.planRepo.findById(activeSub.planId)) || undefined;
       }
 
-      if (activeSub && activeSub.status === "ACTIVE" && currentPlan) {
-        if (currentPlan.id === plan.id) {
-          throw new BadRequestError(`You are already subscribed to the '${plan.name}' plan.`);
-        }
-        if (currentPlan.price > 0 && plan.price < currentPlan.price) {
-          throw new BadRequestError(
-            `Cannot downgrade active '${currentPlan.name}' plan to a lower tier with reduced quotas.`
-          );
-        }
-      }
+      SubscriptionPlanPolicy.assertCanSubscribe(plan, currentPlan, activeSub?.status);
+    } else {
+      SubscriptionPlanPolicy.assertCanSubscribe(plan);
     }
 
     // Determine billing cycle
@@ -71,13 +64,21 @@ export class CreateRazorpayOrderUseCase {
           savings: planOffer.savings,
         };
       } else {
-        const standardPricing = calculatePlanCheckoutPrice(Number(plan.price), selectedCycle, DEFAULT_GST_PERCENT);
+        const standardPricing = SubscriptionBillingPolicy.calculatePlanCheckoutPrice(
+          Number(plan.price),
+          selectedCycle,
+          DEFAULT_GST_PERCENT
+        );
         finalBasePrice = standardPricing.basePrice;
         finalTaxAmount = standardPricing.taxAmount;
         finalTotalAmount = standardPricing.totalAmount;
       }
     } else {
-      const standardPricing = calculatePlanCheckoutPrice(Number(plan.price), selectedCycle, DEFAULT_GST_PERCENT);
+      const standardPricing = SubscriptionBillingPolicy.calculatePlanCheckoutPrice(
+        Number(plan.price),
+        selectedCycle,
+        DEFAULT_GST_PERCENT
+      );
       finalBasePrice = standardPricing.basePrice;
       finalTaxAmount = standardPricing.taxAmount;
       finalTotalAmount = standardPricing.totalAmount;

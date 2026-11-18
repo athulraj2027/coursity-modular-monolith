@@ -1,13 +1,14 @@
-import { SubscriptionRepository } from "../../domain/repositories/subscription.repository";
+import { ISubscriptionRepository } from "../../domain/repositories/subscription.repository";
 import { TeacherSubscription } from "../../domain/entities/subscription.entity";
+import { SubscriptionNotFoundError } from "../../domain/errors/subscription.errors";
 
 export class CancelSubscriptionUseCase {
-  constructor(private readonly subscriptionRepo: SubscriptionRepository) {}
+  constructor(private readonly subscriptionRepo: ISubscriptionRepository) {}
 
   async execute(teacherProfileId: string, immediate = false): Promise<TeacherSubscription> {
     const activeSub = await this.subscriptionRepo.findActiveByTeacherId(teacherProfileId);
     if (!activeSub) {
-      throw new Error("No active subscription found to cancel.");
+      throw new SubscriptionNotFoundError("No active subscription found to cancel.");
     }
 
     if (immediate) {

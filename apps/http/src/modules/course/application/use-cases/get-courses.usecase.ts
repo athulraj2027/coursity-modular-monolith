@@ -1,9 +1,9 @@
-import { ICourseRepository } from "../../domain/repositories/course.repository";
-import { CourseEntity, CourseFilterParams } from "../../domain/entities/course.entity";
+import { ICourseQueryRepository } from "../../domain/repositories/course.repository";
+import { CourseEntity, CourseFilterParams, isCoursePubliclyVisible } from "../../domain/entities/course.entity";
 import { NotFoundError } from "@/app/errors";
 
 export class GetCoursesUseCase {
-  constructor(private readonly courseRepository: ICourseRepository) {}
+  constructor(private readonly courseRepository: ICourseQueryRepository) {}
 
   async getPublicCourses(params: CourseFilterParams = {}): Promise<{ items: CourseEntity[]; total: number }> {
     return this.courseRepository.findMany({
@@ -39,7 +39,7 @@ export class GetCoursesUseCase {
 
   async getCourseBySlug(slug: string): Promise<CourseEntity> {
     const course = await this.courseRepository.findBySlug(slug, false, true);
-    if (!course || (course.status !== "PUBLISHED" && course.isDeleted)) {
+    if (!course || !isCoursePubliclyVisible(course)) {
       throw new NotFoundError(`Course with slug '${slug}' was not found.`);
     }
     return course;

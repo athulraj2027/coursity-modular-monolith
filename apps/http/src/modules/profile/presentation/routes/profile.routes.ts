@@ -9,8 +9,8 @@ import {
     updateProfileSchema,
     updateStudentProfileSchema,
     updateTeacherProfileSchema,
-} from "../validators/profile.validator";
-import { changePasswordSchema } from "../validators/change-password.validator";
+} from "../schemas/profile.schema";
+import { changePasswordSchema } from "../schemas/change-password.schema";
 import validate from "@/app/middlewares/validate";
 
 export class ProfileRoutes {

@@ -7,7 +7,12 @@ import {
   ListPayoutsQueryDto,
   AdminProcessPayoutDto,
 } from "../../domain/dtos/payout-request.dto";
-import { BadRequestError, NotFoundError } from "@/app/errors";
+import {
+  WalletNotFoundError,
+  PayoutRequestNotFoundError,
+  MissingBankDetailError,
+} from "../../domain/errors/wallet.errors";
+import { WalletPayoutPolicy } from "../../domain/policies/wallet-payout.policy";
 
 export class PrismaPayoutRequestRepository
   extends PrismaBaseRepository<PayoutRequestEntity, typeof defaultPrisma.payoutRequest>
@@ -56,9 +61,7 @@ export class PrismaPayoutRequestRepository
     amount: number;
     bankDetailId: string;
   }): Promise<PayoutRequestEntity> {
-    if (params.amount < 500) {
-      throw new BadRequestError("Minimum withdrawal amount is ₹500");
-    }
+    WalletPayoutPolicy.validatePayoutAmount(params.amount);
 
     return await this.prisma.$transaction(async (tx) => {
       // 1. Get or find wallet
@@ -67,18 +70,14 @@ export class PrismaPayoutRequestRepository
       });
 
       if (!wallet) {
-        throw new NotFoundError("Wallet record not found");
+        throw new WalletNotFoundError("Wallet record not found");
       }
 
       const balance = Number(wallet.balance);
       const locked = Number(wallet.lockedBalance);
-      const available = balance - locked;
+      const available = WalletPayoutPolicy.calculateAvailableBalance(balance, locked);
 
-      if (available < params.amount) {
-        throw new BadRequestError(
-          `Insufficient available balance. Available: ₹${available.toFixed(2)}, Requested: ₹${params.amount.toFixed(2)}`
-        );
-      }
+      WalletPayoutPolicy.validateSufficientBalance(available, params.amount);
 
       // 2. Fetch Bank Details & Validate
       let bankDetail = await tx.bankDetail.findFirst({
@@ -99,13 +98,10 @@ export class PrismaPayoutRequestRepository
       }
 
       if (!bankDetail) {
-        throw new BadRequestError("Please configure a bank account or UPI ID before requesting a payout");
+        throw new MissingBankDetailError();
       }
 
-      const accountSummary =
-        bankDetail.methodType === "UPI"
-          ? `UPI: ${bankDetail.upiId}`
-          : `${bankDetail.bankName} (A/C: ••••${bankDetail.accountNumber.slice(-4)})`;
+      const accountSummary = WalletPayoutPolicy.formatAccountSummary(bankDetail);
 
       // 3. Atomically lock the withdrawal amount
       await tx.wallet.update({
@@ -266,12 +262,10 @@ export class PrismaPayoutRequestRepository
       });
 
       if (!payout) {
-        throw new NotFoundError("Payout request not found");
+        throw new PayoutRequestNotFoundError();
       }
 
-      if (payout.status === "COMPLETED" || payout.status === "REJECTED") {
-        throw new BadRequestError(`Payout request is already ${payout.status.toLowerCase()}`);
-      }
+      WalletPayoutPolicy.validateStatusTransition(payout.status as any, dto.status as any);
 
       const amount = Number(payout.amount);
       const now = new Date();

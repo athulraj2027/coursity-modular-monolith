@@ -1,10 +1,14 @@
-import { IdempotencyService } from "./idempotency.service";
-import { IIdempotencyService } from "./contracts/idempotency-service.abstract";
+import { IdempotencyService, InMemoryIdempotencyService } from "./infrastructure/services/idempotency.service";
+import { IIdempotencyService } from "./domain/contracts/idempotency-service.interface";
 
 export const idempotencyService: IIdempotencyService = new IdempotencyService();
 
-export * from "./contracts/idempotency-service.abstract";
-export * from "./idempotency.types";
-export * from "./idempotency.service";
+// Domain Exports
+export * from "./domain/entities/idempotency.entity";
+export * from "./domain/contracts/idempotency-service.interface";
 
+// Infrastructure Exports
+export * from "./infrastructure/services/idempotency.service";
+
+export { InMemoryIdempotencyService };
 export default idempotencyService;

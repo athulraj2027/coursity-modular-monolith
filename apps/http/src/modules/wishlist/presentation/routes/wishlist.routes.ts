@@ -1,16 +1,26 @@
-import { Router } from "express";
+import { Router, RequestHandler } from "express";
 import { WishlistController } from "../controllers/wishlist.controller";
-import { authMiddleware } from "@/app/middlewares/auth.middleware";
-import { isBlockedMiddleware } from "@/app/middlewares/is-blocked.middleware";
+import { authMiddleware as defaultAuthMiddleware } from "@/app/middlewares/auth.middleware";
+import { isBlockedMiddleware as defaultIsBlockedMiddleware } from "@/app/middlewares/is-blocked.middleware";
 import validate from "@/app/middlewares/validate";
 import { toggleWishlistSchema } from "../schemas/wishlist.schema";
 
-export const createWishlistRouter = (controller: WishlistController): Router => {
+export interface WishlistRouterOptions {
+  authMiddleware?: RequestHandler;
+  isBlockedMiddleware?: RequestHandler;
+}
+
+export const createWishlistRouter = (
+  controller: WishlistController,
+  options: WishlistRouterOptions = {}
+): Router => {
   const router = Router();
+  const auth = options.authMiddleware ?? defaultAuthMiddleware;
+  const isBlocked = options.isBlockedMiddleware ?? defaultIsBlockedMiddleware;
 
   // All wishlist routes require authentication and active non-blocked student/user status
-  router.use(authMiddleware);
-  router.use(isBlockedMiddleware);
+  router.use(auth);
+  router.use(isBlocked);
 
   // 1. Get full paginated wishlist
   router.get("/", controller.getWishlist);
@@ -29,3 +39,5 @@ export const createWishlistRouter = (controller: WishlistController): Router => 
 
   return router;
 };
+
+export default createWishlistRouter;

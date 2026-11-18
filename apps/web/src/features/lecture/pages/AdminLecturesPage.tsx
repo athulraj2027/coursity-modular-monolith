@@ -252,7 +252,10 @@ export const AdminLecturesPage: React.FC = () => {
           pageSize,
           totalItems: totalCount,
           onPageChange: setCurrentPage,
-          onPageSizeChange: setPageSize,
+          onPageSizeChange: (newSize) => {
+            setPageSize(newSize);
+            setCurrentPage(1);
+          },
         }}
       />
 

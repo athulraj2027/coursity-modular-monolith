@@ -1,9 +1,9 @@
-import { IWalletRepository } from "../../domain/repositories/wallet.repository.interface";
+import { IWalletTransactionRepository } from "../../domain/repositories/wallet.repository.interface";
 import { WalletTransactionEntity } from "../../domain/entities/wallet-transaction.entity";
 import { ListTransactionsQueryDto } from "../../domain/dtos/wallet-transaction.dto";
 
 export class GetWalletTransactionsUseCase {
-  constructor(private readonly walletRepo: IWalletRepository) {}
+  constructor(private readonly walletRepo: IWalletTransactionRepository) {}
 
   async execute(
     query: ListTransactionsQueryDto

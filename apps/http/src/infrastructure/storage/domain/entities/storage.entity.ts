@@ -1,0 +1,84 @@
+export const STORAGE_FOLDERS = [
+    "avatars",
+    "certificates",
+    "courses",
+    "thumbnails",
+    "videos",
+    "documents",
+    "notes",
+    "homework",
+    "identity",
+    "general",
+] as const;
+
+export type StorageFolder = (typeof STORAGE_FOLDERS)[number];
+
+export const ALLOWED_IMAGE_MIME_TYPES = [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+    "image/svg+xml",
+] as const;
+
+export const ALLOWED_DOCUMENT_MIME_TYPES = [
+    "application/pdf",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain",
+    "application/zip",
+    "application/x-zip-compressed",
+    "application/x-rar-compressed",
+    "application/octet-stream",
+] as const;
+
+export const ALLOWED_VIDEO_MIME_TYPES = [
+    "video/mp4",
+    "video/webm",
+    "video/quicktime",
+    "video/x-matroska",
+    "video/ogg",
+    "video/m4v",
+] as const;
+
+export const ALL_ALLOWED_MIME_TYPES = [
+    ...ALLOWED_IMAGE_MIME_TYPES,
+    ...ALLOWED_DOCUMENT_MIME_TYPES,
+    ...ALLOWED_VIDEO_MIME_TYPES,
+] as const;
+
+export type AllowedMimeType = (typeof ALL_ALLOWED_MIME_TYPES)[number];
+
+export interface PresignedUrlRequestDTO {
+    fileName: string;
+    fileType: string;
+    folder?: StorageFolder;
+    fileSize?: number;
+    userId: string;
+}
+
+export interface PresignedUrlResponseDTO {
+    uploadUrl: string;
+    fileUrl: string;
+    publicUrl?: string;
+    key: string;
+    expiresIn: number;
+}
+
+export interface DeleteFileInputDTO {
+    key?: string;
+    fileUrl?: string;
+    userId: string;
+    userRole: string;
+}
+
+export interface StoredFileInfo {
+    key: string;
+    fileUrl: string;
+    folder: StorageFolder;
+    userId: string;
+}
+

@@ -1,33 +1,16 @@
-import { TeacherCouponRepository } from "../../domain/repositories/teacher-coupon.repository";
-import { TeacherCouponEntity } from "../../domain/entities/teacher-coupon.entity";
+import {
+  IAdminCouponRepository,
+  AdminCouponFilterParams,
+  AdminCouponsListResult,
+} from "../../domain/repositories/teacher-coupon.repository";
 
-export interface AdminGetCouponsInput {
-  search?: string;
-  isActive?: boolean;
-  discountType?: "PERCENTAGE" | "FLAT";
-  teacherProfileId?: string;
-  courseId?: string;
-  page?: number;
-  limit?: number;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-}
-
-export interface AdminGetCouponsOutput {
-  items: TeacherCouponEntity[];
-  total: number;
-  metrics: {
-    totalCoupons: number;
-    activeCoupons: number;
-    totalRedemptions: number;
-    totalDiscountGiven: number;
-  };
-}
+export type AdminGetCouponsInput = AdminCouponFilterParams;
+export type AdminGetCouponsOutput = AdminCouponsListResult;
 
 export class AdminGetCouponsUseCase {
-  constructor(private readonly couponRepo: TeacherCouponRepository) {}
+  constructor(private readonly couponRepo: IAdminCouponRepository) {}
 
-  async execute(input: AdminGetCouponsInput): Promise<AdminGetCouponsOutput> {
+  async execute(input?: AdminGetCouponsInput): Promise<AdminGetCouponsOutput> {
     return this.couponRepo.listAllCoupons(input);
   }
 }

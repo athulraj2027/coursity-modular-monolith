@@ -1,47 +1,58 @@
-import { PlanRepository } from "../../domain/repositories/plan.repository";
+import { IPlanRepository } from "../../domain/repositories/plan.repository";
 import { Plan, Feature } from "../../domain/entities/plan.entity";
 import { CreatePlanDto, UpdatePlanDto } from "../../domain/dtos/plan.dto";
+import { AdminCreatePlanUseCase } from "./admin-create-plan.usecase";
+import { AdminUpdatePlanUseCase } from "./admin-update-plan.usecase";
+import { AdminDeletePlanUseCase } from "./admin-delete-plan.usecase";
+import { AdminGetAllPlansUseCase } from "./admin-get-all-plans.usecase";
+import { AdminGetAllFeaturesUseCase } from "./admin-get-all-features.usecase";
+import { GetPlanByIdUseCase } from "./get-plan-by-id.usecase";
 
+/**
+ * Backward compatibility facade delegating to focused use cases
+ */
 export class AdminManagePlansUseCase {
-  constructor(private readonly planRepo: PlanRepository) {}
+  private readonly adminCreatePlanUseCase: AdminCreatePlanUseCase;
+  private readonly adminUpdatePlanUseCase: AdminUpdatePlanUseCase;
+  private readonly adminDeletePlanUseCase: AdminDeletePlanUseCase;
+  private readonly adminGetAllPlansUseCase: AdminGetAllPlansUseCase;
+  private readonly adminGetAllFeaturesUseCase: AdminGetAllFeaturesUseCase;
+  private readonly getPlanByIdUseCase: GetPlanByIdUseCase;
+
+  constructor(private readonly planRepo: IPlanRepository) {
+    this.adminCreatePlanUseCase = new AdminCreatePlanUseCase(planRepo);
+    this.adminUpdatePlanUseCase = new AdminUpdatePlanUseCase(planRepo);
+    this.adminDeletePlanUseCase = new AdminDeletePlanUseCase(planRepo);
+    this.adminGetAllPlansUseCase = new AdminGetAllPlansUseCase(planRepo);
+    this.adminGetAllFeaturesUseCase = new AdminGetAllFeaturesUseCase(planRepo);
+    this.getPlanByIdUseCase = new GetPlanByIdUseCase(planRepo);
+  }
 
   async getAllPlans(): Promise<Plan[]> {
-    return this.planRepo.findAll(true);
+    return this.adminGetAllPlansUseCase.execute();
   }
 
   async getAllFeatures(): Promise<Feature[]> {
-    return this.planRepo.findAllFeatures();
+    return this.adminGetAllFeaturesUseCase.execute();
   }
 
   async getPlanById(id: string): Promise<Plan | null> {
-    return this.planRepo.findById(id);
+    try {
+      return await this.getPlanByIdUseCase.execute(id);
+    } catch {
+      return null;
+    }
   }
 
   async createPlan(dto: CreatePlanDto): Promise<Plan> {
-    const existing = await this.planRepo.findBySlug(dto.slug);
-    if (existing) {
-      throw new Error(`A plan with slug '${dto.slug}' already exists.`);
-    }
-    return this.planRepo.create(dto);
+    return this.adminCreatePlanUseCase.execute(dto);
   }
 
   async updatePlan(id: string, dto: UpdatePlanDto): Promise<Plan> {
-    const existing = await this.planRepo.findById(id);
-    if (!existing) {
-      throw new Error(`Plan with id '${id}' not found.`);
-    }
-
-    if (dto.slug && dto.slug !== existing.slug) {
-      const slugExists = await this.planRepo.findBySlug(dto.slug);
-      if (slugExists) {
-        throw new Error(`A plan with slug '${dto.slug}' already exists.`);
-      }
-    }
-
-    return this.planRepo.update(id, dto);
+    return this.adminUpdatePlanUseCase.execute(id, dto);
   }
 
   async deletePlan(id: string): Promise<boolean> {
-    return this.planRepo.delete(id);
+    return this.adminDeletePlanUseCase.execute(id);
   }
 }

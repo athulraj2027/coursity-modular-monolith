@@ -1,29 +1,33 @@
-import { BadRequestError, NotFoundError } from "@/app/errors";
-import { UserRepository } from "../../domain/repositories/user.repository";
-import { PasswordService } from "@/infrastructure/security";
+import { IUserQueryRepository, IUserMutationRepository } from "../../domain/repositories/user.repository";
+import { IPasswordService } from "@/infrastructure/security";
 import { ChangePasswordData } from "../../domain/dtos/change-password.dto";
+import {
+    UserNotFoundError,
+    CurrentPasswordRequiredError,
+    InvalidCurrentPasswordError,
+} from "../../domain/errors/user.errors";
 
 export class ChangePassword {
     constructor(
-        private readonly userRepository: UserRepository,
-        private readonly passwordService: PasswordService
+        private readonly userRepository: IUserQueryRepository & IUserMutationRepository,
+        private readonly passwordService: IPasswordService
     ) { }
 
     async execute(userId: string, data: ChangePasswordData): Promise<{ message: string }> {
         const user = await this.userRepository.findById(userId);
         if (!user) {
-            throw new NotFoundError("User not found");
+            throw new UserNotFoundError("User not found");
         }
 
         // If user already has a password, verify current password
         if (user.password) {
             if (!data.currentPassword) {
-                throw new BadRequestError("Current password is required");
+                throw new CurrentPasswordRequiredError("Current password is required");
             }
 
             const isValid = await this.passwordService.compare(data.currentPassword, user.password);
             if (!isValid) {
-                throw new BadRequestError("Incorrect current password");
+                throw new InvalidCurrentPasswordError("Incorrect current password");
             }
         }
 

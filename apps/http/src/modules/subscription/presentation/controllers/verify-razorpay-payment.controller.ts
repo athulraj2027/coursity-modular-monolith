@@ -1,18 +1,22 @@
 import { Request, Response, NextFunction } from "express";
 import { VerifyRazorpayPaymentUseCase } from "../../application/use-cases/verify-razorpay-payment.usecase";
-import { verifyRazorpayPaymentSchema } from "../validators/subscription.validator";
+import { verifyRazorpayPaymentSchema } from "../schemas/subscription.schema";
 import { UnauthorizedError } from "@/app/errors";
 import { profileRepository } from "@/modules/profile";
 import { ApiResponse } from "@/shared/utils/api-response";
+import { ITeacherProfileResolver } from "./get-my-subscription.controller";
 
 export class VerifyRazorpayPaymentController {
-  constructor(private readonly verifyRazorpayPaymentUseCase: VerifyRazorpayPaymentUseCase) {}
+  constructor(
+    private readonly verifyRazorpayPaymentUseCase: VerifyRazorpayPaymentUseCase,
+    private readonly profileRepo: ITeacherProfileResolver = profileRepository
+  ) {}
 
   execute = async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.user) throw new UnauthorizedError("Authentication required");
       const validated = verifyRazorpayPaymentSchema.parse(req.body);
-      const teacherProfileId = await profileRepository.getOrCreateTeacherProfileId(req.user.userId);
+      const teacherProfileId = await this.profileRepo.getOrCreateTeacherProfileId(req.user.userId);
 
       const result = await this.verifyRazorpayPaymentUseCase.execute({
         orderId: validated.orderId,

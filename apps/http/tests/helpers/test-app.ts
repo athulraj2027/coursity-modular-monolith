@@ -28,7 +28,7 @@ import { requireRoles } from "../../src/app/middlewares/role.middleware";
 import errorMiddleware from "../../src/app/middlewares/err.middleware";
 import notFoundMiddleware from "../../src/app/middlewares/not-found.middleware";
 import { createIdempotencyMiddleware } from "../../src/app/middlewares/idempotency.middleware";
-import { IdempotencyService, InMemoryIdempotencyService } from "../../src/infrastructure/idempotency/idempotency.service";
+import { IdempotencyService, InMemoryIdempotencyService } from "../../src/infrastructure/idempotency";
 import {
     User,
     UserRepository,
@@ -279,6 +279,19 @@ export class InMemoryProfileRepository implements ProfileRepository {
 
     async updateUserName(userId: string, name: string): Promise<void> {
         await this.userRepo.update(userId, { name });
+    }
+
+    async getOrCreateTeacherProfileId(userId: string): Promise<string> {
+        const user = this.userRepo.users.get(userId);
+        if (user?.profile?.teacherProfile?.id) {
+            return user.profile.teacherProfile.id;
+        }
+        return `tp_${userId}`;
+    }
+
+    async getTeacherProfileIdByUserId(userId: string): Promise<string | null> {
+        const user = this.userRepo.users.get(userId);
+        return user?.profile?.teacherProfile?.id || null;
     }
 }
 

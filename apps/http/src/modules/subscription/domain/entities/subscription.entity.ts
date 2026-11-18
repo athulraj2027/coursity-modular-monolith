@@ -1,7 +1,13 @@
-import { BillingCycle, SubscriptionStatus, PaymentStatus } from "@prisma/client";
 import { Plan } from "@/modules/plan/domain/entities/plan.entity";
 
-export { BillingCycle, SubscriptionStatus, PaymentStatus };
+export type BillingCycle = "MONTHLY" | "QUARTERLY" | "YEARLY" | "LIFETIME";
+export type SubscriptionStatus =
+  | "ACTIVE"
+  | "PAST_DUE"
+  | "CANCELED"
+  | "EXPIRED"
+  | "PENDING";
+export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "REFUNDED";
 
 export interface TeacherSubscription {
   id: string;
@@ -42,7 +48,7 @@ export interface SubscriptionInvoice {
   paymentMethod: string | null;
   receiptUrl: string | null;
   paidAt: Date | null;
-  
+
   // Enhanced Plan & User Details
   planName?: string | null;
   billingCycle?: BillingCycle | null;
@@ -58,7 +64,7 @@ export interface SubscriptionInvoice {
   gstin?: string | null;
   gatewayOrderId?: string | null;
   gatewayPaymentId?: string | null;
-  
+
   createdAt: Date;
   updatedAt: Date;
 }

@@ -67,17 +67,15 @@ export interface IPaymentRefundGateway {
   refundPayment(input: RefundPaymentInput): Promise<RefundPaymentResult>;
 }
 
-/**
- * Aggregated port contract implementing segregated payment interfaces.
- * Preserves backward compatibility while enabling Interface Segregation.
- */
-export abstract class IPaymentGateway
-  implements
-    IPaymentOrderGateway,
+export interface IPaymentGateway
+  extends IPaymentOrderGateway,
     IPaymentVerificationGateway,
     IPaymentDetailsGateway,
-    IPaymentRefundGateway
-{
+    IPaymentRefundGateway {
+  isConfigured(): boolean;
+}
+
+export abstract class PaymentGateway implements IPaymentGateway {
   abstract createOrder(input: CreatePaymentOrderInput): Promise<PaymentOrderResult>;
   abstract verifyPaymentSignature(input: VerifySignatureInput): boolean;
   abstract verifyWebhookSignature(body: string | Buffer, signature: string): boolean;
@@ -85,3 +83,6 @@ export abstract class IPaymentGateway
   abstract refundPayment(input: RefundPaymentInput): Promise<RefundPaymentResult>;
   abstract isConfigured(): boolean;
 }
+
+// Backward-compatibility alias
+export { PaymentGateway as IPaymentGatewayBase };

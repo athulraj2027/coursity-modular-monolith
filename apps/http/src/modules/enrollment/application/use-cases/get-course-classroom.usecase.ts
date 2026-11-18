@@ -1,9 +1,10 @@
-import { EnrollmentRepository } from "../../domain/repositories/enrollment.repository";
+import { IEnrollmentRepository } from "../../domain/repositories/enrollment.repository";
 import { CourseClassroomResponse } from "../../domain/dtos/enrollment.dto";
+import { CourseRefundPolicy } from "../../domain/policies/course-refund.policy";
 import { ForbiddenError, NotFoundError } from "@/app/errors";
 
 export class GetCourseClassroomUseCase {
-  constructor(private readonly enrollmentRepo: EnrollmentRepository) {}
+  constructor(private readonly enrollmentRepo: IEnrollmentRepository) {}
 
   async execute(studentId: string, courseIdOrSlug: string): Promise<CourseClassroomResponse> {
     // 1. Resolve course by ID or Slug
@@ -23,11 +24,7 @@ export class GetCourseClassroomUseCase {
     const progressList = await this.enrollmentRepo.listLessonProgressForEnrollment(enrollment.id);
     const progressMap = new Map(progressList.map((p) => [p.lessonId, p]));
 
-    // 4. Calculate 20-Day & 4-Class Policy Metrics
     const now = new Date();
-    const refundDeadline = new Date(enrollment.refundEligibleUntil).getTime();
-    const daysRemaining = Math.max(0, Math.ceil((refundDeadline - now.getTime()) / (1000 * 60 * 60 * 24)));
-
     let totalLessons = 0;
     let completedLessonsCount = 0;
     let attendedClassesCount = 0;
@@ -77,13 +74,17 @@ export class GetCourseClassroomUseCase {
       };
     });
 
-    const isWithinTimeWindow = now.getTime() <= refundDeadline;
-    const isWithinClassCount = classesConductedCount < 4 && attendedClassesCount < 4;
-    const isPaid = enrollment.finalAmount > 0;
-    const isRefundEligible = enrollment.status === "ACTIVE" && isPaid && isWithinTimeWindow && isWithinClassCount;
-
     // Check certificate
     const certificate = await this.enrollmentRepo.findCertificateByEnrollmentId(enrollment.id);
+
+    // Evaluate 20-Day / 4-Classes Guarantee via Domain Policy
+    const refundEligibility = CourseRefundPolicy.checkEligibility({
+      enrollment,
+      classesConductedCount,
+      classesAttendedCount: attendedClassesCount,
+      hasClaimedCertificate: Boolean(certificate),
+      now,
+    });
 
     // Update progress snapshot on enrollment if changed
     const progressPercentage = totalLessons > 0 ? Number(((completedLessonsCount / totalLessons) * 100).toFixed(1)) : 0;
@@ -106,8 +107,8 @@ export class GetCourseClassroomUseCase {
         totalLessons,
         enrolledAt: enrollment.enrolledAt,
         refundEligibleUntil: enrollment.refundEligibleUntil,
-        isRefundEligible,
-        daysRemainingForRefund: daysRemaining,
+        isRefundEligible: refundEligibility.isEligible,
+        daysRemainingForRefund: refundEligibility.daysRemaining,
         classesConductedCount,
         isCertificateClaimed: Boolean(certificate),
         certificateCode: certificate?.certificateCode,

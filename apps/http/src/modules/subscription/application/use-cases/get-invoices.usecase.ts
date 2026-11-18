@@ -1,8 +1,8 @@
 import { SubscriptionInvoice } from "../../domain/entities/subscription.entity";
-import { SubscriptionRepository } from "../../domain/repositories/subscription.repository";
+import { IInvoiceRepository } from "../../domain/repositories/subscription.repository";
 
 export class GetInvoicesUseCase {
-  constructor(private readonly subscriptionRepo?: SubscriptionRepository) {}
+  constructor(private readonly subscriptionRepo?: IInvoiceRepository) {}
 
   async execute(teacherProfileId: string): Promise<SubscriptionInvoice[]> {
     const invoices = this.subscriptionRepo

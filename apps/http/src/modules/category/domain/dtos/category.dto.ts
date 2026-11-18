@@ -1,3 +1,5 @@
+import { CategoryEntity } from "../entities/category.entity";
+
 export interface CreateCategoryDTO {
   name: string;
   slug?: string;
@@ -23,7 +25,7 @@ export interface UpdateCategoryDTO {
 }
 
 export interface CategoryListResponseDTO {
-  items: any[];
+  items: CategoryEntity[];
   total: number;
   page?: number;
   limit?: number;

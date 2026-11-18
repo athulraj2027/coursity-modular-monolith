@@ -1,5 +1,6 @@
 import defaultPrisma from "@/infrastructure/database/prisma.client";
 import { PrismaHomeworkRepository } from "./infrastructure/repositories/prisma-homework.repository";
+import { IHomeworkRepository } from "./domain/repositories/homework.repository";
 import { CreateHomeworkUseCase } from "./application/use-cases/create-homework.usecase";
 import { GetHomeworkByLectureUseCase } from "./application/use-cases/get-homework-by-lecture.usecase";
 import { GetHomeworkByCourseUseCase } from "./application/use-cases/get-homework-by-course.usecase";
@@ -14,8 +15,12 @@ import { AdminListHomeworkUseCase } from "./application/use-cases/admin-list-hom
 import { HomeworkController } from "./presentation/controllers/homework.controller";
 import { createHomeworkRouter } from "./presentation/routes/homework.routes";
 
-export function createHomeworkModule() {
-  const homeworkRepo = new PrismaHomeworkRepository(defaultPrisma);
+export interface HomeworkModuleDependencies {
+  homeworkRepo?: IHomeworkRepository;
+}
+
+export function createHomeworkModule(deps?: HomeworkModuleDependencies) {
+  const homeworkRepo = deps?.homeworkRepo || new PrismaHomeworkRepository(defaultPrisma);
 
   const createHomeworkUseCase = new CreateHomeworkUseCase(homeworkRepo);
   const getHomeworkByLectureUseCase = new GetHomeworkByLectureUseCase(homeworkRepo);
@@ -29,7 +34,7 @@ export function createHomeworkModule() {
   const reviewSubmissionUseCase = new ReviewSubmissionUseCase(homeworkRepo);
   const adminListHomeworkUseCase = new AdminListHomeworkUseCase(homeworkRepo);
 
-  const homeworkController = new HomeworkController(
+  const homeworkController = new HomeworkController({
     createHomeworkUseCase,
     getHomeworkByLectureUseCase,
     getHomeworkByCourseUseCase,
@@ -40,8 +45,8 @@ export function createHomeworkModule() {
     getMySubmissionUseCase,
     getHomeworkSubmissionsUseCase,
     reviewSubmissionUseCase,
-    adminListHomeworkUseCase
-  );
+    adminListHomeworkUseCase,
+  });
 
   const homeworkRouter = createHomeworkRouter(homeworkController);
 
@@ -49,13 +54,46 @@ export function createHomeworkModule() {
     homeworkRouter,
     homeworkRepo,
     homeworkController,
+    useCases: {
+      createHomeworkUseCase,
+      getHomeworkByLectureUseCase,
+      getHomeworkByCourseUseCase,
+      getHomeworkDetailUseCase,
+      updateHomeworkUseCase,
+      deleteHomeworkUseCase,
+      submitHomeworkUseCase,
+      getMySubmissionUseCase,
+      getHomeworkSubmissionsUseCase,
+      reviewSubmissionUseCase,
+      adminListHomeworkUseCase,
+    },
   };
 }
 
 const { homeworkRouter } = createHomeworkModule();
 export default homeworkRouter;
+
+// Domain exports
 export * from "./domain/entities/homework.entity";
 export * from "./domain/dtos/homework.dto";
 export * from "./domain/repositories/homework.repository";
 export * from "./domain/errors/homework.errors";
+export * from "./domain/policies";
+
+// Application exports
+export * from "./application/use-cases/create-homework.usecase";
+export * from "./application/use-cases/get-homework-by-lecture.usecase";
+export * from "./application/use-cases/get-homework-by-course.usecase";
+export * from "./application/use-cases/get-homework-detail.usecase";
+export * from "./application/use-cases/update-homework.usecase";
+export * from "./application/use-cases/delete-homework.usecase";
+export * from "./application/use-cases/submit-homework.usecase";
+export * from "./application/use-cases/get-my-submission.usecase";
+export * from "./application/use-cases/get-homework-submissions.usecase";
+export * from "./application/use-cases/review-submission.usecase";
+export * from "./application/use-cases/admin-list-homework.usecase";
+
+// Presentation exports
 export * from "./presentation/controllers";
+export * from "./presentation/schemas/homework.schema";
+export * from "./presentation/routes/homework.routes";

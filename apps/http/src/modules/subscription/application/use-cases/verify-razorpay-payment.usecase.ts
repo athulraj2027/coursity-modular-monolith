@@ -1,18 +1,25 @@
-import { SubscriptionRepository } from "../../domain/repositories/subscription.repository";
-import { PlanRepository } from "@/modules/plan/domain/repositories/plan.repository";
+import { ISubscriptionRepository, IInvoiceRepository } from "../../domain/repositories/subscription.repository";
+import { IPlanRepository } from "@/modules/plan/domain/repositories/plan.repository";
 import { IPaymentGateway } from "@/infrastructure/payment";
 import { IEmailService } from "@/infrastructure/email";
 import { IOfferRepository } from "@/modules/offer/domain/repositories/offer.repository";
 import { GetPlanOfferUseCase } from "@/modules/offer/application/use-cases/get-plan-offer.usecase";
 import { VerifyRazorpayPaymentDto } from "../../domain/dtos/subscription.dto";
-import { calculatePlanCheckoutPrice, DEFAULT_GST_PERCENT } from "../../domain/constants/billing.constants";
+import {
+  SubscriptionBillingPolicy,
+  SubscriptionPeriodPolicy,
+  DEFAULT_GST_PERCENT,
+} from "../../domain/policies";
 import { TeacherSubscription, SubscriptionInvoice } from "../../domain/entities/subscription.entity";
-import { BadRequestError, NotFoundError } from "@/app/errors";
+import {
+  SubscriptionNotFoundError,
+  SubscriptionPaymentVerificationError,
+} from "../../domain/errors/subscription.errors";
 
 export class VerifyRazorpayPaymentUseCase {
   constructor(
-    private readonly subscriptionRepo: SubscriptionRepository,
-    private readonly planRepo: PlanRepository,
+    private readonly subscriptionRepo: ISubscriptionRepository & IInvoiceRepository,
+    private readonly planRepo: IPlanRepository,
     private readonly paymentGateway: IPaymentGateway,
     private readonly emailService: IEmailService,
     private readonly offerRepo?: IOfferRepository,
@@ -31,27 +38,21 @@ export class VerifyRazorpayPaymentUseCase {
     });
 
     if (!isValid) {
-      throw new BadRequestError("Payment verification failed. Invalid cryptographic signature.");
+      throw new SubscriptionPaymentVerificationError(
+        "Payment verification failed. Invalid cryptographic signature."
+      );
     }
 
     // 2. Fetch Target Plan
     const plan = await this.planRepo.findById(dto.planId);
     if (!plan) {
-      throw new NotFoundError(`Target plan with ID '${dto.planId}' not found.`);
+      throw new SubscriptionNotFoundError(`Target plan with ID '${dto.planId}' not found.`);
     }
 
     // 3. Compute Dates & Pricing (with dynamic GST and Default Offer Discount)
     const now = new Date();
-    const periodEnd = new Date(now);
     const selectedCycle = dto.billingCycle || plan.billingCycle || "MONTHLY";
-
-    if (selectedCycle === "YEARLY") {
-      periodEnd.setFullYear(periodEnd.getFullYear() + 1);
-    } else if (selectedCycle === "QUARTERLY") {
-      periodEnd.setMonth(periodEnd.getMonth() + 3);
-    } else {
-      periodEnd.setMonth(periodEnd.getMonth() + 1);
-    }
+    const periodEnd = SubscriptionPeriodPolicy.calculatePeriodEnd(now, selectedCycle);
 
     let finalBasePrice: number;
     let finalTaxAmount: number;
@@ -75,19 +76,31 @@ export class VerifyRazorpayPaymentUseCase {
           appliedOfferId = planOffer.offerId;
           appliedDiscountAmount = planOffer.discountAmount;
         } else {
-          const standardPricing = calculatePlanCheckoutPrice(Number(plan.price), selectedCycle, DEFAULT_GST_PERCENT);
+          const standardPricing = SubscriptionBillingPolicy.calculatePlanCheckoutPrice(
+            Number(plan.price),
+            selectedCycle,
+            DEFAULT_GST_PERCENT
+          );
           finalBasePrice = standardPricing.basePrice;
           finalTaxAmount = standardPricing.taxAmount;
           finalAmount = standardPricing.totalAmount;
         }
       } catch {
-        const standardPricing = calculatePlanCheckoutPrice(Number(plan.price), selectedCycle, DEFAULT_GST_PERCENT);
+        const standardPricing = SubscriptionBillingPolicy.calculatePlanCheckoutPrice(
+          Number(plan.price),
+          selectedCycle,
+          DEFAULT_GST_PERCENT
+        );
         finalBasePrice = standardPricing.basePrice;
         finalTaxAmount = standardPricing.taxAmount;
         finalAmount = standardPricing.totalAmount;
       }
     } else {
-      const standardPricing = calculatePlanCheckoutPrice(Number(plan.price), selectedCycle, DEFAULT_GST_PERCENT);
+      const standardPricing = SubscriptionBillingPolicy.calculatePlanCheckoutPrice(
+        Number(plan.price),
+        selectedCycle,
+        DEFAULT_GST_PERCENT
+      );
       finalBasePrice = standardPricing.basePrice;
       finalTaxAmount = standardPricing.taxAmount;
       finalAmount = standardPricing.totalAmount;

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { STORAGE_FOLDERS, ALL_ALLOWED_MIME_TYPES } from "../../entities/storage.entity";
+import { STORAGE_FOLDERS, ALL_ALLOWED_MIME_TYPES } from "../../domain/entities/storage.entity";
 
 export const getPresignedUrlSchema = z.object({
     fileName: z

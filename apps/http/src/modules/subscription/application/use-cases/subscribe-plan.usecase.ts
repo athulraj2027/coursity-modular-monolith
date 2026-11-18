@@ -1,23 +1,20 @@
-import { SubscriptionRepository } from "../../domain/repositories/subscription.repository";
-import { PlanRepository } from "@/modules/plan/domain/repositories/plan.repository";
+import { ISubscriptionRepository, IInvoiceRepository } from "../../domain/repositories/subscription.repository";
+import { IPlanRepository } from "@/modules/plan/domain/repositories/plan.repository";
 import { TeacherSubscription } from "../../domain/entities/subscription.entity";
 import { SubscribePlanDto } from "../../domain/dtos/subscription.dto";
-import { BadRequestError, NotFoundError } from "@/app/errors";
+import { SubscriptionNotFoundError } from "../../domain/errors/subscription.errors";
+import { SubscriptionPlanPolicy, SubscriptionPeriodPolicy } from "../../domain/policies";
 
 export class SubscribePlanUseCase {
   constructor(
-    private readonly subscriptionRepo: SubscriptionRepository,
-    private readonly planRepo: PlanRepository
+    private readonly subscriptionRepo: ISubscriptionRepository & IInvoiceRepository,
+    private readonly planRepo: IPlanRepository
   ) {}
 
   async execute(dto: SubscribePlanDto): Promise<TeacherSubscription> {
     const targetPlan = await this.planRepo.findById(dto.planId);
     if (!targetPlan) {
-      throw new NotFoundError(`Plan with id '${dto.planId}' not found.`);
-    }
-
-    if (!targetPlan.isActive) {
-      throw new BadRequestError(`Plan '${targetPlan.name}' is currently not active for new subscriptions.`);
+      throw new SubscriptionNotFoundError(`Plan with id '${dto.planId}' not found.`);
     }
 
     const activeSub = await this.subscriptionRepo.findActiveByTeacherId(dto.teacherProfileId);
@@ -26,32 +23,14 @@ export class SubscribePlanUseCase {
       currentPlan = (await this.planRepo.findById(activeSub.planId)) || undefined;
     }
 
-    if (activeSub && activeSub.status === "ACTIVE" && currentPlan) {
-      if (currentPlan.id === targetPlan.id) {
-        throw new BadRequestError(`You are already subscribed to the '${targetPlan.name}' plan.`);
-      }
-      if (currentPlan.price > 0 && targetPlan.price < currentPlan.price) {
-        throw new BadRequestError(
-          `Cannot downgrade active '${currentPlan.name}' plan to a lower tier with reduced quotas.`
-        );
-      }
-    }
+    SubscriptionPlanPolicy.assertCanSubscribe(targetPlan, currentPlan, activeSub?.status);
 
     const now = new Date();
-    const periodEnd = new Date(now);
-
-    if (targetPlan.billingCycle === "YEARLY") {
-      periodEnd.setFullYear(periodEnd.getFullYear() + 1);
-    } else if (targetPlan.billingCycle === "QUARTERLY") {
-      periodEnd.setMonth(periodEnd.getMonth() + 3);
-    } else {
-      periodEnd.setMonth(periodEnd.getMonth() + 1);
-    }
+    const periodEnd = SubscriptionPeriodPolicy.calculatePeriodEnd(now, targetPlan.billingCycle);
 
     let trialEndsAt: Date | null = null;
-    if (targetPlan.trialDays > 0 && (!activeSub || activeSub.status !== "ACTIVE")) {
-      trialEndsAt = new Date(now);
-      trialEndsAt.setDate(trialEndsAt.getDate() + targetPlan.trialDays);
+    if (!activeSub || activeSub.status !== "ACTIVE") {
+      trialEndsAt = SubscriptionPeriodPolicy.calculateTrialEnd(now, targetPlan.trialDays);
     }
 
     let subscription: TeacherSubscription;

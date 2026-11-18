@@ -132,8 +132,14 @@ export function DataTableTemplate<T>({
   // Compute pagination parameters
   const currentPage = pagination?.currentPage || 1
   const pageSize = pagination?.pageSize || (data.length > 0 ? data.length : 10)
-  const totalItems = pagination ? pagination.totalItems : data.length
+  const totalItems = Math.max(0, pagination?.totalItems ?? data.length)
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+
+  const defaultPageSizes = [5, 10, 20, 50]
+  const pageSizeOptions = pagination?.pageSizeOptions ||
+    (defaultPageSizes.includes(pageSize)
+      ? defaultPageSizes
+      : [...new Set([pageSize, ...defaultPageSizes])].sort((a, b) => a - b))
 
   const startRecord = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1
   const endRecord = Math.min(currentPage * pageSize, totalItems)
@@ -424,7 +430,7 @@ export function DataTableTemplate<T>({
                     onChange={(e) => pagination.onPageSizeChange!(Number(e.target.value))}
                     className="px-2 py-1 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs font-medium cursor-pointer"
                   >
-                    {(pagination.pageSizeOptions || [5, 10, 20, 50]).map((size) => (
+                    {pageSizeOptions.map((size) => (
                       <option key={size} value={size}>
                         {size}
                       </option>

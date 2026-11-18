@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { RequestCourseRefundUseCase } from "../../application/use-cases/request-course-refund.usecase";
+import { requestCourseRefundSchema } from "../schemas/enrollment.schema";
 import { UnauthorizedError } from "@/app/errors";
 import { ApiResponse } from "@/shared";
 
@@ -14,9 +15,12 @@ export class RequestRefundController {
       const enrollmentId = Array.isArray(req.params.enrollmentId)
         ? req.params.enrollmentId[0]
         : req.params.enrollmentId;
+
+      const validated = requestCourseRefundSchema.parse(req.body);
+
       const result = await this.requestRefundUseCase.execute(studentId, {
         enrollmentId,
-        ...req.body,
+        ...validated,
       });
       return ApiResponse.success(
         res,

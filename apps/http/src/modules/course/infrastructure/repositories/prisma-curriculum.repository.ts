@@ -24,6 +24,7 @@ export class PrismaCurriculumRepository implements ICurriculumRepository {
       include: includeLessons
         ? {
             lessons: {
+              where: { isDeleted: false },
               orderBy: { sortOrder: "asc" },
             },
           }
@@ -39,6 +40,7 @@ export class PrismaCurriculumRepository implements ICurriculumRepository {
       include: includeLessons
         ? {
             lessons: {
+              where: { isDeleted: false },
               orderBy: { sortOrder: "asc" },
             },
           }
@@ -87,6 +89,7 @@ export class PrismaCurriculumRepository implements ICurriculumRepository {
       data: updateData,
       include: {
         lessons: {
+          where: { isDeleted: false },
           orderBy: { sortOrder: "asc" },
         },
       },
@@ -141,7 +144,7 @@ export class PrismaCurriculumRepository implements ICurriculumRepository {
 
   async getLessonsByModuleId(moduleId: string): Promise<CourseLessonEntity[]> {
     const lessons = await (this.prisma as any).courseLesson.findMany({
-      where: { moduleId },
+      where: { moduleId, isDeleted: false },
       orderBy: { sortOrder: "asc" },
     });
     return lessons as CourseLessonEntity[];
@@ -158,22 +161,18 @@ export class PrismaCurriculumRepository implements ICurriculumRepository {
       sortOrder = (highest?.sortOrder ?? -1) + 1;
     }
 
+    const lessonData: any = {
+      moduleId: data.moduleId,
+      title: data.title,
+      description: data.description || null,
+      durationSeconds: data.durationSeconds ?? 0,
+      sortOrder,
+      isPublished: data.isPublished ?? true,
+      scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
+    };
+
     const created = await (this.prisma as any).courseLesson.create({
-      data: {
-        moduleId: data.moduleId,
-        title: data.title,
-        description: data.description || null,
-        lessonType: data.lessonType || "VIDEO",
-        durationSeconds: data.durationSeconds ?? 0,
-        sortOrder,
-        isFreePreview: data.isFreePreview ?? false,
-        isPublished: data.isPublished ?? true,
-        videoUrl: data.videoUrl || null,
-        videoProvider: data.videoProvider || (data.videoUrl ? "S3" : null),
-        videoThumbnail: data.videoThumbnail || null,
-        articleBody: data.articleBody || null,
-        attachments: data.attachments || [],
-      },
+      data: lessonData,
     });
 
     const module = await (this.prisma as any).courseModule.findUnique({
@@ -191,16 +190,12 @@ export class PrismaCurriculumRepository implements ICurriculumRepository {
     const updateData: any = {};
     if (data.title !== undefined) updateData.title = data.title;
     if (data.description !== undefined) updateData.description = data.description;
-    if (data.lessonType !== undefined) updateData.lessonType = data.lessonType;
     if (data.durationSeconds !== undefined) updateData.durationSeconds = data.durationSeconds;
     if (data.sortOrder !== undefined) updateData.sortOrder = data.sortOrder;
-    if (data.isFreePreview !== undefined) updateData.isFreePreview = data.isFreePreview;
     if (data.isPublished !== undefined) updateData.isPublished = data.isPublished;
-    if (data.videoUrl !== undefined) updateData.videoUrl = data.videoUrl;
-    if (data.videoProvider !== undefined) updateData.videoProvider = data.videoProvider;
-    if (data.videoThumbnail !== undefined) updateData.videoThumbnail = data.videoThumbnail;
-    if (data.articleBody !== undefined) updateData.articleBody = data.articleBody;
-    if (data.attachments !== undefined) updateData.attachments = data.attachments;
+    if (data.scheduledAt !== undefined) {
+      updateData.scheduledAt = data.scheduledAt ? new Date(data.scheduledAt) : null;
+    }
 
     const updated = await (this.prisma as any).courseLesson.update({
       where: { id },
@@ -225,8 +220,9 @@ export class PrismaCurriculumRepository implements ICurriculumRepository {
     });
     if (!lesson) return false;
 
-    await (this.prisma as any).courseLesson.delete({
+    await (this.prisma as any).courseLesson.update({
       where: { id },
+      data: { isDeleted: true, deletedAt: new Date() },
     });
 
     if (lesson.module?.courseId) {
@@ -254,6 +250,7 @@ export class PrismaCurriculumRepository implements ICurriculumRepository {
       where: { courseId },
       include: {
         lessons: {
+          where: { isDeleted: false },
           select: { durationSeconds: true },
         },
       },

@@ -1,15 +1,16 @@
 import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
-import { PasswordService, TokenService } from "@/infrastructure/security";
-import { TokenRepository } from "../../domain/repositories/token.repository";
+import { IPasswordComparer, ITokenGenerator } from "@/infrastructure/security";
+import { ISaveRefreshTokenRepository } from "../../domain/repositories/token.repository";
 import { BadRequestError, UnauthorizedError, ForbiddenError } from "@/app/errors";
 import { SigninInputDTO, SigninOutputDTO } from "../dtos/signin.dto";
+import { PortalAccessPolicy } from "../../domain/policies/portal-access.policy";
 
 export class SigninUser {
     constructor(
         private readonly userRepository: UserRepository,
-        private readonly passwordService: PasswordService,
-        private readonly tokenService: TokenService,
-        private readonly tokenRepository: TokenRepository
+        private readonly passwordService: IPasswordComparer,
+        private readonly tokenService: ITokenGenerator,
+        private readonly tokenRepository: ISaveRefreshTokenRepository
     ) { }
 
     async execute(input: SigninInputDTO): Promise<SigninOutputDTO> {
@@ -26,41 +27,32 @@ export class SigninUser {
             throw new ForbiddenError("Your account has been blocked. Please contact support.");
         }
 
-        // 3. Enforce strict role matching if a specific portal role was requested
-        if (input.role && user.role !== input.role) {
-            if (user.role === "ADMIN") {
-                throw new ForbiddenError("This account is registered as an Administrator. Please sign in through the Admin portal.");
-            } else if (user.role === "TEACHER") {
-                throw new ForbiddenError("This account is registered as a Teacher. Please sign in through the Teacher portal.");
-            } else if (user.role === "STUDENT") {
-                throw new ForbiddenError("This account is registered as a Student. Please sign in through the Student portal.");
-            } else {
-                throw new ForbiddenError(`Access denied. Your account does not have ${input.role.toLowerCase()} privileges.`);
-            }
-        }
+        // 3. Enforce strict role matching via PortalAccessPolicy (OCP)
+        PortalAccessPolicy.assertPortalRoleAccess(user.role, input.role, "signin");
 
-        // 4. Check if user is password-based or OAuth-only
+        // 4. Check if user is password-based or OAuth-only (OCP: dynamic provider check)
         if (!user.password) {
-            if (user.authProvider === "GOOGLE") {
-                throw new BadRequestError("This account was created with Google. Please sign in with Google.");
+            if (user.authProvider && user.authProvider !== "LOCAL") {
+                const providerName = user.authProvider === "GOOGLE" ? "Google" : user.authProvider;
+                throw new BadRequestError(`This account was created with ${providerName}. Please sign in with ${providerName}.`);
             }
             throw new UnauthorizedError("Invalid email or password");
         }
 
-        // 3. Compare password
+        // 5. Compare password
         const isPasswordValid = await this.passwordService.compare(input.password, user.password);
         if (!isPasswordValid) {
             throw new UnauthorizedError("Invalid email or password");
         }
 
-        // 4. Generate Access & Refresh tokens
+        // 6. Generate Access & Refresh tokens
         const tokens = this.tokenService.generateAuthTokens({
             userId: user.id,
             email: user.email,
             role: user.role,
         });
 
-        // 5. Save Refresh Token in Redis session storage
+        // 7. Save Refresh Token in session storage
         await this.tokenRepository.saveRefreshToken(user.id, tokens.refreshToken);
 
         return {

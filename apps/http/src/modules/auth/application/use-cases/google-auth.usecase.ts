@@ -1,17 +1,19 @@
 import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
 import type { UserRole } from "@/modules/user/domain/entities/user.entity";
-import { OAuthService, OAuthUserProfile } from "../../domain/services/oauth.service";
-import { TokenService } from "@/infrastructure/security";
-import { TokenRepository } from "../../domain/repositories/token.repository";
+import { IOAuthService } from "../../domain/services/oauth.service.interface";
+import { OAuthUserProfile } from "../../domain/entities/oauth-user-profile.entity";
+import { ITokenGenerator } from "@/infrastructure/security";
+import { ISaveRefreshTokenRepository } from "../../domain/repositories/token.repository";
 import { BadRequestError, ForbiddenError } from "@/app/errors";
 import { GoogleAuthOutputDTO, GoogleAuthUrlOutputDTO, GoogleLoginInputDTO } from "../dtos/google-auth.dto";
+import { PortalAccessPolicy } from "../../domain/policies/portal-access.policy";
 
 export class GoogleAuth {
     constructor(
-        private readonly oauthService: OAuthService,
+        private readonly oauthService: IOAuthService,
         private readonly userRepository: UserRepository,
-        private readonly tokenService: TokenService,
-        private readonly tokenRepository: TokenRepository
+        private readonly tokenService: ITokenGenerator,
+        private readonly tokenRepository: ISaveRefreshTokenRepository
     ) { }
 
     getAuthUrl(state?: string): GoogleAuthUrlOutputDTO {
@@ -51,18 +53,8 @@ export class GoogleAuth {
                 throw new ForbiddenError("Your account has been blocked. Please contact support.");
             }
 
-            // 2. Enforce strict role matching if a specific portal role was requested
-            if (requestedRole && user.role !== requestedRole) {
-                if (user.role === "ADMIN") {
-                    throw new ForbiddenError("This account is registered as an Administrator. Please sign in through the Admin portal.");
-                } else if (user.role === "TEACHER") {
-                    throw new ForbiddenError("This account is registered as a Teacher. Please sign in through the Teacher portal.");
-                } else if (user.role === "STUDENT") {
-                    throw new ForbiddenError("This account is registered as a Student. Please sign in through the Student portal.");
-                } else {
-                    throw new ForbiddenError(`Access denied. Your account does not have ${requestedRole.toLowerCase()} privileges.`);
-                }
-            }
+            // 2. Enforce strict role matching via PortalAccessPolicy (OCP)
+            PortalAccessPolicy.assertPortalRoleAccess(user.role, requestedRole, "signin");
         }
 
         // Issue auth tokens
@@ -72,7 +64,7 @@ export class GoogleAuth {
             role: user.role,
         });
 
-        // Store refresh token in Redis
+        // Store refresh token in session storage
         await this.tokenRepository.saveRefreshToken(user.id, tokens.refreshToken);
 
         return {

@@ -1,4 +1,3 @@
-import { IBaseRepository } from "@/shared/domain/repositories/base.repository.interface";
 import {
   TeacherSubscription,
   TeacherPlanUsage,
@@ -12,14 +11,7 @@ import {
   AdminSubscriptionMetrics,
 } from "../dtos/subscription.dto";
 
-export interface SubscriptionRepository
-  extends IBaseRepository<
-    TeacherSubscription,
-    string,
-    CreateSubscriptionDto,
-    any,
-    AdminSubscriptionFilterDto
-  > {
+export interface ISubscriptionRepository {
   findById(id: string): Promise<TeacherSubscription | null>;
   findActiveByTeacherId(teacherProfileId: string): Promise<TeacherSubscription | null>;
   create(data: CreateSubscriptionDto): Promise<TeacherSubscription>;
@@ -35,8 +27,9 @@ export interface SubscriptionRepository
     newPeriodStart: Date,
     newPeriodEnd: Date
   ): Promise<TeacherSubscription>;
+}
 
-  // Metered Usage
+export interface ISubscriptionUsageRepository {
   getUsage(subscriptionId: string, featureCode: string, periodStart: Date): Promise<TeacherPlanUsage | null>;
   recordUsage(
     subscriptionId: string,
@@ -48,11 +41,13 @@ export interface SubscriptionRepository
     isAbsolute?: boolean
   ): Promise<TeacherPlanUsage>;
   getAllCurrentUsages(subscriptionId: string): Promise<TeacherPlanUsage[]>;
+}
 
-  // Quota Verification
+export interface IQuotaEvaluationRepository {
   evaluateQuota(teacherProfileId: string, featureCode: string, requestedAmount?: number): Promise<QuotaEvaluationResult>;
+}
 
-  // Admin Subscriptions
+export interface IAdminSubscriptionRepository {
   adminFindAll(filter: AdminSubscriptionFilterDto): Promise<{
     items: AdminSubscriptionListItem[];
     total: number;
@@ -65,10 +60,20 @@ export interface SubscriptionRepository
     status: "PAID" | "PENDING" | "FAILED" | "REFUNDED",
     receiptUrl?: string
   ): Promise<any>;
+}
 
-  // Invoices & Billing
+export interface IInvoiceRepository {
   createInvoice(data: any): Promise<any>;
   findInvoiceById(invoiceId: string): Promise<any | null>;
   findInvoicesByTeacher(teacherProfileId: string): Promise<any[]>;
   findTeacherWithUser(teacherProfileId: string): Promise<any | null>;
 }
+
+export interface SubscriptionRepository
+  extends ISubscriptionRepository,
+    ISubscriptionUsageRepository,
+    IQuotaEvaluationRepository,
+    IAdminSubscriptionRepository,
+    IInvoiceRepository {}
+
+export type ISubscriptionCompositeRepository = SubscriptionRepository;

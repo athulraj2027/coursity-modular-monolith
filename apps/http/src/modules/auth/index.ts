@@ -9,8 +9,10 @@ import {
 import { RedisOtpRepository } from "./infrastructure/repositories/redis-otp.repository";
 import { RedisTokenRepository } from "./infrastructure/repositories/redis-token.repository";
 import { GoogleOAuthService } from "./infrastructure/oauth/google-oauth.service";
-import { OAuthService } from "./domain/services/oauth.service";
+import { IOAuthService } from "./domain/services/oauth.service";
+import { CryptoOtpGeneratorService } from "./infrastructure/services/crypto-otp-generator.service";
 import { emailService } from "@/infrastructure/email";
+import { env } from "@/app/config/env";
 
 // Use Cases
 import { SignupUser } from "./application/use-cases/signup.user.usecase";
@@ -44,24 +46,29 @@ import { AuthRoutes } from "./presentation/routes/auth.routes";
 // 1. Repositories & Services
 const userRepository = new PrismaUserRepository();
 export const passwordService: PasswordService = new BcryptPasswordService();
-const otpRepository = new RedisOtpRepository();
+export const otpRepository = new RedisOtpRepository();
 export const tokenRepository = new RedisTokenRepository();
 export const tokenService: TokenService = new JwtTokenService();
-export const oauthService: OAuthService = new GoogleOAuthService();
+export const otpGenerator = new CryptoOtpGeneratorService();
+export const oauthService: IOAuthService = new GoogleOAuthService({
+    clientId: env.GOOGLE_CLIENT_ID || "",
+    clientSecret: env.GOOGLE_CLIENT_SECRET || "",
+    redirectUri: env.GOOGLE_REDIRECT_URI || "http://localhost:3000/api/auth/google/callback",
+});
 
 // 2. Use Cases
-const signupUser = new SignupUser(userRepository, passwordService, otpRepository, emailService);
+const signupUser = new SignupUser(userRepository, passwordService, otpRepository, emailService, otpGenerator);
 const verifySignupOtp = new VerifySignupOtp(
     otpRepository,
     userRepository,
     tokenService,
     tokenRepository
 );
-const resendSignupOtp = new ResendSignupOtp(otpRepository, userRepository, emailService);
+const resendSignupOtp = new ResendSignupOtp(otpRepository, userRepository, emailService, otpGenerator);
 const signinUser = new SigninUser(userRepository, passwordService, tokenService, tokenRepository);
 const logoutUser = new LogoutUser(tokenRepository, tokenService);
 const refreshTokenUseCase = new RefreshToken(tokenService, tokenRepository, userRepository);
-const forgotPassword = new ForgotPassword(userRepository, otpRepository, emailService);
+const forgotPassword = new ForgotPassword(userRepository, otpRepository, emailService, otpGenerator);
 const resetPassword = new ResetPassword(userRepository, passwordService, otpRepository, tokenRepository);
 const googleAuth = new GoogleAuth(oauthService, userRepository, tokenService, tokenRepository);
 const getCurrentUser = new GetCurrentUser(userRepository);
@@ -77,11 +84,11 @@ const logoutController = new LogoutController(logoutUser);
 const refreshController = new RefreshController(refreshTokenUseCase);
 const forgotPasswordController = new ForgotPasswordController(forgotPassword);
 const resetPasswordController = new ResetPasswordController(resetPassword);
-const googleAuthController = new GoogleAuthController(googleAuth);
+const googleAuthController = new GoogleAuthController(googleAuth, { frontendUrl: env.FRONTEND_URL });
 const meController = new MeController(getCurrentUser);
 
 // 4. Routes
-const authRoutes = new AuthRoutes(
+const authRoutes = new AuthRoutes({
     signupController,
     verifyOtpController,
     resendOtpController,
@@ -93,12 +100,41 @@ const authRoutes = new AuthRoutes(
     googleAuthController,
     meController,
     authMiddleware,
-    isBlockedMiddleware
-);
+    isBlockedMiddleware,
+});
 
 export * from "./application/dtos";
+export * from "./application/use-cases/signup.user.usecase";
+export * from "./application/use-cases/verify-signup-otp.usecase";
+export * from "./application/use-cases/resend-signup-otp.usecase";
+export * from "./application/use-cases/signin.user.usecase";
+export * from "./application/use-cases/logout.user.usecase";
+export * from "./application/use-cases/refresh-token.usecase";
+export * from "./application/use-cases/forgot-password.usecase";
+export * from "./application/use-cases/reset-password.usecase";
+export * from "./application/use-cases/google-auth.usecase";
+export * from "./application/use-cases/get-current-user.usecase";
 export * from "./presentation/validators";
+export * from "./domain/entities/oauth-user-profile.entity";
+export * from "./domain/repositories/otp.repository.interface";
+export * from "./domain/repositories/token.repository";
+export * from "./domain/policies/portal-access.policy";
+export * from "./domain/policies/otp-cooldown.policy";
+export * from "./domain/services/otp-generator.service.interface";
+export * from "./domain/services/oauth.service.interface";
 export * from "./domain/services/oauth.service";
-export { PasswordService, TokenService, BcryptPasswordService, JwtTokenService } from "@/infrastructure/security";
+export * from "./infrastructure/services/crypto-otp-generator.service";
+export {
+    IPasswordService,
+    ITokenService,
+    IPasswordHasher,
+    IPasswordComparer,
+    ITokenGenerator,
+    ITokenVerifier,
+    PasswordService,
+    TokenService,
+    BcryptPasswordService,
+    JwtTokenService,
+} from "@/infrastructure/security";
 export const authRouter = authRoutes.router;
 export default authRouter;

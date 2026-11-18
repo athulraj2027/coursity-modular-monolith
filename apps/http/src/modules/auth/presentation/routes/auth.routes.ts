@@ -22,31 +22,90 @@ import {
     googleCallbackSchema,
 } from "../validators/index";
 import validate from "@/app/middlewares/validate";
-import { authRateLimiter } from "@/app/middlewares/rate-limit.middleware";
+
+export interface AuthRoutesDependencies {
+    signupController: SignupController;
+    verifyOtpController: VerifyOtpController;
+    resendOtpController: ResendOtpController;
+    signinController: SigninController;
+    logoutController: LogoutController;
+    refreshController: RefreshController;
+    forgotPasswordController: ForgotPasswordController;
+    resetPasswordController: ResetPasswordController;
+    googleAuthController: GoogleAuthController;
+    meController: MeController;
+    authMiddleware: RequestHandler;
+    isBlockedMiddleware: RequestHandler;
+}
 
 export class AuthRoutes {
     public readonly router: Router;
+    private readonly signupController: SignupController;
+    private readonly verifyOtpController: VerifyOtpController;
+    private readonly resendOtpController: ResendOtpController;
+    private readonly signinController: SigninController;
+    private readonly logoutController: LogoutController;
+    private readonly refreshController: RefreshController;
+    private readonly forgotPasswordController: ForgotPasswordController;
+    private readonly resetPasswordController: ResetPasswordController;
+    private readonly googleAuthController: GoogleAuthController;
+    private readonly meController: MeController;
+    private readonly authMiddleware: RequestHandler;
+    private readonly isBlockedMiddleware: RequestHandler;
 
     constructor(
-        private readonly signupController: SignupController,
-        private readonly verifyOtpController: VerifyOtpController,
-        private readonly resendOtpController: ResendOtpController,
-        private readonly signinController: SigninController,
-        private readonly logoutController: LogoutController,
-        private readonly refreshController: RefreshController,
-        private readonly forgotPasswordController: ForgotPasswordController,
-        private readonly resetPasswordController: ResetPasswordController,
-        private readonly googleAuthController: GoogleAuthController,
-        private readonly meController: MeController,
-        private readonly authMiddleware: RequestHandler,
-        private readonly isBlockedMiddleware: RequestHandler
+        dependenciesOrSignup: AuthRoutesDependencies | SignupController,
+        verifyOtpController?: VerifyOtpController,
+        resendOtpController?: ResendOtpController,
+        signinController?: SigninController,
+        logoutController?: LogoutController,
+        refreshController?: RefreshController,
+        forgotPasswordController?: ForgotPasswordController,
+        resetPasswordController?: ResetPasswordController,
+        googleAuthController?: GoogleAuthController,
+        meController?: MeController,
+        authMiddleware?: RequestHandler,
+        isBlockedMiddleware?: RequestHandler
     ) {
+        if (
+            dependenciesOrSignup &&
+            typeof dependenciesOrSignup === "object" &&
+            "signupController" in dependenciesOrSignup
+        ) {
+            const deps = dependenciesOrSignup as AuthRoutesDependencies;
+            this.signupController = deps.signupController;
+            this.verifyOtpController = deps.verifyOtpController;
+            this.resendOtpController = deps.resendOtpController;
+            this.signinController = deps.signinController;
+            this.logoutController = deps.logoutController;
+            this.refreshController = deps.refreshController;
+            this.forgotPasswordController = deps.forgotPasswordController;
+            this.resetPasswordController = deps.resetPasswordController;
+            this.googleAuthController = deps.googleAuthController;
+            this.meController = deps.meController;
+            this.authMiddleware = deps.authMiddleware;
+            this.isBlockedMiddleware = deps.isBlockedMiddleware;
+        } else {
+            this.signupController = dependenciesOrSignup as SignupController;
+            this.verifyOtpController = verifyOtpController!;
+            this.resendOtpController = resendOtpController!;
+            this.signinController = signinController!;
+            this.logoutController = logoutController!;
+            this.refreshController = refreshController!;
+            this.forgotPasswordController = forgotPasswordController!;
+            this.resetPasswordController = resetPasswordController!;
+            this.googleAuthController = googleAuthController!;
+            this.meController = meController!;
+            this.authMiddleware = authMiddleware!;
+            this.isBlockedMiddleware = isBlockedMiddleware!;
+        }
+
         this.router = Router();
         this.initRoutes();
     }
 
     private initRoutes(): void {
-        // this.router.use(authRateLimiter);
+        // 1. Registration & OTP flow
         this.router.post(
             "/signup",
             validate(signupSchema),
@@ -65,7 +124,7 @@ export class AuthRoutes {
             this.resendOtpController.execute
         );
 
-        // Sign In & Authentication Session
+        // 2. Sign In & Session flow
         this.router.post(
             "/signin",
             validate(signinSchema),
@@ -84,15 +143,7 @@ export class AuthRoutes {
             this.refreshController.execute
         );
 
-        // Current Authenticated User
-        this.router.get(
-            "/me",
-            this.authMiddleware,
-            this.isBlockedMiddleware,
-            this.meController.execute
-        );
-
-        // Password Recovery
+        // 3. Password Recovery flow
         this.router.post(
             "/forgot-password",
             validate(forgotPasswordSchema),
@@ -105,9 +156,9 @@ export class AuthRoutes {
             this.resetPasswordController.execute
         );
 
-        // Google OAuth Routes
+        // 4. Google OAuth flow
         this.router.get(
-            "/google",
+            "/google/url",
             this.googleAuthController.getAuthUrl
         );
 
@@ -126,6 +177,14 @@ export class AuthRoutes {
             "/google/callback",
             validate(googleCallbackSchema),
             this.googleAuthController.callback
+        );
+
+        // 5. Authenticated Profile / Me
+        this.router.get(
+            "/me",
+            this.authMiddleware,
+            this.isBlockedMiddleware,
+            this.meController.execute
         );
     }
 }

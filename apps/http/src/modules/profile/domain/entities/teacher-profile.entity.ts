@@ -15,7 +15,7 @@ export interface TeacherProfile {
     id: string;
     profileId: string;
     expertise: string[];
-    qualifications?: QualificationItem[] | string | null;
+    qualifications?: QualificationItem[] | string[] | string | null;
     experienceYears?: number | null;
     resume?: string | null;
     credentials?: string[];

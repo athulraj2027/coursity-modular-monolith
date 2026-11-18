@@ -14,7 +14,7 @@ import { AdminRefundSubscriptionUseCase } from "../../application/use-cases/admi
 import { AdminExtendSubscriptionUseCase } from "../../application/use-cases/admin-extend-subscription.usecase";
 import { AdminChangeSubscriptionPlanUseCase } from "../../application/use-cases/admin-change-subscription-plan.usecase";
 
-import { GetMySubscriptionController } from "./get-my-subscription.controller";
+import { GetMySubscriptionController, ITeacherProfileResolver } from "./get-my-subscription.controller";
 import { SubscribePlanController } from "./subscribe-plan.controller";
 import { CreateRazorpayOrderController } from "./create-razorpay-order.controller";
 import { VerifyRazorpayPaymentController } from "./verify-razorpay-payment.controller";
@@ -30,20 +30,20 @@ import { AdminExtendSubscriptionController } from "./admin-extend-subscription.c
 import { AdminChangeSubscriptionPlanController } from "./admin-change-plan.controller";
 
 export class SubscriptionController {
-  private readonly getMySubscriptionController: GetMySubscriptionController;
-  private readonly subscribePlanController: SubscribePlanController;
-  private readonly createRazorpayOrderController: CreateRazorpayOrderController;
-  private readonly verifyRazorpayPaymentController: VerifyRazorpayPaymentController;
-  private readonly getInvoicesController: GetInvoicesController;
-  private readonly cancelSubscriptionController: CancelSubscriptionController;
-  private readonly recordUsageController: RecordUsageController;
-  private readonly checkQuotaController: CheckQuotaController;
-  private readonly adminGetSubscriptionsController: AdminGetSubscriptionsController;
-  private readonly adminGetSubscriptionDetailController: AdminGetSubscriptionDetailController;
-  private readonly adminCancelSubscriptionController: AdminCancelSubscriptionController;
-  private readonly adminRefundSubscriptionController: AdminRefundSubscriptionController;
-  private readonly adminExtendSubscriptionController: AdminExtendSubscriptionController;
-  private readonly adminChangeSubscriptionPlanController: AdminChangeSubscriptionPlanController;
+  public readonly getMySubscriptionController: GetMySubscriptionController;
+  public readonly subscribePlanController: SubscribePlanController;
+  public readonly createRazorpayOrderController: CreateRazorpayOrderController;
+  public readonly verifyRazorpayPaymentController: VerifyRazorpayPaymentController;
+  public readonly getInvoicesController: GetInvoicesController;
+  public readonly cancelSubscriptionController: CancelSubscriptionController;
+  public readonly recordUsageController: RecordUsageController;
+  public readonly checkQuotaController: CheckQuotaController;
+  public readonly adminGetSubscriptionsController: AdminGetSubscriptionsController;
+  public readonly adminGetSubscriptionDetailController: AdminGetSubscriptionDetailController;
+  public readonly adminCancelSubscriptionController: AdminCancelSubscriptionController;
+  public readonly adminRefundSubscriptionController: AdminRefundSubscriptionController;
+  public readonly adminExtendSubscriptionController: AdminExtendSubscriptionController;
+  public readonly adminChangeSubscriptionPlanController: AdminChangeSubscriptionPlanController;
 
   constructor(
     private readonly getTeacherSubscriptionUseCase: GetTeacherSubscriptionUseCase,
@@ -59,22 +59,59 @@ export class SubscriptionController {
     private readonly adminCancelSubscriptionUseCase: AdminCancelSubscriptionUseCase,
     private readonly adminRefundSubscriptionUseCase: AdminRefundSubscriptionUseCase,
     private readonly adminExtendSubscriptionUseCase: AdminExtendSubscriptionUseCase,
-    private readonly adminChangeSubscriptionPlanUseCase: AdminChangeSubscriptionPlanUseCase
+    private readonly adminChangeSubscriptionPlanUseCase: AdminChangeSubscriptionPlanUseCase,
+    private readonly profileRepo?: ITeacherProfileResolver
   ) {
-    this.getMySubscriptionController = new GetMySubscriptionController(this.getTeacherSubscriptionUseCase);
-    this.subscribePlanController = new SubscribePlanController(this.subscribePlanUseCase);
-    this.createRazorpayOrderController = new CreateRazorpayOrderController(this.createRazorpayOrderUseCase);
-    this.verifyRazorpayPaymentController = new VerifyRazorpayPaymentController(this.verifyRazorpayPaymentUseCase);
-    this.getInvoicesController = new GetInvoicesController(this.getInvoicesUseCase);
-    this.cancelSubscriptionController = new CancelSubscriptionController(this.cancelSubscriptionUseCase);
-    this.recordUsageController = new RecordUsageController(this.recordUsageUseCase);
-    this.checkQuotaController = new CheckQuotaController(this.checkQuotaUseCase);
-    this.adminGetSubscriptionsController = new AdminGetSubscriptionsController(this.adminGetSubscriptionsUseCase);
-    this.adminGetSubscriptionDetailController = new AdminGetSubscriptionDetailController(this.adminGetSubscriptionDetailUseCase);
-    this.adminCancelSubscriptionController = new AdminCancelSubscriptionController(this.adminCancelSubscriptionUseCase);
-    this.adminRefundSubscriptionController = new AdminRefundSubscriptionController(this.adminRefundSubscriptionUseCase);
-    this.adminExtendSubscriptionController = new AdminExtendSubscriptionController(this.adminExtendSubscriptionUseCase);
-    this.adminChangeSubscriptionPlanController = new AdminChangeSubscriptionPlanController(this.adminChangeSubscriptionPlanUseCase);
+    this.getMySubscriptionController = new GetMySubscriptionController(
+      this.getTeacherSubscriptionUseCase,
+      this.profileRepo
+    );
+    this.subscribePlanController = new SubscribePlanController(
+      this.subscribePlanUseCase,
+      this.profileRepo
+    );
+    this.createRazorpayOrderController = new CreateRazorpayOrderController(
+      this.createRazorpayOrderUseCase,
+      this.profileRepo
+    );
+    this.verifyRazorpayPaymentController = new VerifyRazorpayPaymentController(
+      this.verifyRazorpayPaymentUseCase,
+      this.profileRepo
+    );
+    this.getInvoicesController = new GetInvoicesController(
+      this.getInvoicesUseCase,
+      this.profileRepo
+    );
+    this.cancelSubscriptionController = new CancelSubscriptionController(
+      this.cancelSubscriptionUseCase,
+      this.profileRepo
+    );
+    this.recordUsageController = new RecordUsageController(
+      this.recordUsageUseCase,
+      this.profileRepo
+    );
+    this.checkQuotaController = new CheckQuotaController(
+      this.checkQuotaUseCase,
+      this.profileRepo
+    );
+    this.adminGetSubscriptionsController = new AdminGetSubscriptionsController(
+      this.adminGetSubscriptionsUseCase
+    );
+    this.adminGetSubscriptionDetailController = new AdminGetSubscriptionDetailController(
+      this.adminGetSubscriptionDetailUseCase
+    );
+    this.adminCancelSubscriptionController = new AdminCancelSubscriptionController(
+      this.adminCancelSubscriptionUseCase
+    );
+    this.adminRefundSubscriptionController = new AdminRefundSubscriptionController(
+      this.adminRefundSubscriptionUseCase
+    );
+    this.adminExtendSubscriptionController = new AdminExtendSubscriptionController(
+      this.adminExtendSubscriptionUseCase
+    );
+    this.adminChangeSubscriptionPlanController = new AdminChangeSubscriptionPlanController(
+      this.adminChangeSubscriptionPlanUseCase
+    );
   }
 
   getMySubscription = (req: Request, res: Response, next: NextFunction) =>

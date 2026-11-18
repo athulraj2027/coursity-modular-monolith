@@ -13,6 +13,7 @@ import {
   InterviewSessionEntity,
   InterviewTranscriptEntity,
 } from "../../domain/entities/interview.entity";
+import { InterviewEvaluationPolicy } from "../../domain/policies";
 
 export class InternalInterviewUseCases {
   constructor(
@@ -83,20 +84,18 @@ export class InternalInterviewUseCases {
     const durationSeconds =
       dto.durationSeconds !== undefined
         ? dto.durationSeconds
-        : session.startedAt
-        ? Math.round(
-            (endedAt.getTime() - new Date(session.startedAt).getTime()) / 1000
-          )
-        : session.durationSeconds || 0;
+        : InterviewEvaluationPolicy.calculateDurationSeconds(
+            session.startedAt,
+            endedAt,
+            session.durationSeconds || 0
+          );
 
-    let outcome = dto.outcome || "NEEDS_HUMAN_REVIEW";
-    const overallScore = dto.overallScore !== undefined ? dto.overallScore : 0;
-
-    // Check passing score if template is attached and outcome was not explicitly set
-    if (!dto.outcome && session.template) {
-      outcome =
-        overallScore >= session.template.passingScore ? "PASSED" : "FAILED";
-    }
+    const overallScore = InterviewEvaluationPolicy.normalizeScore(dto.overallScore);
+    const outcome = InterviewEvaluationPolicy.determineOutcome({
+      overallScore,
+      passingScore: session.template?.passingScore,
+      explicitOutcome: dto.outcome,
+    });
 
     const updated = await this.sessionRepo.saveEvaluation({
       sessionId: dto.sessionId,
@@ -157,15 +156,26 @@ export class InternalInterviewUseCases {
     const session = await this.sessionRepo.findById(dto.sessionId);
     if (!session) throw new InterviewNotFoundError();
 
-    const mergedMeta = dto.meta
-      ? { ...(session.meta || {}), ...dto.meta }
-      : session.meta;
-
-    return this.sessionRepo.updateSession(dto.sessionId, {
+    const updated = await this.sessionRepo.updateSession(dto.sessionId, {
       livekitRoomSid: dto.livekitRoomSid || session.livekitRoomSid,
       recordingUrl: dto.recordingUrl || session.recordingUrl,
-      meta: mergedMeta,
+      meta: dto.meta
+        ? { ...(session.meta || {}), ...dto.meta }
+        : session.meta,
     });
+
+    await this.sessionRepo.recordAuditLog({
+      sessionId: dto.sessionId,
+      actorId: "AI_SERVICE",
+      action: "INTERNAL_METADATA_UPDATED",
+      newState: {
+        livekitRoomSid: updated.livekitRoomSid,
+        recordingUrl: updated.recordingUrl,
+      },
+      note: "AI service updated technical session metadata",
+    });
+
+    return updated;
   }
 
   async abandonSession(
@@ -176,16 +186,19 @@ export class InternalInterviewUseCases {
 
     const updated = await this.sessionRepo.updateStatus(
       dto.sessionId,
-      "ABANDONED"
+      "ABANDONED",
+      {
+        outcome: "FAILED",
+        endedAt: new Date(),
+      }
     );
 
     await this.sessionRepo.recordAuditLog({
       sessionId: dto.sessionId,
       actorId: "AI_SERVICE",
       action: "INTERNAL_SESSION_ABANDONED",
-      previousState: { status: session.status },
-      newState: { status: "ABANDONED" },
-      note: dto.reason || "Candidate disconnected or abandoned session",
+      newState: { status: "ABANDONED", outcome: "FAILED" },
+      note: dto.reason || "AI service detected disconnected / abandoned session",
     });
 
     return updated;

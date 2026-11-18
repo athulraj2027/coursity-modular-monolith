@@ -8,7 +8,7 @@ import {
   CourseFilterParams,
   CourseMetrics,
 } from "../../domain/entities/course.entity";
-import { CreateCourseDTO, UpdateCourseDTO } from "../../domain/dtos/course.dto";
+import { CreateCourseDTO, UpdateCourseDTO, CourseStatusUpdateExtras } from "../../domain/dtos/course.dto";
 
 export class PrismaCourseRepository
   extends PrismaBaseRepository<
@@ -68,7 +68,7 @@ export class PrismaCourseRepository
     };
   }
 
-  async findById(id: string, includeDeleted = false, includeCurriculum = false): Promise<CourseEntity | null> {
+  override async findById(id: string, includeDeleted = false, includeCurriculum = false): Promise<CourseEntity | null> {
     const where: any = { id };
     if (!includeDeleted) {
       where.isDeleted = false;
@@ -98,7 +98,7 @@ export class PrismaCourseRepository
     return course as CourseEntity | null;
   }
 
-  async findMany(params: CourseFilterParams = {}): Promise<PaginatedResult<CourseEntity>> {
+  override async findMany(params: CourseFilterParams = {}): Promise<PaginatedResult<CourseEntity>> {
     const where: any = {};
 
     // Soft delete
@@ -151,6 +151,9 @@ export class PrismaCourseRepository
     if (params.isTrending !== undefined) {
       where.isTrending = params.isTrending;
     }
+    if (params.isFrozen !== undefined) {
+      where.isFrozen = params.isFrozen;
+    }
 
     // Search query
     if (params.search && params.search.trim()) {
@@ -192,7 +195,7 @@ export class PrismaCourseRepository
     };
   }
 
-  async create(data: CreateCourseDTO): Promise<CourseEntity> {
+  override async create(data: CreateCourseDTO): Promise<CourseEntity> {
     const slug = data.slug || this.generateSlug(data.title);
 
     const initialModules = data.modules || [];
@@ -237,15 +240,9 @@ export class PrismaCourseRepository
                     create: (m.lessons || []).map((l, lIdx) => ({
                       title: l.title,
                       description: l.description,
-                      lessonType: l.lessonType || "VIDEO",
                       durationSeconds: l.durationSeconds || 0,
                       sortOrder: l.sortOrder ?? lIdx,
-                      isFreePreview: l.isFreePreview ?? false,
-                      videoUrl: l.videoUrl,
-                      videoProvider: l.videoProvider,
-                      videoThumbnail: l.videoThumbnail,
-                      articleBody: l.articleBody,
-                      attachments: l.attachments || [],
+                      scheduledAt: l.scheduledAt ? new Date(l.scheduledAt) : null,
                     })),
                   },
                 })),
@@ -259,7 +256,7 @@ export class PrismaCourseRepository
     return created as CourseEntity;
   }
 
-  async update(id: string, data: UpdateCourseDTO): Promise<CourseEntity> {
+  override async update(id: string, data: UpdateCourseDTO): Promise<CourseEntity> {
     const updateData: any = {};
 
     if (data.title !== undefined) updateData.title = data.title;
@@ -304,21 +301,15 @@ export class PrismaCourseRepository
   async updateStatus(
     id: string,
     status: CourseEntity["status"],
-    extras: {
-      rejectionReason?: string | null;
-      isApproved?: boolean;
-      approvedByAdminId?: string | null;
-      publishedAt?: Date | null;
-      submittedAt?: Date | null;
-    } = {}
+    extras: CourseStatusUpdateExtras = {}
   ): Promise<CourseEntity> {
     const data: any = { status };
 
-    if (extras.rejectionReason !== undefined) data.rejectionReason = extras.rejectionReason;
+    if (extras.rejectionReason !== undefined) data.delistReason = extras.rejectionReason;
+    if (extras.delistReason !== undefined) data.delistReason = extras.delistReason;
+    if (extras.freezeReason !== undefined) data.freezeReason = extras.freezeReason;
     if (extras.isApproved !== undefined) data.isApproved = extras.isApproved;
-    if (extras.approvedByAdminId !== undefined) data.approvedByAdminId = extras.approvedByAdminId;
     if (extras.publishedAt !== undefined) data.publishedAt = extras.publishedAt;
-    if (extras.submittedAt !== undefined) data.submittedAt = extras.submittedAt;
 
     const updated = await (this.prisma as any).course.update({
       where: { id },
@@ -330,15 +321,20 @@ export class PrismaCourseRepository
   }
 
   async softDelete(id: string, delistReason?: string): Promise<CourseEntity> {
+    const data: any = {
+      isDeleted: true,
+      deletedAt: new Date(),
+      status: "ARCHIVED",
+    };
+
+    if (delistReason) {
+      data.delistReason = delistReason;
+      data.delistedAt = new Date();
+    }
+
     const updated = await (this.prisma as any).course.update({
       where: { id },
-      data: {
-        isDeleted: true,
-        deletedAt: new Date(),
-        status: "ARCHIVED",
-        delistReason: delistReason || null,
-        delistedAt: new Date(),
-      },
+      data,
       include: this.getInclude(false),
     });
     return updated as CourseEntity;

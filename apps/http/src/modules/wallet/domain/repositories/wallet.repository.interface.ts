@@ -3,15 +3,13 @@ import { WalletEntity } from "../entities/wallet.entity";
 import {
   WalletTransactionEntity,
   TransactionType,
-  TransactionDirection,
 } from "../entities/wallet-transaction.entity";
 import {
   AdminListWalletsQueryDto,
-  AdminWalletAdjustmentDto,
 } from "../dtos/wallet.dto";
 import { ListTransactionsQueryDto } from "../dtos/wallet-transaction.dto";
 
-export interface IWalletRepository extends IBaseRepository<WalletEntity, string> {
+export interface IWalletQueryRepository {
   /**
    * Get or automatically initialize a wallet for a user
    */
@@ -26,7 +24,9 @@ export interface IWalletRepository extends IBaseRepository<WalletEntity, string>
    * Find wallet by wallet ID
    */
   findById(walletId: string): Promise<WalletEntity | null>;
+}
 
+export interface IWalletMutationRepository {
   /**
    * Atomic credit balance and log transaction
    */
@@ -56,14 +56,18 @@ export interface IWalletRepository extends IBaseRepository<WalletEntity, string>
     performedByUserId?: string;
     notes?: string;
   }): Promise<{ wallet: WalletEntity; transaction: WalletTransactionEntity }>;
+}
 
+export interface IWalletTransactionRepository {
   /**
    * Get paginated transactions for a wallet or user
    */
   getTransactions(
     query: ListTransactionsQueryDto
   ): Promise<{ items: WalletTransactionEntity[]; total: number }>;
+}
 
+export interface IAdminWalletRepository {
   /**
    * Admin list all user wallets
    */
@@ -80,3 +84,12 @@ export interface IWalletRepository extends IBaseRepository<WalletEntity, string>
     };
   }>;
 }
+
+export interface IWalletRepository
+  extends IBaseRepository<WalletEntity, string>,
+    IWalletQueryRepository,
+    IWalletMutationRepository,
+    IWalletTransactionRepository,
+    IAdminWalletRepository {}
+
+export type WalletRepository = IWalletRepository;

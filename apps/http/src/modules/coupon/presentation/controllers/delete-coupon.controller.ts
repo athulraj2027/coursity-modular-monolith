@@ -1,18 +1,24 @@
 import { Request, Response, NextFunction } from "express";
 import { DeleteTeacherCouponUseCase } from "../../application/use-cases/delete-teacher-coupon.usecase";
+import {
+  ITeacherProfileResolver,
+  defaultTeacherProfileResolver,
+} from "../../domain/services/teacher-profile-resolver.service";
 import { ForbiddenError, UnauthorizedError } from "@/app/errors";
-import { profileRepository } from "@/modules/profile";
 import { ApiResponse } from "@/shared";
 
 export class DeleteCouponController {
-  constructor(private readonly deleteCouponUseCase: DeleteTeacherCouponUseCase) {}
+  constructor(
+    private readonly deleteCouponUseCase: DeleteTeacherCouponUseCase,
+    private readonly profileResolver: ITeacherProfileResolver = defaultTeacherProfileResolver
+  ) {}
 
   execute = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("Authentication required.");
 
-      const teacherProfileId = await profileRepository.getTeacherProfileIdByUserId(userId);
+      const teacherProfileId = await this.profileResolver.getTeacherProfileIdByUserId(userId);
       if (!teacherProfileId) throw new ForbiddenError("Teacher profile required.");
 
       const couponId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;

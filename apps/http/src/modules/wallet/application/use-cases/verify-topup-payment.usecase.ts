@@ -1,13 +1,14 @@
-import { IPaymentGateway } from "@/infrastructure/payment/contracts/payment-gateway.abstract";
-import { IWalletRepository } from "../../domain/repositories/wallet.repository.interface";
+import { IPaymentGateway } from "@/infrastructure/payment";
+import { IWalletMutationRepository } from "../../domain/repositories/wallet.repository.interface";
 import { VerifyTopUpPaymentDto } from "../../domain/dtos/wallet.dto";
 import { WalletEntity } from "../../domain/entities/wallet.entity";
 import { WalletTransactionEntity } from "../../domain/entities/wallet-transaction.entity";
-import { BadRequestError } from "@/app/errors";
+import { PaymentSignatureVerificationError } from "../../domain/errors/wallet.errors";
+import { WalletTopUpPolicy } from "../../domain/policies/wallet-topup.policy";
 
 export class VerifyTopUpPaymentUseCase {
   constructor(
-    private readonly walletRepo: IWalletRepository,
+    private readonly walletRepo: IWalletMutationRepository,
     private readonly paymentGateway: IPaymentGateway
   ) {}
 
@@ -23,7 +24,7 @@ export class VerifyTopUpPaymentUseCase {
     });
 
     if (!isValidSignature) {
-      throw new BadRequestError("Invalid payment signature verification failed");
+      throw new PaymentSignatureVerificationError();
     }
 
     // 2. Fetch payment details from gateway to get authentic captured amount
@@ -41,7 +42,7 @@ export class VerifyTopUpPaymentUseCase {
 
     // Fallback if sandbox / mock mode
     if (depositAmount <= 0) {
-      depositAmount = 500; // default fallback amount in test simulation
+      depositAmount = WalletTopUpPolicy.DEFAULT_FALLBACK_DEPOSIT_AMOUNT;
     }
 
     // 3. Atomically credit wallet and log ledger transaction

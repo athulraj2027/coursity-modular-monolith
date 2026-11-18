@@ -1,5 +1,9 @@
-import { SubscriptionRepository } from "../../domain/repositories/subscription.repository";
-import { PlanRepository } from "@/modules/plan/domain/repositories/plan.repository";
+import {
+  ISubscriptionRepository,
+  ISubscriptionUsageRepository,
+  IQuotaEvaluationRepository,
+} from "../../domain/repositories/subscription.repository";
+import { IPlanRepository } from "@/modules/plan/domain/repositories/plan.repository";
 import {
   TeacherSubscription,
   TeacherPlanUsage,
@@ -27,8 +31,10 @@ export interface TeacherSubscriptionDetailsResult {
 
 export class GetTeacherSubscriptionUseCase {
   constructor(
-    private readonly subscriptionRepo: SubscriptionRepository,
-    private readonly planRepo: PlanRepository
+    private readonly subscriptionRepo: ISubscriptionRepository &
+      ISubscriptionUsageRepository &
+      IQuotaEvaluationRepository,
+    private readonly planRepo: IPlanRepository
   ) {}
 
   async execute(teacherProfileId: string): Promise<TeacherSubscriptionDetailsResult> {
@@ -89,7 +95,8 @@ export class GetTeacherSubscriptionUseCase {
         );
 
         const isUnlimited = evaluation.isUnlimited || pf.isUnlimited || false;
-        const numericLimit = typeof evaluation.limit === "number" ? evaluation.limit : parseFloat(pf.value);
+        const numericLimit =
+          typeof evaluation.limit === "number" ? evaluation.limit : parseFloat(pf.value);
         const currentUsage = evaluation.currentUsage || 0;
         const featureType =
           pf.feature?.featureType ||
@@ -114,7 +121,7 @@ export class GetTeacherSubscriptionUseCase {
           unit: pf.feature?.unit || evaluation.unit || null,
           isAvailable: evaluation.allowed,
         });
-      } catch (err) {
+      } catch {
         // Graceful fallback for this individual feature
         const isUnlimited = pf.isUnlimited || false;
         const numericLimit = parseFloat(pf.value);
@@ -122,12 +129,14 @@ export class GetTeacherSubscriptionUseCase {
           featureCode: featCode,
           featureName: pf.feature?.name || featCode,
           name: pf.feature?.name || featCode,
-          featureType: pf.feature?.featureType || (!isNaN(numericLimit) && numericLimit > 0 ? "NUMERIC" : "BOOLEAN"),
+          featureType:
+            pf.feature?.featureType ||
+            (!isNaN(numericLimit) && numericLimit > 0 ? "NUMERIC" : "BOOLEAN"),
           category: pf.feature?.category || "COURSES",
           limit: isUnlimited ? -1 : numericLimit,
           isUnlimited,
           currentUsage: 0,
-          remaining: isUnlimited ? 999999 : (isNaN(numericLimit) ? 0 : numericLimit),
+          remaining: isUnlimited ? 999999 : isNaN(numericLimit) ? 0 : numericLimit,
           usagePercentage: 0,
           unit: pf.feature?.unit || null,
           isAvailable: true,

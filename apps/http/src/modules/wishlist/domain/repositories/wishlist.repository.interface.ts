@@ -2,7 +2,7 @@ import { IBaseRepository } from "@/shared/domain/repositories/base.repository.in
 import { WishlistEntity, WishlistItemEntity } from "../entities/wishlist.entity";
 import { GetUserWishlistDTO, PaginatedWishlistResultDTO } from "../dtos/wishlist.dto";
 
-export interface IWishlistRepository extends IBaseRepository<WishlistEntity, string> {
+export interface IWishlistQueryRepository {
   /**
    * Find or create a user's parent wishlist container
    */
@@ -27,7 +27,9 @@ export interface IWishlistRepository extends IBaseRepository<WishlistEntity, str
    * Check if a specific course is in a user's wishlist
    */
   isCourseWishlisted(userId: string, courseId: string): Promise<boolean>;
+}
 
+export interface IWishlistMutationRepository {
   /**
    * Add a course to a user's wishlist
    */
@@ -43,3 +45,10 @@ export interface IWishlistRepository extends IBaseRepository<WishlistEntity, str
    */
   clearWishlist(wishlistId: string): Promise<number>;
 }
+
+export interface IWishlistRepository
+  extends IBaseRepository<WishlistEntity, string>,
+    IWishlistQueryRepository,
+    IWishlistMutationRepository {}
+
+export type WishlistRepository = IWishlistRepository;

@@ -1,13 +1,13 @@
 import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
-import { TokenService } from "@/infrastructure/security";
-import { TokenRepository } from "../../domain/repositories/token.repository";
+import { ITokenService } from "@/infrastructure/security";
+import { ITokenRepository } from "../../domain/repositories/token.repository";
 import { UnauthorizedError, ForbiddenError } from "@/app/errors";
 import { RefreshTokenInputDTO, RefreshTokenOutputDTO } from "../dtos/refresh-token.dto";
 
 export class RefreshToken {
     constructor(
-        private readonly tokenService: TokenService,
-        private readonly tokenRepository: TokenRepository,
+        private readonly tokenService: ITokenService,
+        private readonly tokenRepository: ITokenRepository,
         private readonly userRepository: UserRepository
     ) { }
 
@@ -19,7 +19,7 @@ export class RefreshToken {
         // 1. Verify cryptographic validity of Refresh Token
         const payload = this.tokenService.verifyRefreshToken(input.refreshToken);
 
-        // 2. Check if token is present and valid in Redis session store
+        // 2. Check if token is present and valid in session store
         const storedToken = await this.tokenRepository.getRefreshToken(payload.userId);
         if (!storedToken || storedToken !== input.refreshToken) {
             throw new UnauthorizedError("Refresh token has expired or been revoked. Please sign in again.");
@@ -47,7 +47,7 @@ export class RefreshToken {
             role: user.role,
         });
 
-        // 5. Update Redis with new Refresh Token
+        // 5. Update session store with new Refresh Token
         await this.tokenRepository.saveRefreshToken(user.id || payload.userId, newTokens.refreshToken);
 
         return {

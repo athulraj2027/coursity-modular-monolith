@@ -1,14 +1,24 @@
-import { BcryptPasswordService } from "./services/bcrypt-password.service";
-import { JwtTokenService } from "./services/jwt-token.service";
-import { PasswordService } from "./contracts/password.service.abstract";
-import { TokenService } from "./contracts/token.service.abstract";
+import { BcryptPasswordService } from "./infrastructure/services/bcrypt-password.service";
+import { JwtTokenService } from "./infrastructure/services/jwt-token.service";
+import { IPasswordService, PasswordService } from "./domain/contracts/password-service.interface";
+import { ITokenService, TokenService } from "./domain/contracts/token-service.interface";
 
 // Singleton default instances
-export const passwordService: PasswordService = new BcryptPasswordService();
-export const tokenService: TokenService = new JwtTokenService();
+export const passwordService: IPasswordService = new BcryptPasswordService();
+export const tokenService: ITokenService = new JwtTokenService();
 
-// Export contracts and implementations
-export * from "./contracts/password.service.abstract";
-export * from "./contracts/token.service.abstract";
-export * from "./services/bcrypt-password.service";
-export * from "./services/jwt-token.service";
+// Domain entities & types
+export * from "./domain/entities/token.entity";
+export * from "./domain/entities/password.entity";
+
+// Domain contracts & interfaces
+export * from "./domain/contracts/password-service.interface";
+export * from "./domain/contracts/token-service.interface";
+
+// Infrastructure configs
+export * from "./infrastructure/config/jwt.config";
+export * from "./infrastructure/config/password.config";
+
+// Infrastructure services
+export * from "./infrastructure/services/bcrypt-password.service";
+export * from "./infrastructure/services/jwt-token.service";

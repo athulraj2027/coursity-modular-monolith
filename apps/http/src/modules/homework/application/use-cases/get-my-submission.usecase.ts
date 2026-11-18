@@ -1,4 +1,7 @@
-import { IHomeworkRepository } from "../../domain/repositories/homework.repository";
+import {
+  IHomeworkQueryRepository,
+  IHomeworkSubmissionRepository,
+} from "../../domain/repositories/homework.repository";
 import { HomeworkSubmissionEntity } from "../../domain/entities/homework.entity";
 import { HomeworkNotFoundError } from "../../domain/errors/homework.errors";
 
@@ -7,8 +10,11 @@ export interface GetMySubmissionInput {
   studentId: string;
 }
 
+export type GetMySubmissionRepository = IHomeworkQueryRepository &
+  IHomeworkSubmissionRepository;
+
 export class GetMySubmissionUseCase {
-  constructor(private readonly homeworkRepo: IHomeworkRepository) {}
+  constructor(private readonly homeworkRepo: GetMySubmissionRepository) {}
 
   async execute(input: GetMySubmissionInput): Promise<HomeworkSubmissionEntity | null> {
     const { homeworkId, studentId } = input;

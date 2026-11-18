@@ -7,11 +7,12 @@ import { GetUserByIdController } from "../controllers/get-user-by-id.controller"
 import { BlockUserController } from "../controllers/block-user.controller";
 import { ApproveTeacherController } from "../controllers/approve-teacher.controller";
 import { GetAdminAnalyticsController } from "../controllers/get-admin-analytics.controller";
+import { DeleteUserController } from "../controllers/delete-user.controller";
 import {
     updateProfileSchema,
     changePasswordSchema,
     approveTeacherSchema,
-} from "../validators/user.validator";
+} from "../schemas/user.schema";
 import validate from "@/app/middlewares/validate";
 
 export class UserRoutes {
@@ -28,7 +29,8 @@ export class UserRoutes {
         private readonly getAdminAnalyticsController: GetAdminAnalyticsController,
         private readonly authMiddleware: RequestHandler,
         private readonly isBlockedMiddleware: RequestHandler,
-        private readonly adminMiddleware: RequestHandler
+        private readonly adminMiddleware: RequestHandler,
+        private readonly deleteUserController?: DeleteUserController
     ) {
         this.router = Router();
         this.initRoutes();
@@ -119,5 +121,14 @@ export class UserRoutes {
             validate(approveTeacherSchema),
             this.approveTeacherController.execute
         );
+
+        if (this.deleteUserController) {
+            this.router.delete(
+                "/:id",
+                this.authMiddleware,
+                this.adminMiddleware,
+                this.deleteUserController.execute
+            );
+        }
     }
 }

@@ -1,8 +1,8 @@
-import { UserRepository } from "../../domain/repositories/user.repository";
+import { IUserQueryRepository } from "../../domain/repositories/user.repository";
 import { FindUsersOptions, PaginatedUsersResult } from "../../domain/dtos/user-query.dto";
 
 export class GetAllUsers {
-    constructor(private readonly userRepository: UserRepository) { }
+    constructor(private readonly userRepository: IUserQueryRepository) { }
 
     async execute(options?: FindUsersOptions): Promise<PaginatedUsersResult> {
         return this.userRepository.findMany(options);

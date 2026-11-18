@@ -1,47 +1,36 @@
-import { NotFoundError, BadRequestError } from "@/app/errors";
-import { ProfileRepository } from "../../domain/repositories/profile.repository";
+import { IProfileRepository } from "../../domain/repositories/profile.repository";
 import { FullUserProfile } from "../../domain/entities/profile.entity";
 import { UpdateProfileDTO } from "../../domain/dtos/update-profile.dto";
+import { ProfileNotFoundError } from "../../domain/errors/profile.errors";
+import { ProfileSocialLinksPolicy, ProfileValidationPolicy } from "../../domain/policies";
 
 export class UpdateProfile {
-    constructor(private readonly profileRepository: ProfileRepository) { }
+    constructor(private readonly profileRepository: IProfileRepository) { }
 
     async execute(userId: string, data: UpdateProfileDTO): Promise<FullUserProfile> {
         const existingProfile = await this.profileRepository.getFullProfileByUserId(userId);
         if (!existingProfile) {
-            throw new NotFoundError("User profile not found");
+            throw new ProfileNotFoundError("User profile not found");
         }
 
-        // Prevent modifying verified social links (LinkedIn/Twitter) if instructor is approved
-        if (existingProfile.teacherProfile?.isApproved) {
-            const currentLinkedin = existingProfile.teacherProfile.linkedinUrl ? existingProfile.teacherProfile.linkedinUrl.trim() : null;
-            const currentTwitter = existingProfile.teacherProfile.twitterUrl ? existingProfile.teacherProfile.twitterUrl.trim() : null;
+        // 1. Policy domain validations
+        ProfileValidationPolicy.validateName(data.name);
+        ProfileValidationPolicy.validateBio(data.bio);
+        ProfileValidationPolicy.validateExperienceYears(data.experienceYears);
 
-            if (data.linkedinUrl !== undefined) {
-                const incomingLinkedin = data.linkedinUrl ? data.linkedinUrl.trim() : null;
-                if (incomingLinkedin !== currentLinkedin) {
-                    throw new BadRequestError(
-                        "Verified social links (LinkedIn) cannot be modified once your instructor account is approved by an administrator. You can only update your website URL."
-                    );
-                }
-            }
+        // 2. Validate social link edit permissions
+        ProfileSocialLinksPolicy.assertCanModifySocialLinks({
+            teacherProfile: existingProfile.teacherProfile,
+            incomingLinkedin: data.linkedinUrl,
+            incomingTwitter: data.twitterUrl,
+        });
 
-            if (data.twitterUrl !== undefined) {
-                const incomingTwitter = data.twitterUrl ? data.twitterUrl.trim() : null;
-                if (incomingTwitter !== currentTwitter) {
-                    throw new BadRequestError(
-                        "Verified social links (Twitter/X) cannot be modified once your instructor account is approved by an administrator. You can only update your website URL."
-                    );
-                }
-            }
-        }
-
-        // 1. Update user name if provided
+        // 3. Update user name if provided
         if (data.name !== undefined && data.name.trim() !== "") {
             await this.profileRepository.updateUserName(userId, data.name.trim());
         }
 
-        // 2. Upsert common profile (avatar, bio, phone, country)
+        // 4. Upsert common profile (avatar, bio, phone, country)
         const updatedProfileRecord = await this.profileRepository.upsertProfile(userId, {
             avatar: data.avatar,
             bio: data.bio,
@@ -49,7 +38,7 @@ export class UpdateProfile {
             country: data.country,
         });
 
-        // 3. If teacher role or teacher-specific fields provided, upsert teacher profile using profileId
+        // 5. If teacher role or teacher-specific fields provided, upsert teacher profile using profileId
         if (
             existingProfile.role === "TEACHER" ||
             data.expertise !== undefined ||
@@ -62,6 +51,12 @@ export class UpdateProfile {
             data.twitterUrl !== undefined ||
             data.websiteUrl !== undefined
         ) {
+            const effectiveSocial = ProfileSocialLinksPolicy.resolveEffectiveUrls({
+                teacherProfile: existingProfile.teacherProfile,
+                incomingLinkedin: data.linkedinUrl,
+                incomingTwitter: data.twitterUrl,
+            });
+
             await this.profileRepository.upsertTeacherProfile(updatedProfileRecord.id, {
                 expertise: data.expertise,
                 qualifications: data.qualifications,
@@ -69,15 +64,15 @@ export class UpdateProfile {
                 resume: data.resume,
                 credentials: data.credentials,
                 identityCard: data.identityCard,
-                linkedinUrl: existingProfile.teacherProfile?.isApproved ? existingProfile.teacherProfile.linkedinUrl : data.linkedinUrl,
-                twitterUrl: existingProfile.teacherProfile?.isApproved ? existingProfile.teacherProfile.twitterUrl : data.twitterUrl,
+                linkedinUrl: effectiveSocial.linkedinUrl,
+                twitterUrl: effectiveSocial.twitterUrl,
                 websiteUrl: data.websiteUrl,
             });
         }
 
         const updatedProfile = await this.profileRepository.getFullProfileByUserId(userId);
         if (!updatedProfile) {
-            throw new NotFoundError("Updated profile not found");
+            throw new ProfileNotFoundError("Updated profile not found");
         }
 
         return updatedProfile;

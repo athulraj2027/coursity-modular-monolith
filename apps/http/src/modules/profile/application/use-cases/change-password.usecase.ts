@@ -1,13 +1,13 @@
-import { UserRepository } from "@/modules/user/domain/repositories/user.repository";
+import { IUserPasswordRepository } from "../../domain/repositories/profile.repository";
 import { IEmailService } from "@/infrastructure/email";
-import { PasswordService } from "@/infrastructure/security";
-import { BadRequestError, NotFoundError } from "@/app/errors";
+import { IPasswordService } from "@/infrastructure/security";
 import { ChangePasswordDto, ChangePasswordResultDto } from "../../domain/dtos/change-password.dto";
+import { ProfileNotFoundError, PasswordChangeNotAllowedError } from "../../domain/errors/profile.errors";
 
 export class ChangePassword {
     constructor(
-        private readonly userRepository: UserRepository,
-        private readonly passwordService: PasswordService,
+        private readonly userRepository: IUserPasswordRepository,
+        private readonly passwordService: IPasswordService,
         private readonly emailService: IEmailService
     ) {}
 
@@ -16,39 +16,41 @@ export class ChangePassword {
         const user = await this.userRepository.findById(dto.userId);
 
         if (!user) {
-            throw new NotFoundError("User account not found");
+            throw new ProfileNotFoundError("User account not found");
         }
 
         // 2. Reject password change for Google SSO accounts
         if (user.authProvider === "GOOGLE") {
-            throw new BadRequestError("Accounts authenticated via Google Single Sign-On do not use a password. Password changes are not supported for Google accounts.");
+            throw new PasswordChangeNotAllowedError(
+                "Accounts authenticated via Google Single Sign-On do not use a password. Password changes are not supported for Google accounts."
+            );
         }
 
         // 3. Validate current password if user has an existing password
         if (user.password) {
             if (!dto.currentPassword) {
-                throw new BadRequestError("Current password is required to update your password");
+                throw new PasswordChangeNotAllowedError("Current password is required to update your password");
             }
 
             const isCurrentValid = await this.passwordService.compare(dto.currentPassword, user.password);
             if (!isCurrentValid) {
-                throw new BadRequestError("The current password you entered is incorrect");
+                throw new PasswordChangeNotAllowedError("The current password you entered is incorrect");
             }
 
             // Check if new password matches current password
             const isSame = await this.passwordService.compare(dto.newPassword, user.password);
             if (isSame) {
-                throw new BadRequestError("New password cannot be the same as your current password");
+                throw new PasswordChangeNotAllowedError("New password cannot be the same as your current password");
             }
         }
 
-        // 3. Hash the new password securely
+        // 4. Hash the new password securely
         const hashedPassword = await this.passwordService.hash(dto.newPassword);
 
-        // 4. Update password in repository
+        // 5. Update password in repository
         await this.userRepository.updatePassword(dto.userId, hashedPassword);
 
-        // 5. Send security notification email to user
+        // 6. Send security notification email to user
         try {
             await this.emailService.sendPasswordChangedNotification(user.email, user.name);
         } catch (emailErr) {
