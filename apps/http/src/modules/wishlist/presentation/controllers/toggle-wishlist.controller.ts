@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { ToggleWishlistUseCase } from "../../application/use-cases/toggle-wishlist.usecase";
 import { UnauthorizedError } from "@/app/errors";
 import { ApiResponse } from "@/shared/utils/api-response";
+import { WishlistPolicy } from "../../domain/policies/wishlist.policy";
 
 export class ToggleWishlistController {
   constructor(private readonly toggleWishlistUseCase: ToggleWishlistUseCase) {}
@@ -22,9 +23,7 @@ export class ToggleWishlistController {
       return ApiResponse.success(
         res,
         result,
-        result.isWishlisted
-          ? "Course added to your wishlist"
-          : "Course removed from your wishlist"
+        WishlistPolicy.formatToggleMessage(result.isWishlisted)
       );
     } catch (error) {
       next(error);

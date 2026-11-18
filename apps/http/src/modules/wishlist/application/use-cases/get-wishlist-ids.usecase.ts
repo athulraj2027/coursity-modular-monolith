@@ -1,12 +1,12 @@
-import { IWishlistRepository } from "../../domain/repositories/wishlist.repository.interface";
-import { BadRequestError } from "@/app/errors";
+import { IWishlistQueryRepository } from "../../domain/repositories/wishlist.repository.interface";
+import { InvalidWishlistOperationError } from "../../domain/errors/wishlist.errors";
 
 export class GetWishlistIdsUseCase {
-  constructor(private readonly wishlistRepo: IWishlistRepository) {}
+  constructor(private readonly wishlistRepo: IWishlistQueryRepository) {}
 
   async execute(userId: string): Promise<string[]> {
     if (!userId) {
-      throw new BadRequestError("User ID is required");
+      throw new InvalidWishlistOperationError("User ID is required");
     }
 
     return this.wishlistRepo.getWishlistCourseIds(userId);

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { GetUserWishlistUseCase } from "../../application/use-cases/get-user-wishlist.usecase";
 import { UnauthorizedError } from "@/app/errors";
 import { ApiResponse } from "@/shared/utils/api-response";
+import { getUserWishlistQuerySchema } from "../schemas/wishlist.schema";
 
 export class GetWishlistController {
   constructor(private readonly getUserWishlistUseCase: GetUserWishlistUseCase) {}
@@ -12,14 +13,14 @@ export class GetWishlistController {
       if (!userId) {
         throw new UnauthorizedError("Authentication required. Please sign in.");
       }
-      const { page, limit, search, sortBy } = req.query as any;
+      const query = getUserWishlistQuerySchema.parse(req.query);
 
       const result = await this.getUserWishlistUseCase.execute({
         userId,
-        page: page ? Number(page) : 1,
-        limit: limit ? Number(limit) : 12,
-        search: search ? String(search) : undefined,
-        sortBy: sortBy as any,
+        page: query.page,
+        limit: query.limit,
+        search: query.search,
+        sortBy: query.sortBy,
       });
 
       return ApiResponse.success(res, result);

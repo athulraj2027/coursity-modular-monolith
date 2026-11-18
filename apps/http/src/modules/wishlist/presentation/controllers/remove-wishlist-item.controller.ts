@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { RemoveWishlistItemUseCase } from "../../application/use-cases/remove-wishlist-item.usecase";
 import { UnauthorizedError } from "@/app/errors";
 import { ApiResponse } from "@/shared/utils/api-response";
+import { removeWishlistItemParamsSchema } from "../schemas/wishlist.schema";
 
 export class RemoveWishlistItemController {
   constructor(private readonly removeWishlistItemUseCase: RemoveWishlistItemUseCase) {}
@@ -12,7 +13,7 @@ export class RemoveWishlistItemController {
       if (!userId) {
         throw new UnauthorizedError("Authentication required. Please sign in.");
       }
-      const courseId = String(req.params.courseId);
+      const { courseId } = removeWishlistItemParamsSchema.parse(req.params);
 
       const removed = await this.removeWishlistItemUseCase.execute(userId, courseId);
 

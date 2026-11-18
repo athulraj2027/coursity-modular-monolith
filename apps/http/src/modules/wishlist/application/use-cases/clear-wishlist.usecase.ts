@@ -1,12 +1,17 @@
-import { IWishlistRepository } from "../../domain/repositories/wishlist.repository.interface";
-import { BadRequestError } from "@/app/errors";
+import {
+  IWishlistQueryRepository,
+  IWishlistMutationRepository,
+} from "../../domain/repositories/wishlist.repository.interface";
+import { InvalidWishlistOperationError } from "../../domain/errors/wishlist.errors";
 
 export class ClearWishlistUseCase {
-  constructor(private readonly wishlistRepo: IWishlistRepository) {}
+  constructor(
+    private readonly wishlistRepo: IWishlistQueryRepository & IWishlistMutationRepository
+  ) {}
 
   async execute(userId: string): Promise<{ clearedCount: number }> {
     if (!userId) {
-      throw new BadRequestError("User ID is required");
+      throw new InvalidWishlistOperationError("User ID is required");
     }
 
     const wishlist = await this.wishlistRepo.getOrCreateWishlist(userId);
