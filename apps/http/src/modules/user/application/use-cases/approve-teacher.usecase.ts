@@ -1,6 +1,16 @@
-import { NotFoundError, BadRequestError } from "@/app/errors";
-import { UserRepository } from "../../domain/repositories/user.repository";
+import { IUserQueryRepository, IUserAdminRepository } from "../../domain/repositories/user.repository";
 import { User, ApprovalStatus } from "../../domain/entities/user.entity";
+import { IEmailService } from "@/infrastructure/email";
+import {
+    UserNotFoundError,
+    NonTeacherApprovalError,
+} from "../../domain/errors/user.errors";
+import {
+    TeacherApprovalPolicy,
+    ALLOWED_APPROVAL_TRANSITIONS,
+} from "../../domain/policies/teacher-approval.policy";
+
+export { ALLOWED_APPROVAL_TRANSITIONS } from "../../domain/policies/teacher-approval.policy";
 
 export interface ApproveTeacherDTO {
     userId: string;
@@ -9,19 +19,9 @@ export interface ApproveTeacherDTO {
     rejectionReason?: string | null;
 }
 
-import { IEmailService } from "@/infrastructure/email";
-
-export const ALLOWED_APPROVAL_TRANSITIONS: Record<ApprovalStatus, ApprovalStatus[]> = {
-    PENDING: [],
-    IN_PROGRESS: ["VERIFIED", "REDO"],
-    VERIFIED: ["REVOKED"],
-    REVOKED: ["PENDING"],
-    REDO: [],
-};
-
 export class ApproveTeacher {
     constructor(
-        private readonly userRepository: UserRepository,
+        private readonly userRepository: IUserQueryRepository & IUserAdminRepository,
         private readonly emailService?: IEmailService
     ) { }
 
@@ -52,43 +52,22 @@ export class ApproveTeacher {
         const effectiveStatus = approvalStatus || "VERIFIED";
 
         // Validate feedback / suggestions when status is REVOKED or REDO
-        if (effectiveStatus === "REVOKED" || effectiveStatus === "REDO") {
-            if (!rejectionReason || rejectionReason.trim().length < 5) {
-                throw new BadRequestError(
-                    `Please provide a suggestion or feedback (at least 5 characters) explaining what the instructor should improve when setting status to ${effectiveStatus.toLowerCase()}`
-                );
-            }
-        }
+        TeacherApprovalPolicy.validateFeedback(effectiveStatus, rejectionReason);
 
         const existingUser = await this.userRepository.findById(userId);
         if (!existingUser) {
-            throw new NotFoundError("User not found");
+            throw new UserNotFoundError("User not found");
         }
 
         if (existingUser.role !== "TEACHER") {
-            throw new BadRequestError("Only instructor accounts can have verification status updated");
+            throw new NonTeacherApprovalError("Only instructor accounts can have verification status updated");
         }
 
         const currentStatus: ApprovalStatus =
             existingUser.profile?.teacherProfile?.approvalStatus ||
             (existingUser.profile?.teacherProfile?.isApproved ? "VERIFIED" : "PENDING");
 
-        const allowedTransitions = ALLOWED_APPROVAL_TRANSITIONS[currentStatus] || [];
-        if (!allowedTransitions.includes(effectiveStatus)) {
-            if (currentStatus === "PENDING") {
-                throw new BadRequestError(
-                    "Instructor application is currently in draft (Pending). The instructor must submit their application for verification before administrative evaluation."
-                );
-            }
-            if (currentStatus === "REDO") {
-                throw new BadRequestError(
-                    "Instructor application is currently marked for revision (Redo). The instructor must revise their profile and re-submit for verification before administrative evaluation."
-                );
-            }
-            throw new BadRequestError(
-                `Invalid status transition from ${currentStatus} to ${effectiveStatus}. Allowed transition(s) from ${currentStatus}: ${allowedTransitions.join(", ")}.`
-            );
-        }
+        TeacherApprovalPolicy.validateTransition(currentStatus, effectiveStatus);
 
         const updatedUser = await this.userRepository.updateTeacherApproval(userId, {
             approvalStatus: effectiveStatus,
@@ -111,26 +90,7 @@ export class ApproveTeacher {
         }
 
         const { password, ...safeUser } = updatedUser;
-
-        let actionMessage: string;
-        switch (effectiveStatus) {
-            case "VERIFIED":
-                actionMessage = "Instructor has been verified and approved successfully";
-                break;
-            case "IN_PROGRESS":
-                actionMessage = "Instructor application marked as in progress";
-                break;
-            case "REVOKED":
-                actionMessage = "Instructor verification has been revoked with feedback";
-                break;
-            case "REDO":
-                actionMessage = "Instructor application marked for revision (redo) with feedback";
-                break;
-            case "PENDING":
-            default:
-                actionMessage = "Instructor application status reset to pending";
-                break;
-        }
+        const actionMessage = TeacherApprovalPolicy.formatActionMessage(effectiveStatus);
 
         return {
             user: safeUser,
@@ -138,4 +98,3 @@ export class ApproveTeacher {
         };
     }
 }
-

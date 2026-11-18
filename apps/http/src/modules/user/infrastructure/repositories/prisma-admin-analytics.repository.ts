@@ -43,7 +43,7 @@ export class PrismaAdminAnalyticsRepository implements IAdminAnalyticsRepository
         select: {
           id: true,
           outcome: true,
-          score: true,
+          overallScore: true,
         },
       }),
     ]);
@@ -64,7 +64,7 @@ export class PrismaAdminAnalyticsRepository implements IAdminAnalyticsRepository
     });
 
     const interviewPassedCount = interviews.filter(
-      (i) => i.outcome === "PASSED" || (i.score && i.score >= 65)
+      (i) => i.outcome === "PASSED" || (i.overallScore && i.overallScore >= 65)
     ).length;
 
     // 3. Fetch Real Categories & Courses
