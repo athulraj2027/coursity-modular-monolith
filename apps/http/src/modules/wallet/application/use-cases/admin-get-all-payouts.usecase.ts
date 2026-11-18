@@ -1,9 +1,9 @@
-import { IPayoutRequestRepository } from "../../domain/repositories/payout-request.repository.interface";
+import { IAdminPayoutRepository } from "../../domain/repositories/payout-request.repository.interface";
 import { ListPayoutsQueryDto } from "../../domain/dtos/payout-request.dto";
 import { PayoutRequestEntity } from "../../domain/entities/payout-request.entity";
 
 export class AdminGetAllPayoutsUseCase {
-  constructor(private readonly payoutRepo: IPayoutRequestRepository) {}
+  constructor(private readonly payoutRepo: IAdminPayoutRepository) {}
 
   async execute(query: ListPayoutsQueryDto): Promise<{
     items: PayoutRequestEntity[];

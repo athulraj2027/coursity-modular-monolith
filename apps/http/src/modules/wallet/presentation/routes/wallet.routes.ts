@@ -1,6 +1,6 @@
-import { Router } from "express";
+import { Router, RequestHandler } from "express";
 import { WalletController } from "../controllers/wallet.controller";
-import { authMiddleware } from "@/app/middlewares/auth.middleware";
+import { authMiddleware as defaultAuthMiddleware } from "@/app/middlewares/auth.middleware";
 import { requireRoles } from "@/app/middlewares/role.middleware";
 import validate from "@/app/middlewares/validate";
 import {
@@ -11,11 +11,21 @@ import {
   adminWalletAdjustmentSchema,
 } from "../schemas/wallet.schema";
 
-export const createWalletRouter = (controller: WalletController): Router => {
+export interface WalletRouterOptions {
+  authMiddleware?: RequestHandler;
+  adminMiddleware?: RequestHandler;
+}
+
+export const createWalletRouter = (
+  controller: WalletController,
+  options: WalletRouterOptions = {}
+): Router => {
   const router = Router();
+  const auth = options.authMiddleware ?? defaultAuthMiddleware;
+  const admin = options.adminMiddleware ?? requireRoles("ADMIN", "SUPERADMIN");
 
   // All wallet routes require authenticated user
-  router.use(authMiddleware);
+  router.use(auth);
 
   // ==========================================
   // 1. User Wallet Endpoints (Students & Teachers)
@@ -48,28 +58,17 @@ export const createWalletRouter = (controller: WalletController): Router => {
   // ==========================================
   // 2. Admin Wallet & Master Ledger Endpoints
   // ==========================================
-  router.get(
-    "/admin/wallets",
-    requireRoles("ADMIN", "SUPERADMIN"),
-    controller.adminGetAllWallets
-  );
-
-  router.get(
-    "/admin/payouts",
-    requireRoles("ADMIN", "SUPERADMIN"),
-    controller.adminGetAllPayouts
-  );
-
+  router.get("/admin/wallets", admin, controller.adminGetAllWallets);
+  router.get("/admin/payouts", admin, controller.adminGetAllPayouts);
   router.patch(
     "/admin/payouts/:id",
-    requireRoles("ADMIN", "SUPERADMIN"),
+    admin,
     validate(adminProcessPayoutSchema),
     controller.adminProcessPayout
   );
-
   router.post(
     "/admin/adjustment",
-    requireRoles("ADMIN", "SUPERADMIN"),
+    admin,
     validate(adminWalletAdjustmentSchema),
     controller.adminWalletAdjustment
   );

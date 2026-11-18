@@ -9,7 +9,9 @@ import {
 } from "../../domain/entities/wallet-transaction.entity";
 import { AdminListWalletsQueryDto } from "../../domain/dtos/wallet.dto";
 import { ListTransactionsQueryDto } from "../../domain/dtos/wallet-transaction.dto";
-import { BadRequestError, NotFoundError } from "@/app/errors";
+import { BadRequestError } from "@/app/errors";
+import { WalletNotFoundError } from "../../domain/errors/wallet.errors";
+import { WalletPayoutPolicy } from "../../domain/policies/wallet-payout.policy";
 
 export class PrismaWalletRepository
   extends PrismaBaseRepository<WalletEntity, typeof defaultPrisma.wallet>
@@ -31,7 +33,7 @@ export class PrismaWalletRepository
       userId: raw.userId,
       balance,
       lockedBalance,
-      availableBalance: Math.max(0, balance - lockedBalance),
+      availableBalance: WalletPayoutPolicy.calculateAvailableBalance(balance, lockedBalance),
       currency: raw.currency,
       status: raw.status,
       totalEarned: Number(raw.totalEarned || 0),
@@ -197,18 +199,14 @@ export class PrismaWalletRepository
       });
 
       if (!wallet) {
-        throw new NotFoundError("User wallet not found");
+        throw new WalletNotFoundError();
       }
 
       const balanceBefore = Number(wallet.balance);
       const locked = Number(wallet.lockedBalance);
-      const available = balanceBefore - locked;
+      const available = WalletPayoutPolicy.calculateAvailableBalance(balanceBefore, locked);
 
-      if (available < params.amount) {
-        throw new BadRequestError(
-          `Insufficient wallet balance. Available: ₹${available.toFixed(2)}, Requested: ₹${params.amount.toFixed(2)}`
-        );
-      }
+      WalletPayoutPolicy.validateSufficientBalance(available, params.amount);
 
       const balanceAfter = balanceBefore - params.amount;
       const isSpend = params.type === "ENROLLMENT_PAYMENT";

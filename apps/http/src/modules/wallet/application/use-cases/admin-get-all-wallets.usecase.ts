@@ -1,9 +1,9 @@
-import { IWalletRepository } from "../../domain/repositories/wallet.repository.interface";
+import { IAdminWalletRepository } from "../../domain/repositories/wallet.repository.interface";
 import { AdminListWalletsQueryDto } from "../../domain/dtos/wallet.dto";
 import { WalletEntity } from "../../domain/entities/wallet.entity";
 
 export class AdminGetAllWalletsUseCase {
-  constructor(private readonly walletRepo: IWalletRepository) {}
+  constructor(private readonly walletRepo: IAdminWalletRepository) {}
 
   async execute(query: AdminListWalletsQueryDto): Promise<{
     items: Array<WalletEntity & { user: { id: string; name: string; email: string; role: string } }>;

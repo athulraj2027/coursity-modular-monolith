@@ -5,16 +5,7 @@ import {
   AdminProcessPayoutDto,
 } from "../dtos/payout-request.dto";
 
-export interface IPayoutRequestRepository extends IBaseRepository<PayoutRequestEntity, string> {
-  /**
-   * Create a new withdrawal payout request and atomically lock the wallet funds
-   */
-  createRequest(params: {
-    userId: string;
-    amount: number;
-    bankDetailId: string;
-  }): Promise<PayoutRequestEntity>;
-
+export interface IPayoutRequestQueryRepository {
   /**
    * Find a payout request by ID
    */
@@ -26,7 +17,20 @@ export interface IPayoutRequestRepository extends IBaseRepository<PayoutRequestE
   findByUserId(
     query: ListPayoutsQueryDto
   ): Promise<{ items: PayoutRequestEntity[]; total: number }>;
+}
 
+export interface IPayoutRequestMutationRepository {
+  /**
+   * Create a new withdrawal payout request and atomically lock the wallet funds
+   */
+  createRequest(params: {
+    userId: string;
+    amount: number;
+    bankDetailId: string;
+  }): Promise<PayoutRequestEntity>;
+}
+
+export interface IAdminPayoutRepository {
   /**
    * Admin list all payout requests with search & filters
    */
@@ -48,3 +52,11 @@ export interface IPayoutRequestRepository extends IBaseRepository<PayoutRequestE
    */
   processPayout(dto: AdminProcessPayoutDto): Promise<PayoutRequestEntity>;
 }
+
+export interface IPayoutRequestRepository
+  extends IBaseRepository<PayoutRequestEntity, string>,
+    IPayoutRequestQueryRepository,
+    IPayoutRequestMutationRepository,
+    IAdminPayoutRepository {}
+
+export type PayoutRequestRepository = IPayoutRequestRepository;
